@@ -2,6 +2,7 @@
 
 package com.example.allowelcome.ui.settings
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -32,6 +33,9 @@ fun SettingsScreen(
     onBack: () -> Unit,
     vm: SettingsViewModel = viewModel(factory = AppViewModelProvider(LocalContext.current))
 ) {
+    // Handle system back button
+    BackHandler { onBack() }
+
     val current by vm.techProfile.collectAsState()
 
     var name by remember(current) { mutableStateOf(current.name) }

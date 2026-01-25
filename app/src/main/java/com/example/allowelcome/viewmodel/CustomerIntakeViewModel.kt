@@ -9,12 +9,12 @@ import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.allowelcome.data.CustomerData
-import com.example.allowelcome.data.DedupStore
 import com.example.allowelcome.data.MessageTemplate
 import com.example.allowelcome.data.SettingsStore
 import com.example.allowelcome.data.TechProfile
 import com.example.allowelcome.ui.CustomerIntakeUiState
 import com.example.allowelcome.util.PhoneUtils
+import com.example.allowelcome.util.StringUtils
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -26,8 +26,6 @@ class CustomerIntakeViewModel(private val settingsStore: SettingsStore) : ViewMo
 
     private val _uiState = MutableStateFlow(CustomerIntakeUiState())
     val uiState: StateFlow<CustomerIntakeUiState> = _uiState.asStateFlow()
-
-    private lateinit var dedupStore: DedupStore
 
     fun onCustomerNameChanged(name: String) {
         _uiState.update { it.copy(customerName = name, customerNameError = null) }
@@ -50,34 +48,28 @@ class CustomerIntakeViewModel(private val settingsStore: SettingsStore) : ViewMo
     }
 
     fun onSmsClicked(context: Context) = viewModelScope.launch {
-        if (validateInputs(context)) {
+        if (validateInputs()) {
             val message = generateMessage(context)
             sendSms(context, _uiState.value.customerPhone, message)
-            dedupStore.markSent(_uiState.value.customerPhone, _uiState.value.accountNumber)
         }
     }
 
     fun onShareClicked(context: Context) = viewModelScope.launch {
-        if (validateInputs(context)) {
+        if (validateInputs()) {
             val message = generateMessage(context)
             shareMessage(context, message)
-            dedupStore.markSent(_uiState.value.customerPhone, _uiState.value.accountNumber)
         }
     }
 
     fun onCopyClicked(context: Context) = viewModelScope.launch {
-        if (validateInputs(context)) {
+        if (validateInputs()) {
             val message = generateMessage(context)
             copyToClipboard(context, message)
             Toast.makeText(context, "Message copied to clipboard", Toast.LENGTH_SHORT).show()
         }
     }
 
-    private fun validateInputs(context: Context): Boolean {
-        if (!::dedupStore.isInitialized) {
-            dedupStore = DedupStore(context.applicationContext)
-        }
-
+    private fun validateInputs(): Boolean {
         var hasError = false
         val currentState = _uiState.value
 
@@ -112,7 +104,7 @@ class CustomerIntakeViewModel(private val settingsStore: SettingsStore) : ViewMo
         val uiState = _uiState.value
         val techProfile = settingsStore.techProfileFlow.first()
         val customerData = CustomerData(
-            customerName = uiState.customerName,
+            customerName = StringUtils.toTitleCase(uiState.customerName),
             customerPhone = uiState.customerPhone,
             ssid = uiState.ssid,
             password = uiState.password,
