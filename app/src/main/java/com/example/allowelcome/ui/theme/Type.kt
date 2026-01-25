@@ -26,16 +26,25 @@ val BodyFont = FontFamily(
 
 // ============== DARK MODE GLOW EFFECTS ==============
 // Neon glow shadows for dark mode - vibrant and visible against dark backgrounds
+// ChatGPT feedback: Keep big glow (12f) for headlineLarge, tighter (8f) for titleLarge
 private val CyanGlowDark = Shadow(
     color = Color(0xFF00E5FF).copy(alpha = 0.6f),
     offset = Offset(0f, 0f),
-    blurRadius = 12f
+    blurRadius = 12f  // Wide blur for large headlines
 )
 
+// Tighter glow for titleLarge - prevents haziness on smaller text
+private val CyanGlowTightDark = Shadow(
+    color = Color(0xFF00E5FF).copy(alpha = 0.5f),
+    offset = Offset(0f, 0f),
+    blurRadius = 8f  // Tighter blur for titles
+)
+
+// Tighter blur (8f) for titleMedium/accent text - reduces haziness per ChatGPT feedback
 private val MagentaGlowDark = Shadow(
     color = Color(0xFFFF2BD6).copy(alpha = 0.5f),
     offset = Offset(0f, 0f),
-    blurRadius = 10f
+    blurRadius = 8f  // Tighter than headline (was 10f)
 )
 
 // ============== LIGHT MODE GLOW EFFECTS ==============
@@ -103,11 +112,11 @@ val CyberTypography = Typography(
  */
 @Composable
 fun cyberTypography(isDark: Boolean = LocalDarkTheme.current): Typography {
-    // Light mode: Only headlineLarge gets a very subtle shadow (for Q WELCOME header)
-    // Dark mode: Headers get neon glows
-    val headlineGlow = if (isDark) CyanGlowDark else null
-    val titleGlow = if (isDark) CyanGlowDark else null
-    val accentGlow = if (isDark) MagentaGlowDark else null
+    // Light mode: No shadows - keeps it crisp and readable
+    // Dark mode: Headers get neon glows (headlineLarge=wide, titleLarge=tight)
+    val headlineGlow = if (isDark) CyanGlowDark else null      // blur 12f
+    val titleGlow = if (isDark) CyanGlowTightDark else null    // blur 8f (tighter)
+    val accentGlow = if (isDark) MagentaGlowDark else null     // blur 8f
     
     return Typography(
         headlineLarge = CyberTypography.headlineLarge.copy(shadow = headlineGlow),

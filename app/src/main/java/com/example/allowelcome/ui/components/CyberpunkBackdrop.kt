@@ -98,7 +98,7 @@ private fun ScanlineOverlay(modifier: Modifier = Modifier, isDark: Boolean = tru
         label = "scanlineY"
     )
 
-    val colorScheme = CyberScheme
+    val colorScheme = androidx.compose.material3.MaterialTheme.colorScheme
 
     Canvas(modifier) {
         val lineHeight = 4.dp.toPx()

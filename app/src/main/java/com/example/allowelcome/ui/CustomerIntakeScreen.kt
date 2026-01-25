@@ -64,6 +64,8 @@ fun CustomerIntakeScreen(
     var showQrSheet by rememberSaveable { mutableStateOf(false) }
     // Dropdown state is transient - use remember so it collapses on rotation
     var templateDropdownExpanded by remember { mutableStateOf(false) }
+    // Copy success feedback - brief visual confirmation (ChatGPT feedback: animate meaning)
+    var copySuccess by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
     // Lifecycle observer for auto-clear after 10 min in background
@@ -80,11 +82,18 @@ fun CustomerIntakeScreen(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    // Collect UI events (Toasts, rate limit warnings)
+    // Collect UI events (Toasts, rate limit warnings, copy success feedback)
     LaunchedEffect(Unit) {
         customerIntakeViewModel.uiEvent.collect { event ->
             when (event) {
                 is UiEvent.ShowToast -> {
+                    // Check if this is a copy success for visual feedback
+                    if (event.message.contains("copied", ignoreCase = true)) {
+                        copySuccess = true
+                        // Reset after brief delay (cyberpunk feedback, not screensaver)
+                        kotlinx.coroutines.delay(1500L)
+                        copySuccess = false
+                    }
                     Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
                 }
                 is UiEvent.RateLimitExceeded -> {
@@ -297,18 +306,23 @@ fun CustomerIntakeScreen(
                         Text("Share")
                     }
                     // Copy = Tertiary (lowest emphasis - utility action)
-                    NeonCyanButton(
+                    // ChatGPT feedback: Animate meaning - show success state after copy
+                    val cyberColors = com.example.allowelcome.ui.theme.LocalCyberColors.current
+                    NeonButton(
                         onClick = { customerIntakeViewModel.onCopyClicked(navigator) },
                         modifier = Modifier.weight(1f),
-                        style = NeonButtonStyle.TERTIARY
+                        style = NeonButtonStyle.TERTIARY,
+                        // Success state: Switch to success green color
+                        glowColor = if (copySuccess) cyberColors.success else MaterialTheme.colorScheme.primary
                     ) {
                         Icon(
-                            Icons.Filled.ContentCopy,
+                            // Success state: Show check icon instead of copy icon
+                            if (copySuccess) Icons.Filled.Check else Icons.Filled.ContentCopy,
                             contentDescription = null,
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(Modifier.width(4.dp))
-                        Text("Copy")
+                        Text(if (copySuccess) "Copied!" else "Copy")
                     }
                 }
 

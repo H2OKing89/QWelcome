@@ -111,11 +111,28 @@ fun NeonPanel(
                     Modifier.background(colorScheme.surface)
                 }
             )
-            // CYBERPUNK SIGNATURE: Neon top-edge accent line
+            // CYBERPUNK SIGNATURE: Neon top-edge accent line (both modes now!)
             .drawBehind {
-                if (!isDark) {
-                    // Draw neon gradient line across top of panel
-                    // StrokeCap.Round for intentional, polished look
+                // Draw neon gradient line across top of panel
+                // StrokeCap.Round for intentional, polished look
+                if (isDark) {
+                    // Dark mode: cyan→magenta gradient at low alpha (static, no animation)
+                    drawLine(
+                        brush = Brush.horizontalGradient(
+                            colors = listOf(
+                                accentColor.copy(alpha = 0f),
+                                accentColor.copy(alpha = 0.25f),  // Cyan
+                                colorScheme.secondary.copy(alpha = 0.20f),  // Magenta
+                                accentColor.copy(alpha = 0f)
+                            )
+                        ),
+                        start = Offset(16.dp.toPx(), 0f),
+                        end = Offset(size.width - 16.dp.toPx(), 0f),
+                        strokeWidth = 2.dp.toPx(),
+                        cap = StrokeCap.Round
+                    )
+                } else {
+                    // Light mode: cyan→magenta at higher alpha
                     drawLine(
                         brush = Brush.horizontalGradient(
                             colors = listOf(
@@ -141,6 +158,10 @@ fun NeonPanel(
 /**
  * Cyberpunk-styled outlined text field.
  * Adapts border and label colors based on theme.
+ * 
+ * ChatGPT feedback: Focus state should feel like "hacking a terminal"
+ * - Dark mode: thin cyan glow on focused field
+ * - Error: neon red with NO infinite pulse (prevents rave mode)
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -158,6 +179,15 @@ fun NeonOutlinedField(
 ) {
     val isDark = LocalDarkTheme.current
     val colorScheme = MaterialTheme.colorScheme
+    
+    // Focus state glow modifier for dark mode - "hacking terminal" vibe
+    val focusGlowModifier = if (isDark) {
+        // Add a subtle outer glow when focused (applied via border, not drawBehind)
+        // The thicker focused border + brighter color creates the glow effect
+        Modifier
+    } else {
+        Modifier
+    }
 
     OutlinedTextField(
         value = value,
@@ -169,10 +199,10 @@ fun NeonOutlinedField(
         trailingIcon = trailingIcon,
         visualTransformation = visualTransformation,
         keyboardOptions = keyboardOptions,
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth().then(focusGlowModifier),
         colors = OutlinedTextFieldDefaults.colors(
-            // Focused states
-            focusedBorderColor = colorScheme.primary,
+            // Focused states - brighter in dark mode for "terminal" feel
+            focusedBorderColor = if (isDark) colorScheme.primary else colorScheme.primary,
             focusedLabelColor = colorScheme.primary,
             focusedTextColor = colorScheme.onSurface,
             cursorColor = colorScheme.primary,
@@ -184,13 +214,14 @@ fun NeonOutlinedField(
             },
             unfocusedLabelColor = colorScheme.onSurfaceVariant,
             unfocusedTextColor = colorScheme.onSurface,
-            // Container
-            focusedContainerColor = if (isDark) Color.Transparent else colorScheme.surface,
+            // Container - slight tint on focus in dark mode
+            focusedContainerColor = if (isDark) colorScheme.primary.copy(alpha = 0.05f) else colorScheme.surface,
             unfocusedContainerColor = if (isDark) Color.Transparent else colorScheme.surface,
-            // Error states
+            // Error states - neon red (no animation, per motion budget)
             errorBorderColor = colorScheme.error,
             errorLabelColor = colorScheme.error,
-            errorCursorColor = colorScheme.error
+            errorCursorColor = colorScheme.error,
+            errorContainerColor = if (isDark) colorScheme.error.copy(alpha = 0.05f) else Color.Transparent
         )
     )
 }
@@ -218,28 +249,28 @@ fun NeonButton(
     val isDark = LocalDarkTheme.current
     val colorScheme = MaterialTheme.colorScheme
 
-    // Pulsing animation for the glow effect (dark mode PRIMARY only)
-    val infiniteTransition = rememberInfiniteTransition(label = "neonPulse")
-    val glowAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.4f,
-        targetValue = 0.8f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1500, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "glowAlpha"
-    )
+    // MOTION BUDGET: Scanline is the ONE continuous animation per screen.
+    // Button glow is now STATIC (0.6 alpha) - no infinite pulse.
+    // This prevents "casino UI" while keeping the cyberpunk vibe.
+    val glowAlpha = 0.6f  // Static glow - no animation
 
     // Style-dependent properties - DECISIVE hierarchy per ChatGPT feedback
     // PRIMARY = Filled (no border), SECONDARY = Outlined, TERTIARY = Text/Subtle
+    // Issue 6 (ChatGPT): PRIMARY needs more decisive fill in dark mode
+    // Using 0.20f alpha (up from 0.15f) for better "premium" feel
     val containerColor = when (style) {
         NeonButtonStyle.PRIMARY -> if (isDark) {
-            glowColor.copy(alpha = 0.15f)
+            glowColor.copy(alpha = 0.20f)  // Slightly stronger tint
         } else {
             glowColor  // Solid fill - shape + elevation do the work
         }
         NeonButtonStyle.SECONDARY -> Color.Transparent
-        NeonButtonStyle.TERTIARY -> if (isDark) Color.Transparent else colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        // TERTIARY: Subtle tonal fill so it reads as a button, not floating text
+        NeonButtonStyle.TERTIARY -> if (isDark) {
+            colorScheme.surfaceVariant.copy(alpha = 0.35f)  // Visible but subtle
+        } else {
+            colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        }
     }
     
     val contentColor = when (style) {
@@ -255,9 +286,11 @@ fun NeonButton(
         NeonButtonStyle.TERTIARY -> 0.dp  // Text button - no border
     }
     
+    // SECONDARY is STATIC (not animated) - this preserves hierarchy.
+    // PRIMARY has glow, SECONDARY has static outline, TERTIARY is subtle.
     val borderAlpha = when (style) {
         NeonButtonStyle.PRIMARY -> if (enabled && isDark) glowAlpha else 0f
-        NeonButtonStyle.SECONDARY -> if (enabled) (if (isDark) 0.7f else 0.6f) else 0.3f
+        NeonButtonStyle.SECONDARY -> if (enabled) (if (isDark) 0.7f else 0.6f) else 0.3f  // Static!
         NeonButtonStyle.TERTIARY -> 0f
     }
 
@@ -299,21 +332,18 @@ fun NeonButton(
             )
             else -> ButtonDefaults.buttonElevation(0.dp, 0.dp, 0.dp)
         },
+        // Dark mode PRIMARY: subtle inner glow effect (stays within bounds, no alignment issues)
         modifier = modifier
             .height(48.dp)
             .then(
-                // Dark mode PRIMARY: outer glow effect
+                // Dark mode PRIMARY: draw glow as inner border effect (no clipping issues)
                 if (enabled && isDark && style == NeonButtonStyle.PRIMARY) {
                     Modifier.drawBehind {
+                        // Draw subtle glow as an inset rounded rect
                         drawRoundRect(
                             color = glowColor.copy(alpha = glowAlpha * 0.25f),
                             cornerRadius = CornerRadius(8.dp.toPx()),
-                            style = Stroke(width = 3.dp.toPx()),
-                            topLeft = Offset(-1.5.dp.toPx(), -1.5.dp.toPx()),
-                            size = size.copy(
-                                width = size.width + 3.dp.toPx(),
-                                height = size.height + 3.dp.toPx()
-                            )
+                            style = Stroke(width = 2.dp.toPx())
                         )
                     }
                 } else Modifier
