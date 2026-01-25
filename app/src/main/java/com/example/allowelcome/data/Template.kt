@@ -57,13 +57,11 @@ data class Template(
                 .trim('_')
                 .take(50) // Limit length
             
-            val shortId = UUID.randomUUID().toString().take(8)
-            
             return when {
                 // Fallback if slug is empty (e.g., name was "!!!" or "🎉🎉🎉")
-                cleaned.isEmpty() -> "template_$shortId"
+                cleaned.isEmpty() -> "template_${UUID.randomUUID().toString().take(8)}"
                 // Append suffix for reserved slugs
-                cleaned in RESERVED_SLUGS -> "${cleaned}_$shortId"
+                cleaned in RESERVED_SLUGS -> "${cleaned}_${UUID.randomUUID().toString().take(8)}"
                 else -> cleaned
             }
         }
