@@ -401,12 +401,12 @@ data class FullBackup(
 
 ## Commit History
 
-| Date       | Commit    | Description                  |
-|------------|-----------|------------------------------|
+| Date | Commit | Description |
+| ------------ | ----------- | ---------------------------------- |
 | 2026-01-25 | `901a039` | Phase 1: Foundation complete |
-| 2026-01-25 | `313aeb5` | Phase 1: Code review fixes   |
-| 2026-01-25 | `xxxxxxx` | Phase 2: ImportExportRepository |
-| 2026-01-25 | `3ec5663` | Phase 3: Export UI complete  |
+| 2026-01-25 | `313aeb5` | Phase 1: Code review fixes |
+| 2026-01-25 | `612ce9f` | Phase 2: ImportExportRepository |
+| 2026-01-25 | `3ec5663` | Phase 3: Export UI complete |
 
 ---
 

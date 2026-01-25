@@ -297,17 +297,7 @@ fun SettingsScreen(
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         NeonMagentaButton(
-                            onClick = {
-                                if (hasUnsavedChanges) {
-                                    Toast.makeText(
-                                        context,
-                                        "Please save changes before exporting",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                } else {
-                                    onOpenExport()
-                                }
-                            },
+                            onClick = onOpenExport,
                             modifier = Modifier.weight(1f),
                             enabled = !hasUnsavedChanges
                         ) {

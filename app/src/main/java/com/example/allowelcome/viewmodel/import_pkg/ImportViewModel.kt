@@ -295,16 +295,20 @@ class ImportViewModel(
                 // Filter to only selected template IDs
                 val selectedIds = selectedTemplates.map { it.template.id }.toSet()
 
+                // Capture cached values to avoid null assertions
+                val localPack = cachedTemplatePack
+                val localBackup = cachedFullBackup
+
                 val result = when {
-                    cachedTemplatePack != null -> {
-                        val filteredPack = cachedTemplatePack!!.copy(
-                            templates = cachedTemplatePack!!.templates.filter { it.id in selectedIds }
+                    localPack != null -> {
+                        val filteredPack = localPack.copy(
+                            templates = localPack.templates.filter { it.id in selectedIds }
                         )
                         repository.applyTemplatePack(filteredPack, resolutions)
                     }
-                    cachedFullBackup != null -> {
-                        val filteredBackup = cachedFullBackup!!.copy(
-                            templates = cachedFullBackup!!.templates.filter { it.id in selectedIds }
+                    localBackup != null -> {
+                        val filteredBackup = localBackup.copy(
+                            templates = localBackup.templates.filter { it.id in selectedIds }
                         )
                         repository.applyFullBackup(
                             backup = filteredBackup,
@@ -376,6 +380,6 @@ class ImportViewModel(
     fun reset() {
         cachedTemplatePack = null
         cachedFullBackup = null
-        _uiState.value = ImportUiState()
+        _uiState.update { ImportUiState() }
     }
 }
