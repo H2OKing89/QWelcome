@@ -62,7 +62,8 @@ fun NeonOutlinedField(
     isError: Boolean = false,
     supportingText: @Composable (() -> Unit)? = null,
     trailingIcon: @Composable (() -> Unit)? = null,
-    visualTransformation: VisualTransformation = VisualTransformation.None
+    visualTransformation: VisualTransformation = VisualTransformation.None,
+    keyboardOptions: androidx.compose.foundation.text.KeyboardOptions = androidx.compose.foundation.text.KeyboardOptions.Default
 ) {
     OutlinedTextField(
         value = value,
@@ -73,6 +74,7 @@ fun NeonOutlinedField(
         supportingText = supportingText,
         trailingIcon = trailingIcon,
         visualTransformation = visualTransformation,
+        keyboardOptions = keyboardOptions,
         modifier = modifier.fillMaxWidth(),
         colors = OutlinedTextFieldDefaults.colors(
             focusedBorderColor = CyberScheme.primary.copy(alpha = 0.85f),

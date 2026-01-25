@@ -1,8 +1,5 @@
 package com.example.allowelcome.data
 
-import android.content.Context
-import com.example.allowelcome.R
-
 object MessageTemplate {
 
     /** Placeholder keys - single source of truth */
@@ -19,13 +16,7 @@ object MessageTemplate {
         KEY_ACCOUNT_NUMBER to "Account number"
     )
 
-    /** Generate message using the default template from strings.xml */
-    fun generate(context: Context, data: CustomerData): String {
-        val template = context.getString(R.string.welcome_template)
-        return applyPlaceholders(template, data)
-    }
-
-    /** Generate message using a custom template string */
+    /** Generate message by applying placeholders to the template */
     fun generate(template: String, data: CustomerData): String {
         return applyPlaceholders(template, data)
     }

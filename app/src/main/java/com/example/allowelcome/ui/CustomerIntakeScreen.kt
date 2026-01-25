@@ -16,9 +16,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -111,7 +113,8 @@ fun CustomerIntakeScreen(
                         onValueChange = { customerIntakeViewModel.onCustomerPhoneChanged(it) },
                         label = { Text("Customer Phone") },
                         isError = uiState.customerPhoneError != null,
-                        supportingText = { uiState.customerPhoneError?.let { Text(it) } }
+                        supportingText = { uiState.customerPhoneError?.let { Text(it) } },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
                     )
                     NeonOutlinedField(
                         value = uiState.ssid,
@@ -140,7 +143,8 @@ fun CustomerIntakeScreen(
                         onValueChange = { customerIntakeViewModel.onAccountNumberChanged(it) },
                         label = { Text("Account Number") },
                         isError = uiState.accountNumberError != null,
-                        supportingText = { uiState.accountNumberError?.let { Text(it) } }
+                        supportingText = { uiState.accountNumberError?.let { Text(it) } },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                     )
                 }
 

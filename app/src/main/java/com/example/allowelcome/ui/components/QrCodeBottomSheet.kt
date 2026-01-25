@@ -210,6 +210,9 @@ private fun generateHighResQrBitmap(
     val destRect = android.graphics.Rect(padding, padding, padding + size, padding + size)
     canvas.drawBitmap(qrBitmap, null, destRect, null)
     
+    // Recycle intermediate bitmap to free memory
+    qrBitmap.recycle()
+    
     return finalBitmap
 }
 
