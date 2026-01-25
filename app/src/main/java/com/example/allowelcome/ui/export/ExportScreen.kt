@@ -8,6 +8,8 @@ import android.content.Context
 import android.content.Intent
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -34,6 +36,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Backup
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.SaveAlt
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -51,6 +54,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -77,6 +83,33 @@ fun ExportScreen(
     val context = LocalContext.current
     val uiState by vm.uiState.collectAsState()
 
+    // State for pending file save
+    var pendingSuggestedName by remember { mutableStateOf<String?>(null) }
+
+    // File picker launcher for saving
+    val saveFileLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        if (uri != null) {
+            // Write JSON to the selected file
+            val json = vm.getPendingFileExportContent()
+            if (json != null) {
+                try {
+                    context.contentResolver.openOutputStream(uri)?.use { outputStream ->
+                        outputStream.write(json.toByteArray(Charsets.UTF_8))
+                    }
+                    vm.onFileSaveComplete()
+                } catch (e: Exception) {
+                    Toast.makeText(context, "Failed to save file: ${e.message}", Toast.LENGTH_LONG).show()
+                    vm.onFileSaveCancelled()
+                }
+            }
+        } else {
+            vm.onFileSaveCancelled()
+        }
+        pendingSuggestedName = null
+    }
+
     // Handle system back button
     BackHandler { onBack() }
 
@@ -99,6 +132,17 @@ fun ExportScreen(
                 }
                 is ExportEvent.ShareReady -> {
                     shareJson(context, event.json, event.type)
+                }
+                is ExportEvent.RequestFileSave -> {
+                    pendingSuggestedName = event.suggestedName
+                    saveFileLauncher.launch(event.suggestedName)
+                }
+                is ExportEvent.FileSaved -> {
+                    val typeName = when (event.type) {
+                        ExportType.TEMPLATE_PACK -> "Template Pack"
+                        ExportType.FULL_BACKUP -> "Full Backup"
+                    }
+                    Toast.makeText(context, "$typeName saved to file", Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -231,6 +275,21 @@ fun ExportScreen(
                                 Spacer(Modifier.width(8.dp))
                                 Text("Share")
                             }
+                        }
+
+                        // Save to File button
+                        NeonButton(
+                            onClick = { vm.onSaveToFileRequested() },
+                            glowColor = CyberScheme.secondary,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(
+                                Icons.Default.SaveAlt,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text("Save to File")
                         }
 
                         // JSON Preview

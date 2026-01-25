@@ -1,7 +1,7 @@
 # JSON Import/Export Feature Design
 
 > **Branch:** `feature/json-import-export`  
-> **Status:** Phase 4 Complete ✅  
+> **Status:** Phase 5 Complete ✅  
 > **Last Updated:** 2026-01-25
 
 ---
@@ -298,11 +298,27 @@ For each template:
 - Warnings display for schema version, long content, missing placeholders
 - Animated transitions between steps
 
-### Phase 5: File-Based Import/Export (Future)
+### Phase 5: File-Based Import/Export ✅ COMPLETE
 
-- [ ] Export to `.json` file (`ACTION_CREATE_DOCUMENT`)
-- [ ] Import from `.json` file (`ACTION_OPEN_DOCUMENT`)
-- [ ] File picker integration
+- [x] Export to `.json` file (`ACTION_CREATE_DOCUMENT`)
+- [x] Import from `.json` file (`ACTION_OPEN_DOCUMENT`)
+- [x] File picker integration
+
+**Files Modified:**
+
+- `viewmodel/export/ExportViewModel.kt` - Added file save events and state
+- `viewmodel/import_pkg/ImportViewModel.kt` - Added file load events
+- `ui/export/ExportScreen.kt` - Added "Save to File" button with `CreateDocument` launcher
+- `ui/import_pkg/ImportScreen.kt` - Added "Load from File" button with `OpenDocument` launcher
+
+**Key Features:**
+
+- "Save to File" button on Export screen (after generating JSON)
+- Suggested filenames: `q-welcome-templates.json` / `q-welcome-backup.json`
+- "Load from File" button on Import screen (alongside Paste)
+- Uses Android Storage Access Framework (SAF) for cross-device compatibility
+- Supports both `application/json` and `text/plain` MIME types for import
+- Toast feedback for file save/load success
 
 ### Phase 6: Multi-Template UI (Future)
 
@@ -407,6 +423,7 @@ data class FullBackup(
 | 2026-01-25 | `313aeb5` | Phase 1: Code review fixes |
 | 2026-01-25 | `612ce9f` | Phase 2: ImportExportRepository |
 | 2026-01-25 | `3ec5663` | Phase 3: Export UI complete |
+| 2026-01-25 | `1881493` | Phase 4: Import UI complete |
 
 ---
 

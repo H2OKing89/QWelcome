@@ -99,6 +99,10 @@ sealed class ImportEvent {
     data class ValidationError(val message: String) : ImportEvent()
     data class ImportSuccess(val count: Int, val techProfileImported: Boolean = false) : ImportEvent()
     data class ImportError(val message: String) : ImportEvent()
+    /** Request to open file picker for loading JSON */
+    data object RequestFileLoad : ImportEvent()
+    /** File was loaded and JSON text is ready */
+    data class FileLoaded(val fileName: String) : ImportEvent()
 }
 
 /**
@@ -381,5 +385,26 @@ class ImportViewModel(
         cachedTemplatePack = null
         cachedFullBackup = null
         _uiState.update { ImportUiState() }
+    }
+
+    /**
+     * Request to open file picker for importing from a file.
+     */
+    fun requestFileLoad() {
+        viewModelScope.launch {
+            _events.emit(ImportEvent.RequestFileLoad)
+        }
+    }
+
+    /**
+     * Called when a file has been loaded from the file picker.
+     * @param json The JSON content read from the file
+     * @param fileName The name of the file that was loaded
+     */
+    fun onFileLoaded(json: String, fileName: String) {
+        _uiState.update { it.copy(jsonInput = json) }
+        viewModelScope.launch {
+            _events.emit(ImportEvent.FileLoaded(fileName))
+        }
     }
 }

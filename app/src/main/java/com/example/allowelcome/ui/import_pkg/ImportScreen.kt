@@ -6,6 +6,8 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -38,6 +40,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.FileOpen
 import androidx.compose.material.icons.filled.NewReleases
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.SwapHoriz
@@ -95,6 +98,26 @@ fun ImportScreen(
     val context = LocalContext.current
     val uiState by vm.uiState.collectAsState()
 
+    // File picker launcher for loading JSON
+    val loadFileLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) {
+            try {
+                val json = context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                    inputStream.bufferedReader().readText()
+                }
+                if (json != null) {
+                    // Extract filename from URI
+                    val fileName = uri.lastPathSegment?.substringAfterLast('/') ?: "file.json"
+                    vm.onFileLoaded(json, fileName)
+                }
+            } catch (e: Exception) {
+                Toast.makeText(context, "Failed to read file: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
     // Shared back navigation logic
     val handleBack: () -> Unit = {
         when (uiState.step) {
@@ -130,6 +153,12 @@ fun ImportScreen(
                 }
                 is ImportEvent.ImportError -> {
                     Toast.makeText(context, event.message, Toast.LENGTH_LONG).show()
+                }
+                is ImportEvent.RequestFileLoad -> {
+                    loadFileLauncher.launch(arrayOf("application/json", "text/plain"))
+                }
+                is ImportEvent.FileLoaded -> {
+                    Toast.makeText(context, "Loaded: ${event.fileName}", Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -184,6 +213,7 @@ fun ImportScreen(
                                     vm.updateJsonInput(json)
                                 }
                             },
+                            onLoadFromFile = vm::requestFileLoad,
                             isValidating = uiState.isProcessing,
                             errorMessage = uiState.errorMessage
                         )
@@ -232,6 +262,7 @@ private fun InputStepContent(
     onJsonInputChange: (String) -> Unit,
     onValidate: () -> Unit,
     onPasteFromClipboard: () -> Unit,
+    onLoadFromFile: () -> Unit,
     isValidating: Boolean,
     errorMessage: String?
 ) {
@@ -245,7 +276,7 @@ private fun InputStepContent(
         // Instructions
         NeonPanel {
             Text(
-                "Paste JSON from a teammate's export below, or tap the paste button to grab it from your clipboard.",
+                "Paste JSON from a teammate's export below, tap the paste button, or load from a file.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = CyberScheme.onSurface.copy(alpha = 0.8f)
             )
@@ -263,15 +294,29 @@ private fun InputStepContent(
                     style = MaterialTheme.typography.titleSmall,
                     color = CyberScheme.primary
                 )
-                TextButton(onClick = onPasteFromClipboard) {
-                    Icon(
-                        Icons.Default.ContentPaste,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp),
-                        tint = CyberScheme.secondary
-                    )
-                    Spacer(Modifier.width(4.dp))
-                    Text("Paste", color = CyberScheme.secondary)
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    TextButton(onClick = onLoadFromFile) {
+                        Icon(
+                            Icons.Default.FileOpen,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                            tint = CyberScheme.tertiary
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        Text("File", color = CyberScheme.tertiary)
+                    }
+                    TextButton(onClick = onPasteFromClipboard) {
+                        Icon(
+                            Icons.Default.ContentPaste,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                            tint = CyberScheme.secondary
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        Text("Paste", color = CyberScheme.secondary)
+                    }
                 }
             }
 

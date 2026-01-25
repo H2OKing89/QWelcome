@@ -1,5 +1,6 @@
 package com.example.allowelcome.viewmodel.export
 
+import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -25,7 +26,10 @@ data class ExportUiState(
     val currentlyExportingType: ExportType? = null,
     val lastExportedJson: String? = null,
     val lastExportType: ExportType? = null,
-    val templateCount: Int = 0
+    val templateCount: Int = 0,
+    // File export state
+    val pendingFileExportJson: String? = null,
+    val pendingFileExportType: ExportType? = null
 )
 
 /**
@@ -44,6 +48,10 @@ sealed class ExportEvent {
     data class ExportError(val message: String) : ExportEvent()
     data class CopiedToClipboard(val type: ExportType) : ExportEvent()
     data class ShareReady(val json: String, val type: ExportType) : ExportEvent()
+    /** Request to open file picker for saving */
+    data class RequestFileSave(val suggestedName: String, val type: ExportType) : ExportEvent()
+    /** File was saved successfully */
+    data class FileSaved(val type: ExportType) : ExportEvent()
 }
 
 /**
@@ -177,7 +185,71 @@ class ExportViewModel(
             it.copy(
                 lastExportedJson = null,
                 lastExportType = null,
-                templateCount = 0
+                templateCount = 0,
+                pendingFileExportJson = null,
+                pendingFileExportType = null
+            )
+        }
+    }
+
+    /**
+     * Request to save current export to a file.
+     * Triggers file picker via event.
+     */
+    fun onSaveToFileRequested() {
+        val json = _uiState.value.lastExportedJson ?: return
+        val type = _uiState.value.lastExportType ?: return
+
+        // Store pending export for when file picker returns
+        _uiState.update {
+            it.copy(
+                pendingFileExportJson = json,
+                pendingFileExportType = type
+            )
+        }
+
+        val suggestedName = when (type) {
+            ExportType.TEMPLATE_PACK -> "q-welcome-templates.json"
+            ExportType.FULL_BACKUP -> "q-welcome-backup.json"
+        }
+
+        viewModelScope.launch {
+            _events.emit(ExportEvent.RequestFileSave(suggestedName, type))
+        }
+    }
+
+    /**
+     * Called when user selects a file location from the picker.
+     * Returns the JSON content to write to the file.
+     */
+    fun getPendingFileExportContent(): String? {
+        return _uiState.value.pendingFileExportJson
+    }
+
+    /**
+     * Called after file has been written successfully.
+     */
+    fun onFileSaveComplete() {
+        val type = _uiState.value.pendingFileExportType ?: return
+        _uiState.update {
+            it.copy(
+                pendingFileExportJson = null,
+                pendingFileExportType = null
+            )
+        }
+        viewModelScope.launch {
+            _events.emit(ExportEvent.FileSaved(type))
+        }
+    }
+
+    /**
+     * Called if file save was cancelled or failed.
+     */
+    fun onFileSaveCancelled() {
+        _uiState.update {
+            it.copy(
+                pendingFileExportJson = null,
+                pendingFileExportType = null
             )
         }
     }
