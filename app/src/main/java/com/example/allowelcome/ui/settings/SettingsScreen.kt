@@ -72,7 +72,8 @@ private fun safeTruncate(text: String, maxLength: Int): String {
 
 @Composable
 fun SettingsScreen(
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onOpenExport: () -> Unit = {}
 ) {
     // Get ViewModel from CompositionLocal (provided at Activity level)
     val vm = LocalSettingsViewModel.current
@@ -246,6 +247,29 @@ fun SettingsScreen(
                             style = MaterialTheme.typography.bodySmall,
                             color = CyberScheme.onSurface.copy(alpha = 0.6f)
                         )
+                    }
+                }
+
+                Spacer(Modifier.height(16.dp))
+
+                // === EXPORT / IMPORT SECTION ===
+                Text(
+                    "Export & Share",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = CyberScheme.primary
+                )
+                NeonPanel {
+                    Text(
+                        "Share templates with your team via Slack, Teams, or email.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = CyberScheme.onSurface.copy(alpha = 0.7f)
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    NeonMagentaButton(
+                        onClick = onOpenExport,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Export Templates")
                     }
                 }
 

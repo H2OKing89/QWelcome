@@ -4,8 +4,10 @@ import android.content.Context
 import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import com.example.allowelcome.data.ImportExportRepository
 import com.example.allowelcome.data.SettingsStore
 import com.example.allowelcome.viewmodel.CustomerIntakeViewModel
+import com.example.allowelcome.viewmodel.export.ExportViewModel
 import com.example.allowelcome.viewmodel.settings.SettingsViewModel
 
 /**
@@ -25,10 +27,21 @@ class AppViewModelProvider(private val context: Context) : ViewModelProvider.Fac
         @Volatile
         private var settingsStoreInstance: SettingsStore? = null
         
+        @Volatile
+        private var importExportRepositoryInstance: ImportExportRepository? = null
+        
         private fun getSettingsStore(context: Context): SettingsStore {
             return settingsStoreInstance ?: synchronized(this) {
                 settingsStoreInstance ?: SettingsStore(context.applicationContext).also {
                     settingsStoreInstance = it
+                }
+            }
+        }
+        
+        private fun getImportExportRepository(context: Context): ImportExportRepository {
+            return importExportRepositoryInstance ?: synchronized(this) {
+                importExportRepositoryInstance ?: ImportExportRepository(getSettingsStore(context)).also {
+                    importExportRepositoryInstance = it
                 }
             }
         }
@@ -51,6 +64,7 @@ class AppViewModelProvider(private val context: Context) : ViewModelProvider.Fac
         fun resetForTesting() {
             synchronized(this) {
                 settingsStoreInstance = null
+                importExportRepositoryInstance = null
             }
         }
     }
@@ -64,6 +78,9 @@ class AppViewModelProvider(private val context: Context) : ViewModelProvider.Fac
             }
             modelClass.isAssignableFrom(SettingsViewModel::class.java) -> {
                 SettingsViewModel(settingsStore) as T
+            }
+            modelClass.isAssignableFrom(ExportViewModel::class.java) -> {
+                ExportViewModel(getImportExportRepository(context)) as T
             }
             else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
         }

@@ -12,16 +12,28 @@ import androidx.compose.runtime.setValue
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.allowelcome.di.LocalCustomerIntakeViewModel
+import com.example.allowelcome.di.LocalExportViewModel
 import com.example.allowelcome.di.LocalNavigator
 import com.example.allowelcome.di.LocalSettingsViewModel
 import com.example.allowelcome.navigation.AndroidNavigator
 import com.example.allowelcome.navigation.Navigator
 import com.example.allowelcome.ui.CustomerIntakeScreen
+import com.example.allowelcome.ui.export.ExportScreen
 import com.example.allowelcome.ui.settings.SettingsScreen
 import com.example.allowelcome.ui.theme.CyberpunkTheme
 import com.example.allowelcome.viewmodel.CustomerIntakeViewModel
+import com.example.allowelcome.viewmodel.export.ExportViewModel
 import com.example.allowelcome.viewmodel.factory.AppViewModelProvider
 import com.example.allowelcome.viewmodel.settings.SettingsViewModel
+
+/**
+ * Simple screen navigation state for the app.
+ */
+private enum class Screen {
+    Main,
+    Settings,
+    Export
+}
 
 class MainActivity : ComponentActivity() {
 
@@ -44,6 +56,9 @@ class MainActivity : ComponentActivity() {
             val settingsViewModel: SettingsViewModel = viewModel(
                 factory = AppViewModelProvider(applicationContext)
             )
+            val exportViewModel: ExportViewModel = viewModel(
+                factory = AppViewModelProvider(applicationContext)
+            )
 
             // Theme follows system setting automatically
             CyberpunkTheme {
@@ -51,16 +66,28 @@ class MainActivity : ComponentActivity() {
                 CompositionLocalProvider(
                     LocalCustomerIntakeViewModel provides customerIntakeViewModel,
                     LocalSettingsViewModel provides settingsViewModel,
+                    LocalExportViewModel provides exportViewModel,
                     LocalNavigator provides navigator
                 ) {
-                    var showSettings by rememberSaveable { mutableStateOf(false) }
+                    var currentScreen by rememberSaveable { mutableStateOf(Screen.Main) }
 
-                    if (showSettings) {
-                        SettingsScreen(onBack = { showSettings = false })
-                    } else {
-                        CustomerIntakeScreen(
-                            onOpenSettings = { showSettings = true }
-                        )
+                    when (currentScreen) {
+                        Screen.Main -> {
+                            CustomerIntakeScreen(
+                                onOpenSettings = { currentScreen = Screen.Settings }
+                            )
+                        }
+                        Screen.Settings -> {
+                            SettingsScreen(
+                                onBack = { currentScreen = Screen.Main },
+                                onOpenExport = { currentScreen = Screen.Export }
+                            )
+                        }
+                        Screen.Export -> {
+                            ExportScreen(
+                                onBack = { currentScreen = Screen.Settings }
+                            )
+                        }
                     }
                 }
             }
