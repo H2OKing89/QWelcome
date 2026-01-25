@@ -1,4 +1,4 @@
 <resources>
     <string name="app_name">Q Welcome</string>
-    <string name="welcome_template">Welcome, {{ customer_name }}! 🎉\n\nYour fast, reliable fiber internet is now up and running. Below are your Wi-Fi details:\n\n📶 Wi-Fi Network (SSID): {{ ssid }}\n🔑 Password: {{ password }}\n👤 Account Number: {{ account_number }}\n\nYou can now connect all your devices and enjoy blazing-fast speeds, crystal-clear streaming, and seamless browsing.\n\nWelcome aboard — let the streaming, browsing, and connecting begin! 🚀</string>
-</resources>
+    <string name="welcome_template">Welcome to ALLO, {{ customer_name }}! 🎉\n\nWe\'re excited to have you as part of the ALLO family. Your fast, reliable fiber internet is now up and running. Below are your Wi-Fi details:\n\n📶 Wi-Fi Network (SSID): {{ ssid }}\n🔑 Password: {{ password }}\n👤 Account Number: {{ account_number }}\n\nYou can now connect all your devices and enjoy blazing-fast speeds, crystal-clear streaming, and seamless browsing.\n\nIf you ever need assistance, our friendly support team is available 24/7 at 1-866-481-2556.\n\nWelcome aboard, {{ customer_name }} — let the streaming, browsing, and connecting begin! 🚀</string>
+    </resources>
