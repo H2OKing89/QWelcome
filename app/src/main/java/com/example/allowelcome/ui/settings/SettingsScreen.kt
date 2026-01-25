@@ -24,9 +24,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.allowelcome.data.DEFAULT_TEMPLATE_ID
 import com.example.allowelcome.data.MessageTemplate
 import com.example.allowelcome.data.TechProfile
-import com.example.allowelcome.data.TemplateSettings
+import com.example.allowelcome.data.Template
 import com.example.allowelcome.di.LocalSettingsViewModel
 import com.example.allowelcome.ui.components.CyberpunkBackdrop
 import com.example.allowelcome.ui.components.NeonMagentaButton
@@ -80,8 +81,11 @@ fun SettingsScreen(
     BackHandler { onBack() }
 
     val currentProfile by vm.techProfile.collectAsState()
-    val currentTemplate by vm.templateSettings.collectAsState()
-    val defaultTemplate = remember { vm.getDefaultTemplate() }
+    val activeTemplate by vm.activeTemplate.collectAsState()
+    val defaultTemplateContent = remember { vm.getDefaultTemplateContent() }
+
+    // Derive useCustom from whether active template is the default
+    val isUsingDefault = activeTemplate.id == DEFAULT_TEMPLATE_ID
 
     // Tech profile state
     var name by remember(currentProfile) { mutableStateOf(currentProfile.name) }
@@ -89,9 +93,15 @@ fun SettingsScreen(
     var dept by remember(currentProfile) { mutableStateOf(currentProfile.dept) }
 
     // Template state
-    var useCustom by remember(currentTemplate) { mutableStateOf(currentTemplate.useCustomTemplate) }
-    var customTemplate by remember(currentTemplate) {
-        mutableStateOf(currentTemplate.customTemplate.ifBlank { defaultTemplate })
+    var useCustom by remember(isUsingDefault) { mutableStateOf(!isUsingDefault) }
+    var customTemplate by remember(activeTemplate) {
+        mutableStateOf(
+            if (isUsingDefault) defaultTemplateContent else activeTemplate.content
+        )
+    }
+    // Track the custom template ID for updates
+    var customTemplateId by remember(activeTemplate) {
+        mutableStateOf(if (isUsingDefault) null else activeTemplate.id)
     }
 
     CyberpunkBackdrop {
@@ -219,7 +229,7 @@ fun SettingsScreen(
 
                         // Reset to default button
                         TextButton(
-                            onClick = { customTemplate = defaultTemplate }
+                            onClick = { customTemplate = defaultTemplateContent }
                         ) {
                             Text("Restore Default Template", color = CyberScheme.tertiary)
                         }
@@ -232,7 +242,7 @@ fun SettingsScreen(
                             color = CyberScheme.onSurface.copy(alpha = 0.7f)
                         )
                         Text(
-                            safeTruncate(defaultTemplate, 150),
+                            safeTruncate(defaultTemplateContent, 150),
                             style = MaterialTheme.typography.bodySmall,
                             color = CyberScheme.onSurface.copy(alpha = 0.6f)
                         )
@@ -245,12 +255,27 @@ fun SettingsScreen(
                 NeonMagentaButton(
                     onClick = {
                         vm.save(TechProfile(name, title, dept))
-                        vm.saveTemplate(
-                            TemplateSettings(
-                                useCustomTemplate = useCustom,
-                                customTemplate = if (useCustom) customTemplate else ""
-                            )
-                        )
+                        
+                        if (useCustom && customTemplate.isNotBlank()) {
+                            // Save or update the custom template
+                            val templateToSave = if (customTemplateId != null) {
+                                // Update existing custom template
+                                Template(
+                                    id = customTemplateId!!,
+                                    name = "Custom",
+                                    content = customTemplate
+                                )
+                            } else {
+                                // Create new custom template
+                                Template.create(name = "Custom", content = customTemplate)
+                            }
+                            vm.saveTemplate(templateToSave)
+                            vm.setActiveTemplate(templateToSave.id)
+                        } else {
+                            // Switch to default template
+                            vm.setActiveTemplate(DEFAULT_TEMPLATE_ID)
+                        }
+                        
                         onBack()
                     },
                     modifier = Modifier.fillMaxWidth()

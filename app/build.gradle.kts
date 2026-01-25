@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
     // Note: kotlin-android is included transitively via kotlin.compose plugin
 }
 
@@ -53,6 +54,8 @@ dependencies {
     implementation(libs.androidx.splashscreen)
     // QR Code generation with styling support
     implementation(libs.qrose)
+    // JSON serialization for import/export
+    implementation(libs.kotlinx.serialization.json)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
