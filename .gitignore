@@ -1,0 +1,14 @@
+# Android Studio
+.gradle/
+.idea/
+captures/
+.DS_Store
+
+# Build
+/build
+*.apk
+*.aab
+*.ap_
+
+# Local
+/local.properties
