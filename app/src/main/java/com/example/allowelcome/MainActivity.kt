@@ -26,7 +26,9 @@ class MainActivity : ComponentActivity() {
                 if (showSettings) {
                     SettingsScreen(onBack = { showSettings = false })
                 } else {
-                    CustomerIntakeScreen(onOpenSettings = { showSettings = true })
+                    CustomerIntakeScreen(
+                        onOpenSettings = { showSettings = true }
+                    )
                 }
             }
         }
