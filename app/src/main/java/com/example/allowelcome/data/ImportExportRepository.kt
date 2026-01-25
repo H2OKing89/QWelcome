@@ -32,6 +32,7 @@ class ImportExportRepository(private val settingsStore: SettingsStore) {
 
     private val json = Json {
         ignoreUnknownKeys = true  // Forward compatibility
+        isLenient = true          // Tolerates trailing commas, unquoted strings (clipboard UX)
         prettyPrint = true        // Human readable for sharing
         encodeDefaults = true     // Include default values
     }

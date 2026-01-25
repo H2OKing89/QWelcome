@@ -45,13 +45,13 @@
 
 ### Sideload to Phone
 
-**Option A: USB**
+#### Option A: USB
 
 ```bash
 adb install app-debug.apk
 ```
 
-**Option B: File Transfer**
+#### Option B: File Transfer
 
 1. Copy APK to phone (Google Drive, email, USB)
 2. Open APK on phone and allow installation from unknown sources.

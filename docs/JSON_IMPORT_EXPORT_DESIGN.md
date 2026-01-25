@@ -149,12 +149,15 @@ For each template in import:
 - Only the **built-in app default** is protected (cannot edit/delete)
 - Imported templates are **never protected**—even if source marked them as such
 - Any `protected` flag in imported JSON is ignored (prevents "undeleteable template" attacks)
+- **Reserved ID rule:** If imported template has `id == "default"`, it cannot replace the built-in; it will be imported as a copy with a new UUID
 
 ### Import Preview Checkboxes
 
 - ✅ Import templates (default: checked)
 - ☐ Import tech profile (default: unchecked)
 - ☐ Import app settings (default: unchecked)
+
+> **Settings import is merge-safe:** Only known keys are applied; unknown keys are ignored. This is not a destructive overwrite.
 
 ---
 
@@ -169,7 +172,7 @@ For each template in import:
 ### Template Validation
 
 - Each template has `id`, `name`, `content`
-- Content length warning if > 2000 chars (approaching SMS segment limits)
+- Content length warning if > 2000 chars (may increase number of SMS/RCS segments)
 - **Known placeholder validation** (warn but don't block):
   - `{{ customer_name }}`
   - `{{ ssid }}`
@@ -439,6 +442,7 @@ Ideas for future schema versions (backward compatible):
 ```kotlin
 val json = Json {
     ignoreUnknownKeys = true  // Forward compatibility
+    isLenient = true          // Tolerates trailing commas, unquoted strings (clipboard UX)
     prettyPrint = true        // Human readable for sharing
 }
 ```
@@ -450,6 +454,25 @@ Template IDs use **UUID v4** (generated via `UUID.randomUUID().toString()`). Thi
 - IDs are **never shown in UI**—users see `name` only
 - UUIDs ensure merge safety across packs from different sources
 - The built-in default template uses the reserved ID `"default"`
+
+### Slug Generation Rules
+
+The optional `slug` field is auto-generated from `name` for human-readable debugging:
+
+1. Lowercase the name
+2. Replace non-alphanumeric chars with `_`
+3. Collapse consecutive `_` and trim edges
+4. Truncate to 50 characters
+5. If result is empty, use `"template_<8-char-uuid>"`
+
+**Reserved slugs:** `default`, `null`, `undefined` — if generated slug matches, append UUID suffix.
+
+### Defaults Fallback Behavior
+
+If `defaults.defaultTemplateId` references a template ID not present in `templates`:
+
+- **Import:** Ignore the missing reference; keep current local default
+- **Preview:** Show warning: "Default template missing; keeping local default"
 
 ### Timestamp Format
 
@@ -511,6 +534,14 @@ data class FullBackup(
 @Serializable
 data class ExportDefaults(
     val defaultTemplateId: String? = null
+)
+
+// Settings that can be exported/imported (curated subset, not full app state)
+@Serializable
+data class ExportedSettings(
+    val signatureEnabled: Boolean = true
+    // Future: dedupeWindowSeconds: Int
+    // Future: lastUsedTemplateId: String?
 )
 ```
 

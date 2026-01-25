@@ -40,14 +40,32 @@ data class Template(
         }
 
         /**
+         * Reserved slugs that should not be used directly.
+         */
+        private val RESERVED_SLUGS = setOf("default", "null", "undefined")
+
+        /**
          * Generate a URL-friendly slug from a name.
          * Example: "Residential Welcome" -> "residential_welcome"
+         * If no alphanumeric chars remain, returns a fallback like "template_abc123"
+         * Reserved slugs get a UUID suffix appended.
          */
         private fun generateSlug(name: String): String {
-            return name.lowercase()
+            val cleaned = name.lowercase()
                 .replace(Regex("[^a-z0-9]+"), "_")
+                .replace(Regex("_+"), "_") // Collapse consecutive underscores
                 .trim('_')
                 .take(50) // Limit length
+            
+            val shortId = UUID.randomUUID().toString().take(8)
+            
+            return when {
+                // Fallback if slug is empty (e.g., name was "!!!" or "🎉🎉🎉")
+                cleaned.isEmpty() -> "template_$shortId"
+                // Append suffix for reserved slugs
+                cleaned in RESERVED_SLUGS -> "${cleaned}_$shortId"
+                else -> cleaned
+            }
         }
 
         /**
