@@ -26,7 +26,7 @@ val BodyFont = FontFamily(
 
 // ============== DARK MODE GLOW EFFECTS ==============
 // Neon glow shadows for dark mode - vibrant and visible against dark backgrounds
-// ChatGPT feedback: Keep big glow (12f) for headlineLarge, tighter (8f) for titleLarge
+// Tiered blur: 12f for headlines (larger text tolerates wider glow), 8f for titles (prevents haziness)
 private val CyanGlowDark = Shadow(
     color = Color(0xFF00E5FF).copy(alpha = 0.6f),
     offset = Offset(0f, 0f),

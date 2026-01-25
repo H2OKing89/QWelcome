@@ -179,15 +179,6 @@ fun NeonOutlinedField(
 ) {
     val isDark = LocalDarkTheme.current
     val colorScheme = MaterialTheme.colorScheme
-    
-    // Focus state glow modifier for dark mode - "hacking terminal" vibe
-    val focusGlowModifier = if (isDark) {
-        // Add a subtle outer glow when focused (applied via border, not drawBehind)
-        // The thicker focused border + brighter color creates the glow effect
-        Modifier
-    } else {
-        Modifier
-    }
 
     OutlinedTextField(
         value = value,
@@ -199,10 +190,10 @@ fun NeonOutlinedField(
         trailingIcon = trailingIcon,
         visualTransformation = visualTransformation,
         keyboardOptions = keyboardOptions,
-        modifier = modifier.fillMaxWidth().then(focusGlowModifier),
+        modifier = modifier.fillMaxWidth(),
         colors = OutlinedTextFieldDefaults.colors(
-            // Focused states - brighter in dark mode for "terminal" feel
-            focusedBorderColor = if (isDark) colorScheme.primary else colorScheme.primary,
+            // Focused states - primary color for "terminal" feel
+            focusedBorderColor = colorScheme.primary,
             focusedLabelColor = colorScheme.primary,
             focusedTextColor = colorScheme.onSurface,
             cursorColor = colorScheme.primary,

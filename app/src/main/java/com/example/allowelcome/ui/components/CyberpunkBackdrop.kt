@@ -3,6 +3,7 @@ package com.example.allowelcome.ui.components
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -98,7 +99,7 @@ private fun ScanlineOverlay(modifier: Modifier = Modifier, isDark: Boolean = tru
         label = "scanlineY"
     )
 
-    val colorScheme = androidx.compose.material3.MaterialTheme.colorScheme
+    val colorScheme = MaterialTheme.colorScheme
 
     Canvas(modifier) {
         val lineHeight = 4.dp.toPx()

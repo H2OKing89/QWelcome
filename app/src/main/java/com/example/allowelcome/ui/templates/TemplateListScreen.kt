@@ -70,6 +70,7 @@ import com.example.allowelcome.data.Template
 import com.example.allowelcome.di.LocalTemplateListViewModel
 import com.example.allowelcome.ui.components.CyberpunkBackdrop
 import com.example.allowelcome.ui.components.NeonButton
+import com.example.allowelcome.ui.components.NeonButtonStyle
 import com.example.allowelcome.ui.components.NeonMagentaButton
 import com.example.allowelcome.ui.components.NeonPanel
 import com.example.allowelcome.ui.theme.LocalDarkTheme
@@ -263,9 +264,16 @@ private fun TemplateCard(
                 if (isDark) MaterialTheme.colorScheme.surface.copy(alpha = 0.6f) else MaterialTheme.colorScheme.surface
             }
         ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = if (isDark) 0.dp else 2.dp
-        ),
+        // No elevation - Material3 elevation creates tonal overlays (gray tint in light mode)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = if (!isDark) {
+            // Light mode: thin border for definition instead of elevation
+            androidx.compose.foundation.BorderStroke(
+                0.5.dp,
+                if (isActive) MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+            )
+        } else null,
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
@@ -374,10 +382,12 @@ private fun TemplateActionButtons(
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         // Edit button (disabled for default template)
+        // Using SECONDARY style - these are card-level actions, not screen-level primary actions
         NeonButton(
             onClick = onEdit,
             enabled = !isDefault,
             glowColor = MaterialTheme.colorScheme.secondary,
+            style = NeonButtonStyle.SECONDARY,
             modifier = Modifier.weight(1f)
         ) {
             Icon(
@@ -393,6 +403,7 @@ private fun TemplateActionButtons(
         NeonButton(
             onClick = onDuplicate,
             glowColor = MaterialTheme.colorScheme.tertiary,
+            style = NeonButtonStyle.SECONDARY,
             modifier = Modifier.weight(1f)
         ) {
             Icon(
@@ -409,6 +420,7 @@ private fun TemplateActionButtons(
             onClick = onDelete,
             enabled = !isDefault,
             glowColor = MaterialTheme.colorScheme.error,
+            style = NeonButtonStyle.SECONDARY,
             modifier = Modifier.weight(1f)
         ) {
             Icon(
@@ -536,9 +548,11 @@ private fun DeleteConfirmationDialog(
             )
         },
         confirmButton = {
+            // Destructive action - PRIMARY style with error color
             NeonButton(
                 onClick = onConfirm,
-                glowColor = MaterialTheme.colorScheme.error
+                glowColor = MaterialTheme.colorScheme.error,
+                style = NeonButtonStyle.PRIMARY
             ) {
                 Text("Delete")
             }

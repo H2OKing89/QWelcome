@@ -44,8 +44,10 @@ import com.example.allowelcome.ui.components.NeonOutlinedField
 import com.example.allowelcome.ui.components.NeonPanel
 import com.example.allowelcome.ui.components.QrCodeBottomSheet
 import com.example.allowelcome.ui.components.QWelcomeHeader
+import com.example.allowelcome.ui.theme.LocalCyberColors
 import com.example.allowelcome.ui.theme.LocalDarkTheme
 import com.example.allowelcome.viewmodel.UiEvent
+import kotlinx.coroutines.launch
 
 @Composable
 fun CustomerIntakeScreen(
@@ -86,14 +88,15 @@ fun CustomerIntakeScreen(
     LaunchedEffect(Unit) {
         customerIntakeViewModel.uiEvent.collect { event ->
             when (event) {
-                is UiEvent.ShowToast -> {
-                    // Check if this is a copy success for visual feedback
-                    if (event.message.contains("copied", ignoreCase = true)) {
-                        copySuccess = true
-                        // Reset after brief delay (cyberpunk feedback, not screensaver)
+                is UiEvent.CopySuccess -> {
+                    // Typed event for copy feedback - non-blocking reset
+                    copySuccess = true
+                    launch {
                         kotlinx.coroutines.delay(1500L)
                         copySuccess = false
                     }
+                }
+                is UiEvent.ShowToast -> {
                     Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
                 }
                 is UiEvent.RateLimitExceeded -> {
@@ -306,8 +309,8 @@ fun CustomerIntakeScreen(
                         Text("Share")
                     }
                     // Copy = Tertiary (lowest emphasis - utility action)
-                    // ChatGPT feedback: Animate meaning - show success state after copy
-                    val cyberColors = com.example.allowelcome.ui.theme.LocalCyberColors.current
+                    // Success state provides visual feedback on action completion
+                    val cyberColors = LocalCyberColors.current
                     NeonButton(
                         onClick = { customerIntakeViewModel.onCopyClicked(navigator) },
                         modifier = Modifier.weight(1f),

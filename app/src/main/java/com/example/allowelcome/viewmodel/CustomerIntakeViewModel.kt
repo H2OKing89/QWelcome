@@ -23,6 +23,8 @@ import kotlinx.coroutines.launch
 /** One-shot UI events emitted by the ViewModel */
 sealed class UiEvent {
     data class ShowToast(val message: String) : UiEvent()
+    /** Emitted when message is successfully copied to clipboard - triggers visual feedback */
+    object CopySuccess : UiEvent()
     object RateLimitExceeded : UiEvent()
 }
 
@@ -199,6 +201,7 @@ class CustomerIntakeViewModel(private val settingsStore: SettingsStore) : ViewMo
         if (validateInputs(requirePhone = false)) {
             val message = generateMessage()
             navigator.copyToClipboard("Customer Message", message)
+            _uiEvent.emit(UiEvent.CopySuccess)
             _uiEvent.emit(UiEvent.ShowToast("Message copied to clipboard"))
         }
     }

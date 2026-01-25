@@ -264,10 +264,11 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.primary
                 )
                 NeonPanel {
-                    // Manage Templates button
+                    // Manage Templates - SECONDARY since Save All is the PRIMARY action
                     NeonButton(
                         onClick = onOpenTemplates,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        style = NeonButtonStyle.SECONDARY
                     ) {
                         Text("Manage Templates")
                     }

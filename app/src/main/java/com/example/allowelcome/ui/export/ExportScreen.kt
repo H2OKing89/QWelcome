@@ -66,6 +66,7 @@ import androidx.compose.ui.unit.sp
 import com.example.allowelcome.di.LocalExportViewModel
 import com.example.allowelcome.ui.components.CyberpunkBackdrop
 import com.example.allowelcome.ui.components.NeonButton
+import com.example.allowelcome.ui.components.NeonButtonStyle
 import com.example.allowelcome.ui.components.NeonMagentaButton
 import com.example.allowelcome.ui.components.NeonPanel
 import com.example.allowelcome.ui.theme.LocalDarkTheme
@@ -257,6 +258,7 @@ fun ExportScreen(
                             NeonButton(
                                 onClick = { vm.onShareRequested() },
                                 glowColor = MaterialTheme.colorScheme.tertiary,
+                                style = NeonButtonStyle.SECONDARY,
                                 modifier = Modifier.weight(1f)
                             ) {
                                 Icon(
@@ -273,6 +275,7 @@ fun ExportScreen(
                         NeonButton(
                             onClick = { vm.onSaveToFileRequested() },
                             glowColor = MaterialTheme.colorScheme.secondary,
+                            style = NeonButtonStyle.SECONDARY,
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Icon(
@@ -311,10 +314,11 @@ fun ExportScreen(
                             }
                         }
 
-                        // Export new button
+                        // Export new button - reset action, subtle styling
                         NeonButton(
                             onClick = { vm.clearExport() },
                             glowColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                            style = NeonButtonStyle.TERTIARY,
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Text("Export Another")

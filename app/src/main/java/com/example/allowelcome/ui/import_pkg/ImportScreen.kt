@@ -82,6 +82,7 @@ import com.example.allowelcome.data.ConflictResolution
 import com.example.allowelcome.di.LocalImportViewModel
 import com.example.allowelcome.ui.components.CyberpunkBackdrop
 import com.example.allowelcome.ui.components.NeonButton
+import com.example.allowelcome.ui.components.NeonButtonStyle
 import com.example.allowelcome.ui.components.NeonMagentaButton
 import com.example.allowelcome.ui.components.NeonPanel
 import com.example.allowelcome.ui.theme.LocalDarkTheme
@@ -630,7 +631,8 @@ private fun PreviewStepContent(
                 NeonButton(
                     onClick = onCancel,
                     modifier = Modifier.weight(1f),
-                    enabled = !isApplying
+                    enabled = !isApplying,
+                    style = NeonButtonStyle.TERTIARY
                 ) {
                     Text("Cancel")
                 }
@@ -638,7 +640,8 @@ private fun PreviewStepContent(
                 NeonMagentaButton(
                     onClick = onApply,
                     modifier = Modifier.weight(1f),
-                    enabled = canApply
+                    enabled = canApply,
+                    style = NeonButtonStyle.PRIMARY
                 ) {
                     if (isApplying) {
                         CircularProgressIndicator(
