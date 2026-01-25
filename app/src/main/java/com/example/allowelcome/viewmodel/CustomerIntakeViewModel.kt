@@ -125,6 +125,7 @@ class CustomerIntakeViewModel(private val settingsStore: SettingsStore) : ViewMo
     private suspend fun generateMessage(context: Context): String {
         val uiState = _uiState.value
         val techProfile = settingsStore.techProfileFlow.first()
+        val template = settingsStore.activeTemplateFlow.first()
         val customerData = CustomerData(
             customerName = StringUtils.toTitleCase(uiState.customerName),
             customerPhone = uiState.customerPhone,
@@ -132,7 +133,7 @@ class CustomerIntakeViewModel(private val settingsStore: SettingsStore) : ViewMo
             password = uiState.password,
             accountNumber = uiState.accountNumber
         )
-        val baseMessage = MessageTemplate.generate(context, customerData)
+        val baseMessage = MessageTemplate.generate(template, customerData)
         return baseMessage + buildSignature(techProfile)
     }
     
