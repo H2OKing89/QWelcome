@@ -71,13 +71,12 @@ class AppViewModelProvider(private val context: Context) : ViewModelProvider.Fac
     
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        val settingsStore = getSettingsStore(context)
         return when {
             modelClass.isAssignableFrom(CustomerIntakeViewModel::class.java) -> {
-                CustomerIntakeViewModel(settingsStore) as T
+                CustomerIntakeViewModel(getSettingsStore(context)) as T
             }
             modelClass.isAssignableFrom(SettingsViewModel::class.java) -> {
-                SettingsViewModel(settingsStore) as T
+                SettingsViewModel(getSettingsStore(context)) as T
             }
             modelClass.isAssignableFrom(ExportViewModel::class.java) -> {
                 ExportViewModel(getImportExportRepository(context)) as T

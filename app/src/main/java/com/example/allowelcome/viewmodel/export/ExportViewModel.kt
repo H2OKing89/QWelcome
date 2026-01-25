@@ -22,6 +22,7 @@ private const val TAG = "ExportViewModel"
  */
 data class ExportUiState(
     val isExporting: Boolean = false,
+    val currentlyExportingType: ExportType? = null,
     val lastExportedJson: String? = null,
     val lastExportType: ExportType? = null,
     val templateCount: Int = 0
@@ -66,7 +67,7 @@ class ExportViewModel(
         if (_uiState.value.isExporting) return
 
         viewModelScope.launch {
-            _uiState.update { it.copy(isExporting = true) }
+            _uiState.update { it.copy(isExporting = true, currentlyExportingType = ExportType.TEMPLATE_PACK) }
 
             try {
                 when (val result = repository.exportTemplatePack()) {
@@ -74,6 +75,7 @@ class ExportViewModel(
                         _uiState.update {
                             it.copy(
                                 isExporting = false,
+                                currentlyExportingType = null,
                                 lastExportedJson = result.json,
                                 lastExportType = ExportType.TEMPLATE_PACK,
                                 templateCount = result.templateCount
@@ -88,7 +90,7 @@ class ExportViewModel(
                         )
                     }
                     is ExportResult.Error -> {
-                        _uiState.update { it.copy(isExporting = false) }
+                        _uiState.update { it.copy(isExporting = false, currentlyExportingType = null) }
                         _events.emit(ExportEvent.ExportError(result.message))
                     }
                 }
@@ -96,7 +98,7 @@ class ExportViewModel(
                 throw e
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to export template pack", e)
-                _uiState.update { it.copy(isExporting = false) }
+                _uiState.update { it.copy(isExporting = false, currentlyExportingType = null) }
                 _events.emit(ExportEvent.ExportError("Export failed: ${e.message}"))
             }
         }
@@ -109,7 +111,7 @@ class ExportViewModel(
         if (_uiState.value.isExporting) return
 
         viewModelScope.launch {
-            _uiState.update { it.copy(isExporting = true) }
+            _uiState.update { it.copy(isExporting = true, currentlyExportingType = ExportType.FULL_BACKUP) }
 
             try {
                 when (val result = repository.exportFullBackup()) {
@@ -117,6 +119,7 @@ class ExportViewModel(
                         _uiState.update {
                             it.copy(
                                 isExporting = false,
+                                currentlyExportingType = null,
                                 lastExportedJson = result.json,
                                 lastExportType = ExportType.FULL_BACKUP,
                                 templateCount = result.templateCount
@@ -131,7 +134,7 @@ class ExportViewModel(
                         )
                     }
                     is ExportResult.Error -> {
-                        _uiState.update { it.copy(isExporting = false) }
+                        _uiState.update { it.copy(isExporting = false, currentlyExportingType = null) }
                         _events.emit(ExportEvent.ExportError(result.message))
                     }
                 }
@@ -139,7 +142,7 @@ class ExportViewModel(
                 throw e
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to export full backup", e)
-                _uiState.update { it.copy(isExporting = false) }
+                _uiState.update { it.copy(isExporting = false, currentlyExportingType = null) }
                 _events.emit(ExportEvent.ExportError("Export failed: ${e.message}"))
             }
         }

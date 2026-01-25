@@ -155,7 +155,7 @@ fun ExportScreen(
                     description = "Share templates with your team. Does NOT include your personal signature info.",
                     icon = Icons.Default.Description,
                     iconTint = CyberScheme.secondary,
-                    isLoading = uiState.isExporting && uiState.lastExportType == null,
+                    isLoading = uiState.isExporting && uiState.currentlyExportingType == ExportType.TEMPLATE_PACK,
                     onClick = { vm.exportTemplatePack() }
                 )
 
@@ -165,7 +165,7 @@ fun ExportScreen(
                     description = "Export everything including your tech profile. Use for personal backup/restore.",
                     icon = Icons.Default.Backup,
                     iconTint = CyberScheme.tertiary,
-                    isLoading = uiState.isExporting && uiState.lastExportType == null,
+                    isLoading = uiState.isExporting && uiState.currentlyExportingType == ExportType.FULL_BACKUP,
                     onClick = { vm.exportFullBackup() }
                 )
 

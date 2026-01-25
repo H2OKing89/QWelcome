@@ -21,9 +21,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.widget.Toast
 import com.example.allowelcome.data.DEFAULT_TEMPLATE_ID
 import com.example.allowelcome.data.MessageTemplate
 import com.example.allowelcome.data.TechProfile
@@ -104,6 +106,29 @@ fun SettingsScreen(
     var customTemplateId by remember(activeTemplate) {
         mutableStateOf(if (isUsingDefault) null else activeTemplate.id)
     }
+
+    // Detect unsaved changes by comparing current values to saved values
+    val hasUnsavedChanges by remember(name, title, dept, useCustom, customTemplate, currentProfile, activeTemplate, isUsingDefault) {
+        derivedStateOf {
+            // Profile changes
+            val profileChanged = name != currentProfile.name ||
+                    title != currentProfile.title ||
+                    dept != currentProfile.dept
+            
+            // Template changes
+            val templateChanged = if (useCustom) {
+                // Custom mode: either switching from default, or content changed
+                isUsingDefault || customTemplate != activeTemplate.content
+            } else {
+                // Default mode: changed if was previously using custom
+                !isUsingDefault
+            }
+            
+            profileChanged || templateChanged
+        }
+    }
+
+    val context = LocalContext.current
 
     CyberpunkBackdrop {
         Scaffold(
@@ -266,10 +291,21 @@ fun SettingsScreen(
                     )
                     Spacer(Modifier.height(12.dp))
                     NeonMagentaButton(
-                        onClick = onOpenExport,
-                        modifier = Modifier.fillMaxWidth()
+                        onClick = {
+                            if (hasUnsavedChanges) {
+                                Toast.makeText(
+                                    context,
+                                    "Please save changes before exporting",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            } else {
+                                onOpenExport()
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !hasUnsavedChanges
                     ) {
-                        Text("Export Templates")
+                        Text(if (hasUnsavedChanges) "Save First to Export" else "Export Templates")
                     }
                 }
 
