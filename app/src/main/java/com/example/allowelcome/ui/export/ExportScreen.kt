@@ -54,9 +54,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -83,9 +80,6 @@ fun ExportScreen(
     val context = LocalContext.current
     val uiState by vm.uiState.collectAsState()
 
-    // State for pending file save
-    var pendingSuggestedName by remember { mutableStateOf<String?>(null) }
-
     // File picker launcher for saving
     val saveFileLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/json")
@@ -107,7 +101,6 @@ fun ExportScreen(
         } else {
             vm.onFileSaveCancelled()
         }
-        pendingSuggestedName = null
     }
 
     // Handle system back button
@@ -134,7 +127,6 @@ fun ExportScreen(
                     shareJson(context, event.json, event.type)
                 }
                 is ExportEvent.RequestFileSave -> {
-                    pendingSuggestedName = event.suggestedName
                     saveFileLauncher.launch(event.suggestedName)
                 }
                 is ExportEvent.FileSaved -> {

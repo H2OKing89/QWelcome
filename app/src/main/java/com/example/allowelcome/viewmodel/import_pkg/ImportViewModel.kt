@@ -384,7 +384,7 @@ class ImportViewModel(
     fun reset() {
         cachedTemplatePack = null
         cachedFullBackup = null
-        _uiState.update { ImportUiState() }
+        _uiState.value = ImportUiState()
     }
 
     /**

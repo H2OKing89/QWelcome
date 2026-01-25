@@ -424,6 +424,7 @@ data class FullBackup(
 | 2026-01-25 | `612ce9f` | Phase 2: ImportExportRepository |
 | 2026-01-25 | `3ec5663` | Phase 3: Export UI complete |
 | 2026-01-25 | `1881493` | Phase 4: Import UI complete |
+| 2026-01-25 | `97201aa` | Phase 5: File-based import/export |
 
 ---
 

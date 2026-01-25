@@ -4,6 +4,7 @@ package com.example.allowelcome.ui.import_pkg
 
 import android.content.ClipboardManager
 import android.content.Context
+import android.provider.OpenableColumns
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -108,8 +109,20 @@ fun ImportScreen(
                     inputStream.bufferedReader().readText()
                 }
                 if (json != null) {
-                    // Extract filename from URI
-                    val fileName = uri.lastPathSegment?.substringAfterLast('/') ?: "file.json"
+                    // Extract filename using ContentResolver query for DISPLAY_NAME
+                    val fileName = context.contentResolver.query(
+                        uri,
+                        arrayOf(OpenableColumns.DISPLAY_NAME),
+                        null,
+                        null,
+                        null
+                    )?.use { cursor ->
+                        if (cursor.moveToFirst()) {
+                            val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                            if (nameIndex >= 0) cursor.getString(nameIndex) else null
+                        } else null
+                    } ?: uri.lastPathSegment?.substringAfterLast('/') ?: "file.json"
+                    
                     vm.onFileLoaded(json, fileName)
                 }
             } catch (e: Exception) {
@@ -424,78 +437,77 @@ private fun PreviewStepContent(
     canApply: Boolean,
     errorMessage: String?
 ) {
-    Column(
+    LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .padding(16.dp)
-            .verticalScroll(rememberScrollState()),
+            .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // Summary header
-        NeonPanel {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
-                    Text(
-                        importKind,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = CyberScheme.primary
-                    )
-                    if (packName != null) {
+        item(key = "summary") {
+            NeonPanel {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
                         Text(
-                            packName,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = CyberScheme.secondary
+                            importKind,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = CyberScheme.primary
                         )
+                        if (packName != null) {
+                            Text(
+                                packName,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = CyberScheme.secondary
+                            )
+                        }
                     }
+                    Text(
+                        "${templatePreviews.size} template${if (templatePreviews.size != 1) "s" else ""}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = CyberScheme.onSurface.copy(alpha = 0.7f)
+                    )
                 }
-                Text(
-                    "${templatePreviews.size} template${if (templatePreviews.size != 1) "s" else ""}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = CyberScheme.onSurface.copy(alpha = 0.7f)
-                )
             }
         }
 
         // Warnings section
-        AnimatedVisibility(
-            visible = warnings.isNotEmpty(),
-            enter = fadeIn() + expandVertically(),
-            exit = fadeOut() + shrinkVertically()
-        ) {
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = CyberScheme.tertiary.copy(alpha = 0.15f)
-                ),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(12.dp)) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            Icons.Default.Warning,
-                            contentDescription = null,
-                            tint = CyberScheme.tertiary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Text(
-                            "Warnings",
-                            style = MaterialTheme.typography.titleSmall,
-                            color = CyberScheme.tertiary
-                        )
-                    }
-                    Spacer(Modifier.height(8.dp))
-                    warnings.forEach { warning ->
-                        Text(
-                            "• $warning",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = CyberScheme.onSurface.copy(alpha = 0.7f)
-                        )
+        if (warnings.isNotEmpty()) {
+            item(key = "warnings") {
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = CyberScheme.tertiary.copy(alpha = 0.15f)
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.Warning,
+                                contentDescription = null,
+                                tint = CyberScheme.tertiary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Text(
+                                "Warnings",
+                                style = MaterialTheme.typography.titleSmall,
+                                color = CyberScheme.tertiary
+                            )
+                        }
+                        Spacer(Modifier.height(8.dp))
+                        warnings.forEach { warning ->
+                            Text(
+                                "• $warning",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = CyberScheme.onSurface.copy(alpha = 0.7f)
+                            )
+                        }
                     }
                 }
             }
@@ -503,143 +515,145 @@ private fun PreviewStepContent(
 
         // Tech Profile option (full backup only)
         if (hasTechProfile) {
-            NeonPanel {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onToggleTechProfile() },
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+            item(key = "tech_profile") {
+                NeonPanel {
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onToggleTechProfile() },
+                        horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            Icons.Default.Person,
-                            contentDescription = null,
-                            tint = CyberScheme.tertiary,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Column {
-                            Text(
-                                "Import Tech Profile",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = CyberScheme.onSurface
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.Person,
+                                contentDescription = null,
+                                tint = CyberScheme.tertiary,
+                                modifier = Modifier.size(24.dp)
                             )
-                            Text(
-                                techProfileName ?: "Unknown",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = CyberScheme.onSurface.copy(alpha = 0.6f)
-                            )
+                            Column {
+                                Text(
+                                    "Import Tech Profile",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = CyberScheme.onSurface
+                                )
+                                Text(
+                                    techProfileName ?: "Unknown",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = CyberScheme.onSurface.copy(alpha = 0.6f)
+                                )
+                            }
                         }
-                    }
-                    Checkbox(
-                        checked = importTechProfile,
-                        onCheckedChange = { onToggleTechProfile() },
-                        colors = CheckboxDefaults.colors(
-                            checkedColor = CyberScheme.secondary,
-                            uncheckedColor = CyberScheme.onSurface.copy(alpha = 0.5f)
+                        Checkbox(
+                            checked = importTechProfile,
+                            onCheckedChange = { onToggleTechProfile() },
+                            colors = CheckboxDefaults.colors(
+                                checkedColor = CyberScheme.secondary,
+                                uncheckedColor = CyberScheme.onSurface.copy(alpha = 0.5f)
+                            )
                         )
-                    )
+                    }
                 }
             }
         }
 
         // Templates section header
-        Text(
-            "Templates to Import",
-            style = MaterialTheme.typography.titleMedium,
-            color = CyberScheme.primary
-        )
+        item(key = "templates_header") {
+            Text(
+                "Templates to Import",
+                style = MaterialTheme.typography.titleMedium,
+                color = CyberScheme.primary
+            )
+        }
 
-        // Template list - use LazyColumn for virtualization
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f, fill = false)
-                .heightIn(max = 400.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            items(
-                items = templatePreviews,
-                key = { it.template.id }
-            ) { preview ->
-                TemplatePreviewCard(
-                    preview = preview,
-                    onToggleSelection = { onToggleTemplate(preview.template.id) },
-                    onSetResolution = { resolution -> onSetResolution(preview.template.id, resolution) }
-                )
-            }
+        // Template list items
+        items(
+            items = templatePreviews,
+            key = { it.template.id }
+        ) { preview ->
+            TemplatePreviewCard(
+                preview = preview,
+                onToggleSelection = { onToggleTemplate(preview.template.id) },
+                onSetResolution = { resolution -> onSetResolution(preview.template.id, resolution) }
+            )
         }
 
         // Error message
-        AnimatedVisibility(
-            visible = errorMessage != null,
-            enter = fadeIn() + expandVertically(),
-            exit = fadeOut() + shrinkVertically()
-        ) {
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = CyberScheme.error.copy(alpha = 0.15f)
-                ),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
-                    modifier = Modifier.padding(12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+        if (errorMessage != null) {
+            item(key = "error") {
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = CyberScheme.error.copy(alpha = 0.15f)
+                    ),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Icon(
-                        Icons.Default.Error,
-                        contentDescription = null,
-                        tint = CyberScheme.error,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Text(
-                        errorMessage ?: "",
-                        color = CyberScheme.error,
-                        style = MaterialTheme.typography.bodySmall
-                    )
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.Error,
+                            contentDescription = null,
+                            tint = CyberScheme.error,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Text(
+                            errorMessage,
+                            color = CyberScheme.error,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
                 }
             }
         }
 
-        Spacer(Modifier.height(8.dp))
+        // Spacer before action buttons
+        item(key = "spacer") {
+            Spacer(Modifier.height(8.dp))
+        }
 
         // Action buttons
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            NeonButton(
-                onClick = onCancel,
-                modifier = Modifier.weight(1f),
-                enabled = !isApplying
+        item(key = "actions") {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text("Cancel")
-            }
+                NeonButton(
+                    onClick = onCancel,
+                    modifier = Modifier.weight(1f),
+                    enabled = !isApplying
+                ) {
+                    Text("Cancel")
+                }
 
-            NeonMagentaButton(
-                onClick = onApply,
-                modifier = Modifier.weight(1f),
-                enabled = canApply
-            ) {
-                if (isApplying) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        color = CyberScheme.onPrimary,
-                        strokeWidth = 2.dp
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Text("Importing...")
-                } else {
-                    Text("Import $selectedCount")
+                NeonMagentaButton(
+                    onClick = onApply,
+                    modifier = Modifier.weight(1f),
+                    enabled = canApply
+                ) {
+                    if (isApplying) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            color = CyberScheme.onPrimary,
+                            strokeWidth = 2.dp
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text("Importing...")
+                    } else {
+                        Text("Import $selectedCount")
+                    }
                 }
             }
         }
 
-        Spacer(Modifier.height(16.dp))
+        // Bottom spacer
+        item(key = "bottom_spacer") {
+            Spacer(Modifier.height(16.dp))
+        }
     }
 }
 
