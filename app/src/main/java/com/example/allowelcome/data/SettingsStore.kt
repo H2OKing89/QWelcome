@@ -1,6 +1,7 @@
 package com.example.allowelcome.data
 
 import android.content.Context
+import android.util.Log
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -8,6 +9,7 @@ import com.example.allowelcome.R
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
@@ -26,6 +28,8 @@ data class TechProfile(
  * ID for the built-in default template.
  */
 const val DEFAULT_TEMPLATE_ID = "default"
+
+private const val TAG = "SettingsStore"
 
 /**
  * Manages app settings and template storage using DataStore.
@@ -51,15 +55,16 @@ class SettingsStore(private val context: Context) {
     /** The default template that ships with the app */
     val defaultTemplateContent: String = context.getString(R.string.welcome_template)
 
-    /** Built-in default template as a Template object */
-    private val builtInDefaultTemplate: Template
-        get() = Template(
+    /** Built-in default template as a Template object (lazily initialized once) */
+    private val builtInDefaultTemplate: Template by lazy {
+        Template(
             id = DEFAULT_TEMPLATE_ID,
             name = "Default",
             content = defaultTemplateContent,
             createdAt = "2024-01-01T00:00:00Z",
             modifiedAt = "2024-01-01T00:00:00Z"
         )
+    }
 
     // ========== Tech Profile ==========
 
@@ -97,7 +102,8 @@ class SettingsStore(private val context: Context) {
             } else {
                 try {
                     json.decodeFromString<List<Template>>(jsonString)
-                } catch (e: Exception) {
+                } catch (e: SerializationException) {
+                    Log.e(TAG, "Failed to decode templates JSON", e)
                     emptyList()
                 }
             }
@@ -128,7 +134,8 @@ class SettingsStore(private val context: Context) {
             val userTemplates = prefs[Keys.TEMPLATES_JSON]?.let { jsonString ->
                 try {
                     json.decodeFromString<List<Template>>(jsonString)
-                } catch (e: Exception) {
+                } catch (e: SerializationException) {
+                    Log.e(TAG, "Failed to decode templates JSON in activeTemplateFlow", e)
                     emptyList()
                 }
             } ?: emptyList()
@@ -206,7 +213,8 @@ class SettingsStore(private val context: Context) {
             val currentTemplates = prefs[Keys.TEMPLATES_JSON]?.let { jsonString ->
                 try {
                     json.decodeFromString<List<Template>>(jsonString)
-                } catch (e: Exception) {
+                } catch (e: SerializationException) {
+                    Log.e(TAG, "Failed to decode templates JSON in saveTemplate", e)
                     emptyList()
                 }
             } ?: emptyList()
@@ -229,13 +237,15 @@ class SettingsStore(private val context: Context) {
             val currentTemplates = prefs[Keys.TEMPLATES_JSON]?.let { jsonString ->
                 try {
                     json.decodeFromString<List<Template>>(jsonString)
-                } catch (e: Exception) {
+                } catch (e: SerializationException) {
+                    Log.e(TAG, "Failed to decode templates JSON in saveTemplates", e)
                     emptyList()
                 }
             } ?: emptyList()
 
-            // Create a map for quick lookup, new templates override existing
-            val templateMap = currentTemplates.associateBy { it.id }.toMutableMap()
+            // Use LinkedHashMap to preserve insertion order
+            val templateMap = LinkedHashMap<String, Template>()
+            currentTemplates.forEach { templateMap[it.id] = it }
             validTemplates.forEach { templateMap[it.id] = it }
 
             prefs[Keys.TEMPLATES_JSON] = json.encodeToString(templateMap.values.toList())
@@ -256,7 +266,8 @@ class SettingsStore(private val context: Context) {
             val currentTemplates = prefs[Keys.TEMPLATES_JSON]?.let { jsonString ->
                 try {
                     json.decodeFromString<List<Template>>(jsonString)
-                } catch (e: Exception) {
+                } catch (e: SerializationException) {
+                    Log.e(TAG, "Failed to decode templates JSON in deleteTemplate", e)
                     emptyList()
                 }
             } ?: emptyList()

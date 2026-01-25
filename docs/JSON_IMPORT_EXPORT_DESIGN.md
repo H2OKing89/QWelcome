@@ -17,6 +17,7 @@ JSON import/export turns Q Welcome from a personal app into something a whole cr
 ### 1) Template Pack (Team Sharing)
 
 What a lead would post in Slack. Contains:
+
 - Templates (one or many)
 - Optional defaults (which template to use)
 - Metadata (creator, notes)
@@ -26,6 +27,7 @@ What a lead would post in Slack. Contains:
 ### 2) Full Backup (Personal Restore)
 
 For when you get a new phone. Contains:
+
 - Templates
 - Tech Profile (name, title, dept)
 - App preferences
@@ -86,19 +88,21 @@ For when you get a new phone. Contains:
 
 Instead of hardcoding name/title/dept into every template:
 
-```
+```text
 {{ tech_signature }}
 ```
 
 The app replaces this with the current device's Tech Profile.
 
 **Result:**
+
 - ✅ Templates can be shared freely
 - ✅ Everyone's signature stays local
 - ✅ No accidental name leaks
 
 **Signature Format:**
-```
+
+```text
 John Smith
 Field Tech, Network Services
 ```
@@ -112,6 +116,7 @@ Avoid "replace everything" as default—accidental nukes are how devices get thr
 ### Template Merge Rules
 
 For each template in import:
+
 - If `id` doesn't exist locally → **Add**
 - If `id` exists locally → **Ask what to do:**
   - Replace existing
@@ -129,11 +134,13 @@ For each template in import:
 ## Validation Rules
 
 ### Required Fields
+
 - `schemaVersion` exists and is supported (currently: 1)
 - `kind` is `template-pack` or `full-backup`
 - `templates` is non-empty for packs
 
 ### Template Validation
+
 - Each template has `id`, `name`, `content`
 - Content length warning if > 2000 chars
 - Placeholder warnings (don't block, just warn):
@@ -144,6 +151,7 @@ For each template in import:
   - `{{ tech_signature }}`
 
 ### Version Handling
+
 - If `schemaVersion` is newer than app supports:
   - Show "Created by newer version" warning
   - Allow import of known fields, ignore unknown
@@ -153,12 +161,15 @@ For each template in import:
 ## Import Preview UI
 
 ### Summary Section
+
 - Pack name
 - Number of templates
 - Whether it contains techProfile/settings
 
 ### Template List
+
 For each template:
+
 - Name + ID
 - Short snippet preview (~120 chars)
 - Status pill:
@@ -167,6 +178,7 @@ For each template:
   - 🔴 "Conflict" (requires choice)
 
 ### Action Buttons
+
 - **Apply Selected** — imports checked items
 - **Cancel** — discards import
 
@@ -186,10 +198,12 @@ For each template:
 - [x] Update `CustomerIntakeViewModel` to use signature placeholder
 
 **Files Created:**
+
 - `data/Template.kt`
 - `data/ExportModels.kt`
 
 **Files Modified:**
+
 - `gradle/libs.versions.toml`
 - `app/build.gradle.kts`
 - `data/MessageTemplate.kt`
@@ -247,6 +261,7 @@ For each template:
 ### "Loadout" Concept
 
 A loadout is a quick-switch preset:
+
 - Selected default template
 - Signature enabled/disabled
 - Optional "include support line" toggle
@@ -256,6 +271,7 @@ Techs can switch "Residential" ↔ "Business" like changing weapons in a game.
 ### QR Code Export
 
 Cool but JSON gets big fast. Consider:
+
 - Compressed format
 - URL shortener integration
 - Only for single templates

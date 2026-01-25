@@ -92,8 +92,8 @@ fun SettingsScreen(
     var title by remember(currentProfile) { mutableStateOf(currentProfile.title) }
     var dept by remember(currentProfile) { mutableStateOf(currentProfile.dept) }
 
-    // Template state
-    var useCustom by remember(isUsingDefault) { mutableStateOf(!isUsingDefault) }
+    // Template state - use activeTemplate as key to recompute when it changes
+    var useCustom by remember(activeTemplate) { mutableStateOf(!isUsingDefault) }
     var customTemplate by remember(activeTemplate) {
         mutableStateOf(
             if (isUsingDefault) defaultTemplateContent else activeTemplate.content
