@@ -1,8 +1,9 @@
-# JSON Import/Export Feature Design
+# JSON Import/Export Feature Design — v1 Complete
 
+> **Status:** ✅ ARCHIVED — v1 Implementation Complete  
+> **Archived:** 2026-01-25  
 > **Branch:** `feature/json-import-export`  
-> **Status:** Phase 6 Complete ✅  
-> **Last Updated:** 2026-01-25
+> **Future Work:** See [JSON_IMPORT_EXPORT_ROADMAP.md](./JSON_IMPORT_EXPORT_ROADMAP.md)
 
 ---
 
@@ -51,8 +52,8 @@ For when you get a new phone. Contains:
   "exportedAt": "2026-01-25T18:42:00Z",
   "appVersion": "1.0.0",
   "meta": {
-    "name": "ALLO Residential Pack",
-    "createdBy": "Quentin King",
+    "name": "Residential Pack",
+    "createdBy": "Team Lead",
     "notes": "Standard welcome text for Residential installs."
   },
   "templates": [
@@ -60,7 +61,7 @@ For when you get a new phone. Contains:
       "id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
       "slug": "residential_welcome",
       "name": "Residential Welcome",
-      "content": "Welcome to ALLO, {{ customer_name }}! 🎉\n\n📶 Wi-Fi Network (SSID): {{ ssid }}\n🔑 Password: {{ password }}\n👤 Account Number: {{ account_number }}\n\nSupport: 1-866-481-2556\n\n{{ tech_signature }}",
+      "content": "Welcome, {{ customer_name }}! 🎉\n\n📶 Wi-Fi Network (SSID): {{ ssid }}\n🔑 Password: {{ password }}\n👤 Account Number: {{ account_number }}\n\n{{ tech_signature }}",
       "createdAt": "2026-01-20T08:00:00Z",
       "modifiedAt": "2026-01-25T10:00:00Z"
     }
@@ -80,9 +81,9 @@ For when you get a new phone. Contains:
   "exportedAt": "2026-01-25T18:42:00Z",
   "appVersion": "1.0.0",
   "techProfile": {
-    "name": "Quentin King",
-    "title": "Installation Technician 1",
-    "dept": "ALLO Fiber | Residential"
+    "name": "Jane Doe",
+    "title": "Installation Technician",
+    "dept": "Fiber Services"
   },
   "templates": [
     {
@@ -385,56 +386,6 @@ For each template:
 
 ---
 
-## Future Ideas 🚀
-
-### "Loadout" Concept
-
-A loadout is a quick-switch preset:
-
-- Selected default template
-- Signature enabled/disabled
-- Optional "include support line" toggle
-
-Techs can switch "Residential" ↔ "Business" like changing weapons in a game.
-
-### QR Code Export
-
-Cool but JSON gets big fast. Consider:
-
-- Compressed format
-- URL shortener integration
-- Only for single templates
-
-### Tags/Categories
-
-```json
-{
-  "id": "biz_welcome",
-  "name": "Business Welcome",
-  "tags": ["business", "install"],
-  "content": "..."
-}
-```
-
-Then filter by tag in template selector.
-
-### Schema v2 Candidates
-
-Ideas for future schema versions (backward compatible):
-
-```json
-{
-  "packageName": "com.example.allowelcome",  // Source app identifier
-  "deviceName": "Quentin-S22U",              // Optional: who exported this?
-  "revision": 3                               // Monotonic version for smarter merge defaults
-}
-```
-
-- `revision`: If imported revision > local revision, default conflict choice to "replace"
-- `deviceName`: Helps answer "who made this?" when importing from group chat
-
----
-
 ## Technical Notes
 
 ### Why kotlinx.serialization?
@@ -563,7 +514,8 @@ data class ExportedSettings(
 
 ## Related Files
 
-- [ANDROID_APP_PLAN.md](./ANDROID_APP_PLAN.md) - Overall app architecture
-- [Template.kt](../app/src/main/java/com/example/allowelcome/data/Template.kt) - Template data class
-- [ExportModels.kt](../app/src/main/java/com/example/allowelcome/data/ExportModels.kt) - Export schema classes
-- [ImportExportRepository.kt](../app/src/main/java/com/example/allowelcome/data/ImportExportRepository.kt) - Import/export logic
+- [JSON_IMPORT_EXPORT_ROADMAP.md](./JSON_IMPORT_EXPORT_ROADMAP.md) — Future enhancements
+- [ANDROID_APP_PLAN.md](./ANDROID_APP_PLAN.md) — Overall app architecture
+- [Template.kt](../app/src/main/java/com/example/allowelcome/data/Template.kt) — Template data class
+- [ExportModels.kt](../app/src/main/java/com/example/allowelcome/data/ExportModels.kt) — Export schema classes
+- [ImportExportRepository.kt](../app/src/main/java/com/example/allowelcome/data/ImportExportRepository.kt) — Import/export logic
