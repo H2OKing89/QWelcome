@@ -8,6 +8,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.allowelcome.ui.CustomerIntakeScreen
 import com.example.allowelcome.ui.settings.SettingsScreen
 import com.example.allowelcome.ui.theme.CyberpunkTheme

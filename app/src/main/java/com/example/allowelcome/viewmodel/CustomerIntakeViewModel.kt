@@ -27,6 +27,28 @@ class CustomerIntakeViewModel(private val settingsStore: SettingsStore) : ViewMo
     private val _uiState = MutableStateFlow(CustomerIntakeUiState())
     val uiState: StateFlow<CustomerIntakeUiState> = _uiState.asStateFlow()
 
+    // Track when app went to background for auto-clear
+    private var backgroundTimestamp: Long = 0L
+    private val autoCleatTimeoutMs = 10 * 60 * 1000L // 10 minutes
+
+    fun onPause() {
+        backgroundTimestamp = System.currentTimeMillis()
+    }
+
+    fun onResume() {
+        if (backgroundTimestamp > 0) {
+            val elapsed = System.currentTimeMillis() - backgroundTimestamp
+            if (elapsed >= autoCleatTimeoutMs) {
+                clearForm()
+            }
+            backgroundTimestamp = 0L
+        }
+    }
+
+    fun clearForm() {
+        _uiState.update { CustomerIntakeUiState() }
+    }
+
     fun onCustomerNameChanged(name: String) {
         _uiState.update { it.copy(customerName = name, customerNameError = null) }
     }

@@ -17,6 +17,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.allowelcome.ui.components.CyberpunkBackdrop
 import com.example.allowelcome.ui.components.NeonCyanButton
@@ -36,6 +39,20 @@ fun CustomerIntakeScreen(
     val uiState by customerIntakeViewModel.uiState.collectAsState()
     var passwordVisible by remember { mutableStateOf(false) }
     val context = LocalContext.current
+
+    // Lifecycle observer for auto-clear after 10 min in background
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_PAUSE -> customerIntakeViewModel.onPause()
+                Lifecycle.Event.ON_RESUME -> customerIntakeViewModel.onResume()
+                else -> {}
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     CyberpunkBackdrop {
         Scaffold(
