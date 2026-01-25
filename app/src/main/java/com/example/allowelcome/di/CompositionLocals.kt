@@ -3,7 +3,10 @@ package com.example.allowelcome.di
 import androidx.compose.runtime.staticCompositionLocalOf
 import com.example.allowelcome.navigation.Navigator
 import com.example.allowelcome.viewmodel.CustomerIntakeViewModel
+import com.example.allowelcome.viewmodel.export.ExportViewModel
+import com.example.allowelcome.viewmodel.import_pkg.ImportViewModel
 import com.example.allowelcome.viewmodel.settings.SettingsViewModel
+import com.example.allowelcome.viewmodel.templates.TemplateListViewModel
 
 /**
  * CompositionLocal providers for dependency injection in Compose.
@@ -45,6 +48,30 @@ val LocalCustomerIntakeViewModel = staticCompositionLocalOf<CustomerIntakeViewMo
  */
 val LocalSettingsViewModel = staticCompositionLocalOf<SettingsViewModel> {
     error("SettingsViewModel not provided. Wrap your composable with CompositionLocalProvider.")
+}
+
+/**
+ * Provides the ExportViewModel throughout the composition.
+ * Throws if accessed before being provided (fail-fast for configuration errors).
+ */
+val LocalExportViewModel = staticCompositionLocalOf<ExportViewModel> {
+    error("ExportViewModel not provided. Wrap your composable with CompositionLocalProvider.")
+}
+
+/**
+ * Provides the ImportViewModel throughout the composition.
+ * Throws if accessed before being provided (fail-fast for configuration errors).
+ */
+val LocalImportViewModel = staticCompositionLocalOf<ImportViewModel> {
+    error("ImportViewModel not provided. Wrap your composable with CompositionLocalProvider.")
+}
+
+/**
+ * Provides the TemplateListViewModel throughout the composition.
+ * Throws if accessed before being provided (fail-fast for configuration errors).
+ */
+val LocalTemplateListViewModel = staticCompositionLocalOf<TemplateListViewModel> {
+    error("TemplateListViewModel not provided. Wrap your composable with CompositionLocalProvider.")
 }
 
 /**

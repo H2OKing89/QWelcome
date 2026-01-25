@@ -26,7 +26,7 @@
 ## v2 Quality-of-Life Features (Backlog)
 
 | Feature | Description |
-|---------|-------------|
+| --------- | ------------- |
 | **Tech Profile / Signature Settings** | Store tech name/title/department locally and append to message. |
 | **Saved Templates** | Multiple message templates (different regions, services) stored locally. |
 | **Recent Customers** | List of last 50 sends with tap-to-resend. |
@@ -45,13 +45,13 @@
 
 ### Sideload to Phone
 
-**Option A: USB**
+#### Option A: USB
 
 ```bash
 adb install app-debug.apk
 ```
 
-**Option B: File Transfer**
+#### Option B: File Transfer
 
 1. Copy APK to phone (Google Drive, email, USB)
 2. Open APK on phone and allow installation from unknown sources.
