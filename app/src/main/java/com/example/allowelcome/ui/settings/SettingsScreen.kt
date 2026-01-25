@@ -64,7 +64,8 @@ private fun safeTruncate(text: String, maxLength: Int): String {
     val lastCloseBrace = beforeCutoff.lastIndexOf("}}")
 
     // If we found {{ after the last }}, we're inside a placeholder - back up
-    if (lastOpenBrace > lastCloseBrace && lastOpenBrace >= 0) {
+    // Note: lastOpenBrace > lastCloseBrace implies lastOpenBrace >= 0
+    if (lastOpenBrace > lastCloseBrace) {
         cutoff = lastOpenBrace
     }
 
@@ -117,10 +118,6 @@ fun SettingsScreen(
         mutableStateOf(
             if (isUsingDefault) defaultTemplateContent else activeTemplate.content
         )
-    }
-    // Track the custom template ID for updates
-    var customTemplateId by rememberSaveable(activeTemplate) {
-        mutableStateOf(if (isUsingDefault) null else activeTemplate.id)
     }
 
     // Detect unsaved changes by comparing current values to saved values

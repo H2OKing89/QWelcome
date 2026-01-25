@@ -4,7 +4,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.graphics.Color
 
 /**
@@ -193,10 +193,14 @@ private val LightExtendedColors = CyberExtendedColors(
     lime = CyberLightLime
 )
 
-val LocalCyberColors = staticCompositionLocalOf { DarkExtendedColors }
+val LocalCyberColors = compositionLocalOf<CyberExtendedColors> {
+    error("No CyberExtendedColors provided. Ensure CyberpunkTheme is applied.")
+}
 
 // Composition local for dark theme state
-val LocalDarkTheme = staticCompositionLocalOf { true }
+val LocalDarkTheme = compositionLocalOf<Boolean> {
+    error("No LocalDarkTheme provided. Ensure CyberpunkTheme is applied.")
+}
 
 /**
  * DEPRECATED: Use MaterialTheme.colorScheme instead.

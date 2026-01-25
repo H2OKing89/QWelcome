@@ -544,4 +544,4 @@ The cyberpunk is in the **system**, not just the colors.
 
 ---
 
-*Last updated: January 25, 2026*
+- *Last updated: January 25, 2026*

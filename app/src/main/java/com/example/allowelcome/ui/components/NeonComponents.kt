@@ -94,21 +94,21 @@ fun NeonPanel(
                     )
                 }
             )
-            .background(
+            .then(
                 if (isDark) {
                     // Dark mode: colorful gradient with low alpha
-                    Brush.linearGradient(
-                        listOf(
-                            colorScheme.secondary.copy(alpha = 0.10f),
-                            colorScheme.primary.copy(alpha = 0.06f),
-                            colorScheme.tertiary.copy(alpha = 0.08f)
+                    Modifier.background(
+                        Brush.linearGradient(
+                            listOf(
+                                colorScheme.secondary.copy(alpha = 0.10f),
+                                colorScheme.primary.copy(alpha = 0.06f),
+                                colorScheme.tertiary.copy(alpha = 0.08f)
+                            )
                         )
                     )
                 } else {
-                    // Light mode: clean white background
-                    Brush.linearGradient(
-                        listOf(colorScheme.surface, colorScheme.surface)
-                    )
+                    // Light mode: clean solid white background (no gradient allocation)
+                    Modifier.background(colorScheme.surface)
                 }
             )
             // CYBERPUNK SIGNATURE: Neon top-edge accent line
@@ -410,6 +410,9 @@ fun PlaceholderChipsRow(
     placeholders: List<Pair<String, String>>, // (placeholder, description)
     modifier: Modifier = Modifier
 ) {
+    // Required placeholders - exact match against canonical tokens
+    val requiredPlaceholders = setOf("{{ customer_name }}", "{{ ssid }}")
+    
     FlowRow(
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -418,8 +421,8 @@ fun PlaceholderChipsRow(
         placeholders.forEach { (placeholder, _) ->
             PlaceholderChip(
                 text = placeholder,
-                // Mark required placeholders (those with "name" or "ssid")
-                isRequired = placeholder.contains("name") || placeholder.contains("ssid")
+                // Mark required placeholders using exact match against canonical tokens
+                isRequired = placeholder in requiredPlaceholders
             )
         }
     }

@@ -23,8 +23,10 @@ import androidx.compose.ui.graphics.Color
  * - Background: Light purple tint (#FAF8FC)
  * - Surface: Pure white (#FFFFFF)
  * 
- * Usage: Use CyberScheme composable getter to get theme-aware colors,
- * or access CyberDarkScheme/CyberLightScheme directly when needed.
+ * Usage:
+ *   - MaterialTheme.colorScheme for standard Material3 color tokens (primary, secondary, surface, etc.)
+ *   - LocalCyberColors.current for app-specific extended colors (success, warning, lime, etc.)
+ *   - Access CyberDarkScheme/CyberLightScheme directly when needed for non-composable contexts.
  */
 
 // Semantic status colors (can be used directly when needed)

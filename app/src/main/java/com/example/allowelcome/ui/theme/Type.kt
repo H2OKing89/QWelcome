@@ -40,12 +40,16 @@ private val MagentaGlowDark = Shadow(
 
 // ============== LIGHT MODE GLOW EFFECTS ==============
 // Subtle drop shadows for light mode - maintains cyberpunk feel without overwhelming
+// TODO: Reserved for future light mode header shadows if design requires them.
+//       Currently light mode uses no text shadows for maximum readability.
+@Suppress("unused") // Reserved for potential future use
 private val CyanGlowLight = Shadow(
     color = Color(0xFF0097A7).copy(alpha = 0.3f),
     offset = Offset(1f, 2f),
     blurRadius = 4f
 )
 
+@Suppress("unused") // Reserved for potential future use
 private val MagentaGlowLight = Shadow(
     color = Color(0xFFD81B60).copy(alpha = 0.25f),
     offset = Offset(1f, 2f),

@@ -62,7 +62,8 @@ fun CustomerIntakeScreen(
     // Use rememberSaveable so rotation/process death doesn't reset these
     var passwordVisible by rememberSaveable { mutableStateOf(false) }
     var showQrSheet by rememberSaveable { mutableStateOf(false) }
-    var templateDropdownExpanded by rememberSaveable { mutableStateOf(false) }
+    // Dropdown state is transient - use remember so it collapses on rotation
+    var templateDropdownExpanded by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
     // Lifecycle observer for auto-clear after 10 min in background

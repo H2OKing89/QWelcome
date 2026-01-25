@@ -45,6 +45,46 @@ class CustomerIntakeViewModel(private val settingsStore: SettingsStore) : ViewMo
         const val ERROR_PASSWORD_TOO_SHORT = "Password must be at least 8 characters"
         const val ERROR_PASSWORD_TOO_LONG = "Password cannot exceed 63 characters"
         const val ERROR_ACCOUNT_EMPTY = "Account number is required"
+        
+        /**
+         * Validates a US phone number following NANP rules.
+         * @param phone The phone number string (may contain formatting characters)
+         * @param progressiveMode If true, returns progressive typing feedback (e.g., "7/10 digits").
+         *                        If false, returns short generic error suitable for submit validation.
+         * @return Error message string, or null if valid.
+         */
+        fun validatePhoneNumber(phone: String, progressiveMode: Boolean): String? {
+            val digits = phone.replace(Regex("\\D"), "")
+            return when {
+                phone.isEmpty() -> null // Don't show error for empty (handled at submit)
+                digits.length < 10 -> {
+                    if (progressiveMode) "Enter 10-digit US number (${digits.length}/10)"
+                    else ERROR_PHONE_INVALID
+                }
+                digits.length == 10 || digits.length == 11 -> {
+                    // Check NANP rules: area code and exchange must start with 2-9
+                    val areaStart = if (digits.length == 11) 1 else 0
+                    val areaCode = digits.substring(areaStart, areaStart + 3)
+                    val exchange = digits.substring(areaStart + 3, areaStart + 6)
+                    when {
+                        digits.length == 11 && digits[0] != '1' -> {
+                            if (progressiveMode) "US numbers start with 1" else ERROR_PHONE_INVALID
+                        }
+                        areaCode[0] !in '2'..'9' -> {
+                            if (progressiveMode) "Area code can't start with ${areaCode[0]}" else ERROR_PHONE_INVALID
+                        }
+                        exchange[0] !in '2'..'9' -> {
+                            if (progressiveMode) "Exchange can't start with ${exchange[0]}" else ERROR_PHONE_INVALID
+                        }
+                        else -> null // Valid!
+                    }
+                }
+                digits.length > 11 -> {
+                    if (progressiveMode) "Too many digits (${digits.length})" else ERROR_PHONE_INVALID
+                }
+                else -> null
+            }
+        }
     }
 
     private val _uiState = MutableStateFlow(CustomerIntakeUiState())
@@ -83,26 +123,8 @@ class CustomerIntakeViewModel(private val settingsStore: SettingsStore) : ViewMo
     }
 
     fun onCustomerPhoneChanged(phone: String) {
-        // Real-time validation feedback for US phone numbers
-        val digits = phone.replace(Regex("\\D"), "")
-        val error = when {
-            phone.isEmpty() -> null // Don't show error for empty (show on submit)
-            digits.length < 10 -> "Enter 10-digit US number (${digits.length}/10)"
-            digits.length == 10 || digits.length == 11 -> {
-                // Check NANP rules: area code and exchange must start with 2-9
-                val areaStart = if (digits.length == 11) 1 else 0
-                val areaCode = digits.substring(areaStart, areaStart + 3)
-                val exchange = digits.substring(areaStart + 3, areaStart + 6)
-                when {
-                    digits.length == 11 && digits[0] != '1' -> "US numbers start with 1"
-                    areaCode[0] !in '2'..'9' -> "Area code can't start with ${areaCode[0]}"
-                    exchange[0] !in '2'..'9' -> "Exchange can't start with ${exchange[0]}"
-                    else -> null // Valid!
-                }
-            }
-            digits.length > 11 -> "Too many digits (${digits.length})"
-            else -> null
-        }
+        // Real-time validation with progressive feedback
+        val error = validatePhoneNumber(phone, progressiveMode = true)
         _uiState.update { it.copy(customerPhone = phone, customerPhoneError = error) }
     }
 
@@ -200,9 +222,13 @@ class CustomerIntakeViewModel(private val settingsStore: SettingsStore) : ViewMo
             if (currentState.customerPhone.isBlank()) {
                 _uiState.update { it.copy(customerPhoneError = ERROR_PHONE_EMPTY) }
                 hasError = true
-            } else if (!PhoneUtils.isValid(currentState.customerPhone)) {
-                _uiState.update { it.copy(customerPhoneError = ERROR_PHONE_INVALID) }
-                hasError = true
+            } else {
+                // Use shared validation logic with generic error messages for submit
+                val phoneError = validatePhoneNumber(currentState.customerPhone, progressiveMode = false)
+                if (phoneError != null) {
+                    _uiState.update { it.copy(customerPhoneError = phoneError) }
+                    hasError = true
+                }
             }
         }
         
