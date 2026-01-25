@@ -37,6 +37,35 @@ import com.example.allowelcome.ui.theme.CyberScheme
 import com.example.allowelcome.viewmodel.factory.AppViewModelProvider
 import com.example.allowelcome.viewmodel.settings.SettingsViewModel
 
+/**
+ * Safely truncates text without splitting placeholders like {{ }} or words.
+ * Falls back to word boundary if placeholder boundary not found.
+ */
+private fun safeTruncate(text: String, maxLength: Int): String {
+    if (text.length <= maxLength) return text
+
+    // Find a safe cutoff point that doesn't split {{ or }}
+    var cutoff = maxLength
+
+    // Check if we're in the middle of a placeholder
+    val beforeCutoff = text.substring(0, cutoff)
+    val lastOpenBrace = beforeCutoff.lastIndexOf("{{") 
+    val lastCloseBrace = beforeCutoff.lastIndexOf("}}")
+
+    // If we found {{ after the last }}, we're inside a placeholder - back up
+    if (lastOpenBrace > lastCloseBrace) {
+        cutoff = lastOpenBrace
+    }
+
+    // Try to break at a space for cleaner output
+    val lastSpace = text.substring(0, cutoff).lastIndexOf(' ')
+    if (lastSpace > cutoff - 30) { // Only use space if reasonably close
+        cutoff = lastSpace
+    }
+
+    return text.substring(0, cutoff).trimEnd() + "..."
+}
+
 @Composable
 fun SettingsScreen(
     onBack: () -> Unit,
@@ -198,7 +227,7 @@ fun SettingsScreen(
                             color = Color.White.copy(alpha = 0.7f)
                         )
                         Text(
-                            defaultTemplate.take(150) + "...",
+                            safeTruncate(defaultTemplate, 150),
                             style = MaterialTheme.typography.bodySmall,
                             color = Color.White.copy(alpha = 0.5f)
                         )

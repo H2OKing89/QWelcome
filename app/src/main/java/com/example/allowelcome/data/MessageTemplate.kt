@@ -4,13 +4,19 @@ import android.content.Context
 import com.example.allowelcome.R
 
 object MessageTemplate {
-    
-    /** Available placeholders for templates */
+
+    /** Placeholder keys - single source of truth */
+    const val KEY_CUSTOMER_NAME = "{{ customer_name }}"
+    const val KEY_SSID = "{{ ssid }}"
+    const val KEY_PASSWORD = "{{ password }}"
+    const val KEY_ACCOUNT_NUMBER = "{{ account_number }}"
+
+    /** Available placeholders for templates (key to description) */
     val PLACEHOLDERS = listOf(
-        "{{ customer_name }}" to "Customer's name",
-        "{{ ssid }}" to "WiFi network name",
-        "{{ password }}" to "WiFi password",
-        "{{ account_number }}" to "Account number"
+        KEY_CUSTOMER_NAME to "Customer's name",
+        KEY_SSID to "WiFi network name",
+        KEY_PASSWORD to "WiFi password",
+        KEY_ACCOUNT_NUMBER to "Account number"
     )
 
     /** Generate message using the default template from strings.xml */
@@ -25,10 +31,17 @@ object MessageTemplate {
     }
 
     private fun applyPlaceholders(template: String, data: CustomerData): String {
-        return template
-            .replace("{{ customer_name }}", data.customerName)
-            .replace("{{ ssid }}", data.ssid)
-            .replace("{{ password }}", data.password)
-            .replace("{{ account_number }}", data.accountNumber)
+        // Map placeholder keys to their values from CustomerData
+        val valueMap = mapOf(
+            KEY_CUSTOMER_NAME to data.customerName,
+            KEY_SSID to data.ssid,
+            KEY_PASSWORD to data.password,
+            KEY_ACCOUNT_NUMBER to data.accountNumber
+        )
+
+        // Apply all replacements using the single source of truth
+        return PLACEHOLDERS.fold(template) { result, (key, _) ->
+            result.replace(key, valueMap[key] ?: "")
+        }
     }
 }

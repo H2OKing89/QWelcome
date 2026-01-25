@@ -32,8 +32,8 @@ class SettingsStore(private val context: Context) {
         val CUSTOM_TEMPLATE = stringPreferencesKey("custom_template")
     }
 
-    /** The default template that ships with the app (read-only) */
-    fun getDefaultTemplate(): String = context.getString(R.string.welcome_template)
+    /** The default template that ships with the app (cached at init, read-only) */
+    val defaultTemplate: String = context.getString(R.string.welcome_template)
 
     val techProfileFlow: Flow<TechProfile> =
         context.dataStore.data.map { prefs ->
@@ -56,11 +56,11 @@ class SettingsStore(private val context: Context) {
     val activeTemplateFlow: Flow<String> =
         context.dataStore.data.map { prefs ->
             val useCustom = prefs[Keys.USE_CUSTOM_TEMPLATE] ?: false
-            val customTemplate = prefs[Keys.CUSTOM_TEMPLATE].orEmpty()
-            if (useCustom && customTemplate.isNotBlank()) {
-                customTemplate
+            val customTemplateValue = prefs[Keys.CUSTOM_TEMPLATE].orEmpty()
+            if (useCustom && customTemplateValue.isNotBlank()) {
+                customTemplateValue
             } else {
-                getDefaultTemplate()
+                defaultTemplate
             }
         }
 
@@ -75,7 +75,7 @@ class SettingsStore(private val context: Context) {
     suspend fun saveTemplateSettings(settings: TemplateSettings) {
         context.dataStore.edit { prefs ->
             prefs[Keys.USE_CUSTOM_TEMPLATE] = settings.useCustomTemplate
-            prefs[Keys.CUSTOM_TEMPLATE] = settings.customTemplate
+            prefs[Keys.CUSTOM_TEMPLATE] = settings.customTemplate.trim()
         }
     }
 

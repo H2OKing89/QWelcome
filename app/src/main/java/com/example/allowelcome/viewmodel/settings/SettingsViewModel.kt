@@ -28,7 +28,7 @@ class SettingsViewModel(
             initialValue = TemplateSettings()
         )
 
-    fun getDefaultTemplate(): String = store.getDefaultTemplate()
+    fun getDefaultTemplate(): String = store.defaultTemplate
 
     fun save(profile: TechProfile) {
         viewModelScope.launch { store.saveTechProfile(profile) }
