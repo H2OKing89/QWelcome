@@ -26,7 +26,7 @@
 ## v2 Quality-of-Life Features (Backlog)
 
 | Feature | Description |
-|---------|-------------|
+| --------- | ------------- |
 | **Tech Profile / Signature Settings** | Store tech name/title/department locally and append to message. |
 | **Saved Templates** | Multiple message templates (different regions, services) stored locally. |
 | **Recent Customers** | List of last 50 sends with tap-to-resend. |

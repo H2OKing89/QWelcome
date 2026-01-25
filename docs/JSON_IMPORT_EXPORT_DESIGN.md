@@ -2,13 +2,15 @@
 
 > **Branch:** `feature/json-import-export`  
 > **Status:** Phase 6 Complete ✅  
-> **Last Updated:** 2025-01-25
+> **Last Updated:** 2026-01-25
 
 ---
 
 ## Overview
 
 JSON import/export turns Q Welcome from a personal app into something a whole crew can standardize around—without building a full backend. Techs can share templates via Slack, Teams, or any messaging app.
+
+> **Safety Guarantee:** Template packs never overwrite Tech Profile unless explicitly chosen during import.
 
 ---
 
@@ -36,6 +38,10 @@ For when you get a new phone. Contains:
 
 ## Schema Design v1
 
+> **ID Strategy:** Templates use UUID v4 for merge safety (preventing collisions when teams share).
+> An optional `slug` field provides human-readable hints for debugging and manual JSON edits.
+> Timestamps use ISO 8601 format with UTC timezone (e.g., `2026-01-25T18:42:00Z`).
+
 ### Template Pack
 
 ```json
@@ -43,24 +49,25 @@ For when you get a new phone. Contains:
   "schemaVersion": 1,
   "kind": "template-pack",
   "exportedAt": "2026-01-25T18:42:00Z",
-  "appVersion": "1.0",
+  "appVersion": "1.0.0",
   "meta": {
     "name": "ALLO Residential Pack",
     "createdBy": "Quentin King",
     "notes": "Standard welcome text for Residential installs."
   },
-  "defaults": {
-    "defaultTemplateId": "residential_default"
-  },
   "templates": [
     {
-      "id": "residential_default",
+      "id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+      "slug": "residential_welcome",
       "name": "Residential Welcome",
       "content": "Welcome to ALLO, {{ customer_name }}! 🎉\n\n📶 Wi-Fi Network (SSID): {{ ssid }}\n🔑 Password: {{ password }}\n👤 Account Number: {{ account_number }}\n\nSupport: 1-866-481-2556\n\n{{ tech_signature }}",
       "createdAt": "2026-01-20T08:00:00Z",
       "modifiedAt": "2026-01-25T10:00:00Z"
     }
-  ]
+  ],
+  "defaults": {
+    "defaultTemplateId": "d290f1ee-6c54-4b01-90e6-d701748f0851"
+  }
 }
 ```
 
@@ -71,14 +78,28 @@ For when you get a new phone. Contains:
   "schemaVersion": 1,
   "kind": "full-backup",
   "exportedAt": "2026-01-25T18:42:00Z",
-  "appVersion": "1.0",
+  "appVersion": "1.0.0",
   "techProfile": {
     "name": "Quentin King",
     "title": "Installation Technician 1",
     "dept": "ALLO Fiber | Residential"
   },
-  "templates": [...],
-  "defaultTemplateId": "residential_default"
+  "templates": [
+    {
+      "id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+      "slug": "residential_welcome",
+      "name": "Residential Welcome",
+      "content": "...",
+      "createdAt": "2026-01-20T08:00:00Z",
+      "modifiedAt": "2026-01-25T10:00:00Z"
+    }
+  ],
+  "defaults": {
+    "defaultTemplateId": "d290f1ee-6c54-4b01-90e6-d701748f0851"
+  },
+  "settings": {
+    "signatureEnabled": true
+  }
 }
 ```
 
@@ -121,7 +142,13 @@ For each template in import:
 - If `id` exists locally → **Ask what to do:**
   - Replace existing
   - Keep existing  
-  - Save as copy (new ID auto-generated)
+  - Save as copy (new ID auto-generated, name becomes `"Original Name (Copy)"`)
+
+### Default Template Protection
+
+- Only the **built-in app default** is protected (cannot edit/delete)
+- Imported templates are **never protected**—even if source marked them as such
+- Any `protected` flag in imported JSON is ignored (prevents "undeleteable template" attacks)
 
 ### Import Preview Checkboxes
 
@@ -142,13 +169,14 @@ For each template in import:
 ### Template Validation
 
 - Each template has `id`, `name`, `content`
-- Content length warning if > 2000 chars
-- Placeholder warnings (don't block, just warn):
+- Content length warning if > 2000 chars (approaching SMS segment limits)
+- **Known placeholder validation** (warn but don't block):
   - `{{ customer_name }}`
   - `{{ ssid }}`
   - `{{ password }}`
   - `{{ account_number }}`
-  - `{{ tech_signature }}`
+  - `{{ tech_signature }}` — **warn if missing** (team sharing works best with local signatures)
+- **Unknown placeholder detection**: Warn if template contains `{{ something }}` that isn't a known placeholder (catches typos like `{{ cusomer_name }}`)
 
 ### Version Handling
 
@@ -163,7 +191,10 @@ For each template in import:
 ### Summary Section
 
 - Pack name
-- Number of templates
+- Quick risk assessment:
+  - `New: X` templates
+  - `Conflicts: Y` (requires choice)
+  - `Will replace: Z`
 - Whether it contains techProfile/settings
 
 ### Template List
@@ -384,6 +415,21 @@ Cool but JSON gets big fast. Consider:
 
 Then filter by tag in template selector.
 
+### Schema v2 Candidates
+
+Ideas for future schema versions (backward compatible):
+
+```json
+{
+  "packageName": "com.example.allowelcome",  // Source app identifier
+  "deviceName": "Quentin-S22U",              // Optional: who exported this?
+  "revision": 3                               // Monotonic version for smarter merge defaults
+}
+```
+
+- `revision`: If imported revision > local revision, default conflict choice to "replace"
+- `deviceName`: Helps answer "who made this?" when importing from group chat
+
 ---
 
 ## Technical Notes
@@ -397,22 +443,46 @@ val json = Json {
 }
 ```
 
+### ID Strategy
+
+Template IDs use **UUID v4** (generated via `UUID.randomUUID().toString()`). This prevents collisions when importing templates from different teams or devices.
+
+- IDs are **never shown in UI**—users see `name` only
+- UUIDs ensure merge safety across packs from different sources
+- The built-in default template uses the reserved ID `"default"`
+
+### Timestamp Format
+
+All timestamps **must be ISO 8601 UTC** format:
+
+```text
+2026-01-25T18:42:00Z
+```
+
+- `createdAt`: Set once when template is first created
+- `modifiedAt`: Updated on every edit
+- `exportedAt`: Set at export time
+
+In Kotlin, stored as `String` but always in ISO 8601 UTC format for sorting and display ("modified 3 days ago").
+
 ### Storage Strategy
 
 - **DataStore:** Settings + tech profile + templates JSON
+- **Soft limit:** ~50 templates recommended; warn user if approaching limit
 - **Room (future):** If we add customer history, template versioning, etc.
 
 ### Key Data Classes
 
 ```kotlin
-// Template with full metadata
+// Template with full metadata (UUID + optional slug)
 @Serializable
 data class Template(
-    val id: String,
+    val id: String,           // UUID v4
+    val slug: String? = null, // Human-readable hint (auto-generated from name)
     val name: String,
     val content: String,
-    val createdAt: String,
-    val modifiedAt: String
+    val createdAt: String,    // ISO 8601 UTC
+    val modifiedAt: String    // ISO 8601 UTC
 )
 
 // Team sharing format
@@ -421,17 +491,26 @@ data class TemplatePack(
     val schemaVersion: Int,
     val kind: String,
     val templates: List<Template>,
+    val defaults: ExportDefaults,
     // ... metadata
 )
 
-// Personal backup format  
+// Personal backup format
 @Serializable
 data class FullBackup(
     val schemaVersion: Int,
     val kind: String,
     val techProfile: ExportedTechProfile,
     val templates: List<Template>,
-    // ... settings
+    val defaults: ExportDefaults,
+    val settings: ExportedSettings?,
+    // ... 
+)
+
+// Normalized defaults object
+@Serializable
+data class ExportDefaults(
+    val defaultTemplateId: String? = null
 )
 ```
 

@@ -30,16 +30,18 @@ object ExportKind {
  *   "schemaVersion": 1,
  *   "kind": "template-pack",
  *   "exportedAt": "2026-01-25T10:30:00Z",
- *   "appVersion": "1.0",
+ *   "appVersion": "1.0.0",
  *   "templates": [
  *     {
- *       "id": "abc-123",
+ *       "id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+ *       "slug": "standard_welcome",
  *       "name": "Standard Welcome",
  *       "content": "Hello {{ customer_name }}!\n\nBest,\n{{ tech_signature }}",
  *       "createdAt": "2026-01-20T08:00:00Z",
  *       "modifiedAt": "2026-01-25T10:00:00Z"
  *     }
- *   ]
+ *   ],
+ *   "defaults": { "defaultTemplateId": "d290f1ee-6c54-4b01-90e6-d701748f0851" }
  * }
  * ```
  */
@@ -48,26 +50,42 @@ data class TemplatePack(
     val schemaVersion: Int = EXPORT_SCHEMA_VERSION,
     val kind: String = ExportKind.TEMPLATE_PACK,
     val exportedAt: String = java.time.Instant.now().toString(),
-    val appVersion: String = "1.0",
-    val templates: List<Template>
+    val appVersion: String = "1.0.0",
+    val templates: List<Template>,
+    val defaults: ExportDefaults = ExportDefaults(),
+    // Legacy field for backward compatibility - prefer defaults.defaultTemplateId
+    @Deprecated("Use defaults.defaultTemplateId instead")
+    val defaultTemplateId: String? = null
 ) {
     init {
         require(kind == ExportKind.TEMPLATE_PACK) {
             "TemplatePack kind must be '${ExportKind.TEMPLATE_PACK}', got '$kind'"
         }
     }
+    
+    /**
+     * Get the effective default template ID, checking both new and legacy locations.
+     */
+    fun getEffectiveDefaultTemplateId(): String? {
+        return defaults.defaultTemplateId ?: defaultTemplateId
+    }
 
     companion object {
         /**
          * Create a template pack from a list of templates.
          */
-        fun create(templates: List<Template>, appVersion: String = "1.0"): TemplatePack {
+        fun create(
+            templates: List<Template>, 
+            appVersion: String = "1.0.0",
+            defaultTemplateId: String? = null
+        ): TemplatePack {
             return TemplatePack(
                 schemaVersion = EXPORT_SCHEMA_VERSION,
                 kind = ExportKind.TEMPLATE_PACK,
                 exportedAt = java.time.Instant.now().toString(),
                 appVersion = appVersion,
-                templates = templates
+                templates = templates,
+                defaults = ExportDefaults(defaultTemplateId = defaultTemplateId)
             )
         }
     }
@@ -85,6 +103,24 @@ data class ExportedTechProfile(
 )
 
 /**
+ * Default settings for templates.
+ * Used in both TemplatePack and FullBackup for consistency.
+ */
+@Serializable
+data class ExportDefaults(
+    val defaultTemplateId: String? = null
+)
+
+/**
+ * App settings that can be backed up and restored.
+ * Optional in FullBackup - only included if user has customized settings.
+ */
+@Serializable
+data class ExportedSettings(
+    val signatureEnabled: Boolean = true
+)
+
+/**
  * A Full Backup export - used for personal backup/restore across devices.
  *
  * This format INCLUDES techProfile for complete restoration.
@@ -96,14 +132,15 @@ data class ExportedTechProfile(
  *   "schemaVersion": 1,
  *   "kind": "full-backup",
  *   "exportedAt": "2026-01-25T10:30:00Z",
- *   "appVersion": "1.0",
+ *   "appVersion": "1.0.0",
  *   "techProfile": {
  *     "name": "John Smith",
  *     "title": "Field Tech",
  *     "dept": "Network Services"
  *   },
  *   "templates": [...],
- *   "defaultTemplateId": "abc-123"
+ *   "defaults": { "defaultTemplateId": "d290f1ee-6c54-4b01-90e6-d701748f0851" },
+ *   "settings": { "signatureEnabled": true }
  * }
  * ```
  */
@@ -112,15 +149,26 @@ data class FullBackup(
     val schemaVersion: Int = EXPORT_SCHEMA_VERSION,
     val kind: String = ExportKind.FULL_BACKUP,
     val exportedAt: String = java.time.Instant.now().toString(),
-    val appVersion: String = "1.0",
+    val appVersion: String = "1.0.0",
     val techProfile: ExportedTechProfile,
     val templates: List<Template>,
+    val defaults: ExportDefaults = ExportDefaults(),
+    val settings: ExportedSettings? = null,
+    // Legacy field for backward compatibility - prefer defaults.defaultTemplateId
+    @Deprecated("Use defaults.defaultTemplateId instead")
     val defaultTemplateId: String? = null
 ) {
     init {
         require(kind == ExportKind.FULL_BACKUP) {
             "FullBackup kind must be '${ExportKind.FULL_BACKUP}', got '$kind'"
         }
+    }
+    
+    /**
+     * Get the effective default template ID, checking both new and legacy locations.
+     */
+    fun getEffectiveDefaultTemplateId(): String? {
+        return defaults.defaultTemplateId ?: defaultTemplateId
     }
 
     companion object {
@@ -131,7 +179,8 @@ data class FullBackup(
             techProfile: TechProfile,
             templates: List<Template>,
             defaultTemplateId: String? = null,
-            appVersion: String = "1.0"
+            appVersion: String = "1.0.0",
+            settings: ExportedSettings? = null
         ): FullBackup {
             return FullBackup(
                 schemaVersion = EXPORT_SCHEMA_VERSION,
@@ -144,7 +193,8 @@ data class FullBackup(
                     dept = techProfile.dept
                 ),
                 templates = templates,
-                defaultTemplateId = defaultTemplateId
+                defaults = ExportDefaults(defaultTemplateId = defaultTemplateId),
+                settings = settings
             )
         }
     }

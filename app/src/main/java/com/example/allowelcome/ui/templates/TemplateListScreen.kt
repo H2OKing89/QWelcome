@@ -77,9 +77,9 @@ import com.example.allowelcome.viewmodel.templates.TemplateListEvent
 
 /**
  * Marker ID for new templates being created (not yet persisted).
- * Using empty string as explicit marker instead of implicit convention.
+ * Using a dedicated sentinel value that cannot collide with real UUIDs.
  */
-private const val NEW_TEMPLATE_ID = ""
+private const val NEW_TEMPLATE_ID = "__new__"
 
 @Composable
 fun TemplateListScreen(
