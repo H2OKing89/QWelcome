@@ -23,7 +23,7 @@ import com.example.allowelcome.ui.components.CyberpunkBackdrop
 import com.example.allowelcome.ui.components.NeonMagentaButton
 import com.example.allowelcome.ui.components.NeonOutlinedField
 import com.example.allowelcome.ui.components.NeonPanel
-import com.example.allowelcome.ui.components.NeonTopAppBar
+import com.example.allowelcome.ui.theme.CyberScheme
 import com.example.allowelcome.viewmodel.factory.AppViewModelProvider
 import com.example.allowelcome.viewmodel.settings.SettingsViewModel
 
@@ -42,13 +42,20 @@ fun SettingsScreen(
         Scaffold(
             containerColor = Color.Transparent,
             topBar = {
-                NeonTopAppBar(
-                    title = { Text("Settings") },
+                TopAppBar(
+                    title = { Text("Settings", color = CyberScheme.primary) },
                     navigationIcon = {
                         IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back",
+                                tint = CyberScheme.primary
+                            )
                         }
-                    }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Transparent
+                    )
                 )
             }
         ) { padding ->

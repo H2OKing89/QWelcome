@@ -1,21 +1,21 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:aapt="http://schemas.android.com/aapt"
-    android:width="108dp"
-    android:height="108dp"
-    android:viewportWidth="108"
-    android:viewportHeight="108">
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
 
-    <!-- Q circle with gradient - scaled smaller to fit adaptive icon safe zone -->
+    <!-- Q circle with gradient -->
     <path
-        android:pathData="M54,24 C70,24 84,38 84,54 C84,70 70,84 54,84 C38,84 24,70 24,54 C24,38 38,24 54,24 Z M54,36 C44,36 36,44 36,54 C36,64 44,72 54,72 C64,72 72,64 72,54 C72,44 64,36 54,36 Z"
+        android:pathData="M50,10 C72,10 90,28 90,50 C90,72 72,90 50,90 C28,90 10,72 10,50 C10,28 28,10 50,10 Z M50,25 C36,25 25,36 25,50 C25,64 36,75 50,75 C64,75 75,64 75,50 C75,36 64,25 50,25 Z"
         android:fillType="evenOdd">
         <aapt:attr name="android:fillColor">
             <gradient
                 android:type="linear"
-                android:startX="54"
-                android:startY="24"
-                android:endX="54"
-                android:endY="84">
+                android:startX="50"
+                android:startY="10"
+                android:endX="50"
+                android:endY="90">
                 <item android:offset="0.0" android:color="#FFFF10F0"/>
                 <item android:offset="0.3" android:color="#FFEC4899"/>
                 <item android:offset="0.5" android:color="#FFC19EE0"/>
@@ -25,16 +25,16 @@
         </aapt:attr>
     </path>
 
-    <!-- Q tail - adjusted to match smaller Q -->
+    <!-- Q tail -->
     <path
-        android:pathData="M62,66 L80,86 L70,86 L55,71 Z">
+        android:pathData="M60,65 L85,95 L72,95 L52,72 Z">
         <aapt:attr name="android:fillColor">
             <gradient
                 android:type="linear"
-                android:startX="55"
-                android:startY="72"
-                android:endX="80"
-                android:endY="92">
+                android:startX="52"
+                android:startY="65"
+                android:endX="85"
+                android:endY="95">
                 <item android:offset="0.0" android:color="#FF9D4EDD"/>
                 <item android:offset="1.0" android:color="#FF6D28D9"/>
             </gradient>

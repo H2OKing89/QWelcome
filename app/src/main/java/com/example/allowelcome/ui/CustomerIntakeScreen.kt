@@ -23,7 +23,8 @@ import com.example.allowelcome.ui.components.NeonCyanButton
 import com.example.allowelcome.ui.components.NeonMagentaButton
 import com.example.allowelcome.ui.components.NeonOutlinedField
 import com.example.allowelcome.ui.components.NeonPanel
-import com.example.allowelcome.ui.components.NeonTopAppBar
+import com.example.allowelcome.ui.components.QWelcomeHeader
+import com.example.allowelcome.ui.theme.CyberScheme
 import com.example.allowelcome.viewmodel.CustomerIntakeViewModel
 import com.example.allowelcome.viewmodel.factory.AppViewModelProvider
 
@@ -40,13 +41,17 @@ fun CustomerIntakeScreen(
         Scaffold(
             containerColor = Color.Transparent,
             topBar = {
-                NeonTopAppBar(
-                    title = { Text("ALLO Customer Intake") },
+                TopAppBar(
+                    title = { QWelcomeHeader() },
                     actions = {
                         IconButton(onClick = onOpenSettings) {
                             Icon(Icons.Filled.Settings, contentDescription = "Settings")
                         }
-                    }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Transparent,
+                        actionIconContentColor = CyberScheme.primary
+                    )
                 )
             }
         ) { innerPadding ->

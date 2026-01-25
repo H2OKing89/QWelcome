@@ -9,7 +9,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
@@ -182,47 +181,4 @@ fun NeonMagentaButton(
         enabled = enabled,
         content = content
     )
-}
-
-/**
- * A styled TopAppBar with neon underline
- */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun NeonTopAppBar(
-    title: @Composable () -> Unit,
-    modifier: Modifier = Modifier,
-    navigationIcon: @Composable () -> Unit = {},
-    actions: @Composable RowScope.() -> Unit = {}
-) {
-    Column(modifier = modifier) {
-        TopAppBar(
-            title = title,
-            navigationIcon = navigationIcon,
-            actions = actions,
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = Color.Transparent,
-                titleContentColor = CyberScheme.primary,
-                navigationIconContentColor = CyberScheme.primary,
-                actionIconContentColor = CyberScheme.primary
-            )
-        )
-        // Neon underline
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(1.dp)
-                .background(
-                    Brush.horizontalGradient(
-                        colors = listOf(
-                            Color.Transparent,
-                            CyberScheme.primary.copy(alpha = 0.6f),
-                            CyberScheme.secondary.copy(alpha = 0.4f),
-                            CyberScheme.primary.copy(alpha = 0.6f),
-                            Color.Transparent
-                        )
-                    )
-                )
-        )
-    }
 }
