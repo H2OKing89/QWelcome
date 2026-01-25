@@ -2,4 +2,12 @@
 <resources>
 
     <style name="Theme.ALLOWelcome" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <!-- Splash screen theme -->
+    <style name="Theme.ALLOWelcome.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">#0D0D0F</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/q_logo</item>
+        <item name="windowSplashScreenAnimationDuration">800</item>
+        <item name="postSplashScreenTheme">@style/Theme.ALLOWelcome</item>
+    </style>
 </resources>
