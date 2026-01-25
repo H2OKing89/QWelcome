@@ -221,8 +221,9 @@ private fun saveQrCodeToGallery(
     wifiString: String,
     ssid: String
 ) {
+    var bitmap: Bitmap? = null
     try {
-        val bitmap = generateHighResQrBitmap(wifiString)
+        bitmap = generateHighResQrBitmap(wifiString)
         val filename = "WiFi_QR_${ssid.replace(" ", "_")}_${System.currentTimeMillis()}.png"
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -249,6 +250,8 @@ private fun saveQrCodeToGallery(
         Toast.makeText(context, "QR code saved to Pictures/ALLOWelcome", Toast.LENGTH_SHORT).show()
     } catch (e: Exception) {
         Toast.makeText(context, "Failed to save: ${e.message}", Toast.LENGTH_SHORT).show()
+    } finally {
+        bitmap?.recycle()
     }
 }
 
@@ -257,8 +260,9 @@ private fun shareQrCode(
     wifiString: String,
     ssid: String
 ) {
+    var bitmap: Bitmap? = null
     try {
-        val bitmap = generateHighResQrBitmap(wifiString)
+        bitmap = generateHighResQrBitmap(wifiString)
         val cacheDir = File(context.cacheDir, "qr_codes")
         cacheDir.mkdirs()
         val file = File(cacheDir, "WiFi_QR_${ssid.replace(" ", "_")}.png")
@@ -275,5 +279,7 @@ private fun shareQrCode(
         context.startActivity(Intent.createChooser(intent, "Share WiFi QR Code"))
     } catch (e: Exception) {
         Toast.makeText(context, "Failed to share: ${e.message}", Toast.LENGTH_SHORT).show()
+    } finally {
+        bitmap?.recycle()
     }
 }

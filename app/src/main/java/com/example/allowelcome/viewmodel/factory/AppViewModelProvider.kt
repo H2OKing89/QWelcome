@@ -10,7 +10,14 @@ import com.example.allowelcome.viewmodel.settings.SettingsViewModel
 
 /**
  * Provides ViewModels with shared dependencies.
- * Uses a companion object cache to ensure SettingsStore is a singleton per application context.
+ * 
+ * The [Companion] object maintains a **process-wide singleton** of [SettingsStore],
+ * initialized with the application [Context]. This ensures all ViewModels share the
+ * same [SettingsStore] instance regardless of which Activity or Fragment creates them.
+ * 
+ * Note: The singleton is tied to the process lifetime, not any specific Activity or
+ * application context instance. Once created, the same [SettingsStore] is reused
+ * until the process is killed or [resetForTesting] is called.
  */
 class AppViewModelProvider(private val context: Context) : ViewModelProvider.Factory {
     
