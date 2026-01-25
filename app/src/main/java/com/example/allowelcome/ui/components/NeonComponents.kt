@@ -23,6 +23,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.example.allowelcome.ui.theme.CyberScheme
+import com.example.allowelcome.ui.theme.LocalDarkTheme
 import com.example.allowelcome.util.SoundManager
 
 private val PanelShape = RoundedCornerShape(16.dp)
@@ -33,18 +34,35 @@ fun NeonPanel(
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit
 ) {
+    val isDark = LocalDarkTheme.current
+    val colorScheme = CyberScheme
+
     Column(
         modifier = modifier
             .clip(PanelShape)
-            .border(1.dp, Color.White.copy(alpha = 0.10f), PanelShape)
+            .border(
+                1.dp,
+                if (isDark) Color.White.copy(alpha = 0.10f) else colorScheme.primary.copy(alpha = 0.15f),
+                PanelShape
+            )
             .background(
-                Brush.linearGradient(
-                    listOf(
-                        CyberScheme.secondary.copy(alpha = 0.10f),
-                        CyberScheme.primary.copy(alpha = 0.06f),
-                        CyberScheme.tertiary.copy(alpha = 0.08f)
+                if (isDark) {
+                    Brush.linearGradient(
+                        listOf(
+                            colorScheme.secondary.copy(alpha = 0.10f),
+                            colorScheme.primary.copy(alpha = 0.06f),
+                            colorScheme.tertiary.copy(alpha = 0.08f)
+                        )
                     )
-                )
+                } else {
+                    Brush.linearGradient(
+                        listOf(
+                            colorScheme.surface,
+                            colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                            colorScheme.surface
+                        )
+                    )
+                }
             )
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -66,6 +84,9 @@ fun NeonOutlinedField(
     visualTransformation: VisualTransformation = VisualTransformation.None,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default
 ) {
+    val isDark = LocalDarkTheme.current
+    val colorScheme = CyberScheme
+
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
@@ -78,10 +99,10 @@ fun NeonOutlinedField(
         keyboardOptions = keyboardOptions,
         modifier = modifier.fillMaxWidth(),
         colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = CyberScheme.primary.copy(alpha = 0.85f),
-            unfocusedBorderColor = Color.White.copy(alpha = 0.18f),
-            cursorColor = CyberScheme.primary,
-            focusedLabelColor = CyberScheme.primary,
+            focusedBorderColor = colorScheme.primary.copy(alpha = 0.85f),
+            unfocusedBorderColor = if (isDark) Color.White.copy(alpha = 0.18f) else colorScheme.onSurface.copy(alpha = 0.25f),
+            cursorColor = colorScheme.primary,
+            focusedLabelColor = colorScheme.primary,
         )
     )
 }
@@ -98,11 +119,12 @@ fun NeonButton(
     content: @Composable RowScope.() -> Unit
 ) {
     val haptic = LocalHapticFeedback.current
-    
+    val isDark = LocalDarkTheme.current
+
     val infiniteTransition = rememberInfiniteTransition(label = "neonPulse")
     val glowAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.4f,
-        targetValue = 0.8f,
+        initialValue = if (isDark) 0.4f else 0.3f,
+        targetValue = if (isDark) 0.8f else 0.6f,
         animationSpec = infiniteRepeatable(
             animation = tween(1500, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
@@ -119,7 +141,7 @@ fun NeonButton(
         enabled = enabled,
         shape = ButtonShape,
         colors = ButtonDefaults.buttonColors(
-            containerColor = glowColor.copy(alpha = 0.12f),
+            containerColor = glowColor.copy(alpha = if (isDark) 0.12f else 0.15f),
             contentColor = glowColor,
             disabledContainerColor = glowColor.copy(alpha = 0.05f),
             disabledContentColor = glowColor.copy(alpha = 0.4f)
@@ -136,9 +158,9 @@ fun NeonButton(
         modifier = modifier
             .height(48.dp)
             .then(
-                if (enabled) {
+                if (enabled && isDark) {
                     Modifier.drawBehind {
-                        // Outer glow effect
+                        // Outer glow effect (only in dark mode for visibility)
                         drawRoundRect(
                             color = glowColor.copy(alpha = glowAlpha * 0.3f),
                             cornerRadius = CornerRadius(8.dp.toPx()),

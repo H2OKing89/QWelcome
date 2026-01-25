@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.ALLOWelcome" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Theme.ALLOWelcome" parent="Theme.MaterialComponents.DayNight.NoActionBar" />
 
-    <!-- Splash screen theme -->
+    <!-- Splash screen theme - adapts based on system setting -->
     <style name="Theme.ALLOWelcome.Splash" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenBackground">#0D0D0F</item>
+        <item name="windowSplashScreenBackground">@color/splash_background</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/q_logo</item>
         <item name="windowSplashScreenAnimationDuration">800</item>
         <item name="postSplashScreenTheme">@style/Theme.ALLOWelcome</item>

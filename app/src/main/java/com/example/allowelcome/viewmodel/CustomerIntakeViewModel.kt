@@ -5,7 +5,6 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.allowelcome.data.CustomerData
@@ -15,21 +14,42 @@ import com.example.allowelcome.data.TechProfile
 import com.example.allowelcome.ui.CustomerIntakeUiState
 import com.example.allowelcome.util.PhoneUtils
 import com.example.allowelcome.util.StringUtils
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+/** One-shot UI events emitted by the ViewModel */
+sealed class UiEvent {
+    data class ShowToast(val message: String) : UiEvent()
+    object RateLimitExceeded : UiEvent()
+}
+
 class CustomerIntakeViewModel(private val settingsStore: SettingsStore) : ViewModel() {
+
+    companion object {
+        private const val AUTO_CLEAR_TIMEOUT_MINUTES = 10
+        private const val AUTO_CLEAR_TIMEOUT_MS = AUTO_CLEAR_TIMEOUT_MINUTES * 60 * 1000L
+        private const val ACTION_COOLDOWN_MS = 2000L // 2 seconds between actions
+    }
 
     private val _uiState = MutableStateFlow(CustomerIntakeUiState())
     val uiState: StateFlow<CustomerIntakeUiState> = _uiState.asStateFlow()
 
+    // One-shot UI events (Toasts, navigation, etc.)
+    private val _uiEvent = MutableSharedFlow<UiEvent>()
+    val uiEvent: SharedFlow<UiEvent> = _uiEvent.asSharedFlow()
+
     // Track when app went to background for auto-clear
     private var backgroundTimestamp: Long = 0L
-    private val autoClearTimeoutMs = 10 * 60 * 1000L // 10 minutes
+
+    // Track last action time for rate limiting
+    private var lastActionTime: Long = 0L
 
     fun onPause() {
         backgroundTimestamp = System.currentTimeMillis()
@@ -38,7 +58,7 @@ class CustomerIntakeViewModel(private val settingsStore: SettingsStore) : ViewMo
     fun onResume() {
         if (backgroundTimestamp > 0) {
             val elapsed = System.currentTimeMillis() - backgroundTimestamp
-            if (elapsed >= autoClearTimeoutMs) {
+            if (elapsed >= AUTO_CLEAR_TIMEOUT_MS) {
                 clearForm()
             }
             backgroundTimestamp = 0L
@@ -69,7 +89,22 @@ class CustomerIntakeViewModel(private val settingsStore: SettingsStore) : ViewMo
         _uiState.update { it.copy(accountNumber = accountNumber, accountNumberError = null) }
     }
 
+    /**
+     * Check if enough time has passed since last action to prevent accidental spam.
+     * Emits RateLimitExceeded event if rate limited.
+     */
+    private suspend fun checkRateLimit(): Boolean {
+        val now = System.currentTimeMillis()
+        if (now - lastActionTime < ACTION_COOLDOWN_MS) {
+            _uiEvent.emit(UiEvent.RateLimitExceeded)
+            return false
+        }
+        lastActionTime = now
+        return true
+    }
+
     fun onSmsClicked(context: Context) = viewModelScope.launch {
+        if (!checkRateLimit()) return@launch
         if (validateInputs()) {
             val message = generateMessage(context)
             sendSms(context, _uiState.value.customerPhone, message)
@@ -77,6 +112,7 @@ class CustomerIntakeViewModel(private val settingsStore: SettingsStore) : ViewMo
     }
 
     fun onShareClicked(context: Context) = viewModelScope.launch {
+        if (!checkRateLimit()) return@launch
         if (validateInputs()) {
             val message = generateMessage(context)
             shareMessage(context, message)
@@ -84,10 +120,11 @@ class CustomerIntakeViewModel(private val settingsStore: SettingsStore) : ViewMo
     }
 
     fun onCopyClicked(context: Context) = viewModelScope.launch {
+        if (!checkRateLimit()) return@launch
         if (validateInputs()) {
             val message = generateMessage(context)
             copyToClipboard(context, message)
-            Toast.makeText(context, "Message copied to clipboard", Toast.LENGTH_SHORT).show()
+            _uiEvent.emit(UiEvent.ShowToast("Message copied to clipboard"))
         }
     }
 

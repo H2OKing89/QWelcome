@@ -29,11 +29,13 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.allowelcome.data.MessageTemplate
 import com.example.allowelcome.data.TechProfile
 import com.example.allowelcome.data.TemplateSettings
+import com.example.allowelcome.data.ThemeMode
 import com.example.allowelcome.ui.components.CyberpunkBackdrop
 import com.example.allowelcome.ui.components.NeonMagentaButton
 import com.example.allowelcome.ui.components.NeonOutlinedField
 import com.example.allowelcome.ui.components.NeonPanel
 import com.example.allowelcome.ui.theme.CyberScheme
+import com.example.allowelcome.ui.theme.LocalDarkTheme
 import com.example.allowelcome.viewmodel.factory.AppViewModelProvider
 import com.example.allowelcome.viewmodel.settings.SettingsViewModel
 
@@ -43,9 +45,10 @@ import com.example.allowelcome.viewmodel.settings.SettingsViewModel
  */
 private fun safeTruncate(text: String, maxLength: Int): String {
     if (text.length <= maxLength) return text
+    if (maxLength <= 0) return "..."
 
     // Find a safe cutoff point that doesn't split {{ or }}
-    var cutoff = maxLength
+    var cutoff = maxLength.coerceAtMost(text.length)
 
     // Check if we're in the middle of a placeholder
     val beforeCutoff = text.substring(0, cutoff)
@@ -53,15 +56,20 @@ private fun safeTruncate(text: String, maxLength: Int): String {
     val lastCloseBrace = beforeCutoff.lastIndexOf("}}")
 
     // If we found {{ after the last }}, we're inside a placeholder - back up
-    if (lastOpenBrace > lastCloseBrace) {
+    if (lastOpenBrace > lastCloseBrace && lastOpenBrace > 0) {
         cutoff = lastOpenBrace
     }
 
     // Try to break at a space for cleaner output
-    val lastSpace = text.substring(0, cutoff).lastIndexOf(' ')
-    if (lastSpace > cutoff - 30) { // Only use space if reasonably close
-        cutoff = lastSpace
+    if (cutoff > 0) {
+        val lastSpace = text.substring(0, cutoff).lastIndexOf(' ')
+        if (lastSpace > 0 && lastSpace > cutoff - 30) {
+            cutoff = lastSpace
+        }
     }
+
+    // Ensure cutoff is valid
+    cutoff = cutoff.coerceIn(1, text.length)
 
     return text.substring(0, cutoff).trimEnd() + "..."
 }
@@ -76,6 +84,7 @@ fun SettingsScreen(
 
     val currentProfile by vm.techProfile.collectAsState()
     val currentTemplate by vm.templateSettings.collectAsState()
+    val currentThemeMode by vm.themeMode.collectAsState()
     val defaultTemplate = remember { vm.getDefaultTemplate() }
 
     // Tech profile state
@@ -88,6 +97,9 @@ fun SettingsScreen(
     var customTemplate by remember(currentTemplate) {
         mutableStateOf(currentTemplate.customTemplate.ifBlank { defaultTemplate })
     }
+
+    // Theme state
+    var selectedThemeMode by remember(currentThemeMode) { mutableStateOf(currentThemeMode) }
 
     CyberpunkBackdrop {
         Scaffold(
@@ -144,6 +156,55 @@ fun SettingsScreen(
 
                 Spacer(Modifier.height(8.dp))
 
+                // === APPEARANCE SECTION ===
+                Text(
+                    "Appearance",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = CyberScheme.primary
+                )
+                NeonPanel {
+                    Text(
+                        "Theme Mode",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = CyberScheme.onSurface
+                    )
+                    Spacer(Modifier.height(8.dp))
+
+                    // Theme mode selector
+                    SingleChoiceSegmentedButtonRow(
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        ThemeMode.entries.forEachIndexed { index, mode ->
+                            SegmentedButton(
+                                shape = SegmentedButtonDefaults.itemShape(
+                                    index = index,
+                                    count = ThemeMode.entries.size
+                                ),
+                                onClick = { selectedThemeMode = mode },
+                                selected = selectedThemeMode == mode,
+                                colors = SegmentedButtonDefaults.colors(
+                                    activeContainerColor = CyberScheme.primary.copy(alpha = 0.2f),
+                                    activeContentColor = CyberScheme.primary,
+                                    activeBorderColor = CyberScheme.primary,
+                                    inactiveContainerColor = Color.Transparent,
+                                    inactiveContentColor = CyberScheme.onSurface.copy(alpha = 0.7f),
+                                    inactiveBorderColor = CyberScheme.onSurface.copy(alpha = 0.3f)
+                                )
+                            ) {
+                                Text(
+                                    when (mode) {
+                                        ThemeMode.SYSTEM -> "System"
+                                        ThemeMode.LIGHT -> "Light"
+                                        ThemeMode.DARK -> "Dark"
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(8.dp))
+
                 // === MESSAGE TEMPLATE SECTION ===
                 Text(
                     "Message Template",
@@ -180,7 +241,7 @@ fun SettingsScreen(
                         Text(
                             "Available placeholders:",
                             style = MaterialTheme.typography.labelMedium,
-                            color = Color.White.copy(alpha = 0.7f)
+                            color = CyberScheme.onSurface.copy(alpha = 0.7f)
                         )
                         Text(
                             MessageTemplate.PLACEHOLDERS.joinToString(" • ") { it.first },
@@ -204,7 +265,7 @@ fun SettingsScreen(
                             minLines = 8,
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = CyberScheme.secondary.copy(alpha = 0.85f),
-                                unfocusedBorderColor = Color.White.copy(alpha = 0.18f),
+                                unfocusedBorderColor = CyberScheme.onSurface.copy(alpha = 0.25f),
                                 cursorColor = CyberScheme.secondary,
                                 focusedLabelColor = CyberScheme.secondary,
                             )
@@ -224,12 +285,12 @@ fun SettingsScreen(
                         Text(
                             "Default template (read-only):",
                             style = MaterialTheme.typography.labelMedium,
-                            color = Color.White.copy(alpha = 0.7f)
+                            color = CyberScheme.onSurface.copy(alpha = 0.7f)
                         )
                         Text(
                             safeTruncate(defaultTemplate, 150),
                             style = MaterialTheme.typography.bodySmall,
-                            color = Color.White.copy(alpha = 0.5f)
+                            color = CyberScheme.onSurface.copy(alpha = 0.6f)
                         )
                     }
                 }
@@ -246,6 +307,7 @@ fun SettingsScreen(
                                 customTemplate = if (useCustom) customTemplate else ""
                             )
                         )
+                        vm.saveThemeMode(selectedThemeMode)
                         onBack()
                     },
                     modifier = Modifier.fillMaxWidth()

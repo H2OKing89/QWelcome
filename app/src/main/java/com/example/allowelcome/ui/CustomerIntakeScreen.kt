@@ -20,6 +20,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import android.widget.Toast
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -35,6 +36,7 @@ import com.example.allowelcome.ui.components.QrCodeBottomSheet
 import com.example.allowelcome.ui.components.QWelcomeHeader
 import com.example.allowelcome.ui.theme.CyberScheme
 import com.example.allowelcome.viewmodel.CustomerIntakeViewModel
+import com.example.allowelcome.viewmodel.UiEvent
 import com.example.allowelcome.viewmodel.factory.AppViewModelProvider
 
 @Composable
@@ -59,6 +61,20 @@ fun CustomerIntakeScreen(
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    // Collect UI events (Toasts, rate limit warnings)
+    LaunchedEffect(Unit) {
+        customerIntakeViewModel.uiEvent.collect { event ->
+            when (event) {
+                is UiEvent.ShowToast -> {
+                    Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
+                }
+                is UiEvent.RateLimitExceeded -> {
+                    Toast.makeText(context, "Rate limit exceeded. Please wait.", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
     }
 
     // QR Code Bottom Sheet
