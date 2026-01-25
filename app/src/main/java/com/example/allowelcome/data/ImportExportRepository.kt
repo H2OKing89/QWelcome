@@ -1,6 +1,7 @@
 package com.example.allowelcome.data
 
 import android.util.Log
+import com.example.allowelcome.BuildConfig
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -365,8 +366,7 @@ class ImportExportRepository(private val settingsStore: SettingsStore) {
     // ========== Utility Functions ==========
 
     private fun getAppVersion(): String {
-        // TODO: Get actual app version from BuildConfig
-        return "1.0"
+        return BuildConfig.VERSION_NAME.ifEmpty { "1.0" }
     }
 }
 
