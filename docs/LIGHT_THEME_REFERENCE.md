@@ -248,15 +248,21 @@ fun NeonPanel(
 
     Column(
         modifier = modifier
+            // Ordering: shadow -> clip -> border (matches actual implementation)
+            .then(
+                if (isDark) {
+                    Modifier
+                } else {
+                    // Light mode: shadow BEFORE clip to avoid clipped shadows
+                    Modifier.shadow(elevation = 2.dp, shape = PanelShape, clip = false)
+                }
+            )
             .clip(PanelShape)
             .then(
                 if (isDark) {
                     Modifier.border(1.dp, Color.White.copy(alpha = 0.10f), PanelShape)
                 } else {
-                    // LIGHT MODE: clean shadow, very thin border (0.5dp max)
-                    Modifier
-                        .shadow(elevation = 2.dp, shape = PanelShape)
-                        .border(0.5.dp, colorScheme.outlineVariant.copy(alpha = 0.15f), PanelShape)
+                    Modifier.border(0.5.dp, colorScheme.outlineVariant.copy(alpha = 0.15f), PanelShape)
                 }
             )
             .background(if (isDark) gradientBrush else solidWhite)

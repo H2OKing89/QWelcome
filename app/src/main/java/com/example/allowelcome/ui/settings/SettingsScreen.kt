@@ -181,6 +181,7 @@ fun SettingsScreen(
             confirmButton = {
                 TextButton(onClick = {
                     customTemplate = defaultTemplateContent
+                    useCustom = false  // Fully revert to default mode
                     showRestoreDialog = false
                 }) {
                     Text("Restore", color = MaterialTheme.colorScheme.error)

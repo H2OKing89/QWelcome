@@ -24,6 +24,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import com.example.allowelcome.data.Template
 import com.example.allowelcome.ui.theme.LocalDarkTheme
 import com.example.allowelcome.util.SoundManager
 
@@ -431,9 +432,6 @@ fun PlaceholderChipsRow(
     placeholders: List<Pair<String, String>>, // (placeholder, description)
     modifier: Modifier = Modifier
 ) {
-    // Required placeholders - exact match against canonical tokens
-    val requiredPlaceholders = setOf("{{ customer_name }}", "{{ ssid }}")
-    
     FlowRow(
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -442,8 +440,8 @@ fun PlaceholderChipsRow(
         placeholders.forEach { (placeholder, _) ->
             PlaceholderChip(
                 text = placeholder,
-                // Mark required placeholders using exact match against canonical tokens
-                isRequired = placeholder in requiredPlaceholders
+                // Mark required placeholders from centralized constant
+                isRequired = placeholder in Template.REQUIRED_PLACEHOLDERS
             )
         }
     }

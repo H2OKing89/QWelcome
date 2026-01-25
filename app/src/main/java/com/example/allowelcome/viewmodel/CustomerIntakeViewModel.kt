@@ -48,6 +48,9 @@ class CustomerIntakeViewModel(private val settingsStore: SettingsStore) : ViewMo
         const val ERROR_PASSWORD_TOO_LONG = "Password cannot exceed 63 characters"
         const val ERROR_ACCOUNT_EMPTY = "Account number is required"
         
+        // Regex for stripping non-digits from phone numbers - reused to avoid allocation
+        private val NON_DIGIT_REGEX = Regex("\\D")
+        
         /**
          * Validates a US phone number following NANP rules.
          * @param phone The phone number string (may contain formatting characters)
@@ -56,7 +59,7 @@ class CustomerIntakeViewModel(private val settingsStore: SettingsStore) : ViewMo
          * @return Error message string, or null if valid.
          */
         fun validatePhoneNumber(phone: String, progressiveMode: Boolean): String? {
-            val digits = phone.replace(Regex("\\D"), "")
+            val digits = phone.replace(NON_DIGIT_REGEX, "")
             return when {
                 phone.isEmpty() -> null // Don't show error for empty (handled at submit)
                 digits.length < 10 -> {
@@ -64,27 +67,35 @@ class CustomerIntakeViewModel(private val settingsStore: SettingsStore) : ViewMo
                     else ERROR_PHONE_INVALID
                 }
                 digits.length == 10 || digits.length == 11 -> {
-                    // Check NANP rules: area code and exchange must start with 2-9
-                    val areaStart = if (digits.length == 11) 1 else 0
-                    val areaCode = digits.substring(areaStart, areaStart + 3)
-                    val exchange = digits.substring(areaStart + 3, areaStart + 6)
-                    when {
-                        digits.length == 11 && digits[0] != '1' -> {
-                            if (progressiveMode) "US numbers start with 1" else ERROR_PHONE_INVALID
-                        }
-                        areaCode[0] !in '2'..'9' -> {
-                            if (progressiveMode) "Area code can't start with ${areaCode[0]}" else ERROR_PHONE_INVALID
-                        }
-                        exchange[0] !in '2'..'9' -> {
-                            if (progressiveMode) "Exchange can't start with ${exchange[0]}" else ERROR_PHONE_INVALID
-                        }
-                        else -> null // Valid!
-                    }
+                    validateNanpRules(digits, progressiveMode)
                 }
                 digits.length > 11 -> {
                     if (progressiveMode) "Too many digits (${digits.length})" else ERROR_PHONE_INVALID
                 }
                 else -> null
+            }
+        }
+        
+        /**
+         * Validates NANP-specific rules for 10 or 11 digit phone numbers.
+         * Extracted to reduce cognitive complexity of validatePhoneNumber.
+         */
+        private fun validateNanpRules(digits: String, progressiveMode: Boolean): String? {
+            // Check NANP rules: area code and exchange must start with 2-9
+            val areaStart = if (digits.length == 11) 1 else 0
+            val areaCode = digits.substring(areaStart, areaStart + 3)
+            val exchange = digits.substring(areaStart + 3, areaStart + 6)
+            return when {
+                digits.length == 11 && digits[0] != '1' -> {
+                    if (progressiveMode) "US numbers start with 1" else ERROR_PHONE_INVALID
+                }
+                areaCode[0] !in '2'..'9' -> {
+                    if (progressiveMode) "Area code can't start with ${areaCode[0]}" else ERROR_PHONE_INVALID
+                }
+                exchange[0] !in '2'..'9' -> {
+                    if (progressiveMode) "Exchange can't start with ${exchange[0]}" else ERROR_PHONE_INVALID
+                }
+                else -> null // Valid!
             }
         }
     }

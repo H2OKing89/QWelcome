@@ -27,6 +27,7 @@
     
     <!-- Error: Neon red-pink -->
     <color name="cyber_error">#FFFF4D6D</color>
+    <color name="cyber_on_error">#FFFFFFFF</color>
     
     <!-- Splash screen background - dark mode uses deep space black -->
     <color name="splash_background">#FF05030A</color>

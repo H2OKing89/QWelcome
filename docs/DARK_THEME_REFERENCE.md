@@ -26,7 +26,7 @@ A comprehensive guide to the Cyberpunk Dark Theme implementation in our Android 
 **Rule:** Only ONE continuous animation per screen to avoid "casino UI."
 
 | Animation Type | Status | Notes |
-|---------------|--------|-------|
+| --------------- | -------- | ------- |
 | **Background scanline** | ✅ Continuous | The ONE allowed always-on animation |
 | **Button glow pulse** | ❌ Removed | Was competing with scanline |
 | **Button outer glow** | ✅ Static | Static 0.6 alpha, no pulse |

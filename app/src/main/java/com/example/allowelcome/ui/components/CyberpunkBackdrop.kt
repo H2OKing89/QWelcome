@@ -24,6 +24,7 @@ fun CyberpunkBackdrop(
     content: @Composable BoxScope.() -> Unit
 ) {
     val isDark = LocalDarkTheme.current
+    val colorScheme = MaterialTheme.colorScheme
 
     Box(modifier = modifier.fillMaxSize()) {
         // Background gradient layer
@@ -55,11 +56,11 @@ fun CyberpunkBackdrop(
             }
 
             // Cyberpunk grid overlay
-            val spacing = 28.dp.toPx()
+            val spacing = GRID_SPACING_DP.toPx()
             val gridColor = if (isDark) {
                 Color.White.copy(alpha = 0.04f)
             } else {
-                Color(0xFF6200EA).copy(alpha = 0.04f) // Purple grid for light mode
+                colorScheme.primary.copy(alpha = 0.04f) // Theme-aware grid for light mode
             }
             
             // Vertical lines
@@ -93,7 +94,7 @@ private fun ScanlineOverlay(modifier: Modifier = Modifier, isDark: Boolean = tru
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(8000, easing = LinearEasing),
+            animation = tween(ANIMATION_DURATION_MS, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
         label = "scanlineY"
@@ -102,7 +103,7 @@ private fun ScanlineOverlay(modifier: Modifier = Modifier, isDark: Boolean = tru
     val colorScheme = MaterialTheme.colorScheme
 
     Canvas(modifier) {
-        val lineHeight = 4.dp.toPx()
+        val lineHeight = LINE_HEIGHT_DP.toPx()
         val yPx = size.height * yPosition
 
         // Gradient for scanline - fades at edges
@@ -122,3 +123,11 @@ private fun ScanlineOverlay(modifier: Modifier = Modifier, isDark: Boolean = tru
         )
     }
 }
+
+/**
+ * Visual tuning constants for cyberpunk backdrop effects.
+ * Centralized for easier adjustment of grid spacing, line sizes, and animation speed.
+ */
+private val GRID_SPACING_DP = 28.dp
+private val LINE_HEIGHT_DP = 4.dp
+private const val ANIMATION_DURATION_MS = 8000

@@ -24,6 +24,12 @@ data class Template(
 ) {
     companion object {
         /**
+         * Required placeholders that must be present in every template.
+         * These are essential for the app's core functionality.
+         */
+        val REQUIRED_PLACEHOLDERS = setOf("{{ customer_name }}", "{{ ssid }}")
+        
+        /**
          * Create a template from just name and content (common use case).
          * Auto-generates a slug from the name for readability.
          */
