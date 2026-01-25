@@ -19,8 +19,11 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.allowelcome.ui.components.CyberpunkBackdrop
+import com.example.allowelcome.ui.components.NeonCyanButton
+import com.example.allowelcome.ui.components.NeonMagentaButton
 import com.example.allowelcome.ui.components.NeonOutlinedField
 import com.example.allowelcome.ui.components.NeonPanel
+import com.example.allowelcome.ui.components.NeonTopAppBar
 import com.example.allowelcome.viewmodel.CustomerIntakeViewModel
 import com.example.allowelcome.viewmodel.factory.AppViewModelProvider
 
@@ -37,18 +40,13 @@ fun CustomerIntakeScreen(
         Scaffold(
             containerColor = Color.Transparent,
             topBar = {
-                TopAppBar(
+                NeonTopAppBar(
                     title = { Text("ALLO Customer Intake") },
                     actions = {
                         IconButton(onClick = onOpenSettings) {
                             Icon(Icons.Filled.Settings, contentDescription = "Settings")
                         }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = Color.Transparent,
-                        titleContentColor = MaterialTheme.colorScheme.primary,
-                        actionIconContentColor = MaterialTheme.colorScheme.primary
-                    )
+                    }
                 )
             }
         ) { innerPadding ->
@@ -111,11 +109,20 @@ fun CustomerIntakeScreen(
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Button(onClick = { customerIntakeViewModel.onSmsClicked(context) }) { Text("SMS") }
-                    Button(onClick = { customerIntakeViewModel.onShareClicked(context) }) { Text("Share") }
-                    Button(onClick = { customerIntakeViewModel.onCopyClicked(context) }) { Text("Copy") }
+                    NeonCyanButton(
+                        onClick = { customerIntakeViewModel.onSmsClicked(context) },
+                        modifier = Modifier.weight(1f)
+                    ) { Text("SMS") }
+                    NeonMagentaButton(
+                        onClick = { customerIntakeViewModel.onShareClicked(context) },
+                        modifier = Modifier.weight(1f)
+                    ) { Text("Share") }
+                    NeonCyanButton(
+                        onClick = { customerIntakeViewModel.onCopyClicked(context) },
+                        modifier = Modifier.weight(1f)
+                    ) { Text("Copy") }
                 }
             }
         }

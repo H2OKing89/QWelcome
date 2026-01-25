@@ -20,8 +20,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.allowelcome.data.TechProfile
 import com.example.allowelcome.ui.components.CyberpunkBackdrop
+import com.example.allowelcome.ui.components.NeonMagentaButton
 import com.example.allowelcome.ui.components.NeonOutlinedField
 import com.example.allowelcome.ui.components.NeonPanel
+import com.example.allowelcome.ui.components.NeonTopAppBar
 import com.example.allowelcome.viewmodel.factory.AppViewModelProvider
 import com.example.allowelcome.viewmodel.settings.SettingsViewModel
 
@@ -40,18 +42,13 @@ fun SettingsScreen(
         Scaffold(
             containerColor = Color.Transparent,
             topBar = {
-                TopAppBar(
+                NeonTopAppBar(
                     title = { Text("Settings") },
                     navigationIcon = {
                         IconButton(onClick = onBack) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                         }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = Color.Transparent,
-                        titleContentColor = MaterialTheme.colorScheme.primary,
-                        navigationIconContentColor = MaterialTheme.colorScheme.primary
-                    )
+                    }
                 )
             }
         ) { padding ->
@@ -82,7 +79,7 @@ fun SettingsScreen(
 
                 Spacer(Modifier.height(24.dp))
 
-                Button(
+                NeonMagentaButton(
                     onClick = {
                         vm.save(TechProfile(name, title, dept))
                         onBack()
