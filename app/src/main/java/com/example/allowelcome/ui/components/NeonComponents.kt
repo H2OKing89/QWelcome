@@ -17,9 +17,12 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.example.allowelcome.ui.theme.CyberScheme
+import com.example.allowelcome.util.SoundManager
 
 private val PanelShape = RoundedCornerShape(16.dp)
 private val ButtonShape = RoundedCornerShape(8.dp)
@@ -81,7 +84,7 @@ fun NeonOutlinedField(
 }
 
 /**
- * A neon-styled button with glow effect
+ * A neon-styled button with glow effect, haptic feedback, and sound
  */
 @Composable
 fun NeonButton(
@@ -91,6 +94,8 @@ fun NeonButton(
     enabled: Boolean = true,
     content: @Composable RowScope.() -> Unit
 ) {
+    val haptic = LocalHapticFeedback.current
+    
     val infiniteTransition = rememberInfiniteTransition(label = "neonPulse")
     val glowAlpha by infiniteTransition.animateFloat(
         initialValue = 0.4f,
@@ -103,7 +108,11 @@ fun NeonButton(
     )
 
     Button(
-        onClick = onClick,
+        onClick = {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            SoundManager.playBeep()
+            onClick()
+        },
         enabled = enabled,
         shape = ButtonShape,
         colors = ButtonDefaults.buttonColors(
