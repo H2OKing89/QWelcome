@@ -66,6 +66,8 @@ class ImportExportRepository(private val settingsStore: SettingsStore) {
 
             val jsonString = json.encodeToString(pack)
             ExportResult.Success(jsonString, templatesToExport.size)
+        } catch (e: kotlin.coroutines.cancellation.CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e(TAG, "Failed to export template pack", e)
             ExportResult.Error("Failed to export: ${e.message}")
@@ -93,6 +95,8 @@ class ImportExportRepository(private val settingsStore: SettingsStore) {
 
             val jsonString = json.encodeToString(backup)
             ExportResult.Success(jsonString, userTemplates.size)
+        } catch (e: kotlin.coroutines.cancellation.CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e(TAG, "Failed to export full backup", e)
             ExportResult.Error("Failed to export: ${e.message}")
@@ -292,6 +296,8 @@ class ImportExportRepository(private val settingsStore: SettingsStore) {
             val templatesToSave = resolveTemplates(pack.templates, resolutions)
             settingsStore.saveTemplates(templatesToSave)
             ImportApplyResult.Success(templatesToSave.size)
+        } catch (e: kotlin.coroutines.cancellation.CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e(TAG, "Failed to apply template pack", e)
             ImportApplyResult.Error("Failed to apply import: ${e.message}")
@@ -329,12 +335,14 @@ class ImportExportRepository(private val settingsStore: SettingsStore) {
                 )
             }
 
-            // Set default template if requested and valid
-            if (importDefaultTemplate && backup.defaultTemplateId != null) {
-                // Only set if the template was actually imported
+            // Set default template if requested
+            if (importDefaultTemplate) {
                 val importedIds = templatesToSave.map { it.id }.toSet()
-                if (backup.defaultTemplateId in importedIds) {
-                    settingsStore.setActiveTemplate(backup.defaultTemplateId)
+                // Use normalized defaults object, falling back to legacy field
+                val targetDefaultId = backup.getEffectiveDefaultTemplateId() ?: DEFAULT_TEMPLATE_ID
+                // Set if it's the built-in default or was actually imported
+                if (targetDefaultId == DEFAULT_TEMPLATE_ID || targetDefaultId in importedIds) {
+                    settingsStore.setActiveTemplate(targetDefaultId)
                 }
             }
 
@@ -342,6 +350,8 @@ class ImportExportRepository(private val settingsStore: SettingsStore) {
                 templatesImported = templatesToSave.size,
                 techProfileImported = importTechProfile
             )
+        } catch (e: kotlin.coroutines.cancellation.CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e(TAG, "Failed to apply full backup", e)
             ImportApplyResult.Error("Failed to apply import: ${e.message}")

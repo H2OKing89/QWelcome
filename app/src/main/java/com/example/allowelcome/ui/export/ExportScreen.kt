@@ -424,6 +424,5 @@ private fun shareJson(context: Context, json: String, type: ExportType) {
     
     context.startActivity(
         Intent.createChooser(intent, "Share $typeName")
-            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     )
 }

@@ -158,7 +158,13 @@ fun TemplateListScreen(
                 TopAppBar(
                     title = { Text("Templates", color = CyberScheme.primary) },
                     navigationIcon = {
-                        IconButton(onClick = onBack) {
+                        IconButton(onClick = {
+                            if (uiState.editingTemplate != null) {
+                                vm.cancelEditing()
+                            } else {
+                                onBack()
+                            }
+                        }) {
                             Icon(
                                 Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = "Back",

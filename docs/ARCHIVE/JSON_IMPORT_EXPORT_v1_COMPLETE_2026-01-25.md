@@ -3,7 +3,7 @@
 > **Status:** ✅ ARCHIVED — v1 Implementation Complete  
 > **Archived:** 2026-01-25  
 > **Branch:** `feature/json-import-export`  
-> **Future Work:** See [JSON_IMPORT_EXPORT_ROADMAP.md](./JSON_IMPORT_EXPORT_ROADMAP.md)
+> **Future Work:** See [JSON_IMPORT_EXPORT_ROADMAP.md](../JSON_IMPORT_EXPORT_ROADMAP.md)
 
 ---
 
@@ -514,8 +514,8 @@ data class ExportedSettings(
 
 ## Related Files
 
-- [JSON_IMPORT_EXPORT_ROADMAP.md](./JSON_IMPORT_EXPORT_ROADMAP.md) — Future enhancements
-- [ANDROID_APP_PLAN.md](./ANDROID_APP_PLAN.md) — Overall app architecture
-- [Template.kt](../app/src/main/java/com/example/allowelcome/data/Template.kt) — Template data class
-- [ExportModels.kt](../app/src/main/java/com/example/allowelcome/data/ExportModels.kt) — Export schema classes
-- [ImportExportRepository.kt](../app/src/main/java/com/example/allowelcome/data/ImportExportRepository.kt) — Import/export logic
+- [JSON_IMPORT_EXPORT_ROADMAP.md](../JSON_IMPORT_EXPORT_ROADMAP.md) — Future enhancements
+- [ANDROID_APP_PLAN.md](../ANDROID_APP_PLAN.md) — Overall app architecture
+- [Template.kt](../../app/src/main/java/com/example/allowelcome/data/Template.kt) — Template data class
+- [ExportModels.kt](../../app/src/main/java/com/example/allowelcome/data/ExportModels.kt) — Export schema classes
+- [ImportExportRepository.kt](../../app/src/main/java/com/example/allowelcome/data/ImportExportRepository.kt) — Import/export logic

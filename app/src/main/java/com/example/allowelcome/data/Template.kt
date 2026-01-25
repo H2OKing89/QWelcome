@@ -85,11 +85,12 @@ data class Template(
     }
 
     /**
-     * Create a copy with updated name and modification timestamp.
+     * Create a copy with updated name, slug, and modification timestamp.
      */
     fun withUpdatedName(newName: String): Template {
         return copy(
             name = newName,
+            slug = slug?.let { generateSlug(newName) },
             modifiedAt = currentIsoTimestamp()
         )
     }

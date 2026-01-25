@@ -187,7 +187,7 @@ Detect where JSON came from and customize UX:
 
 ## Related Files
 
-- [JSON_IMPORT_EXPORT_v1_COMPLETE_2026-01-25.md](./JSON_IMPORT_EXPORT_v1_COMPLETE_2026-01-25.md) — Archived v1 design
+- [JSON_IMPORT_EXPORT_v1_COMPLETE_2026-01-25.md](./ARCHIVE/JSON_IMPORT_EXPORT_v1_COMPLETE_2026-01-25.md) — Archived v1 design
 - [ANDROID_APP_PLAN.md](./ANDROID_APP_PLAN.md) — Overall app architecture
 - [Template.kt](../app/src/main/java/com/example/allowelcome/data/Template.kt)
 - [ExportModels.kt](../app/src/main/java/com/example/allowelcome/data/ExportModels.kt)
