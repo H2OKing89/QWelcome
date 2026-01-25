@@ -29,7 +29,7 @@ class CustomerIntakeViewModel(private val settingsStore: SettingsStore) : ViewMo
 
     // Track when app went to background for auto-clear
     private var backgroundTimestamp: Long = 0L
-    private val autoCleatTimeoutMs = 10 * 60 * 1000L // 10 minutes
+    private val autoClearTimeoutMs = 10 * 60 * 1000L // 10 minutes
 
     fun onPause() {
         backgroundTimestamp = System.currentTimeMillis()
@@ -38,7 +38,7 @@ class CustomerIntakeViewModel(private val settingsStore: SettingsStore) : ViewMo
     fun onResume() {
         if (backgroundTimestamp > 0) {
             val elapsed = System.currentTimeMillis() - backgroundTimestamp
-            if (elapsed >= autoCleatTimeoutMs) {
+            if (elapsed >= autoClearTimeoutMs) {
                 clearForm()
             }
             backgroundTimestamp = 0L
