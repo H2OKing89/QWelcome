@@ -86,12 +86,17 @@ class MainActivity : ComponentActivity() {
                     LocalNavigator provides navigator
                 ) {
                     var currentScreen by rememberSaveable { mutableStateOf(Screen.Main) }
+                    // Track origin screen for TemplateList navigation
+                    var templateListOrigin by rememberSaveable { mutableStateOf(Screen.Settings) }
 
                     when (currentScreen) {
                         Screen.Main -> {
                             CustomerIntakeScreen(
                                 onOpenSettings = { currentScreen = Screen.Settings },
-                                onOpenTemplates = { currentScreen = Screen.TemplateList }
+                                onOpenTemplates = {
+                                    templateListOrigin = Screen.Main
+                                    currentScreen = Screen.TemplateList
+                                }
                             )
                         }
                         Screen.Settings -> {
@@ -99,7 +104,10 @@ class MainActivity : ComponentActivity() {
                                 onBack = { currentScreen = Screen.Main },
                                 onOpenExport = { currentScreen = Screen.Export },
                                 onOpenImport = { currentScreen = Screen.Import },
-                                onOpenTemplates = { currentScreen = Screen.TemplateList }
+                                onOpenTemplates = {
+                                    templateListOrigin = Screen.Settings
+                                    currentScreen = Screen.TemplateList
+                                }
                             )
                         }
                         Screen.Export -> {
@@ -115,7 +123,7 @@ class MainActivity : ComponentActivity() {
                         }
                         Screen.TemplateList -> {
                             TemplateListScreen(
-                                onBack = { currentScreen = Screen.Settings }
+                                onBack = { currentScreen = templateListOrigin }
                             )
                         }
                     }

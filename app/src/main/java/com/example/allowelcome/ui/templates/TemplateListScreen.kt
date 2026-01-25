@@ -75,6 +75,12 @@ import com.example.allowelcome.ui.components.NeonPanel
 import com.example.allowelcome.ui.theme.CyberScheme
 import com.example.allowelcome.viewmodel.templates.TemplateListEvent
 
+/**
+ * Marker ID for new templates being created (not yet persisted).
+ * Using empty string as explicit marker instead of implicit convention.
+ */
+private const val NEW_TEMPLATE_ID = ""
+
 @Composable
 fun TemplateListScreen(
     onBack: () -> Unit
@@ -129,12 +135,13 @@ fun TemplateListScreen(
 
     // Edit/Create dialog
     uiState.editingTemplate?.let { template ->
+        val isNewTemplate = template.id == NEW_TEMPLATE_ID
         TemplateEditDialog(
             template = template,
-            isNew = template.id.isEmpty(),
+            isNew = isNewTemplate,
             defaultContent = vm.getDefaultTemplateContent(),
             onSave = { name, content ->
-                if (template.id.isEmpty()) {
+                if (isNewTemplate) {
                     vm.createTemplate(name, content)
                 } else {
                     vm.updateTemplate(template.id, name, content)
@@ -167,8 +174,8 @@ fun TemplateListScreen(
             floatingActionButton = {
                 FloatingActionButton(
                     onClick = {
-                        // Create a placeholder template for "new"
-                        vm.startEditing(Template(id = "", name = "", content = ""))
+                        // Create a placeholder template for "new" using explicit marker
+                        vm.startEditing(Template(id = NEW_TEMPLATE_ID, name = "", content = ""))
                     },
                     containerColor = CyberScheme.secondary,
                     contentColor = CyberScheme.onSecondary
@@ -326,60 +333,81 @@ private fun TemplateCard(
                 enter = fadeIn() + expandVertically(),
                 exit = fadeOut() + shrinkVertically()
             ) {
-                Row(
+                TemplateActionButtons(
+                    isDefault = isDefault,
+                    onEdit = onEdit,
+                    onDuplicate = onDuplicate,
+                    onDelete = onDelete,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    // Edit button (disabled for default template)
-                    NeonButton(
-                        onClick = onEdit,
-                        enabled = !isDefault,
-                        glowColor = CyberScheme.secondary,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Icon(
-                            Icons.Default.Edit,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(Modifier.width(4.dp))
-                        Text("Edit", style = MaterialTheme.typography.labelMedium)
-                    }
-
-                    // Duplicate button
-                    NeonButton(
-                        onClick = onDuplicate,
-                        glowColor = CyberScheme.tertiary,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Icon(
-                            Icons.Default.ContentCopy,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(Modifier.width(4.dp))
-                        Text("Copy", style = MaterialTheme.typography.labelMedium)
-                    }
-
-                    // Delete button (disabled for default template)
-                    NeonButton(
-                        onClick = onDelete,
-                        enabled = !isDefault,
-                        glowColor = CyberScheme.error,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Icon(
-                            Icons.Default.Delete,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(Modifier.width(4.dp))
-                        Text("Delete", style = MaterialTheme.typography.labelMedium)
-                    }
-                }
+                        .padding(top = 12.dp)
+                )
             }
+        }
+    }
+}
+
+/**
+ * Action buttons for template cards (Edit, Copy, Delete).
+ * Extracted to reduce cognitive complexity of TemplateCard.
+ */
+@Composable
+private fun TemplateActionButtons(
+    isDefault: Boolean,
+    onEdit: () -> Unit,
+    onDuplicate: () -> Unit,
+    onDelete: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        // Edit button (disabled for default template)
+        NeonButton(
+            onClick = onEdit,
+            enabled = !isDefault,
+            glowColor = CyberScheme.secondary,
+            modifier = Modifier.weight(1f)
+        ) {
+            Icon(
+                Icons.Default.Edit,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp)
+            )
+            Spacer(Modifier.width(4.dp))
+            Text("Edit", style = MaterialTheme.typography.labelMedium)
+        }
+
+        // Duplicate button
+        NeonButton(
+            onClick = onDuplicate,
+            glowColor = CyberScheme.tertiary,
+            modifier = Modifier.weight(1f)
+        ) {
+            Icon(
+                Icons.Default.ContentCopy,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp)
+            )
+            Spacer(Modifier.width(4.dp))
+            Text("Copy", style = MaterialTheme.typography.labelMedium)
+        }
+
+        // Delete button (disabled for default template)
+        NeonButton(
+            onClick = onDelete,
+            enabled = !isDefault,
+            glowColor = CyberScheme.error,
+            modifier = Modifier.weight(1f)
+        ) {
+            Icon(
+                Icons.Default.Delete,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp)
+            )
+            Spacer(Modifier.width(4.dp))
+            Text("Delete", style = MaterialTheme.typography.labelMedium)
         }
     }
 }

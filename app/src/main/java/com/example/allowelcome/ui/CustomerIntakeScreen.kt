@@ -130,8 +130,11 @@ fun CustomerIntakeScreen(
             ) {
                 // Template selector dropdown
                 if (templateUiState.templates.isNotEmpty()) {
-                    val activeTemplate = templateUiState.templates.find { 
-                        it.id == templateUiState.activeTemplateId 
+                    val activeTemplate = remember(
+                        templateUiState.templates,
+                        templateUiState.activeTemplateId
+                    ) {
+                        templateUiState.templates.find { it.id == templateUiState.activeTemplateId }
                     }
                     
                     Box(modifier = Modifier.fillMaxWidth()) {

@@ -182,12 +182,19 @@ class TemplateListViewModel(
 
     /**
      * Delete a template after confirmation.
+     * If deleting the currently active template, resets to DEFAULT_TEMPLATE_ID.
      */
     fun deleteTemplate(templateId: String) {
         viewModelScope.launch {
             try {
                 val template = settingsStore.getTemplate(templateId)
                 val name = template?.name ?: "Template"
+                
+                // If deleting the active template, switch to default first
+                if (_uiState.value.activeTemplateId == templateId) {
+                    settingsStore.setActiveTemplate(DEFAULT_TEMPLATE_ID)
+                }
+                
                 settingsStore.deleteTemplate(templateId)
                 _uiState.update { it.copy(showDeleteConfirmation = null) }
                 _events.emit(TemplateListEvent.TemplateDeleted(name))

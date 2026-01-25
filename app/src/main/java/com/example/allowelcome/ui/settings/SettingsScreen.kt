@@ -212,7 +212,7 @@ fun SettingsScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            if (useCustom) "Using Custom Template" else "Using Default Template",
+                            if (useCustom) "Using: ${activeTemplate.name}" else "Using Default Template",
                             color = if (useCustom) CyberScheme.secondary else CyberScheme.primary
                         )
                         Switch(
