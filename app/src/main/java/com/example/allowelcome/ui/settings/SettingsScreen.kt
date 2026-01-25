@@ -32,6 +32,7 @@ import com.example.allowelcome.data.TechProfile
 import com.example.allowelcome.data.Template
 import com.example.allowelcome.di.LocalSettingsViewModel
 import com.example.allowelcome.ui.components.CyberpunkBackdrop
+import com.example.allowelcome.ui.components.NeonButton
 import com.example.allowelcome.ui.components.NeonMagentaButton
 import com.example.allowelcome.ui.components.NeonOutlinedField
 import com.example.allowelcome.ui.components.NeonPanel
@@ -75,7 +76,8 @@ private fun safeTruncate(text: String, maxLength: Int): String {
 @Composable
 fun SettingsScreen(
     onBack: () -> Unit,
-    onOpenExport: () -> Unit = {}
+    onOpenExport: () -> Unit = {},
+    onOpenImport: () -> Unit = {}
 ) {
     // Get ViewModel from CompositionLocal (provided at Activity level)
     val vm = LocalSettingsViewModel.current
@@ -290,22 +292,33 @@ fun SettingsScreen(
                         color = CyberScheme.onSurface.copy(alpha = 0.7f)
                     )
                     Spacer(Modifier.height(12.dp))
-                    NeonMagentaButton(
-                        onClick = {
-                            if (hasUnsavedChanges) {
-                                Toast.makeText(
-                                    context,
-                                    "Please save changes before exporting",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            } else {
-                                onOpenExport()
-                            }
-                        },
+                    Row(
                         modifier = Modifier.fillMaxWidth(),
-                        enabled = !hasUnsavedChanges
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Text(if (hasUnsavedChanges) "Save First to Export" else "Export Templates")
+                        NeonMagentaButton(
+                            onClick = {
+                                if (hasUnsavedChanges) {
+                                    Toast.makeText(
+                                        context,
+                                        "Please save changes before exporting",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                } else {
+                                    onOpenExport()
+                                }
+                            },
+                            modifier = Modifier.weight(1f),
+                            enabled = !hasUnsavedChanges
+                        ) {
+                            Text(if (hasUnsavedChanges) "Save First" else "Export")
+                        }
+                        NeonButton(
+                            onClick = onOpenImport,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Import")
+                        }
                     }
                 }
 

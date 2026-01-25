@@ -13,16 +13,19 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.allowelcome.di.LocalCustomerIntakeViewModel
 import com.example.allowelcome.di.LocalExportViewModel
+import com.example.allowelcome.di.LocalImportViewModel
 import com.example.allowelcome.di.LocalNavigator
 import com.example.allowelcome.di.LocalSettingsViewModel
 import com.example.allowelcome.navigation.AndroidNavigator
 import com.example.allowelcome.navigation.Navigator
 import com.example.allowelcome.ui.CustomerIntakeScreen
 import com.example.allowelcome.ui.export.ExportScreen
+import com.example.allowelcome.ui.import_pkg.ImportScreen
 import com.example.allowelcome.ui.settings.SettingsScreen
 import com.example.allowelcome.ui.theme.CyberpunkTheme
 import com.example.allowelcome.viewmodel.CustomerIntakeViewModel
 import com.example.allowelcome.viewmodel.export.ExportViewModel
+import com.example.allowelcome.viewmodel.import_pkg.ImportViewModel
 import com.example.allowelcome.viewmodel.factory.AppViewModelProvider
 import com.example.allowelcome.viewmodel.settings.SettingsViewModel
 
@@ -32,7 +35,8 @@ import com.example.allowelcome.viewmodel.settings.SettingsViewModel
 private enum class Screen {
     Main,
     Settings,
-    Export
+    Export,
+    Import
 }
 
 class MainActivity : ComponentActivity() {
@@ -59,6 +63,9 @@ class MainActivity : ComponentActivity() {
             val exportViewModel: ExportViewModel = viewModel(
                 factory = AppViewModelProvider(applicationContext)
             )
+            val importViewModel: ImportViewModel = viewModel(
+                factory = AppViewModelProvider(applicationContext)
+            )
 
             // Theme follows system setting automatically
             CyberpunkTheme {
@@ -67,6 +74,7 @@ class MainActivity : ComponentActivity() {
                     LocalCustomerIntakeViewModel provides customerIntakeViewModel,
                     LocalSettingsViewModel provides settingsViewModel,
                     LocalExportViewModel provides exportViewModel,
+                    LocalImportViewModel provides importViewModel,
                     LocalNavigator provides navigator
                 ) {
                     var currentScreen by rememberSaveable { mutableStateOf(Screen.Main) }
@@ -80,12 +88,19 @@ class MainActivity : ComponentActivity() {
                         Screen.Settings -> {
                             SettingsScreen(
                                 onBack = { currentScreen = Screen.Main },
-                                onOpenExport = { currentScreen = Screen.Export }
+                                onOpenExport = { currentScreen = Screen.Export },
+                                onOpenImport = { currentScreen = Screen.Import }
                             )
                         }
                         Screen.Export -> {
                             ExportScreen(
                                 onBack = { currentScreen = Screen.Settings }
+                            )
+                        }
+                        Screen.Import -> {
+                            ImportScreen(
+                                onBack = { currentScreen = Screen.Settings },
+                                onImportComplete = { currentScreen = Screen.Settings }
                             )
                         }
                     }

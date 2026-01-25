@@ -8,6 +8,7 @@ import com.example.allowelcome.data.ImportExportRepository
 import com.example.allowelcome.data.SettingsStore
 import com.example.allowelcome.viewmodel.CustomerIntakeViewModel
 import com.example.allowelcome.viewmodel.export.ExportViewModel
+import com.example.allowelcome.viewmodel.import_pkg.ImportViewModel
 import com.example.allowelcome.viewmodel.settings.SettingsViewModel
 
 /**
@@ -80,6 +81,9 @@ class AppViewModelProvider(private val context: Context) : ViewModelProvider.Fac
             }
             modelClass.isAssignableFrom(ExportViewModel::class.java) -> {
                 ExportViewModel(getImportExportRepository(context)) as T
+            }
+            modelClass.isAssignableFrom(ImportViewModel::class.java) -> {
+                ImportViewModel(getImportExportRepository(context)) as T
             }
             else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
         }

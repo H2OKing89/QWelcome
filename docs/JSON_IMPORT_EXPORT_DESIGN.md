@@ -1,7 +1,7 @@
 # JSON Import/Export Feature Design
 
 > **Branch:** `feature/json-import-export`  
-> **Status:** Phase 1 Complete ✅  
+> **Status:** Phase 4 Complete ✅  
 > **Last Updated:** 2026-01-25
 
 ---
@@ -234,25 +234,69 @@ For each template:
 - `ConflictResolution` enum: REPLACE, KEEP_EXISTING, SAVE_AS_COPY
 - `ImportWarning` sealed class for non-blocking warnings
 
-### Phase 3: Export UI ⏳ NEXT
+### Phase 3: Export UI ✅ COMPLETE
 
-- [ ] Export screen with two buttons:
+- [x] Export screen with two buttons:
   - "Export Template Pack"
   - "Export Full Backup"
-- [ ] Copy to clipboard functionality
-- [ ] Android share sheet integration
-- [ ] Success/error feedback
+- [x] Copy to clipboard functionality
+- [x] Android share sheet integration
+- [x] Success/error feedback
 
-### Phase 4: Import UI
+**Files Created:**
 
-- [ ] Paste from clipboard input
-- [ ] Parse and validate JSON
-- [ ] Import Preview screen:
+- `ui/export/ExportScreen.kt`
+- `viewmodel/export/ExportViewModel.kt`
+
+**Files Modified:**
+
+- `di/CompositionLocals.kt` - Added LocalExportViewModel
+- `viewmodel/factory/AppViewModelProvider.kt` - Added ExportViewModel factory
+- `MainActivity.kt` - Screen navigation, ExportViewModel provision
+- `ui/settings/SettingsScreen.kt` - Export button with unsaved changes guard
+
+**Key Features:**
+
+- Two export options: Template Pack (team sharing) and Full Backup (personal)
+- JSON preview panel with syntax highlighting
+- One-tap clipboard copy with visual feedback
+- Android share sheet integration for Slack/Teams/Email
+- Per-card loading spinner via `currentlyExportingType` state
+- Unsaved changes guard prevents exporting stale data
+
+### Phase 4: Import UI ✅ COMPLETE
+
+- [x] Paste from clipboard input
+- [x] Parse and validate JSON
+- [x] Import Preview screen:
   - Summary section
   - Template list with status pills
   - Checkboxes for what to import
-- [ ] Conflict resolution dialog
-- [ ] Apply import with merge logic
+- [x] Conflict resolution dialog
+- [x] Apply import with merge logic
+
+**Files Created:**
+
+- `ui/import_pkg/ImportScreen.kt`
+- `viewmodel/import_pkg/ImportViewModel.kt`
+
+**Files Modified:**
+
+- `di/CompositionLocals.kt` - Added LocalImportViewModel
+- `viewmodel/factory/AppViewModelProvider.kt` - Added ImportViewModel factory
+- `MainActivity.kt` - Import screen navigation
+- `ui/settings/SettingsScreen.kt` - Import button
+
+**Key Features:**
+
+- Step-by-step import flow: INPUT → VALIDATING → PREVIEW → APPLYING → COMPLETE
+- Paste from clipboard functionality
+- Template preview cards with status pills (New/Will Replace/Conflict)
+- Selectable templates with checkboxes
+- Conflict resolution options (Replace/Skip/Copy)
+- Tech profile import option (unchecked by default)
+- Warnings display for schema version, long content, missing placeholders
+- Animated transitions between steps
 
 ### Phase 5: File-Based Import/Export (Future)
 
@@ -361,6 +405,8 @@ data class FullBackup(
 |------------|-----------|------------------------------|
 | 2026-01-25 | `901a039` | Phase 1: Foundation complete |
 | 2026-01-25 | `313aeb5` | Phase 1: Code review fixes   |
+| 2026-01-25 | `xxxxxxx` | Phase 2: ImportExportRepository |
+| 2026-01-25 | `3ec5663` | Phase 3: Export UI complete  |
 
 ---
 
