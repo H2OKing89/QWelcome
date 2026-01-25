@@ -72,7 +72,7 @@ import com.example.allowelcome.ui.components.CyberpunkBackdrop
 import com.example.allowelcome.ui.components.NeonButton
 import com.example.allowelcome.ui.components.NeonMagentaButton
 import com.example.allowelcome.ui.components.NeonPanel
-import com.example.allowelcome.ui.theme.CyberScheme
+import com.example.allowelcome.ui.theme.LocalDarkTheme
 import com.example.allowelcome.viewmodel.templates.TemplateListEvent
 
 /**
@@ -156,7 +156,7 @@ fun TemplateListScreen(
             containerColor = Color.Transparent,
             topBar = {
                 TopAppBar(
-                    title = { Text("Templates", color = CyberScheme.primary) },
+                    title = { Text("Templates", color = MaterialTheme.colorScheme.primary) },
                     navigationIcon = {
                         IconButton(onClick = {
                             if (uiState.editingTemplate != null) {
@@ -168,7 +168,7 @@ fun TemplateListScreen(
                             Icon(
                                 Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = "Back",
-                                tint = CyberScheme.primary
+                                tint = MaterialTheme.colorScheme.primary
                             )
                         }
                     },
@@ -183,8 +183,8 @@ fun TemplateListScreen(
                         // Create a placeholder template for "new" using explicit marker
                         vm.startEditing(Template(id = NEW_TEMPLATE_ID, name = "", content = ""))
                     },
-                    containerColor = CyberScheme.secondary,
-                    contentColor = CyberScheme.onSecondary
+                    containerColor = MaterialTheme.colorScheme.secondary,
+                    contentColor = MaterialTheme.colorScheme.onSecondary
                 ) {
                     Icon(Icons.Default.Add, contentDescription = "Create Template")
                 }
@@ -197,7 +197,7 @@ fun TemplateListScreen(
                         .padding(padding),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(color = CyberScheme.primary)
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 }
             } else {
                 LazyColumn(
@@ -211,7 +211,7 @@ fun TemplateListScreen(
                         Text(
                             "Tap a template to select it. Long press for more options.",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = CyberScheme.onSurface.copy(alpha = 0.7f),
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                             modifier = Modifier.padding(vertical = 8.dp)
                         )
                     }
@@ -251,16 +251,20 @@ private fun TemplateCard(
     onDelete: () -> Unit
 ) {
     var showActions by remember { mutableStateOf(false) }
+    val isDark = LocalDarkTheme.current
 
     Card(
         onClick = onSelect,
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (isActive) {
-                CyberScheme.primary.copy(alpha = 0.15f)
+                MaterialTheme.colorScheme.primary.copy(alpha = if (isDark) 0.15f else 0.12f)
             } else {
-                CyberScheme.surface.copy(alpha = 0.6f)
+                if (isDark) MaterialTheme.colorScheme.surface.copy(alpha = 0.6f) else MaterialTheme.colorScheme.surface
             }
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = if (isDark) 0.dp else 2.dp
         ),
         modifier = Modifier
             .fillMaxWidth()
@@ -285,7 +289,7 @@ private fun TemplateCard(
                     Text(
                         text = template.name,
                         style = MaterialTheme.typography.titleMedium,
-                        color = if (isActive) CyberScheme.primary else CyberScheme.onSurface,
+                        color = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -293,7 +297,7 @@ private fun TemplateCard(
                         Icon(
                             Icons.Default.Check,
                             contentDescription = "Active",
-                            tint = CyberScheme.secondary,
+                            tint = MaterialTheme.colorScheme.secondary,
                             modifier = Modifier.size(18.dp)
                         )
                     }
@@ -301,7 +305,7 @@ private fun TemplateCard(
                         Icon(
                             Icons.Default.Lock,
                             contentDescription = "Built-in",
-                            tint = CyberScheme.onSurface.copy(alpha = 0.5f),
+                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                             modifier = Modifier.size(16.dp)
                         )
                     }
@@ -313,7 +317,7 @@ private fun TemplateCard(
                 ) {
                     Text(
                         if (showActions) "Less" else "More",
-                        color = CyberScheme.tertiary,
+                        color = MaterialTheme.colorScheme.tertiary,
                         style = MaterialTheme.typography.labelMedium
                     )
                 }
@@ -327,7 +331,7 @@ private fun TemplateCard(
                     fontSize = 11.sp,
                     lineHeight = 14.sp
                 ),
-                color = CyberScheme.onSurface.copy(alpha = 0.6f),
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.padding(top = 8.dp)
@@ -373,7 +377,7 @@ private fun TemplateActionButtons(
         NeonButton(
             onClick = onEdit,
             enabled = !isDefault,
-            glowColor = CyberScheme.secondary,
+            glowColor = MaterialTheme.colorScheme.secondary,
             modifier = Modifier.weight(1f)
         ) {
             Icon(
@@ -388,7 +392,7 @@ private fun TemplateActionButtons(
         // Duplicate button
         NeonButton(
             onClick = onDuplicate,
-            glowColor = CyberScheme.tertiary,
+            glowColor = MaterialTheme.colorScheme.tertiary,
             modifier = Modifier.weight(1f)
         ) {
             Icon(
@@ -404,7 +408,7 @@ private fun TemplateActionButtons(
         NeonButton(
             onClick = onDelete,
             enabled = !isDefault,
-            glowColor = CyberScheme.error,
+            glowColor = MaterialTheme.colorScheme.error,
             modifier = Modifier.weight(1f)
         ) {
             Icon(
@@ -432,11 +436,11 @@ private fun TemplateEditDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = CyberScheme.surface,
+        containerColor = MaterialTheme.colorScheme.surface,
         title = {
             Text(
                 if (isNew) "Create Template" else "Edit Template",
-                color = CyberScheme.primary
+                color = MaterialTheme.colorScheme.primary
             )
         },
         text = {
@@ -456,10 +460,13 @@ private fun TemplateEditDialog(
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = CyberScheme.secondary,
-                        unfocusedBorderColor = CyberScheme.onSurface.copy(alpha = 0.3f),
-                        cursorColor = CyberScheme.secondary,
-                        focusedLabelColor = CyberScheme.secondary
+                        focusedBorderColor = MaterialTheme.colorScheme.secondary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                        cursorColor = MaterialTheme.colorScheme.secondary,
+                        focusedLabelColor = MaterialTheme.colorScheme.secondary,
+                        unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        focusedContainerColor = MaterialTheme.colorScheme.surface,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surface
                     )
                 )
 
@@ -472,17 +479,20 @@ private fun TemplateEditDialog(
                         .heightIn(min = 200.dp, max = 300.dp),
                     minLines = 8,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = CyberScheme.secondary,
-                        unfocusedBorderColor = CyberScheme.onSurface.copy(alpha = 0.3f),
-                        cursorColor = CyberScheme.secondary,
-                        focusedLabelColor = CyberScheme.secondary
+                        focusedBorderColor = MaterialTheme.colorScheme.secondary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                        cursorColor = MaterialTheme.colorScheme.secondary,
+                        focusedLabelColor = MaterialTheme.colorScheme.secondary,
+                        unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        focusedContainerColor = MaterialTheme.colorScheme.surface,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surface
                     )
                 )
 
                 Text(
                     "Placeholders: {{ customer_name }}, {{ ssid }}, {{ password }}, {{ account_number }}, {{ tech_signature }}",
                     style = MaterialTheme.typography.bodySmall,
-                    color = CyberScheme.onSurface.copy(alpha = 0.6f)
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
             }
         },
@@ -501,7 +511,7 @@ private fun TemplateEditDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel", color = CyberScheme.onSurface.copy(alpha = 0.7f))
+                Text("Cancel", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
             }
         }
     )
@@ -515,27 +525,27 @@ private fun DeleteConfirmationDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = CyberScheme.surface,
+        containerColor = MaterialTheme.colorScheme.surface,
         title = {
-            Text("Delete Template?", color = CyberScheme.error)
+            Text("Delete Template?", color = MaterialTheme.colorScheme.error)
         },
         text = {
             Text(
                 "Are you sure you want to delete \"$templateName\"? This action cannot be undone.",
-                color = CyberScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurface
             )
         },
         confirmButton = {
             NeonButton(
                 onClick = onConfirm,
-                glowColor = CyberScheme.error
+                glowColor = MaterialTheme.colorScheme.error
             ) {
                 Text("Delete")
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel", color = CyberScheme.onSurface.copy(alpha = 0.7f))
+                Text("Cancel", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
             }
         }
     )

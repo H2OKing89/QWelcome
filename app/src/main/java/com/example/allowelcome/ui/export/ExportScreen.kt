@@ -68,7 +68,7 @@ import com.example.allowelcome.ui.components.CyberpunkBackdrop
 import com.example.allowelcome.ui.components.NeonButton
 import com.example.allowelcome.ui.components.NeonMagentaButton
 import com.example.allowelcome.ui.components.NeonPanel
-import com.example.allowelcome.ui.theme.CyberScheme
+import com.example.allowelcome.ui.theme.LocalDarkTheme
 import com.example.allowelcome.viewmodel.export.ExportEvent
 import com.example.allowelcome.viewmodel.export.ExportType
 
@@ -145,13 +145,13 @@ fun ExportScreen(
             containerColor = Color.Transparent,
             topBar = {
                 TopAppBar(
-                    title = { Text("Export", color = CyberScheme.primary) },
+                    title = { Text("Export", color = MaterialTheme.colorScheme.primary) },
                     navigationIcon = {
                         IconButton(onClick = onBack) {
                             Icon(
                                 Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = "Back",
-                                tint = CyberScheme.primary
+                                tint = MaterialTheme.colorScheme.primary
                             )
                         }
                     },
@@ -173,7 +173,7 @@ fun ExportScreen(
                 Text(
                     "Share your templates with teammates or create a personal backup.",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = CyberScheme.onSurface.copy(alpha = 0.8f)
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
                 )
 
                 Spacer(Modifier.height(8.dp))
@@ -182,7 +182,7 @@ fun ExportScreen(
                 Text(
                     "Export Options",
                     style = MaterialTheme.typography.titleMedium,
-                    color = CyberScheme.primary
+                    color = MaterialTheme.colorScheme.primary
                 )
 
                 // Template Pack Card
@@ -190,7 +190,7 @@ fun ExportScreen(
                     title = "Template Pack",
                     description = "Share templates with your team. Does NOT include your personal signature info.",
                     icon = Icons.Default.Description,
-                    iconTint = CyberScheme.secondary,
+                    iconTint = MaterialTheme.colorScheme.secondary,
                     isLoading = uiState.isExporting && uiState.currentlyExportingType == ExportType.TEMPLATE_PACK,
                     onClick = { vm.exportTemplatePack() }
                 )
@@ -200,7 +200,7 @@ fun ExportScreen(
                     title = "Full Backup",
                     description = "Export everything including your tech profile. Use for personal backup/restore.",
                     icon = Icons.Default.Backup,
-                    iconTint = CyberScheme.tertiary,
+                    iconTint = MaterialTheme.colorScheme.tertiary,
                     isLoading = uiState.isExporting && uiState.currentlyExportingType == ExportType.FULL_BACKUP,
                     onClick = { vm.exportFullBackup() }
                 )
@@ -215,7 +215,7 @@ fun ExportScreen(
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         HorizontalDivider(
-                            color = CyberScheme.primary.copy(alpha = 0.3f),
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
                             modifier = Modifier.padding(vertical = 8.dp)
                         )
 
@@ -228,7 +228,7 @@ fun ExportScreen(
                         Text(
                             "✅ $typeName Ready (${uiState.templateCount} template${if (uiState.templateCount != 1) "s" else ""})",
                             style = MaterialTheme.typography.titleMedium,
-                            color = CyberScheme.secondary
+                            color = MaterialTheme.colorScheme.secondary
                         )
 
                         // Action buttons
@@ -256,7 +256,7 @@ fun ExportScreen(
 
                             NeonButton(
                                 onClick = { vm.onShareRequested() },
-                                glowColor = CyberScheme.tertiary,
+                                glowColor = MaterialTheme.colorScheme.tertiary,
                                 modifier = Modifier.weight(1f)
                             ) {
                                 Icon(
@@ -272,7 +272,7 @@ fun ExportScreen(
                         // Save to File button
                         NeonButton(
                             onClick = { vm.onSaveToFileRequested() },
-                            glowColor = CyberScheme.secondary,
+                            glowColor = MaterialTheme.colorScheme.secondary,
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Icon(
@@ -288,7 +288,7 @@ fun ExportScreen(
                         Text(
                             "Preview",
                             style = MaterialTheme.typography.labelMedium,
-                            color = CyberScheme.onSurface.copy(alpha = 0.7f)
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                         )
 
                         NeonPanel {
@@ -306,7 +306,7 @@ fun ExportScreen(
                                         fontSize = 10.sp,
                                         lineHeight = 14.sp
                                     ),
-                                    color = CyberScheme.onSurface.copy(alpha = 0.8f)
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
                                 )
                             }
                         }
@@ -314,7 +314,7 @@ fun ExportScreen(
                         // Export new button
                         NeonButton(
                             onClick = { vm.clearExport() },
-                            glowColor = CyberScheme.onSurface.copy(alpha = 0.5f),
+                            glowColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Text("Export Another")
@@ -337,12 +337,17 @@ private fun ExportOptionCard(
     isLoading: Boolean,
     onClick: () -> Unit
 ) {
+    val isDark = LocalDarkTheme.current
+    
     Card(
         onClick = onClick,
         enabled = !isLoading,
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = CyberScheme.surface.copy(alpha = 0.6f)
+            containerColor = if (isDark) MaterialTheme.colorScheme.surface.copy(alpha = 0.6f) else MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = if (isDark) 0.dp else 2.dp
         ),
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -383,13 +388,13 @@ private fun ExportOptionCard(
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleMedium,
-                    color = CyberScheme.onSurface
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
                     text = description,
                     style = MaterialTheme.typography.bodySmall,
-                    color = CyberScheme.onSurface.copy(alpha = 0.7f),
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
