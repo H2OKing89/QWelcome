@@ -10,6 +10,7 @@ import com.example.allowelcome.viewmodel.CustomerIntakeViewModel
 import com.example.allowelcome.viewmodel.export.ExportViewModel
 import com.example.allowelcome.viewmodel.import_pkg.ImportViewModel
 import com.example.allowelcome.viewmodel.settings.SettingsViewModel
+import com.example.allowelcome.viewmodel.templates.TemplateListViewModel
 
 /**
  * Provides ViewModels with shared dependencies.
@@ -84,6 +85,9 @@ class AppViewModelProvider(private val context: Context) : ViewModelProvider.Fac
             }
             modelClass.isAssignableFrom(ImportViewModel::class.java) -> {
                 ImportViewModel(getImportExportRepository(context)) as T
+            }
+            modelClass.isAssignableFrom(TemplateListViewModel::class.java) -> {
+                TemplateListViewModel(getSettingsStore(context)) as T
             }
             else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
         }

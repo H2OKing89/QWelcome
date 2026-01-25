@@ -2,10 +2,13 @@
 
 package com.example.allowelcome.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.filled.Settings
@@ -13,12 +16,14 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import android.widget.Toast
 import androidx.compose.foundation.text.KeyboardOptions
@@ -27,6 +32,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.allowelcome.di.LocalCustomerIntakeViewModel
 import com.example.allowelcome.di.LocalNavigator
+import com.example.allowelcome.di.LocalTemplateListViewModel
 import com.example.allowelcome.ui.components.CyberpunkBackdrop
 import com.example.allowelcome.ui.components.NeonButton
 import com.example.allowelcome.ui.components.NeonCyanButton
@@ -40,15 +46,19 @@ import com.example.allowelcome.viewmodel.UiEvent
 
 @Composable
 fun CustomerIntakeScreen(
-    onOpenSettings: () -> Unit
+    onOpenSettings: () -> Unit,
+    onOpenTemplates: () -> Unit = {}
 ) {
     // Get ViewModel and Navigator from CompositionLocals (provided at Activity level)
     val customerIntakeViewModel = LocalCustomerIntakeViewModel.current
+    val templateListViewModel = LocalTemplateListViewModel.current
     val navigator = LocalNavigator.current
     
     val uiState by customerIntakeViewModel.uiState.collectAsState()
+    val templateUiState by templateListViewModel.uiState.collectAsState()
     var passwordVisible by remember { mutableStateOf(false) }
     var showQrSheet by remember { mutableStateOf(false) }
+    var templateDropdownExpanded by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
     // Lifecycle observer for auto-clear after 10 min in background
@@ -118,6 +128,105 @@ fun CustomerIntakeScreen(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.Center
             ) {
+                // Template selector dropdown
+                if (templateUiState.templates.isNotEmpty()) {
+                    val activeTemplate = templateUiState.templates.find { 
+                        it.id == templateUiState.activeTemplateId 
+                    }
+                    
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        OutlinedCard(
+                            onClick = { templateDropdownExpanded = true },
+                            colors = CardDefaults.outlinedCardColors(
+                                containerColor = CyberScheme.surface.copy(alpha = 0.6f)
+                            ),
+                            border = CardDefaults.outlinedCardBorder().copy(
+                                brush = androidx.compose.ui.graphics.SolidColor(
+                                    CyberScheme.secondary.copy(alpha = 0.5f)
+                                )
+                            ),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        "Template",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = CyberScheme.secondary
+                                    )
+                                    Text(
+                                        activeTemplate?.name ?: "Select Template",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = CyberScheme.onSurface,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                                Icon(
+                                    Icons.Filled.ArrowDropDown,
+                                    contentDescription = "Select template",
+                                    tint = CyberScheme.secondary
+                                )
+                            }
+                        }
+                        
+                        DropdownMenu(
+                            expanded = templateDropdownExpanded,
+                            onDismissRequest = { templateDropdownExpanded = false },
+                            modifier = Modifier
+                                .fillMaxWidth(0.9f)
+                        ) {
+                            templateUiState.templates.forEach { template ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Row(
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(template.name)
+                                            if (template.id == templateUiState.activeTemplateId) {
+                                                Icon(
+                                                    Icons.Filled.Check,
+                                                    contentDescription = "Active",
+                                                    tint = CyberScheme.secondary,
+                                                    modifier = Modifier.size(16.dp)
+                                                )
+                                            }
+                                        }
+                                    },
+                                    onClick = {
+                                        templateListViewModel.setActiveTemplate(template.id)
+                                        templateDropdownExpanded = false
+                                    }
+                                )
+                            }
+                            
+                            HorizontalDivider()
+                            
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        "Manage Templates...",
+                                        color = CyberScheme.tertiary
+                                    )
+                                },
+                                onClick = {
+                                    templateDropdownExpanded = false
+                                    onOpenTemplates()
+                                }
+                            )
+                        }
+                    }
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+                
                 NeonPanel {
                     NeonOutlinedField(
                         value = uiState.customerName,

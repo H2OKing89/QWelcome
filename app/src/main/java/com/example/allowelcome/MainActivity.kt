@@ -16,18 +16,21 @@ import com.example.allowelcome.di.LocalExportViewModel
 import com.example.allowelcome.di.LocalImportViewModel
 import com.example.allowelcome.di.LocalNavigator
 import com.example.allowelcome.di.LocalSettingsViewModel
+import com.example.allowelcome.di.LocalTemplateListViewModel
 import com.example.allowelcome.navigation.AndroidNavigator
 import com.example.allowelcome.navigation.Navigator
 import com.example.allowelcome.ui.CustomerIntakeScreen
 import com.example.allowelcome.ui.export.ExportScreen
 import com.example.allowelcome.ui.import_pkg.ImportScreen
 import com.example.allowelcome.ui.settings.SettingsScreen
+import com.example.allowelcome.ui.templates.TemplateListScreen
 import com.example.allowelcome.ui.theme.CyberpunkTheme
 import com.example.allowelcome.viewmodel.CustomerIntakeViewModel
 import com.example.allowelcome.viewmodel.export.ExportViewModel
 import com.example.allowelcome.viewmodel.import_pkg.ImportViewModel
 import com.example.allowelcome.viewmodel.factory.AppViewModelProvider
 import com.example.allowelcome.viewmodel.settings.SettingsViewModel
+import com.example.allowelcome.viewmodel.templates.TemplateListViewModel
 
 /**
  * Simple screen navigation state for the app.
@@ -36,7 +39,8 @@ private enum class Screen {
     Main,
     Settings,
     Export,
-    Import
+    Import,
+    TemplateList
 }
 
 class MainActivity : ComponentActivity() {
@@ -66,6 +70,9 @@ class MainActivity : ComponentActivity() {
             val importViewModel: ImportViewModel = viewModel(
                 factory = AppViewModelProvider(applicationContext)
             )
+            val templateListViewModel: TemplateListViewModel = viewModel(
+                factory = AppViewModelProvider(applicationContext)
+            )
 
             // Theme follows system setting automatically
             CyberpunkTheme {
@@ -75,6 +82,7 @@ class MainActivity : ComponentActivity() {
                     LocalSettingsViewModel provides settingsViewModel,
                     LocalExportViewModel provides exportViewModel,
                     LocalImportViewModel provides importViewModel,
+                    LocalTemplateListViewModel provides templateListViewModel,
                     LocalNavigator provides navigator
                 ) {
                     var currentScreen by rememberSaveable { mutableStateOf(Screen.Main) }
@@ -82,14 +90,16 @@ class MainActivity : ComponentActivity() {
                     when (currentScreen) {
                         Screen.Main -> {
                             CustomerIntakeScreen(
-                                onOpenSettings = { currentScreen = Screen.Settings }
+                                onOpenSettings = { currentScreen = Screen.Settings },
+                                onOpenTemplates = { currentScreen = Screen.TemplateList }
                             )
                         }
                         Screen.Settings -> {
                             SettingsScreen(
                                 onBack = { currentScreen = Screen.Main },
                                 onOpenExport = { currentScreen = Screen.Export },
-                                onOpenImport = { currentScreen = Screen.Import }
+                                onOpenImport = { currentScreen = Screen.Import },
+                                onOpenTemplates = { currentScreen = Screen.TemplateList }
                             )
                         }
                         Screen.Export -> {
@@ -101,6 +111,11 @@ class MainActivity : ComponentActivity() {
                             ImportScreen(
                                 onBack = { currentScreen = Screen.Settings },
                                 onImportComplete = { currentScreen = Screen.Settings }
+                            )
+                        }
+                        Screen.TemplateList -> {
+                            TemplateListScreen(
+                                onBack = { currentScreen = Screen.Settings }
                             )
                         }
                     }

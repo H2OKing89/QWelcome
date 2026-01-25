@@ -6,6 +6,7 @@ import com.example.allowelcome.viewmodel.CustomerIntakeViewModel
 import com.example.allowelcome.viewmodel.export.ExportViewModel
 import com.example.allowelcome.viewmodel.import_pkg.ImportViewModel
 import com.example.allowelcome.viewmodel.settings.SettingsViewModel
+import com.example.allowelcome.viewmodel.templates.TemplateListViewModel
 
 /**
  * CompositionLocal providers for dependency injection in Compose.
@@ -63,6 +64,14 @@ val LocalExportViewModel = staticCompositionLocalOf<ExportViewModel> {
  */
 val LocalImportViewModel = staticCompositionLocalOf<ImportViewModel> {
     error("ImportViewModel not provided. Wrap your composable with CompositionLocalProvider.")
+}
+
+/**
+ * Provides the TemplateListViewModel throughout the composition.
+ * Throws if accessed before being provided (fail-fast for configuration errors).
+ */
+val LocalTemplateListViewModel = staticCompositionLocalOf<TemplateListViewModel> {
+    error("TemplateListViewModel not provided. Wrap your composable with CompositionLocalProvider.")
 }
 
 /**

@@ -77,7 +77,8 @@ private fun safeTruncate(text: String, maxLength: Int): String {
 fun SettingsScreen(
     onBack: () -> Unit,
     onOpenExport: () -> Unit = {},
-    onOpenImport: () -> Unit = {}
+    onOpenImport: () -> Unit = {},
+    onOpenTemplates: () -> Unit = {}
 ) {
     // Get ViewModel from CompositionLocal (provided at Activity level)
     val vm = LocalSettingsViewModel.current
@@ -194,6 +195,16 @@ fun SettingsScreen(
                     color = CyberScheme.primary
                 )
                 NeonPanel {
+                    // Manage Templates button
+                    NeonButton(
+                        onClick = onOpenTemplates,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Manage Templates")
+                    }
+                    
+                    Spacer(Modifier.height(12.dp))
+                    
                     // Toggle between Default and Custom
                     Row(
                         modifier = Modifier.fillMaxWidth(),
