@@ -7,6 +7,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PersonAdd
+import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
@@ -23,10 +24,12 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.allowelcome.ui.components.CyberpunkBackdrop
+import com.example.allowelcome.ui.components.NeonButton
 import com.example.allowelcome.ui.components.NeonCyanButton
 import com.example.allowelcome.ui.components.NeonMagentaButton
 import com.example.allowelcome.ui.components.NeonOutlinedField
 import com.example.allowelcome.ui.components.NeonPanel
+import com.example.allowelcome.ui.components.QrCodeBottomSheet
 import com.example.allowelcome.ui.components.QWelcomeHeader
 import com.example.allowelcome.ui.theme.CyberScheme
 import com.example.allowelcome.viewmodel.CustomerIntakeViewModel
@@ -39,6 +42,7 @@ fun CustomerIntakeScreen(
 ) {
     val uiState by customerIntakeViewModel.uiState.collectAsState()
     var passwordVisible by remember { mutableStateOf(false) }
+    var showQrSheet by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
     // Lifecycle observer for auto-clear after 10 min in background
@@ -53,6 +57,15 @@ fun CustomerIntakeScreen(
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    // QR Code Bottom Sheet
+    if (showQrSheet && uiState.ssid.isNotBlank() && uiState.password.isNotBlank()) {
+        QrCodeBottomSheet(
+            ssid = uiState.ssid,
+            password = uiState.password,
+            onDismiss = { showQrSheet = false }
+        )
     }
 
     CyberpunkBackdrop {
@@ -133,6 +146,7 @@ fun CustomerIntakeScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
+                // Main action buttons row
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -149,6 +163,24 @@ fun CustomerIntakeScreen(
                         onClick = { customerIntakeViewModel.onCopyClicked(context) },
                         modifier = Modifier.weight(1f)
                     ) { Text("Copy") }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // QR Code button - full width, purple themed
+                NeonButton(
+                    onClick = { showQrSheet = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    glowColor = CyberScheme.tertiary, // Purple
+                    enabled = uiState.ssid.isNotBlank() && uiState.password.isNotBlank()
+                ) {
+                    Icon(
+                        Icons.Filled.QrCode2,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text("WiFi QR Code")
                 }
             }
         }
