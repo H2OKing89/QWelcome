@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    // Note: kotlin-android is included transitively via kotlin.compose plugin
 }
 
 android {

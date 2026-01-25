@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import com.example.allowelcome.data.SettingsStore
 import com.example.allowelcome.data.TechProfile
 import com.example.allowelcome.data.TemplateSettings
-import com.example.allowelcome.data.ThemeMode
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -29,13 +28,6 @@ class SettingsViewModel(
             initialValue = TemplateSettings()
         )
 
-    val themeMode: StateFlow<ThemeMode> =
-        store.themeModeFlow.stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5_000),
-            initialValue = ThemeMode.SYSTEM
-        )
-
     fun getDefaultTemplate(): String = store.defaultTemplate
 
     fun save(profile: TechProfile) {
@@ -44,10 +36,6 @@ class SettingsViewModel(
 
     fun saveTemplate(settings: TemplateSettings) {
         viewModelScope.launch { store.saveTemplateSettings(settings) }
-    }
-
-    fun saveThemeMode(mode: ThemeMode) {
-        viewModelScope.launch { store.saveThemeMode(mode) }
     }
 
     fun resetTemplate() {

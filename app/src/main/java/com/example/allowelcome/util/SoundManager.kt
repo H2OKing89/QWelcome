@@ -3,15 +3,25 @@ package com.example.allowelcome.util
 import android.media.AudioAttributes
 import android.media.AudioFormat
 import android.media.AudioTrack
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlin.math.PI
 import kotlin.math.sin
 
 /**
  * Manages cyberpunk sound effects for the app.
  * Generates synthesized beep sounds for that retro-futuristic feel.
+ * 
+ * Uses coroutines for proper lifecycle management and resource efficiency.
  */
 object SoundManager {
     private var isEnabled = true
+    
+    /** Coroutine scope for audio playback - uses SupervisorJob so failures don't cancel other sounds */
+    private val soundScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     fun setEnabled(enabled: Boolean) {
         isEnabled = enabled
@@ -23,13 +33,13 @@ object SoundManager {
     fun playBeep() {
         if (!isEnabled) return
         
-        Thread {
+        soundScope.launch {
             try {
                 playTone(frequency = 880.0, durationMs = 50, volume = 0.3f)
             } catch (e: Exception) {
                 // Silently fail if audio isn't available
             }
-        }.start()
+        }
     }
 
     /**
@@ -38,18 +48,18 @@ object SoundManager {
     fun playConfirm() {
         if (!isEnabled) return
         
-        Thread {
+        soundScope.launch {
             try {
                 playTone(frequency = 660.0, durationMs = 40, volume = 0.25f)
-                Thread.sleep(50)
+                delay(50)
                 playTone(frequency = 880.0, durationMs = 60, volume = 0.3f)
             } catch (e: Exception) {
                 // Silently fail
             }
-        }.start()
+        }
     }
 
-    private fun playTone(frequency: Double, durationMs: Int, volume: Float) {
+    private suspend fun playTone(frequency: Double, durationMs: Int, volume: Float) {
         val sampleRate = 44100
         val numSamples = (sampleRate * durationMs / 1000.0).toInt()
         val samples = ShortArray(numSamples)
@@ -92,7 +102,7 @@ object SoundManager {
         audioTrack.play()
         
         // Wait for playback to complete then release
-        Thread.sleep(durationMs.toLong() + 20)
+        delay(durationMs.toLong() + 20)
         audioTrack.stop()
         audioTrack.release()
     }

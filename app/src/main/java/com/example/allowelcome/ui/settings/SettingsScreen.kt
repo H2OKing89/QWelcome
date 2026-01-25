@@ -21,23 +21,18 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.allowelcome.data.MessageTemplate
 import com.example.allowelcome.data.TechProfile
 import com.example.allowelcome.data.TemplateSettings
-import com.example.allowelcome.data.ThemeMode
+import com.example.allowelcome.di.LocalSettingsViewModel
 import com.example.allowelcome.ui.components.CyberpunkBackdrop
 import com.example.allowelcome.ui.components.NeonMagentaButton
 import com.example.allowelcome.ui.components.NeonOutlinedField
 import com.example.allowelcome.ui.components.NeonPanel
 import com.example.allowelcome.ui.theme.CyberScheme
-import com.example.allowelcome.ui.theme.LocalDarkTheme
-import com.example.allowelcome.viewmodel.factory.AppViewModelProvider
-import com.example.allowelcome.viewmodel.settings.SettingsViewModel
 
 /**
  * Safely truncates text without splitting placeholders like {{ }} or words.
@@ -76,15 +71,16 @@ private fun safeTruncate(text: String, maxLength: Int): String {
 
 @Composable
 fun SettingsScreen(
-    onBack: () -> Unit,
-    vm: SettingsViewModel = viewModel(factory = AppViewModelProvider(LocalContext.current))
+    onBack: () -> Unit
 ) {
+    // Get ViewModel from CompositionLocal (provided at Activity level)
+    val vm = LocalSettingsViewModel.current
+    
     // Handle system back button
     BackHandler { onBack() }
 
     val currentProfile by vm.techProfile.collectAsState()
     val currentTemplate by vm.templateSettings.collectAsState()
-    val currentThemeMode by vm.themeMode.collectAsState()
     val defaultTemplate = remember { vm.getDefaultTemplate() }
 
     // Tech profile state
@@ -97,9 +93,6 @@ fun SettingsScreen(
     var customTemplate by remember(currentTemplate) {
         mutableStateOf(currentTemplate.customTemplate.ifBlank { defaultTemplate })
     }
-
-    // Theme state
-    var selectedThemeMode by remember(currentThemeMode) { mutableStateOf(currentThemeMode) }
 
     CyberpunkBackdrop {
         Scaffold(
@@ -152,55 +145,6 @@ fun SettingsScreen(
                         onValueChange = { dept = it },
                         label = { Text("Department / line") }
                     )
-                }
-
-                Spacer(Modifier.height(8.dp))
-
-                // === APPEARANCE SECTION ===
-                Text(
-                    "Appearance",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = CyberScheme.primary
-                )
-                NeonPanel {
-                    Text(
-                        "Theme Mode",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = CyberScheme.onSurface
-                    )
-                    Spacer(Modifier.height(8.dp))
-
-                    // Theme mode selector
-                    SingleChoiceSegmentedButtonRow(
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        ThemeMode.entries.forEachIndexed { index, mode ->
-                            SegmentedButton(
-                                shape = SegmentedButtonDefaults.itemShape(
-                                    index = index,
-                                    count = ThemeMode.entries.size
-                                ),
-                                onClick = { selectedThemeMode = mode },
-                                selected = selectedThemeMode == mode,
-                                colors = SegmentedButtonDefaults.colors(
-                                    activeContainerColor = CyberScheme.primary.copy(alpha = 0.2f),
-                                    activeContentColor = CyberScheme.primary,
-                                    activeBorderColor = CyberScheme.primary,
-                                    inactiveContainerColor = Color.Transparent,
-                                    inactiveContentColor = CyberScheme.onSurface.copy(alpha = 0.7f),
-                                    inactiveBorderColor = CyberScheme.onSurface.copy(alpha = 0.3f)
-                                )
-                            ) {
-                                Text(
-                                    when (mode) {
-                                        ThemeMode.SYSTEM -> "System"
-                                        ThemeMode.LIGHT -> "Light"
-                                        ThemeMode.DARK -> "Dark"
-                                    }
-                                )
-                            }
-                        }
-                    }
                 }
 
                 Spacer(Modifier.height(8.dp))
@@ -307,7 +251,6 @@ fun SettingsScreen(
                                 customTemplate = if (useCustom) customTemplate else ""
                             )
                         )
-                        vm.saveThemeMode(selectedThemeMode)
                         onBack()
                     },
                     modifier = Modifier.fillMaxWidth()

@@ -25,7 +25,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.allowelcome.di.LocalCustomerIntakeViewModel
+import com.example.allowelcome.di.LocalNavigator
 import com.example.allowelcome.ui.components.CyberpunkBackdrop
 import com.example.allowelcome.ui.components.NeonButton
 import com.example.allowelcome.ui.components.NeonCyanButton
@@ -35,15 +36,16 @@ import com.example.allowelcome.ui.components.NeonPanel
 import com.example.allowelcome.ui.components.QrCodeBottomSheet
 import com.example.allowelcome.ui.components.QWelcomeHeader
 import com.example.allowelcome.ui.theme.CyberScheme
-import com.example.allowelcome.viewmodel.CustomerIntakeViewModel
 import com.example.allowelcome.viewmodel.UiEvent
-import com.example.allowelcome.viewmodel.factory.AppViewModelProvider
 
 @Composable
 fun CustomerIntakeScreen(
-    onOpenSettings: () -> Unit,
-    customerIntakeViewModel: CustomerIntakeViewModel = viewModel(factory = AppViewModelProvider(LocalContext.current))
+    onOpenSettings: () -> Unit
 ) {
+    // Get ViewModel and Navigator from CompositionLocals (provided at Activity level)
+    val customerIntakeViewModel = LocalCustomerIntakeViewModel.current
+    val navigator = LocalNavigator.current
+    
     val uiState by customerIntakeViewModel.uiState.collectAsState()
     var passwordVisible by remember { mutableStateOf(false) }
     var showQrSheet by remember { mutableStateOf(false) }
@@ -172,15 +174,15 @@ fun CustomerIntakeScreen(
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     NeonCyanButton(
-                        onClick = { customerIntakeViewModel.onSmsClicked(context) },
+                        onClick = { customerIntakeViewModel.onSmsClicked(navigator) },
                         modifier = Modifier.weight(1f)
                     ) { Text("SMS") }
                     NeonMagentaButton(
-                        onClick = { customerIntakeViewModel.onShareClicked(context) },
+                        onClick = { customerIntakeViewModel.onShareClicked(navigator) },
                         modifier = Modifier.weight(1f)
                     ) { Text("Share") }
                     NeonCyanButton(
-                        onClick = { customerIntakeViewModel.onCopyClicked(context) },
+                        onClick = { customerIntakeViewModel.onCopyClicked(navigator) },
                         modifier = Modifier.weight(1f)
                     ) { Text("Copy") }
                 }

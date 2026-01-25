@@ -22,13 +22,6 @@ data class TemplateSettings(
     val customTemplate: String = ""
 )
 
-/** Theme preference options */
-enum class ThemeMode {
-    SYSTEM,  // Follow system setting
-    LIGHT,   // Always light
-    DARK     // Always dark
-}
-
 class SettingsStore(private val context: Context) {
 
     private object Keys {
@@ -37,7 +30,6 @@ class SettingsStore(private val context: Context) {
         val TECH_DEPT = stringPreferencesKey("tech_dept")
         val USE_CUSTOM_TEMPLATE = booleanPreferencesKey("use_custom_template")
         val CUSTOM_TEMPLATE = stringPreferencesKey("custom_template")
-        val THEME_MODE = stringPreferencesKey("theme_mode")
     }
 
     /** The default template that ships with the app (cached at init, read-only) */
@@ -72,17 +64,6 @@ class SettingsStore(private val context: Context) {
             }
         }
 
-    /** Returns the current theme mode preference */
-    val themeModeFlow: Flow<ThemeMode> =
-        context.dataStore.data.map { prefs ->
-            val themeString = prefs[Keys.THEME_MODE] ?: ThemeMode.SYSTEM.name
-            try {
-                ThemeMode.valueOf(themeString)
-            } catch (e: IllegalArgumentException) {
-                ThemeMode.SYSTEM
-            }
-        }
-
     suspend fun saveTechProfile(profile: TechProfile) {
         context.dataStore.edit { prefs ->
             prefs[Keys.TECH_NAME] = profile.name.trim()
@@ -95,12 +76,6 @@ class SettingsStore(private val context: Context) {
         context.dataStore.edit { prefs ->
             prefs[Keys.USE_CUSTOM_TEMPLATE] = settings.useCustomTemplate
             prefs[Keys.CUSTOM_TEMPLATE] = settings.customTemplate.trim()
-        }
-    }
-
-    suspend fun saveThemeMode(mode: ThemeMode) {
-        context.dataStore.edit { prefs ->
-            prefs[Keys.THEME_MODE] = mode.name
         }
     }
 
