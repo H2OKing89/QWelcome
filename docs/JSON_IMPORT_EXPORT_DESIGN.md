@@ -212,16 +212,29 @@ For each template:
 - `viewmodel/CustomerIntakeViewModel.kt`
 - `ui/settings/SettingsScreen.kt`
 
-### Phase 2: Import/Export Repository ⏳ NEXT
+### Phase 2: Import/Export Repository ✅ COMPLETE
 
-- [ ] Create `ImportExportRepository` class
-- [ ] JSON serialization with pretty print
-- [ ] JSON parsing with validation
-- [ ] Error handling with descriptive messages
-- [ ] Schema version checking
-- [ ] Template conflict detection
+- [x] Create `ImportExportRepository` class
+- [x] JSON serialization with pretty print
+- [x] JSON parsing with validation
+- [x] Error handling with descriptive messages
+- [x] Schema version checking
+- [x] Template conflict detection
 
-### Phase 3: Export UI
+**Files Created:**
+
+- `data/ImportExportRepository.kt`
+
+**Key Features:**
+
+- `exportTemplatePack()` - Export selected templates as JSON
+- `exportFullBackup()` - Export everything including tech profile
+- `validateImport()` - Parse and validate JSON, detect conflicts
+- `applyTemplatePack()` / `applyFullBackup()` - Apply with conflict resolution
+- `ConflictResolution` enum: REPLACE, KEEP_EXISTING, SAVE_AS_COPY
+- `ImportWarning` sealed class for non-blocking warnings
+
+### Phase 3: Export UI ⏳ NEXT
 
 - [ ] Export screen with two buttons:
   - "Export Template Pack"
@@ -344,9 +357,10 @@ data class FullBackup(
 
 ## Commit History
 
-| Date | Commit | Description |
-|------|--------|-------------|
+| Date       | Commit    | Description                  |
+|------------|-----------|------------------------------|
 | 2026-01-25 | `901a039` | Phase 1: Foundation complete |
+| 2026-01-25 | `313aeb5` | Phase 1: Code review fixes   |
 
 ---
 
@@ -355,3 +369,4 @@ data class FullBackup(
 - [ANDROID_APP_PLAN.md](./ANDROID_APP_PLAN.md) - Overall app architecture
 - [Template.kt](../app/src/main/java/com/example/allowelcome/data/Template.kt) - Template data class
 - [ExportModels.kt](../app/src/main/java/com/example/allowelcome/data/ExportModels.kt) - Export schema classes
+- [ImportExportRepository.kt](../app/src/main/java/com/example/allowelcome/data/ImportExportRepository.kt) - Import/export logic
