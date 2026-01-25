@@ -1,5 +1,8 @@
 package com.example.allowelcome.util
 
+import androidx.annotation.StringRes
+import com.example.allowelcome.R
+
 /**
  * Generates WiFi QR code strings in the standard WIFI: URI format.
  * 
@@ -14,8 +17,12 @@ object WifiQrGenerator {
     /** Maximum password length for WPA/WPA2 (63 characters for passphrase) */
     const val MAX_PASSWORD_LENGTH = 63
     
-    /** Maximum SSID length (32 bytes, but we use chars for simplicity) */
-    const val MAX_SSID_LENGTH = 32
+    /** 
+     * Maximum SSID length in bytes (per IEEE 802.11 specification).
+     * Note: UTF-8 encoded SSIDs with multi-byte characters may have fewer
+     * visible characters than this limit.
+     */
+    const val MAX_SSID_LENGTH_BYTES = 32
     
     /**
      * Validates a WiFi password according to WPA/WPA2 requirements.
@@ -27,17 +34,13 @@ object WifiQrGenerator {
      * - Can contain any printable ASCII characters
      * 
      * @param password The password to validate
-     * @return A [ValidationResult] indicating success or failure with error message
+     * @return A [ValidationResult] indicating success or failure with string resource ID
      */
     fun validatePassword(password: String): ValidationResult {
         return when {
-            password.isBlank() -> ValidationResult.Error("Password cannot be empty")
-            password.length < MIN_PASSWORD_LENGTH -> ValidationResult.Error(
-                "Password must be at least $MIN_PASSWORD_LENGTH characters"
-            )
-            password.length > MAX_PASSWORD_LENGTH -> ValidationResult.Error(
-                "Password cannot exceed $MAX_PASSWORD_LENGTH characters"
-            )
+            password.isBlank() -> ValidationResult.Error(R.string.error_password_empty)
+            password.length < MIN_PASSWORD_LENGTH -> ValidationResult.Error(R.string.error_password_too_short)
+            password.length > MAX_PASSWORD_LENGTH -> ValidationResult.Error(R.string.error_password_too_long)
             else -> ValidationResult.Success
         }
     }
@@ -45,15 +48,18 @@ object WifiQrGenerator {
     /**
      * Validates an SSID (network name).
      * 
+     * Per IEEE 802.11, SSIDs are limited to 32 bytes. This validation checks
+     * the UTF-8 encoded byte length, not character count, to properly handle
+     * multi-byte characters (e.g., emoji, CJK characters).
+     * 
      * @param ssid The SSID to validate
-     * @return A [ValidationResult] indicating success or failure with error message
+     * @return A [ValidationResult] indicating success or failure with string resource ID
      */
     fun validateSsid(ssid: String): ValidationResult {
         return when {
-            ssid.isBlank() -> ValidationResult.Error("SSID cannot be empty")
-            ssid.length > MAX_SSID_LENGTH -> ValidationResult.Error(
-                "SSID cannot exceed $MAX_SSID_LENGTH characters"
-            )
+            ssid.isBlank() -> ValidationResult.Error(R.string.error_ssid_empty)
+            ssid.toByteArray(Charsets.UTF_8).size > MAX_SSID_LENGTH_BYTES -> 
+                ValidationResult.Error(R.string.error_ssid_too_long)
             else -> ValidationResult.Success
         }
     }
@@ -72,12 +78,12 @@ object WifiQrGenerator {
      * @throws IllegalArgumentException if ssid or password are invalid
      */
     fun generateWifiString(ssid: String, password: String): String {
-        // Validate inputs
+        // Validate inputs - throw with generic message since we don't have context for string resolution
         validateSsid(ssid).let { 
-            if (it is ValidationResult.Error) throw IllegalArgumentException(it.message)
+            if (it is ValidationResult.Error) throw IllegalArgumentException("Invalid SSID")
         }
         validatePassword(password).let {
-            if (it is ValidationResult.Error) throw IllegalArgumentException(it.message)
+            if (it is ValidationResult.Error) throw IllegalArgumentException("Invalid password")
         }
         
         val escapedSsid = escapeWifiString(ssid)
@@ -116,9 +122,17 @@ object WifiQrGenerator {
     
     /**
      * Result of validating WiFi credentials.
+     * 
+     * Use [Error.messageResId] with `context.getString()` to get the localized error message.
      */
     sealed class ValidationResult {
         object Success : ValidationResult()
-        data class Error(val message: String) : ValidationResult()
+        
+        /**
+         * Validation failed with an error.
+         * @param messageResId String resource ID for the localized error message.
+         *                     Use `context.getString(messageResId)` to resolve.
+         */
+        data class Error(@param:StringRes val messageResId: Int) : ValidationResult()
     }
 }

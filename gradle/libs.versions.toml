@@ -4,6 +4,8 @@ coreKtx = "1.15.0"
 junit = "4.13.2"
 junitVersion = "1.2.1"
 espressoCore = "3.6.1"
+# Lifecycle versions aligned at 2.8.7 for compatibility across all lifecycle artifacts
+# (runtime-ktx, viewmodel-compose). Version 2.10.0 requires minSdk 21+ and Compose 1.7+
 lifecycleRuntimeKtx = "2.8.7"
 lifecycleViewmodelCompose = "2.8.7"
 activityCompose = "1.9.3"

@@ -4,6 +4,7 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 
 /**
@@ -18,6 +19,7 @@ import android.net.Uri
 interface Navigator {
     /**
      * Opens the SMS app with a pre-filled message.
+     * Uses the default SMS app if available, otherwise shows a chooser.
      * @param phoneNumber The recipient's phone number (E.164 format recommended)
      * @param message The message body to pre-fill
      */
@@ -51,9 +53,22 @@ class AndroidNavigator(private val context: Context) : Navigator {
             putExtra("sms_body", message)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
-        context.startActivity(Intent.createChooser(intent, "Send message via...").apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        })
+        
+        // Check if there's a default handler for SMS intents
+        val hasDefaultHandler = context.packageManager.resolveActivity(
+            intent,
+            PackageManager.MATCH_DEFAULT_ONLY
+        ) != null
+        
+        if (hasDefaultHandler) {
+            // Launch directly to the default SMS app
+            context.startActivity(intent)
+        } else {
+            // No default handler, show chooser
+            context.startActivity(Intent.createChooser(intent, "Send message via...").apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            })
+        }
     }
     
     override fun shareText(message: String, chooserTitle: String) {

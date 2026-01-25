@@ -5,7 +5,9 @@ import android.media.AudioFormat
 import android.media.AudioTrack
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.PI
@@ -16,22 +18,59 @@ import kotlin.math.sin
  * Generates synthesized beep sounds for that retro-futuristic feel.
  * 
  * Uses coroutines for proper lifecycle management and resource efficiency.
+ * 
+ * IMPORTANT: Call [shutdown] when the app is terminating to cancel pending jobs
+ * and release resources. This can be wired to ProcessLifecycleOwner.onStop or
+ * Application.onTerminate.
  */
 object SoundManager {
     private var isEnabled = true
+    private var isShutdown = false
     
     /** Coroutine scope for audio playback - uses SupervisorJob so failures don't cancel other sounds */
-    private val soundScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    private var supervisorJob = SupervisorJob()
+    private var soundScope = CoroutineScope(Dispatchers.IO + supervisorJob)
 
     fun setEnabled(enabled: Boolean) {
         isEnabled = enabled
     }
+    
+    /**
+     * Shuts down the SoundManager, cancelling all pending audio jobs.
+     * After calling this, [playBeep] and [playConfirm] will no longer queue new sounds.
+     * 
+     * This should be called when the app is terminating to prevent resource leaks.
+     * Can be wired to ProcessLifecycleOwner callbacks or Application.onTerminate.
+     * 
+     * Call [restart] to re-enable sound playback after shutdown.
+     */
+    fun shutdown() {
+        isShutdown = true
+        supervisorJob.cancel()
+    }
+    
+    /**
+     * Restarts the SoundManager after a [shutdown], allowing sounds to play again.
+     * Creates a fresh coroutine scope for new audio jobs.
+     */
+    fun restart() {
+        if (isShutdown) {
+            supervisorJob = SupervisorJob()
+            soundScope = CoroutineScope(Dispatchers.IO + supervisorJob)
+            isShutdown = false
+        }
+    }
+    
+    /**
+     * Returns true if the SoundManager has been shut down and is not accepting new jobs.
+     */
+    fun isShutdown(): Boolean = isShutdown
 
     /**
      * Plays a cyberpunk-style beep (short high-frequency pulse)
      */
     fun playBeep() {
-        if (!isEnabled) return
+        if (!isEnabled || isShutdown) return
         
         soundScope.launch {
             try {
@@ -46,7 +85,7 @@ object SoundManager {
      * Plays a confirmation sound (ascending two-tone)
      */
     fun playConfirm() {
-        if (!isEnabled) return
+        if (!isEnabled || isShutdown) return
         
         soundScope.launch {
             try {
