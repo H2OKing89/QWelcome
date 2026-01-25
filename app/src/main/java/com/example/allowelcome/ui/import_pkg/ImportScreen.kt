@@ -27,6 +27,8 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -65,6 +67,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -92,8 +95,8 @@ fun ImportScreen(
     val context = LocalContext.current
     val uiState by vm.uiState.collectAsState()
 
-    // Handle system back button
-    BackHandler {
+    // Shared back navigation logic
+    val handleBack: () -> Unit = {
         when (uiState.step) {
             ImportStep.PREVIEW -> vm.backToInput()
             ImportStep.COMPLETE -> {
@@ -103,6 +106,9 @@ fun ImportScreen(
             else -> onBack()
         }
     }
+
+    // Handle system back button
+    BackHandler { handleBack() }
 
     // Handle one-shot events
     LaunchedEffect(Unit) {
@@ -145,18 +151,7 @@ fun ImportScreen(
                         )
                     },
                     navigationIcon = {
-                        IconButton(
-                            onClick = {
-                                when (uiState.step) {
-                                    ImportStep.PREVIEW -> vm.backToInput()
-                                    ImportStep.COMPLETE -> {
-                                        vm.reset()
-                                        onImportComplete()
-                                    }
-                                    else -> onBack()
-                                }
-                            }
-                        ) {
+                        IconButton(onClick = handleBack) {
                             Icon(
                                 Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = "Back",
@@ -513,13 +508,24 @@ private fun PreviewStepContent(
             color = CyberScheme.primary
         )
 
-        // Template list
-        templatePreviews.forEach { preview ->
-            TemplatePreviewCard(
-                preview = preview,
-                onToggleSelection = { onToggleTemplate(preview.template.id) },
-                onSetResolution = { resolution -> onSetResolution(preview.template.id, resolution) }
-            )
+        // Template list - use LazyColumn for virtualization
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f, fill = false)
+                .heightIn(max = 400.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            items(
+                items = templatePreviews,
+                key = { it.template.id }
+            ) { preview ->
+                TemplatePreviewCard(
+                    preview = preview,
+                    onToggleSelection = { onToggleTemplate(preview.template.id) },
+                    onSetResolution = { resolution -> onSetResolution(preview.template.id, resolution) }
+                )
+            }
         }
 
         // Error message
@@ -592,29 +598,44 @@ private fun PreviewStepContent(
     }
 }
 
+/**
+ * Presentation model for template import status display.
+ */
+private data class StatusPresentation(
+    val color: Color,
+    val icon: ImageVector,
+    val text: String
+)
+
+/**
+ * Maps TemplateImportStatus to its visual presentation.
+ */
+@Composable
+private fun TemplateImportStatus.toPresentation(): StatusPresentation = when (this) {
+    TemplateImportStatus.NEW -> StatusPresentation(
+        color = CyberScheme.secondary,
+        icon = Icons.Default.NewReleases,
+        text = "New"
+    )
+    TemplateImportStatus.WILL_REPLACE -> StatusPresentation(
+        color = CyberScheme.tertiary,
+        icon = Icons.Default.SwapHoriz,
+        text = "Will Replace"
+    )
+    TemplateImportStatus.CONFLICT -> StatusPresentation(
+        color = CyberScheme.error,
+        icon = Icons.Default.Warning,
+        text = "Conflict"
+    )
+}
+
 @Composable
 private fun TemplatePreviewCard(
     preview: TemplatePreviewItem,
     onToggleSelection: () -> Unit,
     onSetResolution: (ConflictResolution) -> Unit
 ) {
-    val statusColor = when (preview.status) {
-        TemplateImportStatus.NEW -> CyberScheme.secondary
-        TemplateImportStatus.WILL_REPLACE -> CyberScheme.tertiary
-        TemplateImportStatus.CONFLICT -> CyberScheme.error
-    }
-
-    val statusIcon = when (preview.status) {
-        TemplateImportStatus.NEW -> Icons.Default.NewReleases
-        TemplateImportStatus.WILL_REPLACE -> Icons.Default.SwapHoriz
-        TemplateImportStatus.CONFLICT -> Icons.Default.Warning
-    }
-
-    val statusText = when (preview.status) {
-        TemplateImportStatus.NEW -> "New"
-        TemplateImportStatus.WILL_REPLACE -> "Will Replace"
-        TemplateImportStatus.CONFLICT -> "Conflict"
-    }
+    val presentation = preview.status.toPresentation()
 
     Card(
         colors = CardDefaults.cardColors(
@@ -670,7 +691,7 @@ private fun TemplatePreviewCard(
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(16.dp))
-                        .background(statusColor.copy(alpha = 0.2f))
+                        .background(presentation.color.copy(alpha = 0.2f))
                         .padding(horizontal = 8.dp, vertical = 4.dp)
                 ) {
                     Row(
@@ -678,15 +699,15 @@ private fun TemplatePreviewCard(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
-                            statusIcon,
+                            presentation.icon,
                             contentDescription = null,
-                            tint = statusColor,
+                            tint = presentation.color,
                             modifier = Modifier.size(14.dp)
                         )
                         Text(
-                            statusText,
+                            presentation.text,
                             style = MaterialTheme.typography.labelSmall,
-                            color = statusColor
+                            color = presentation.color
                         )
                     }
                 }
