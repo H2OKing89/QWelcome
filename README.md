@@ -9,14 +9,14 @@ A modern Android app for fiber internet technicians to quickly send professional
 
 ## Features
 
-- 📱 **Quick Message Generation** — Fill in customer details and instantly generate a welcome message
-- 📨 **Multiple Send Options** — SMS, Share sheet, or Copy to clipboard
-- 📶 **QR Code Generation** — Generate WiFi QR codes customers can scan to connect
-- 🎨 **Cyberpunk Theme** — Beautiful dark/light mode with neon accents
-- 📝 **Custom Templates** — Create and manage multiple message templates
-- 💾 **Import/Export** — Backup and share templates between devices
-- 🔒 **Privacy-Focused** — All data stays on device, auto-clears after 10 minutes of inactivity
-- ✅ **Input Validation** — Real-time validation with helpful error messages
+- **Quick Message Generation** — Fill in customer details and instantly generate a welcome message
+- **Multiple Send Options** — SMS, Share sheet, or Copy to clipboard
+- **QR Code Generation** — Generate WiFi QR codes customers can scan to connect
+- **Cyberpunk Theme** — Beautiful dark/light mode with neon accents
+- **Custom Templates** — Create and manage multiple message templates
+- **Import/Export** — Backup and share templates between devices
+- **Privacy-Focused** — All data stays on device, auto-clears after 10 minutes of inactivity
+- **Input Validation** — Real-time validation with helpful error messages
 
 ## Screenshots
 
@@ -102,6 +102,7 @@ app/src/main/java/com/kingpaging/qwelcome/
 ### Code Style
 
 This project follows standard Kotlin coding conventions. The codebase uses:
+
 - MVVM architecture
 - Unidirectional data flow with StateFlow
 - Compose for all UI

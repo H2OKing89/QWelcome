@@ -1,17 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-   Backup rules for QWelcome app.
-   Excludes settings to protect tech profile and custom template data.
+   Backup rules for QWelcome app (Android 11 and below).
+   Excludes sensitive data from auto-backup.
    See https://developer.android.com/guide/topics/data/autobackup
 -->
 <full-backup-content>
-    <!-- Include internal files directory (getFilesDir()) in backups -->
-    <include domain="file" path="." />
-    <!-- Exclude DataStore file from file domain (stored in files/datastore/) -->
-    <exclude domain="file" path="datastore/settings.preferences_pb" />
+    <!-- Exclude entire DataStore directory (contains sensitive settings) -->
+    <exclude domain="file" path="datastore/" />
     
-    <!-- Include shared preferences but exclude sensitive DataStore settings -->
-    <include domain="sharedpref" path="." />
+    <!-- Exclude any SharedPreferences that might contain sensitive data -->
     <exclude domain="sharedpref" path="settings.preferences_pb" />
 </full-backup-content>
 
