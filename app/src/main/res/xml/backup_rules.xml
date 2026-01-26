@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-   Backup rules for ALLOWelcome app.
+   Backup rules for QWelcome app.
    Excludes settings to protect tech profile and custom template data.
    See https://developer.android.com/guide/topics/data/autobackup
 -->

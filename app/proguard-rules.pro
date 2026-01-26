@@ -10,10 +10,10 @@
 -renamesourcefileattribute SourceFile
 
 # Keep data classes used for settings and customer data
--keep class com.example.allowelcome.data.** { *; }
+-keep class com.kingpaging.qwelcome.data.** { *; }
 
 # Keep ViewModel classes
--keep class com.example.allowelcome.viewmodel.** { *; }
+-keep class com.kingpaging.qwelcome.viewmodel.** { *; }
 
 # Keep QR code library classes
 -keep class io.github.alexzhirkevich.qrose.** { *; }
@@ -21,6 +21,22 @@
 # Kotlin serialization
 -keepattributes *Annotation*, InnerClasses
 -dontnote kotlinx.serialization.AnnotationsKt
+
+-keepclassmembers class kotlinx.serialization.json.** {
+    *** Companion;
+}
+-keepclasseswithmembers class kotlinx.serialization.json.** {
+    kotlinx.serialization.KSerializer serializer(...);
+}
+
+# Keep serializable classes in the app package
+-keep,includedescriptorclasses class com.kingpaging.qwelcome.**$$serializer { *; }
+-keepclassmembers class com.kingpaging.qwelcome.** {
+    *** Companion;
+}
+-keepclasseswithmembers class com.kingpaging.qwelcome.** {
+    kotlinx.serialization.KSerializer serializer(...);
+}
 
 # DataStore
 -keep class androidx.datastore.** { *; }

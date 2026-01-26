@@ -516,6 +516,6 @@ data class ExportedSettings(
 
 - [JSON_IMPORT_EXPORT_ROADMAP.md](../JSON_IMPORT_EXPORT_ROADMAP.md) — Future enhancements
 - [ANDROID_APP_PLAN.md](../ANDROID_APP_PLAN.md) — Overall app architecture
-- [Template.kt](../../app/src/main/java/com/example/allowelcome/data/Template.kt) — Template data class
-- [ExportModels.kt](../../app/src/main/java/com/example/allowelcome/data/ExportModels.kt) — Export schema classes
-- [ImportExportRepository.kt](../../app/src/main/java/com/example/allowelcome/data/ImportExportRepository.kt) — Import/export logic
+- [Template.kt](../../app/src/main/java/com/kingpaging/qwelcome/data/Template.kt) — Template data class
+- [ExportModels.kt](../../app/src/main/java/com/kingpaging/qwelcome/data/ExportModels.kt) — Export schema classes
+- [ImportExportRepository.kt](../../app/src/main/java/com/kingpaging/qwelcome/data/ImportExportRepository.kt) — Import/export logic

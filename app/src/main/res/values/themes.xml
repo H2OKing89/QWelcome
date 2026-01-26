@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.ALLOWelcome" parent="Theme.MaterialComponents.DayNight.NoActionBar" />
+    <style name="Theme.QWelcome" parent="Theme.MaterialComponents.DayNight.NoActionBar" />
 
     <!-- Splash screen theme - adapts based on system setting -->
-    <style name="Theme.ALLOWelcome.Splash" parent="Theme.SplashScreen">
+    <style name="Theme.QWelcome.Splash" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/splash_background</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/q_logo</item>
         <item name="windowSplashScreenAnimationDuration">800</item>
-        <item name="postSplashScreenTheme">@style/Theme.ALLOWelcome</item>
+        <item name="postSplashScreenTheme">@style/Theme.QWelcome</item>
     </style>
 </resources>
