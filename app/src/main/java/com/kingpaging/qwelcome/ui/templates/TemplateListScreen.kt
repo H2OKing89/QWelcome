@@ -14,16 +14,21 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
@@ -44,6 +49,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -52,6 +58,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -64,6 +71,8 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.kingpaging.qwelcome.data.DEFAULT_TEMPLATE_ID
 import com.kingpaging.qwelcome.data.Template
 import com.kingpaging.qwelcome.di.LocalTemplateListViewModel
@@ -440,91 +449,163 @@ private fun TemplateEditDialog(
     onSave: (name: String, content: String) -> Unit,
     onDismiss: () -> Unit
 ) {
-    var name by remember { mutableStateOf(if (isNew) "" else template.name) }
-    var content by remember { mutableStateOf(if (isNew) defaultContent else template.content) }
-    var nameError by remember { mutableStateOf<String?>(null) }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        containerColor = MaterialTheme.colorScheme.surface,
-        title = {
-            Text(
-                if (isNew) "Create Template" else "Edit Template",
-                color = MaterialTheme.colorScheme.primary
+    // Key the composable so editor state resets cleanly per-template
+    key(template.id) {
+        var name by remember { mutableStateOf(if (isNew) "" else template.name) }
+        var nameError by remember { mutableStateOf<String?>(null) }
+        
+        // Use the new state-based text input API for better selection/scrolling behavior
+        val contentState = rememberTextFieldState(
+            initialText = if (isNew) defaultContent else template.content
+        )
+        
+        Dialog(
+            onDismissRequest = onDismiss,
+            properties = DialogProperties(
+                usePlatformDefaultWidth = false,
+                decorFitsSystemWindows = false
             )
-        },
-        text = {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth(0.95f)
+                    .fillMaxHeight(0.85f)
+                    .imePadding(),
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 6.dp
             ) {
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = {
-                        name = it
-                        nameError = null
-                    },
-                    label = { Text("Template Name") },
-                    placeholder = { Text("e.g., Business Welcome") },
-                    isError = nameError != null,
-                    supportingText = nameError?.let { { Text(it) } },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.secondary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                        cursorColor = MaterialTheme.colorScheme.secondary,
-                        focusedLabelColor = MaterialTheme.colorScheme.secondary,
-                        unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        focusedContainerColor = MaterialTheme.colorScheme.surface,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surface
-                    )
-                )
-
-                OutlinedTextField(
-                    value = content,
-                    onValueChange = { content = it },
-                    label = { Text("Template Content") },
+                Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(250.dp),
-                    maxLines = Int.MAX_VALUE,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.secondary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                        cursorColor = MaterialTheme.colorScheme.secondary,
-                        focusedLabelColor = MaterialTheme.colorScheme.secondary,
-                        unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        focusedContainerColor = MaterialTheme.colorScheme.surface,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                        .fillMaxSize()
+                        .padding(24.dp)
+                ) {
+                    // Title
+                    Text(
+                        text = if (isNew) "Create Template" else "Edit Template",
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = MaterialTheme.colorScheme.primary
                     )
-                )
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    // Template Name field
+                    OutlinedTextField(
+                        value = name,
+                        onValueChange = {
+                            name = it
+                            nameError = null
+                        },
+                        label = { Text("Template Name") },
+                        placeholder = { Text("e.g., Business Welcome") },
+                        isError = nameError != null,
+                        supportingText = nameError?.let { { Text(it) } },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.secondary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                            cursorColor = MaterialTheme.colorScheme.secondary,
+                            focusedLabelColor = MaterialTheme.colorScheme.secondary,
+                            unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            focusedContainerColor = MaterialTheme.colorScheme.surface,
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                        )
+                    )
 
-                Text(
-                    "Placeholders: {{ customer_name }}, {{ ssid }}, {{ password }}, {{ account_number }}, {{ tech_signature }}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                )
-            }
-        },
-        confirmButton = {
-            NeonMagentaButton(
-                onClick = {
-                    if (name.isBlank()) {
-                        nameError = "Name is required"
-                    } else {
-                        onSave(name, content)
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Template Content field - uses state-based BasicTextField for proper selection/scroll
+                    // Wrapped in OutlinedTextFieldDefaults.DecorationBox for Material3 styling
+                    // weight(1f) takes remaining space; small min height ensures buttons visible on tiny screens
+                    val contentInteractionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+                    BasicTextField(
+                        state = contentState,
+                        lineLimits = TextFieldLineLimits.MultiLine(
+                            minHeightInLines = 6,
+                            maxHeightInLines = Int.MAX_VALUE
+                        ),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                            .heightIn(min = 100.dp), // Low min ensures buttons stay visible on small screens/large fonts
+                        textStyle = MaterialTheme.typography.bodyLarge.copy(
+                            color = MaterialTheme.colorScheme.onSurface
+                        ),
+                        cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.secondary),
+                        interactionSource = contentInteractionSource,
+                        decorator = { innerTextField ->
+                            OutlinedTextFieldDefaults.DecorationBox(
+                                value = contentState.text.toString(),
+                                innerTextField = innerTextField,
+                                enabled = true,
+                                singleLine = false,
+                                visualTransformation = androidx.compose.ui.text.input.VisualTransformation.None,
+                                interactionSource = contentInteractionSource,
+                                label = { Text("Template Content") },
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = MaterialTheme.colorScheme.secondary,
+                                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                                    cursorColor = MaterialTheme.colorScheme.secondary,
+                                    focusedLabelColor = MaterialTheme.colorScheme.secondary,
+                                    unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                                    unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                                ),
+                                container = {
+                                    OutlinedTextFieldDefaults.Container(
+                                        enabled = true,
+                                        isError = false,
+                                        interactionSource = contentInteractionSource,
+                                        colors = OutlinedTextFieldDefaults.colors(
+                                            focusedBorderColor = MaterialTheme.colorScheme.secondary,
+                                            unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                                        )
+                                    )
+                                }
+                            )
+                        }
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Placeholder hints
+                    Text(
+                        "Placeholders: {{ customer_name }}, {{ ssid }}, {{ password }}, {{ account_number }}, {{ tech_signature }}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    )
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    // Button row - always visible at bottom
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        TextButton(onClick = onDismiss) {
+                            Text("Cancel", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
+                        }
+                        
+                        Spacer(modifier = Modifier.width(8.dp))
+                        
+                        NeonMagentaButton(
+                            onClick = {
+                                if (name.isBlank()) {
+                                    nameError = "Name is required"
+                                } else {
+                                    onSave(name, contentState.text.toString())
+                                }
+                            }
+                        ) {
+                            Text(if (isNew) "Create" else "Save")
+                        }
                     }
                 }
-            ) {
-                Text(if (isNew) "Create" else "Save")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
             }
         }
-    )
+    }
 }
 
 @Composable
