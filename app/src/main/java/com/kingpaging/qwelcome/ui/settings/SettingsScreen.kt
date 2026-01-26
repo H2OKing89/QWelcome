@@ -2,6 +2,8 @@
 
 package com.kingpaging.qwelcome.ui.settings
 
+import android.content.Intent
+import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -18,8 +20,13 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Code
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -42,6 +49,7 @@ import com.kingpaging.qwelcome.ui.components.NeonMagentaButton
 import com.kingpaging.qwelcome.ui.components.NeonOutlinedField
 import com.kingpaging.qwelcome.ui.components.NeonPanel
 import com.kingpaging.qwelcome.ui.components.PlaceholderChipsRow
+import com.kingpaging.qwelcome.viewmodel.settings.UpdateState
 
 /**
  * Safely truncates text without splitting placeholders like {{ }} or words.
@@ -427,6 +435,146 @@ fun SettingsScreen(
                         ) {
                             Text("Import")
                         }
+                    }
+                }
+
+                Spacer(Modifier.height(16.dp))
+
+                // === ABOUT & UPDATES SECTION ===
+                Text(
+                    "About",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                
+                val updateState by vm.updateState.collectAsState()
+                
+                NeonPanel {
+                    // Version info
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Filled.Info,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                "Version ${vm.currentVersion}",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                        
+                        // Update status indicator
+                        when (val state = updateState) {
+                            is UpdateState.Checking -> {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(20.dp),
+                                    strokeWidth = 2.dp
+                                )
+                            }
+                            is UpdateState.UpToDate -> {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        Icons.Filled.CheckCircle,
+                                        contentDescription = "Up to date",
+                                        modifier = Modifier.size(16.dp),
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                    Spacer(Modifier.width(4.dp))
+                                    Text(
+                                        "Up to date",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
+                            is UpdateState.Available -> {
+                                TextButton(
+                                    onClick = {
+                                        val uri = Uri.parse(state.downloadUrl)
+                                        // Only allow https URLs for security
+                                        if (uri.scheme != "https" && uri.scheme != "http") return@TextButton
+                                        val intent = Intent(Intent.ACTION_VIEW, uri)
+                                            .addCategory(Intent.CATEGORY_BROWSABLE)
+                                        try {
+                                            context.startActivity(intent)
+                                        } catch (e: android.content.ActivityNotFoundException) {
+                                            // No browser installed - silently fail
+                                            // Could show toast but unlikely edge case
+                                        }
+                                    }
+                                ) {
+                                    Icon(
+                                        Icons.Filled.Download,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(Modifier.width(4.dp))
+                                    Text("v${state.version} available")
+                                }
+                            }
+                            is UpdateState.Error -> {
+                                Text(
+                                    "Check failed",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                            }
+                            else -> { /* Idle or Dismissed - show nothing */ }
+                        }
+                    }
+                    
+                    Spacer(Modifier.height(12.dp))
+                    
+                    // Check for updates button
+                    OutlinedButton(
+                        onClick = { vm.checkForUpdate() },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = updateState !is UpdateState.Checking
+                    ) {
+                        Icon(
+                            Icons.Filled.Refresh,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            when (updateState) {
+                                is UpdateState.Checking -> "Checking..."
+                                else -> "Check for Updates"
+                            }
+                        )
+                    }
+                    
+                    Spacer(Modifier.height(8.dp))
+                    
+                    // View on GitHub link
+                    TextButton(
+                        onClick = {
+                            val uri = Uri.parse("https://github.com/H2OKing89/QWelcome")
+                            val intent = Intent(Intent.ACTION_VIEW, uri)
+                                .addCategory(Intent.CATEGORY_BROWSABLE)
+                            try {
+                                context.startActivity(intent)
+                            } catch (e: android.content.ActivityNotFoundException) {
+                                // No browser installed - silently fail
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(
+                            Icons.Filled.Code,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text("View on GitHub")
                     }
                 }
 

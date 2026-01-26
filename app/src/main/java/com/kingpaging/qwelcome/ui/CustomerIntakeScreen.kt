@@ -29,9 +29,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import android.widget.Toast
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.kingpaging.qwelcome.di.LocalCustomerIntakeViewModel
 import com.kingpaging.qwelcome.di.LocalNavigator
 import com.kingpaging.qwelcome.di.LocalTemplateListViewModel
@@ -69,19 +66,8 @@ fun CustomerIntakeScreen(
     var copySuccess by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
-    // Lifecycle observer for auto-clear after 10 min in background
-    val lifecycleOwner = LocalLifecycleOwner.current
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            when (event) {
-                Lifecycle.Event.ON_PAUSE -> customerIntakeViewModel.onPause()
-                Lifecycle.Event.ON_RESUME -> customerIntakeViewModel.onResume()
-                else -> {}
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
-    }
+    // Note: Lifecycle observer for auto-clear is registered in MainActivity
+    // to ensure single registration and proper cleanup.
 
     // Collect UI events (Toasts, rate limit warnings, copy success feedback)
     LaunchedEffect(Unit) {
