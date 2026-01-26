@@ -40,7 +40,7 @@ class CustomerIntakeViewModel(private val settingsStore: SettingsStore) : ViewMo
         const val ERROR_PHONE_EMPTY = "Phone number is required"
         const val ERROR_PHONE_INVALID = "Enter a valid US phone number"
         const val ERROR_SSID_EMPTY = "WiFi network name is required"
-        const val ERROR_SSID_TOO_LONG = "SSID cannot exceed 32 characters"
+        const val ERROR_SSID_TOO_LONG = "SSID cannot exceed 32 bytes (WiFi limit)"
         const val ERROR_PASSWORD_EMPTY = "WiFi password is required"
         const val ERROR_PASSWORD_TOO_SHORT = "Password must be at least 8 characters"
         const val ERROR_PASSWORD_TOO_LONG = "Password cannot exceed 63 characters"

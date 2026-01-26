@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+No unreleased changes.
+
+## [1.0.0] - 2026-01-25
+
 ### Added
 
 - Initial release of Q Welcome
@@ -19,6 +23,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tech profile signature support
 - Auto-clear security feature (10-minute timeout)
 - Rate limiting to prevent accidental double-sends
+- Complete customer intake workflow
+- Template management system
+- Import/Export with JSON schema v1
 
 ### Technical
 
@@ -26,12 +33,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - StateFlow for reactive state management
 - DataStore for local persistence
 - ProGuard rules for release builds
-
-## [1.0.0] - 2026-01-25
-
-### Added
-
-- First stable release
-- Complete customer intake workflow
-- Template management system
-- Import/Export with JSON schema v1

@@ -7,8 +7,9 @@
 <full-backup-content>
     <!-- Include internal files directory (getFilesDir()) in backups -->
     <include domain="file" path="." />
-
-    <!-- Exclude sensitive settings data from backups -->
+    
+    <!-- Include shared preferences but exclude sensitive DataStore settings -->
+    <include domain="sharedpref" path="." />
     <exclude domain="sharedpref" path="settings.preferences_pb" />
 </full-backup-content>
 
