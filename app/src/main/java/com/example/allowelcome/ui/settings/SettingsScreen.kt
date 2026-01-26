@@ -12,12 +12,18 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -34,10 +40,12 @@ import com.example.allowelcome.data.Template
 import com.example.allowelcome.di.LocalSettingsViewModel
 import com.example.allowelcome.ui.components.CyberpunkBackdrop
 import com.example.allowelcome.ui.components.NeonButton
+import com.example.allowelcome.ui.components.NeonButtonStyle
 import com.example.allowelcome.ui.components.NeonMagentaButton
 import com.example.allowelcome.ui.components.NeonOutlinedField
 import com.example.allowelcome.ui.components.NeonPanel
-import com.example.allowelcome.ui.theme.CyberScheme
+import com.example.allowelcome.ui.components.PlaceholderChipsRow
+import com.example.allowelcome.ui.theme.LocalDarkTheme
 
 /**
  * Safely truncates text without splitting placeholders like {{ }} or words.
@@ -56,7 +64,8 @@ private fun safeTruncate(text: String, maxLength: Int): String {
     val lastCloseBrace = beforeCutoff.lastIndexOf("}}")
 
     // If we found {{ after the last }}, we're inside a placeholder - back up
-    if (lastOpenBrace > lastCloseBrace && lastOpenBrace > 0) {
+    // Note: lastOpenBrace > lastCloseBrace implies lastOpenBrace >= 0
+    if (lastOpenBrace > lastCloseBrace) {
         cutoff = lastOpenBrace
     }
 
@@ -84,8 +93,12 @@ fun SettingsScreen(
     // Get ViewModel from CompositionLocal (provided at Activity level)
     val vm = LocalSettingsViewModel.current
     
-    // Handle system back button
-    BackHandler { onBack() }
+    // Discard confirmation dialog state
+    var showDiscardDialog by rememberSaveable { mutableStateOf(false) }
+    // Restore default confirmation dialog state
+    var showRestoreDialog by rememberSaveable { mutableStateOf(false) }
+    // Template body expanded state (collapsed by default to reduce visual weight)
+    var showTemplateBody by rememberSaveable { mutableStateOf(false) }
 
     val currentProfile by vm.techProfile.collectAsState()
     val activeTemplate by vm.activeTemplate.collectAsState()
@@ -94,21 +107,17 @@ fun SettingsScreen(
     // Derive useCustom from whether active template is the default
     val isUsingDefault = activeTemplate.id == DEFAULT_TEMPLATE_ID
 
-    // Tech profile state
-    var name by remember(currentProfile) { mutableStateOf(currentProfile.name) }
-    var title by remember(currentProfile) { mutableStateOf(currentProfile.title) }
-    var dept by remember(currentProfile) { mutableStateOf(currentProfile.dept) }
+    // Tech profile state - use rememberSaveable so rotation doesn't lose edits
+    var name by rememberSaveable(currentProfile) { mutableStateOf(currentProfile.name) }
+    var title by rememberSaveable(currentProfile) { mutableStateOf(currentProfile.title) }
+    var dept by rememberSaveable(currentProfile) { mutableStateOf(currentProfile.dept) }
 
     // Template state - use activeTemplate as key to recompute when it changes
-    var useCustom by remember(activeTemplate) { mutableStateOf(!isUsingDefault) }
-    var customTemplate by remember(activeTemplate) {
+    var useCustom by rememberSaveable(activeTemplate) { mutableStateOf(!isUsingDefault) }
+    var customTemplate by rememberSaveable(activeTemplate) {
         mutableStateOf(
             if (isUsingDefault) defaultTemplateContent else activeTemplate.content
         )
-    }
-    // Track the custom template ID for updates
-    var customTemplateId by remember(activeTemplate) {
-        mutableStateOf(if (isUsingDefault) null else activeTemplate.id)
     }
 
     // Detect unsaved changes by comparing current values to saved values
@@ -134,23 +143,83 @@ fun SettingsScreen(
 
     val context = LocalContext.current
 
+    // Discard changes confirmation dialog
+    if (showDiscardDialog) {
+        AlertDialog(
+            onDismissRequest = { showDiscardDialog = false },
+            title = { Text("Discard changes?") },
+            text = { Text("You have unsaved changes that will be lost.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDiscardDialog = false
+                    onBack()
+                }) {
+                    Text("Discard", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDiscardDialog = false }) {
+                    Text("Keep editing")
+                }
+            }
+        )
+    }
+
+    // Restore default template confirmation dialog (destructive action)
+    if (showRestoreDialog) {
+        AlertDialog(
+            onDismissRequest = { showRestoreDialog = false },
+            icon = {
+                Icon(
+                    Icons.Filled.Warning,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error
+                )
+            },
+            title = { Text("Restore Default Template?") },
+            text = { Text("This will replace your current template content with the built-in default. Your edits will be lost.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    customTemplate = defaultTemplateContent
+                    useCustom = false  // Fully revert to default mode
+                    showRestoreDialog = false
+                }) {
+                    Text("Restore", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showRestoreDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    // Handle system back button - respect unsaved changes
+    BackHandler {
+        if (hasUnsavedChanges) showDiscardDialog = true else onBack()
+    }
+
     CyberpunkBackdrop {
         Scaffold(
             containerColor = Color.Transparent,
             topBar = {
                 TopAppBar(
-                    title = { Text("Settings", color = CyberScheme.primary) },
+                    title = { Text("Settings") },
                     navigationIcon = {
-                        IconButton(onClick = onBack) {
+                        IconButton(onClick = {
+                            if (hasUnsavedChanges) showDiscardDialog = true else onBack()
+                        }) {
                             Icon(
                                 Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Back",
-                                tint = CyberScheme.primary
+                                contentDescription = "Back"
                             )
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = Color.Transparent
+                        containerColor = Color.Transparent,
+                        titleContentColor = MaterialTheme.colorScheme.onBackground,
+                        navigationIconContentColor = MaterialTheme.colorScheme.onBackground
                     )
                 )
             }
@@ -167,7 +236,7 @@ fun SettingsScreen(
                 Text(
                     "Tech Profile",
                     style = MaterialTheme.typography.titleMedium,
-                    color = CyberScheme.primary
+                    color = MaterialTheme.colorScheme.primary
                 )
                 NeonPanel {
                     NeonOutlinedField(
@@ -193,40 +262,48 @@ fun SettingsScreen(
                 Text(
                     "Message Template",
                     style = MaterialTheme.typography.titleMedium,
-                    color = CyberScheme.primary
+                    color = MaterialTheme.colorScheme.primary
                 )
                 NeonPanel {
-                    // Manage Templates button
+                    // Manage Templates - SECONDARY since Save All is the PRIMARY action
                     NeonButton(
                         onClick = onOpenTemplates,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        style = NeonButtonStyle.SECONDARY
                     ) {
                         Text("Manage Templates")
                     }
                     
                     Spacer(Modifier.height(12.dp))
                     
-                    // Toggle between Default and Custom
+                    // Clear toggle with explicit label
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            if (useCustom) "Using: ${activeTemplate.name}" else "Using Default Template",
-                            color = if (useCustom) CyberScheme.secondary else CyberScheme.primary,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f)
-                        )
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                "Use Selected Template",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                if (useCustom) "Using: ${activeTemplate.name}" else "Using built-in default",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
                         Switch(
                             checked = useCustom,
                             onCheckedChange = { useCustom = it },
                             colors = SwitchDefaults.colors(
-                                checkedThumbColor = CyberScheme.secondary,
-                                checkedTrackColor = CyberScheme.secondary.copy(alpha = 0.5f),
-                                uncheckedThumbColor = CyberScheme.primary,
-                                uncheckedTrackColor = CyberScheme.primary.copy(alpha = 0.3f)
+                                checkedThumbColor = MaterialTheme.colorScheme.secondary,
+                                checkedTrackColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f),
+                                uncheckedThumbColor = MaterialTheme.colorScheme.primary,
+                                uncheckedTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
                             )
                         )
                     }
@@ -234,47 +311,67 @@ fun SettingsScreen(
                     if (useCustom) {
                         Spacer(Modifier.height(8.dp))
 
-                        // Placeholder hints
+                        // Placeholder chips - scannable format per ChatGPT feedback
                         Text(
                             "Available placeholders:",
                             style = MaterialTheme.typography.labelMedium,
-                            color = CyberScheme.onSurface.copy(alpha = 0.7f)
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                         )
-                        Text(
-                            MessageTemplate.PLACEHOLDERS.joinToString(" • ") { it.first },
-                            style = MaterialTheme.typography.bodySmall.copy(
-                                fontFamily = FontFamily.Monospace,
-                                fontSize = 11.sp
-                            ),
-                            color = CyberScheme.tertiary
+                        Spacer(Modifier.height(4.dp))
+                        PlaceholderChipsRow(
+                            placeholders = MessageTemplate.PLACEHOLDERS,
+                            modifier = Modifier.fillMaxWidth()
                         )
 
-                        Spacer(Modifier.height(8.dp))
+                        Spacer(Modifier.height(12.dp))
 
-                        // Custom template editor
-                        OutlinedTextField(
-                            value = customTemplate,
-                            onValueChange = { customTemplate = it },
-                            label = { Text("Custom Template") },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .heightIn(min = 200.dp),
-                            minLines = 8,
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = CyberScheme.secondary.copy(alpha = 0.85f),
-                                unfocusedBorderColor = CyberScheme.onSurface.copy(alpha = 0.25f),
-                                cursorColor = CyberScheme.secondary,
-                                focusedLabelColor = CyberScheme.secondary,
-                            )
-                        )
-
-                        Spacer(Modifier.height(8.dp))
-
-                        // Reset to default button
-                        TextButton(
-                            onClick = { customTemplate = defaultTemplateContent }
+                        // Collapsible template editor - reduces visual weight
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("Restore Default Template", color = CyberScheme.tertiary)
+                            Text(
+                                "Template Body",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            TextButton(onClick = { showTemplateBody = !showTemplateBody }) {
+                                Text(if (showTemplateBody) "Hide" else "Show")
+                                Icon(
+                                    if (showTemplateBody) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+
+                        if (showTemplateBody) {
+                            OutlinedTextField(
+                                value = customTemplate,
+                                onValueChange = { customTemplate = it },
+                                label = { Text("Custom Template") },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(min = 200.dp),
+                                minLines = 8,
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = MaterialTheme.colorScheme.secondary,
+                                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                                    cursorColor = MaterialTheme.colorScheme.secondary,
+                                    focusedLabelColor = MaterialTheme.colorScheme.secondary,
+                                    unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                                    unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                                )
+                            )
+                        } else {
+                            // Show preview when collapsed
+                            Text(
+                                safeTruncate(customTemplate, 100),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            )
                         }
                     } else {
                         // Show read-only default template preview
@@ -282,12 +379,12 @@ fun SettingsScreen(
                         Text(
                             "Default template (read-only):",
                             style = MaterialTheme.typography.labelMedium,
-                            color = CyberScheme.onSurface.copy(alpha = 0.7f)
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                         )
                         Text(
                             safeTruncate(defaultTemplateContent, 150),
                             style = MaterialTheme.typography.bodySmall,
-                            color = CyberScheme.onSurface.copy(alpha = 0.6f)
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                         )
                     }
                 }
@@ -298,15 +395,23 @@ fun SettingsScreen(
                 Text(
                     "Export & Share",
                     style = MaterialTheme.typography.titleMedium,
-                    color = CyberScheme.primary
+                    color = MaterialTheme.colorScheme.primary
                 )
                 NeonPanel {
                     Text(
                         "Share templates with your team via Slack, Teams, or email.",
                         style = MaterialTheme.typography.bodySmall,
-                        color = CyberScheme.onSurface.copy(alpha = 0.7f)
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                     )
+                    if (hasUnsavedChanges) {
+                        Text(
+                            "Export is disabled until changes are saved.",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.tertiary
+                        )
+                    }
                     Spacer(Modifier.height(12.dp))
+                    // Export/Import are SECONDARY actions - not the main thing on this screen
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -314,13 +419,15 @@ fun SettingsScreen(
                         NeonMagentaButton(
                             onClick = onOpenExport,
                             modifier = Modifier.weight(1f),
-                            enabled = !hasUnsavedChanges
+                            enabled = !hasUnsavedChanges,
+                            style = NeonButtonStyle.SECONDARY
                         ) {
                             Text(if (hasUnsavedChanges) "Save First" else "Export")
                         }
                         NeonButton(
                             onClick = onOpenImport,
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
+                            style = NeonButtonStyle.SECONDARY
                         ) {
                             Text("Import")
                         }
@@ -329,22 +436,18 @@ fun SettingsScreen(
 
                 Spacer(Modifier.height(16.dp))
 
-                // === SAVE BUTTON ===
+                // === SAVE BUTTON - PRIMARY action, disabled until changes exist ===
                 NeonMagentaButton(
                     onClick = {
                         vm.save(TechProfile(name, title, dept))
                         
                         if (useCustom && customTemplate.isNotBlank()) {
                             // Save or update the custom template
-                            val templateToSave = if (customTemplateId != null) {
-                                // Update existing custom template
-                                Template(
-                                    id = customTemplateId!!,
-                                    name = "Custom",
-                                    content = customTemplate
-                                )
+                            val templateToSave = if (!isUsingDefault) {
+                                // Update existing non-default template - preserve name using copy()
+                                activeTemplate.copy(content = customTemplate)
                             } else {
-                                // Create new custom template
+                                // Create new custom template from default
                                 Template.create(name = "Custom", content = customTemplate)
                             }
                             vm.saveTemplate(templateToSave)
@@ -356,9 +459,44 @@ fun SettingsScreen(
                         
                         onBack()
                     },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = hasUnsavedChanges,
+                    style = NeonButtonStyle.PRIMARY
                 ) {
-                    Text("Save All")
+                    Text(if (hasUnsavedChanges) "Save All" else "No changes")
+                }
+
+                // === DANGER ZONE === (only show when using custom template)
+                if (useCustom && customTemplate != defaultTemplateContent) {
+                    Spacer(Modifier.height(24.dp))
+                    
+                    Text(
+                        "Danger Zone",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    
+                    OutlinedButton(
+                        onClick = { showRestoreDialog = true },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
+                        ),
+                        border = ButtonDefaults.outlinedButtonBorder(enabled = true).copy(
+                            brush = androidx.compose.ui.graphics.SolidColor(
+                                MaterialTheme.colorScheme.error.copy(alpha = 0.5f)
+                            )
+                        )
+                    ) {
+                        Icon(
+                            Icons.Filled.Warning,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text("Restore Default Template")
+                    }
                 }
 
                 Spacer(Modifier.height(32.dp))

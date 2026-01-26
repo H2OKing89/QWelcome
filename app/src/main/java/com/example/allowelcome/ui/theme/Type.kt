@@ -1,6 +1,7 @@
 package com.example.allowelcome.ui.theme
 
 import androidx.compose.material3.Typography
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
@@ -23,40 +24,66 @@ val BodyFont = FontFamily(
     Font(R.font.exo2_bold, FontWeight.Bold)
 )
 
-// Glow shadow for neon text effect
-private val CyanGlow = Shadow(
+// ============== DARK MODE GLOW EFFECTS ==============
+// Neon glow shadows for dark mode - vibrant and visible against dark backgrounds
+// Tiered blur: 12f for headlines (larger text tolerates wider glow), 8f for titles (prevents haziness)
+private val CyanGlowDark = Shadow(
     color = Color(0xFF00E5FF).copy(alpha = 0.6f),
     offset = Offset(0f, 0f),
-    blurRadius = 12f
+    blurRadius = 12f  // Wide blur for large headlines
 )
 
-private val MagentaGlow = Shadow(
+// Tighter glow for titleLarge - prevents haziness on smaller text
+private val CyanGlowTightDark = Shadow(
+    color = Color(0xFF00E5FF).copy(alpha = 0.5f),
+    offset = Offset(0f, 0f),
+    blurRadius = 8f  // Tighter blur for titles
+)
+
+// Tighter blur (8f) for titleMedium/accent text - reduces haziness per ChatGPT feedback
+private val MagentaGlowDark = Shadow(
     color = Color(0xFFFF2BD6).copy(alpha = 0.5f),
     offset = Offset(0f, 0f),
-    blurRadius = 10f
+    blurRadius = 8f  // Tighter than headline (was 10f)
 )
 
+// ============== LIGHT MODE GLOW EFFECTS ==============
+// Subtle drop shadows for light mode - maintains cyberpunk feel without overwhelming
+// TODO: Reserved for future light mode header shadows if design requires them.
+//       Currently light mode uses no text shadows for maximum readability.
+@Suppress("unused") // Reserved for potential future use
+private val CyanGlowLight = Shadow(
+    color = Color(0xFF0097A7).copy(alpha = 0.3f),
+    offset = Offset(1f, 2f),
+    blurRadius = 4f
+)
+
+@Suppress("unused") // Reserved for potential future use
+private val MagentaGlowLight = Shadow(
+    color = Color(0xFFD81B60).copy(alpha = 0.25f),
+    offset = Offset(1f, 2f),
+    blurRadius = 4f
+)
+
+// Base typography without shadows (used as foundation)
 val CyberTypography = Typography(
     headlineLarge = TextStyle(
         fontFamily = DisplayFont,
         fontWeight = FontWeight.Bold,
         fontSize = 28.sp,
-        letterSpacing = 1.2.sp,
-        shadow = CyanGlow
+        letterSpacing = 1.2.sp
     ),
     titleLarge = TextStyle(
         fontFamily = DisplayFont,
         fontWeight = FontWeight.Bold,
         fontSize = 18.sp,
-        letterSpacing = 1.0.sp,
-        shadow = CyanGlow
+        letterSpacing = 1.0.sp
     ),
     titleMedium = TextStyle(
         fontFamily = DisplayFont,
         fontWeight = FontWeight.Medium,
         fontSize = 16.sp,
-        letterSpacing = 0.8.sp,
-        shadow = MagentaGlow
+        letterSpacing = 0.8.sp
     ),
     bodyLarge = TextStyle(
         fontFamily = BodyFont,
@@ -75,3 +102,34 @@ val CyberTypography = Typography(
         letterSpacing = 0.5.sp
     )
 )
+
+/**
+ * Returns theme-aware typography with appropriate glow/shadow effects.
+ * 
+ * Dark mode: Vibrant neon glows on headers (headlineLarge, titleLarge, titleMedium)
+ * Light mode: NO shadows on general typography - keeps it crisp and readable.
+ *             The cyberpunk vibe comes from colors/panels, not blurry text.
+ */
+@Composable
+fun cyberTypography(isDark: Boolean = LocalDarkTheme.current): Typography {
+    // Light mode: No shadows - keeps it crisp and readable
+    // Dark mode: Headers get neon glows (headlineLarge=wide, titleLarge=tight)
+    val headlineGlow = if (isDark) CyanGlowDark else null      // blur 12f
+    val titleGlow = if (isDark) CyanGlowTightDark else null    // blur 8f (tighter)
+    val accentGlow = if (isDark) MagentaGlowDark else null     // blur 8f
+    
+    return Typography(
+        headlineLarge = CyberTypography.headlineLarge.copy(shadow = headlineGlow),
+        headlineMedium = CyberTypography.headlineMedium,
+        headlineSmall = CyberTypography.headlineSmall,
+        titleLarge = CyberTypography.titleLarge.copy(shadow = titleGlow),
+        titleMedium = CyberTypography.titleMedium.copy(shadow = accentGlow),
+        titleSmall = CyberTypography.titleSmall,
+        bodyLarge = CyberTypography.bodyLarge,
+        bodyMedium = CyberTypography.bodyMedium,
+        bodySmall = CyberTypography.bodySmall,
+        labelLarge = CyberTypography.labelLarge,
+        labelMedium = CyberTypography.labelMedium,
+        labelSmall = CyberTypography.labelSmall
+    )
+}

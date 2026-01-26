@@ -23,6 +23,8 @@ import kotlinx.coroutines.launch
 /** One-shot UI events emitted by the ViewModel */
 sealed class UiEvent {
     data class ShowToast(val message: String) : UiEvent()
+    /** Emitted when message is successfully copied to clipboard - triggers visual feedback */
+    object CopySuccess : UiEvent()
     object RateLimitExceeded : UiEvent()
 }
 
@@ -45,6 +47,57 @@ class CustomerIntakeViewModel(private val settingsStore: SettingsStore) : ViewMo
         const val ERROR_PASSWORD_TOO_SHORT = "Password must be at least 8 characters"
         const val ERROR_PASSWORD_TOO_LONG = "Password cannot exceed 63 characters"
         const val ERROR_ACCOUNT_EMPTY = "Account number is required"
+        
+        // Regex for stripping non-digits from phone numbers - reused to avoid allocation
+        private val NON_DIGIT_REGEX = Regex("\\D")
+        
+        /**
+         * Validates a US phone number following NANP rules.
+         * @param phone The phone number string (may contain formatting characters)
+         * @param progressiveMode If true, returns progressive typing feedback (e.g., "7/10 digits").
+         *                        If false, returns short generic error suitable for submit validation.
+         * @return Error message string, or null if valid.
+         */
+        fun validatePhoneNumber(phone: String, progressiveMode: Boolean): String? {
+            val digits = phone.replace(NON_DIGIT_REGEX, "")
+            return when {
+                phone.isEmpty() -> null // Don't show error for empty (handled at submit)
+                digits.length < 10 -> {
+                    if (progressiveMode) "Enter 10-digit US number (${digits.length}/10)"
+                    else ERROR_PHONE_INVALID
+                }
+                digits.length == 10 || digits.length == 11 -> {
+                    validateNanpRules(digits, progressiveMode)
+                }
+                digits.length > 11 -> {
+                    if (progressiveMode) "Too many digits (${digits.length})" else ERROR_PHONE_INVALID
+                }
+                else -> null
+            }
+        }
+        
+        /**
+         * Validates NANP-specific rules for 10 or 11 digit phone numbers.
+         * Extracted to reduce cognitive complexity of validatePhoneNumber.
+         */
+        private fun validateNanpRules(digits: String, progressiveMode: Boolean): String? {
+            // Check NANP rules: area code and exchange must start with 2-9
+            val areaStart = if (digits.length == 11) 1 else 0
+            val areaCode = digits.substring(areaStart, areaStart + 3)
+            val exchange = digits.substring(areaStart + 3, areaStart + 6)
+            return when {
+                digits.length == 11 && digits[0] != '1' -> {
+                    if (progressiveMode) "US numbers start with 1" else ERROR_PHONE_INVALID
+                }
+                areaCode[0] !in '2'..'9' -> {
+                    if (progressiveMode) "Area code can't start with ${areaCode[0]}" else ERROR_PHONE_INVALID
+                }
+                exchange[0] !in '2'..'9' -> {
+                    if (progressiveMode) "Exchange can't start with ${exchange[0]}" else ERROR_PHONE_INVALID
+                }
+                else -> null // Valid!
+            }
+        }
     }
 
     private val _uiState = MutableStateFlow(CustomerIntakeUiState())
@@ -83,7 +136,9 @@ class CustomerIntakeViewModel(private val settingsStore: SettingsStore) : ViewMo
     }
 
     fun onCustomerPhoneChanged(phone: String) {
-        _uiState.update { it.copy(customerPhone = phone, customerPhoneError = null) }
+        // Real-time validation with progressive feedback
+        val error = validatePhoneNumber(phone, progressiveMode = true)
+        _uiState.update { it.copy(customerPhone = phone, customerPhoneError = error) }
     }
 
     fun onSsidChanged(ssid: String) {
@@ -91,7 +146,14 @@ class CustomerIntakeViewModel(private val settingsStore: SettingsStore) : ViewMo
     }
 
     fun onPasswordChanged(password: String) {
-        _uiState.update { it.copy(password = password, passwordError = null) }
+        // Real-time validation feedback for WiFi password (WPA/WPA2: 8-63 chars)
+        val error = when {
+            password.isEmpty() -> null // Don't show error for empty (show on submit)
+            password.length < 8 -> "Password must be at least 8 characters (${password.length}/8)"
+            password.length > 63 -> ERROR_PASSWORD_TOO_LONG
+            else -> null
+        }
+        _uiState.update { it.copy(password = password, passwordError = error) }
     }
 
     fun onAccountNumberChanged(accountNumber: String) {
@@ -118,7 +180,7 @@ class CustomerIntakeViewModel(private val settingsStore: SettingsStore) : ViewMo
      */
     fun onSmsClicked(navigator: Navigator) = viewModelScope.launch {
         if (!checkRateLimit()) return@launch
-        if (validateInputs()) {
+        if (validateInputs(requirePhone = true)) {
             val message = generateMessage()
             val normalizedPhone = PhoneUtils.normalize(_uiState.value.customerPhone)
             if (normalizedPhone != null) {
@@ -129,11 +191,12 @@ class CustomerIntakeViewModel(private val settingsStore: SettingsStore) : ViewMo
 
     /**
      * Handles Share button click - validates inputs and opens share sheet via Navigator.
+     * Phone number is NOT required for sharing (only SMS needs it).
      * @param navigator The Navigator instance for launching intents (injected for testability)
      */
     fun onShareClicked(navigator: Navigator) = viewModelScope.launch {
         if (!checkRateLimit()) return@launch
-        if (validateInputs()) {
+        if (validateInputs(requirePhone = false)) {
             val message = generateMessage()
             navigator.shareText(message)
         }
@@ -141,18 +204,24 @@ class CustomerIntakeViewModel(private val settingsStore: SettingsStore) : ViewMo
 
     /**
      * Handles Copy button click - validates inputs and copies to clipboard via Navigator.
+     * Phone number is NOT required for copying (only SMS needs it).
      * @param navigator The Navigator instance for launching intents (injected for testability)
      */
     fun onCopyClicked(navigator: Navigator) = viewModelScope.launch {
         if (!checkRateLimit()) return@launch
-        if (validateInputs()) {
+        if (validateInputs(requirePhone = false)) {
             val message = generateMessage()
             navigator.copyToClipboard("Customer Message", message)
+            _uiEvent.emit(UiEvent.CopySuccess)
             _uiEvent.emit(UiEvent.ShowToast("Message copied to clipboard"))
         }
     }
 
-    private fun validateInputs(): Boolean {
+    /**
+     * Validates form inputs before sending/sharing/copying.
+     * @param requirePhone If true, validates phone number (for SMS). If false, skips phone validation (for Share/Copy).
+     */
+    private fun validateInputs(requirePhone: Boolean): Boolean {
         var hasError = false
         val currentState = _uiState.value
 
@@ -162,13 +231,19 @@ class CustomerIntakeViewModel(private val settingsStore: SettingsStore) : ViewMo
             hasError = true
         }
         
-        // Validate phone number (US only - see PhoneUtils documentation)
-        if (currentState.customerPhone.isBlank()) {
-            _uiState.update { it.copy(customerPhoneError = ERROR_PHONE_EMPTY) }
-            hasError = true
-        } else if (!PhoneUtils.isValid(currentState.customerPhone)) {
-            _uiState.update { it.copy(customerPhoneError = ERROR_PHONE_INVALID) }
-            hasError = true
+        // Validate phone number (US only) - ONLY required for SMS
+        if (requirePhone) {
+            if (currentState.customerPhone.isBlank()) {
+                _uiState.update { it.copy(customerPhoneError = ERROR_PHONE_EMPTY) }
+                hasError = true
+            } else {
+                // Use shared validation logic with generic error messages for submit
+                val phoneError = validatePhoneNumber(currentState.customerPhone, progressiveMode = false)
+                if (phoneError != null) {
+                    _uiState.update { it.copy(customerPhoneError = phoneError) }
+                    hasError = true
+                }
+            }
         }
         
         // Validate SSID (max 32 characters per WiFi spec)

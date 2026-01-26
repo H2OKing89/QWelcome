@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ============== CYBERPUNK DARK MODE COLORS ============== -->
+    <!-- Used for splash screen and XML layouts in dark/night mode -->
+    
+    <!-- Primary: Electric Cyan (neon glow) -->
+    <color name="cyber_primary">#FF00E5FF</color>
+    <color name="cyber_on_primary">#FF001014</color>
+    
+    <!-- Secondary: Hot Pink/Magenta (neon glow) -->
+    <color name="cyber_secondary">#FFFF2BD6</color>
+    <color name="cyber_on_secondary">#FF14000F</color>
+    
+    <!-- Tertiary: Soft Purple -->
+    <color name="cyber_tertiary">#FFA371F7</color>
+    <color name="cyber_on_tertiary">#FF080010</color>
+    
+    <!-- Background colors for dark mode (deep space blacks/purples) -->
+    <color name="cyber_background">#FF05030A</color>
+    <color name="cyber_surface">#FF120A1C</color>
+    <color name="cyber_surface_variant">#FF1E1030</color>
+    
+    <!-- Text colors for dark mode -->
+    <color name="cyber_on_background">#FFF0F5FF</color>
+    <color name="cyber_on_surface">#FFF0F5FF</color>
+    <color name="cyber_on_surface_variant">#FFBEC8DC</color>
+    
+    <!-- Error: Neon red-pink -->
+    <color name="cyber_error">#FFFF4D6D</color>
+    <color name="cyber_on_error">#FFFFFFFF</color>
+    
+    <!-- Splash screen background - dark mode uses deep space black -->
+    <color name="splash_background">#FF05030A</color>
+</resources>

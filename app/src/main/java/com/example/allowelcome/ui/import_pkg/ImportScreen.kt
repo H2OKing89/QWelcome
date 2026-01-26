@@ -82,9 +82,10 @@ import com.example.allowelcome.data.ConflictResolution
 import com.example.allowelcome.di.LocalImportViewModel
 import com.example.allowelcome.ui.components.CyberpunkBackdrop
 import com.example.allowelcome.ui.components.NeonButton
+import com.example.allowelcome.ui.components.NeonButtonStyle
 import com.example.allowelcome.ui.components.NeonMagentaButton
 import com.example.allowelcome.ui.components.NeonPanel
-import com.example.allowelcome.ui.theme.CyberScheme
+import com.example.allowelcome.ui.theme.LocalDarkTheme
 import com.example.allowelcome.viewmodel.import_pkg.ImportEvent
 import com.example.allowelcome.viewmodel.import_pkg.ImportStep
 import com.example.allowelcome.viewmodel.import_pkg.TemplateImportStatus
@@ -189,7 +190,7 @@ fun ImportScreen(
                                 ImportStep.PREVIEW, ImportStep.APPLYING -> "Import Preview"
                                 ImportStep.COMPLETE -> "Import Complete"
                             },
-                            color = CyberScheme.primary
+                            color = MaterialTheme.colorScheme.primary
                         )
                     },
                     navigationIcon = {
@@ -197,7 +198,7 @@ fun ImportScreen(
                             Icon(
                                 Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = "Back",
-                                tint = CyberScheme.primary
+                                tint = MaterialTheme.colorScheme.primary
                             )
                         }
                     },
@@ -291,7 +292,7 @@ private fun InputStepContent(
             Text(
                 "Paste JSON from a teammate's export below, tap the paste button, or load from a file.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = CyberScheme.onSurface.copy(alpha = 0.8f)
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
             )
         }
 
@@ -305,7 +306,7 @@ private fun InputStepContent(
                 Text(
                     "JSON Input",
                     style = MaterialTheme.typography.titleSmall,
-                    color = CyberScheme.primary
+                    color = MaterialTheme.colorScheme.primary
                 )
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -315,20 +316,20 @@ private fun InputStepContent(
                             Icons.Default.FileOpen,
                             contentDescription = null,
                             modifier = Modifier.size(18.dp),
-                            tint = CyberScheme.tertiary
+                            tint = MaterialTheme.colorScheme.tertiary
                         )
                         Spacer(Modifier.width(4.dp))
-                        Text("File", color = CyberScheme.tertiary)
+                        Text("File", color = MaterialTheme.colorScheme.tertiary)
                     }
                     TextButton(onClick = onPasteFromClipboard) {
                         Icon(
                             Icons.Default.ContentPaste,
                             contentDescription = null,
                             modifier = Modifier.size(18.dp),
-                            tint = CyberScheme.secondary
+                            tint = MaterialTheme.colorScheme.secondary
                         )
                         Spacer(Modifier.width(4.dp))
-                        Text("Paste", color = CyberScheme.secondary)
+                        Text("Paste", color = MaterialTheme.colorScheme.secondary)
                     }
                 }
             }
@@ -345,19 +346,24 @@ private fun InputStepContent(
                     Text(
                         "{ \"schemaVersion\": 1, \"kind\": \"template-pack\", ... }",
                         fontFamily = FontFamily.Monospace,
-                        fontSize = 12.sp
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 },
                 textStyle = MaterialTheme.typography.bodySmall.copy(
                     fontFamily = FontFamily.Monospace,
-                    fontSize = 12.sp
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurface
                 ),
                 minLines = 8,
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = CyberScheme.secondary.copy(alpha = 0.85f),
-                    unfocusedBorderColor = CyberScheme.onSurface.copy(alpha = 0.25f),
-                    cursorColor = CyberScheme.secondary,
-                    focusedLabelColor = CyberScheme.secondary
+                    focusedBorderColor = MaterialTheme.colorScheme.secondary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                    cursorColor = MaterialTheme.colorScheme.secondary,
+                    focusedLabelColor = MaterialTheme.colorScheme.secondary,
+                    unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface
                 )
             )
         }
@@ -370,7 +376,7 @@ private fun InputStepContent(
         ) {
             Card(
                 colors = CardDefaults.cardColors(
-                    containerColor = CyberScheme.error.copy(alpha = 0.15f)
+                    containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.15f)
                 ),
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -382,12 +388,12 @@ private fun InputStepContent(
                     Icon(
                         Icons.Default.Error,
                         contentDescription = null,
-                        tint = CyberScheme.error,
+                        tint = MaterialTheme.colorScheme.error,
                         modifier = Modifier.size(20.dp)
                     )
                     Text(
                         errorMessage ?: "",
-                        color = CyberScheme.error,
+                        color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
@@ -405,7 +411,7 @@ private fun InputStepContent(
             if (isValidating) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(20.dp),
-                    color = CyberScheme.onPrimary,
+                    color = MaterialTheme.colorScheme.secondary,
                     strokeWidth = 2.dp
                 )
                 Spacer(Modifier.width(8.dp))
@@ -455,20 +461,20 @@ private fun PreviewStepContent(
                         Text(
                             importKind,
                             style = MaterialTheme.typography.titleMedium,
-                            color = CyberScheme.primary
+                            color = MaterialTheme.colorScheme.primary
                         )
                         if (packName != null) {
                             Text(
                                 packName,
                                 style = MaterialTheme.typography.bodySmall,
-                                color = CyberScheme.secondary
+                                color = MaterialTheme.colorScheme.secondary
                             )
                         }
                     }
                     Text(
                         "${templatePreviews.size} template${if (templatePreviews.size != 1) "s" else ""}",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = CyberScheme.onSurface.copy(alpha = 0.7f)
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                     )
                 }
             }
@@ -479,7 +485,7 @@ private fun PreviewStepContent(
             item(key = "warnings") {
                 Card(
                     colors = CardDefaults.cardColors(
-                        containerColor = CyberScheme.tertiary.copy(alpha = 0.15f)
+                        containerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.15f)
                     ),
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -491,13 +497,13 @@ private fun PreviewStepContent(
                             Icon(
                                 Icons.Default.Warning,
                                 contentDescription = null,
-                                tint = CyberScheme.tertiary,
+                                tint = MaterialTheme.colorScheme.tertiary,
                                 modifier = Modifier.size(20.dp)
                             )
                             Text(
                                 "Warnings",
                                 style = MaterialTheme.typography.titleSmall,
-                                color = CyberScheme.tertiary
+                                color = MaterialTheme.colorScheme.tertiary
                             )
                         }
                         Spacer(Modifier.height(8.dp))
@@ -505,7 +511,7 @@ private fun PreviewStepContent(
                             Text(
                                 "• $warning",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = CyberScheme.onSurface.copy(alpha = 0.7f)
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                             )
                         }
                     }
@@ -531,19 +537,19 @@ private fun PreviewStepContent(
                             Icon(
                                 Icons.Default.Person,
                                 contentDescription = null,
-                                tint = CyberScheme.tertiary,
+                                tint = MaterialTheme.colorScheme.tertiary,
                                 modifier = Modifier.size(24.dp)
                             )
                             Column {
                                 Text(
                                     "Import Tech Profile",
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = CyberScheme.onSurface
+                                    color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Text(
                                     techProfileName ?: "Unknown",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = CyberScheme.onSurface.copy(alpha = 0.6f)
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                                 )
                             }
                         }
@@ -551,8 +557,8 @@ private fun PreviewStepContent(
                             checked = importTechProfile,
                             onCheckedChange = { onToggleTechProfile() },
                             colors = CheckboxDefaults.colors(
-                                checkedColor = CyberScheme.secondary,
-                                uncheckedColor = CyberScheme.onSurface.copy(alpha = 0.5f)
+                                checkedColor = MaterialTheme.colorScheme.secondary,
+                                uncheckedColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                             )
                         )
                     }
@@ -565,7 +571,7 @@ private fun PreviewStepContent(
             Text(
                 "Templates to Import",
                 style = MaterialTheme.typography.titleMedium,
-                color = CyberScheme.primary
+                color = MaterialTheme.colorScheme.primary
             )
         }
 
@@ -586,7 +592,7 @@ private fun PreviewStepContent(
             item(key = "error") {
                 Card(
                     colors = CardDefaults.cardColors(
-                        containerColor = CyberScheme.error.copy(alpha = 0.15f)
+                        containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.15f)
                     ),
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -598,12 +604,12 @@ private fun PreviewStepContent(
                         Icon(
                             Icons.Default.Error,
                             contentDescription = null,
-                            tint = CyberScheme.error,
+                            tint = MaterialTheme.colorScheme.error,
                             modifier = Modifier.size(20.dp)
                         )
                         Text(
                             errorMessage,
-                            color = CyberScheme.error,
+                            color = MaterialTheme.colorScheme.error,
                             style = MaterialTheme.typography.bodySmall
                         )
                     }
@@ -625,7 +631,8 @@ private fun PreviewStepContent(
                 NeonButton(
                     onClick = onCancel,
                     modifier = Modifier.weight(1f),
-                    enabled = !isApplying
+                    enabled = !isApplying,
+                    style = NeonButtonStyle.TERTIARY
                 ) {
                     Text("Cancel")
                 }
@@ -633,12 +640,13 @@ private fun PreviewStepContent(
                 NeonMagentaButton(
                     onClick = onApply,
                     modifier = Modifier.weight(1f),
-                    enabled = canApply
+                    enabled = canApply,
+                    style = NeonButtonStyle.PRIMARY
                 ) {
                     if (isApplying) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(20.dp),
-                            color = CyberScheme.onPrimary,
+                            color = MaterialTheme.colorScheme.secondary,
                             strokeWidth = 2.dp
                         )
                         Spacer(Modifier.width(8.dp))
@@ -672,17 +680,17 @@ private data class StatusPresentation(
 @Composable
 private fun TemplateImportStatus.toPresentation(): StatusPresentation = when (this) {
     TemplateImportStatus.NEW -> StatusPresentation(
-        color = CyberScheme.secondary,
+        color = MaterialTheme.colorScheme.secondary,
         icon = Icons.Default.NewReleases,
         text = "New"
     )
     TemplateImportStatus.WILL_REPLACE -> StatusPresentation(
-        color = CyberScheme.tertiary,
+        color = MaterialTheme.colorScheme.tertiary,
         icon = Icons.Default.SwapHoriz,
         text = "Will Replace"
     )
     TemplateImportStatus.CONFLICT -> StatusPresentation(
-        color = CyberScheme.error,
+        color = MaterialTheme.colorScheme.error,
         icon = Icons.Default.Warning,
         text = "Conflict"
     )
@@ -695,10 +703,14 @@ private fun TemplatePreviewCard(
     onSetResolution: (ConflictResolution) -> Unit
 ) {
     val presentation = preview.status.toPresentation()
+    val isDark = LocalDarkTheme.current
 
     Card(
         colors = CardDefaults.cardColors(
-            containerColor = CyberScheme.surface.copy(alpha = 0.6f)
+            containerColor = if (isDark) MaterialTheme.colorScheme.surface.copy(alpha = 0.6f) else MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = if (isDark) 0.dp else 2.dp
         ),
         shape = RoundedCornerShape(12.dp),
         modifier = Modifier.fillMaxWidth()
@@ -721,8 +733,8 @@ private fun TemplatePreviewCard(
                         checked = preview.isSelected,
                         onCheckedChange = { onToggleSelection() },
                         colors = CheckboxDefaults.colors(
-                            checkedColor = CyberScheme.secondary,
-                            uncheckedColor = CyberScheme.onSurface.copy(alpha = 0.5f)
+                            checkedColor = MaterialTheme.colorScheme.secondary,
+                            uncheckedColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                         )
                     )
                     Column {
@@ -730,7 +742,7 @@ private fun TemplatePreviewCard(
                             preview.template.name,
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Medium,
-                            color = CyberScheme.onSurface,
+                            color = MaterialTheme.colorScheme.onSurface,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -739,7 +751,7 @@ private fun TemplatePreviewCard(
                             style = MaterialTheme.typography.bodySmall,
                             fontFamily = FontFamily.Monospace,
                             fontSize = 10.sp,
-                            color = CyberScheme.onSurface.copy(alpha = 0.5f),
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -779,7 +791,7 @@ private fun TemplatePreviewCard(
                     if (preview.template.content.length > 120) "$it..." else it
                 },
                 style = MaterialTheme.typography.bodySmall,
-                color = CyberScheme.onSurface.copy(alpha = 0.6f),
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                 maxLines = 3,
                 overflow = TextOverflow.Ellipsis
             )
@@ -787,13 +799,13 @@ private fun TemplatePreviewCard(
             // Conflict resolution options
             if (preview.status == TemplateImportStatus.CONFLICT && preview.isSelected) {
                 Spacer(Modifier.height(12.dp))
-                HorizontalDivider(color = CyberScheme.onSurface.copy(alpha = 0.1f))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 Spacer(Modifier.height(12.dp))
 
                 Text(
                     "How to handle this conflict:",
                     style = MaterialTheme.typography.labelMedium,
-                    color = CyberScheme.onSurface.copy(alpha = 0.7f)
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                 )
                 Spacer(Modifier.height(8.dp))
 
@@ -814,8 +826,8 @@ private fun TemplatePreviewCard(
                                 .weight(1f)
                                 .clip(RoundedCornerShape(8.dp))
                                 .background(
-                                    if (isSelected) CyberScheme.secondary.copy(alpha = 0.3f)
-                                    else CyberScheme.surface.copy(alpha = 0.3f)
+                                    if (isSelected) MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f)
+                                    else MaterialTheme.colorScheme.surfaceVariant
                                 )
                                 .clickable { onSetResolution(resolution) }
                                 .padding(vertical = 8.dp),
@@ -824,7 +836,7 @@ private fun TemplatePreviewCard(
                             Text(
                                 label,
                                 style = MaterialTheme.typography.labelMedium,
-                                color = if (isSelected) CyberScheme.secondary else CyberScheme.onSurface.copy(alpha = 0.7f)
+                                color = if (isSelected) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
@@ -850,7 +862,7 @@ private fun CompleteStepContent(
         Icon(
             Icons.Default.CheckCircle,
             contentDescription = null,
-            tint = CyberScheme.secondary,
+            tint = MaterialTheme.colorScheme.secondary,
             modifier = Modifier.size(72.dp)
         )
 
@@ -859,7 +871,7 @@ private fun CompleteStepContent(
         Text(
             "Import Complete!",
             style = MaterialTheme.typography.headlineSmall,
-            color = CyberScheme.primary
+            color = MaterialTheme.colorScheme.primary
         )
 
         Spacer(Modifier.height(8.dp))
@@ -867,7 +879,7 @@ private fun CompleteStepContent(
         Text(
             "Successfully imported $importedCount template${if (importedCount != 1) "s" else ""}",
             style = MaterialTheme.typography.bodyMedium,
-            color = CyberScheme.onSurface.copy(alpha = 0.7f)
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
         )
 
         Spacer(Modifier.height(32.dp))

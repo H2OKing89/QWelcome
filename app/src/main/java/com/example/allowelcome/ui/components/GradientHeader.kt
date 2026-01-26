@@ -15,9 +15,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.allowelcome.R
 import com.example.allowelcome.ui.theme.DisplayFont
+import com.example.allowelcome.ui.theme.LocalDarkTheme
 
-// Gradient colors from pink to purple
-private val GradientColors = listOf(
+// ============== DARK MODE GRADIENT ==============
+// Vibrant pink to purple gradient (matches Q logo)
+private val DarkGradientColors = listOf(
     Color(0xFFFF10F0), // Hot pink
     Color(0xFFEC4899), // Pink
     Color(0xFFC19EE0), // Light purple
@@ -26,15 +28,29 @@ private val GradientColors = listOf(
     Color(0xFF6D28D9)  // Deep purple
 )
 
-private val TextGradient = Brush.verticalGradient(GradientColors)
+// ============== LIGHT MODE GRADIENT ==============
+// Deeper colors for better readability on light backgrounds
+private val LightGradientColors = listOf(
+    Color(0xFFC2185B), // Deep pink
+    Color(0xFFAB47BC), // Medium purple
+    Color(0xFF7B1FA2), // Purple
+    Color(0xFF6200EA), // Deep purple
+    Color(0xFF4527A0), // Indigo purple
+    Color(0xFF311B92)  // Deep indigo
+)
 
 /**
- * Header with Q logo and "WELCOME" text
+ * Header with Q logo and "WELCOME" text with gradient.
+ * Adapts gradient colors for dark/light mode readability.
  */
 @Composable
 fun QWelcomeHeader(
     modifier: Modifier = Modifier
 ) {
+    val isDark = LocalDarkTheme.current
+    val gradientColors = if (isDark) DarkGradientColors else LightGradientColors
+    val textGradient = Brush.verticalGradient(gradientColors)
+    
     Row(
         modifier = modifier.padding(horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -55,19 +71,24 @@ fun QWelcomeHeader(
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 3.sp,
-                brush = TextGradient
+                brush = textGradient
             )
         )
     }
 }
 
 /**
- * Large header variant for splash screens
+ * Large header variant for splash screens.
+ * Adapts gradient colors for dark/light mode readability.
  */
 @Composable
 fun QWelcomeHeaderLarge(
     modifier: Modifier = Modifier
 ) {
+    val isDark = LocalDarkTheme.current
+    val gradientColors = if (isDark) DarkGradientColors else LightGradientColors
+    val textGradient = Brush.verticalGradient(gradientColors)
+    
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -88,7 +109,7 @@ fun QWelcomeHeaderLarge(
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 4.sp,
-                brush = TextGradient
+                brush = textGradient
             )
         )
     }

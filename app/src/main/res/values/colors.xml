@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Legacy Material colors (kept for compatibility) -->
     <color name="purple_200">#FFBB86FC</color>
     <color name="purple_500">#FF6200EE</color>
     <color name="purple_700">#FF3700B3</color>
@@ -8,6 +9,34 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
 
-    <!-- Splash screen background color (default dark); override in values-night if needed -->
-    <color name="splash_background">#0D0D0F</color>
+    <!-- ============== CYBERPUNK LIGHT MODE COLORS ============== -->
+    <!-- Used for splash screen and XML layouts in light mode -->
+    
+    <!-- Primary: Deep Teal (high contrast cyan) -->
+    <color name="cyber_primary">#FF00838F</color>
+    <color name="cyber_on_primary">#FFFFFFFF</color>
+    
+    <!-- Secondary: Deep Magenta -->
+    <color name="cyber_secondary">#FFC2185B</color>
+    <color name="cyber_on_secondary">#FFFFFFFF</color>
+    
+    <!-- Tertiary: Deep Purple -->
+    <color name="cyber_tertiary">#FF6200EA</color>
+    <color name="cyber_on_tertiary">#FFFFFFFF</color>
+    
+    <!-- Background colors for light mode -->
+    <color name="cyber_background">#FFFAF8FC</color>
+    <color name="cyber_surface">#FFFFFFFF</color>
+    <color name="cyber_surface_variant">#FFF3EDF7</color>
+    
+    <!-- Text colors for light mode -->
+    <color name="cyber_on_background">#FF1C1B1F</color>
+    <color name="cyber_on_surface">#FF1C1B1F</color>
+    <color name="cyber_on_surface_variant">#FF49454F</color>
+    
+    <!-- Error -->
+    <color name="cyber_error">#FFBA1A1A</color>
+    
+    <!-- Splash screen background - light mode uses light purple tint -->
+    <color name="splash_background">#FFFAF8FC</color>
 </resources>

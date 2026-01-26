@@ -29,7 +29,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import com.example.allowelcome.ui.theme.CyberDarkScheme
-import com.example.allowelcome.ui.theme.CyberScheme
 import com.example.allowelcome.util.WifiQrGenerator
 import io.github.alexzhirkevich.qrose.options.QrBallShape
 import io.github.alexzhirkevich.qrose.options.QrBrush
@@ -89,12 +88,12 @@ fun QrCodeBottomSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = CyberScheme.surface,
-        contentColor = CyberScheme.onSurface,
+        containerColor = MaterialTheme.colorScheme.surface,
+        contentColor = MaterialTheme.colorScheme.onSurface,
         dragHandle = {
             Surface(
                 modifier = Modifier.padding(vertical = 12.dp),
-                color = CyberScheme.primary.copy(alpha = 0.4f),
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f),
                 shape = RoundedCornerShape(2.dp)
             ) {
                 Box(Modifier.size(width = 32.dp, height = 4.dp))
@@ -110,13 +109,13 @@ fun QrCodeBottomSheet(
             Text(
                 text = "WiFi QR Code",
                 style = MaterialTheme.typography.headlineSmall,
-                color = CyberScheme.primary
+                color = MaterialTheme.colorScheme.primary
             )
             Spacer(Modifier.height(4.dp))
             Text(
                 text = "Scan to connect automatically",
                 style = MaterialTheme.typography.bodyMedium,
-                color = CyberScheme.onSurface.copy(alpha = 0.7f)
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
             )
             Spacer(Modifier.height(16.dp))
             Box(
@@ -139,16 +138,16 @@ fun QrCodeBottomSheet(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("Network:", color = CyberScheme.onSurface.copy(alpha = 0.7f))
-                    Text(ssid, color = CyberScheme.primary, fontWeight = FontWeight.Medium)
+                    Text("Network:", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
+                    Text(ssid, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)
                 }
                 Spacer(Modifier.height(4.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("Password:", color = CyberScheme.onSurface.copy(alpha = 0.7f))
-                    Text(password, color = CyberScheme.secondary, fontWeight = FontWeight.Medium)
+                    Text("Password:", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
+                    Text(password, color = MaterialTheme.colorScheme.secondary, fontWeight = FontWeight.Medium)
                 }
             }
             Spacer(Modifier.height(16.dp))
