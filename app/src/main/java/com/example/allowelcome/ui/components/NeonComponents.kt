@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import com.example.allowelcome.data.Template
 import com.example.allowelcome.ui.theme.LocalDarkTheme
 import com.example.allowelcome.util.SoundManager
+import kotlin.math.max
 
 private val PanelShape = RoundedCornerShape(16.dp)
 private val ButtonShape = RoundedCornerShape(8.dp)
@@ -463,7 +464,8 @@ fun Modifier.cyberGrid(
     val alpha = if (isDark) 0.06f else 0.03f
     
     return this.drawBehind {
-        val gridSpacing = cellSize.dp.toPx()
+        // Coerce to safe minimum to prevent infinite loop if cellSize <= 0
+        val gridSpacing = max(1f, cellSize.dp.toPx())
         
         // Vertical lines
         var x = 0f
@@ -504,7 +506,8 @@ fun Modifier.cyberScanlines(
     val alpha = if (isDark) 0.04f else 0.02f
     
     return this.drawBehind {
-        val spacing = lineSpacing.dp.toPx()
+        // Coerce to safe minimum to prevent infinite loop if lineSpacing <= 0
+        val spacing = max(1f, lineSpacing.dp.toPx())
         var y = 0f
         while (y < size.height) {
             drawLine(
