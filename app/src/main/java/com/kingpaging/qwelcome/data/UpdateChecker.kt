@@ -1,6 +1,7 @@
 package com.kingpaging.qwelcome.data
 
 import android.util.Log
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
@@ -61,8 +62,9 @@ object UpdateChecker {
         currentVersionCode: Int,
         currentVersionName: String
     ): UpdateCheckResult = withContext(Dispatchers.IO) {
+        var connection: HttpURLConnection? = null
         try {
-            val connection = URL(GITHUB_API_URL).openConnection() as HttpURLConnection
+            connection = URL(GITHUB_API_URL).openConnection() as HttpURLConnection
             connection.apply {
                 requestMethod = "GET"
                 setRequestProperty("Accept", "application/vnd.github.v3+json")
@@ -82,7 +84,6 @@ object UpdateChecker {
             }
             
             val responseBody = connection.inputStream.bufferedReader().use { it.readText() }
-            connection.disconnect()
             
             val release = json.decodeFromString<GitHubRelease>(responseBody)
             val latestVersion = release.tag_name.removePrefix("v")
@@ -103,19 +104,29 @@ object UpdateChecker {
             } else {
                 UpdateCheckResult.UpToDate
             }
+        } catch (e: CancellationException) {
+            // Rethrow cancellation to preserve structured concurrency
+            throw e
         } catch (e: Exception) {
             Log.e(TAG, "Update check failed", e)
             UpdateCheckResult.Error(e.message ?: "Unknown error")
+        } finally {
+            connection?.disconnect()
         }
     }
     
     /**
      * Compare semantic versions (e.g., "1.2.0" vs "1.1.0").
+     * Handles pre-release suffixes: stable releases are preferred over pre-releases.
      * Returns true if remote is newer than current.
      */
     private fun isNewerVersion(remote: String, current: String): Boolean {
-        val remoteParts = remote.split(".").mapNotNull { it.toIntOrNull() }
-        val currentParts = current.split(".").mapNotNull { it.toIntOrNull() }
+        // Split off pre-release suffix (e.g., "1.2.0-beta" -> base="1.2.0", pre="beta")
+        val (remoteBase, remotePre) = splitVersion(remote)
+        val (currentBase, currentPre) = splitVersion(current)
+        
+        val remoteParts = remoteBase.split(".").mapNotNull { it.toIntOrNull() }
+        val currentParts = currentBase.split(".").mapNotNull { it.toIntOrNull() }
         
         val maxLen = maxOf(remoteParts.size, currentParts.size)
         for (i in 0 until maxLen) {
@@ -124,6 +135,21 @@ object UpdateChecker {
             if (r > c) return true
             if (r < c) return false
         }
+        
+        // Base versions are equal - prefer stable over pre-release
+        // If remote is stable (no pre-release) and current has pre-release, update available
+        if (remotePre == null && currentPre != null) return true
+        // If remote has pre-release and current is stable, no update
+        if (remotePre != null && currentPre == null) return false
+        
         return false
+    }
+    
+    /**
+     * Split version into base and optional pre-release suffix.
+     */
+    private fun splitVersion(version: String): Pair<String, String?> {
+        val parts = version.split("-", limit = 2)
+        return parts[0] to parts.getOrNull(1)
     }
 }

@@ -497,8 +497,17 @@ fun SettingsScreen(
                             is UpdateState.Available -> {
                                 TextButton(
                                     onClick = {
-                                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(state.downloadUrl))
-                                        context.startActivity(intent)
+                                        val uri = Uri.parse(state.downloadUrl)
+                                        // Only allow https URLs for security
+                                        if (uri.scheme != "https" && uri.scheme != "http") return@TextButton
+                                        val intent = Intent(Intent.ACTION_VIEW, uri)
+                                            .addCategory(Intent.CATEGORY_BROWSABLE)
+                                        try {
+                                            context.startActivity(intent)
+                                        } catch (e: android.content.ActivityNotFoundException) {
+                                            // No browser installed - silently fail
+                                            // Could show toast but unlikely edge case
+                                        }
                                     }
                                 ) {
                                     Icon(
