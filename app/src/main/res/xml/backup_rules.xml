@@ -7,8 +7,5 @@
 <full-backup-content>
     <!-- Exclude entire DataStore directory (contains sensitive settings) -->
     <exclude domain="file" path="datastore/" />
-    
-    <!-- Exclude any SharedPreferences that might contain sensitive data -->
-    <exclude domain="sharedpref" path="settings.preferences_pb" />
 </full-backup-content>
 
