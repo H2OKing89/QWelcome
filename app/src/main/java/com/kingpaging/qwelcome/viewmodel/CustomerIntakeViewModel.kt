@@ -140,7 +140,13 @@ class CustomerIntakeViewModel(private val settingsStore: SettingsStore) : ViewMo
     }
 
     fun onSsidChanged(ssid: String) {
-        _uiState.update { it.copy(ssid = ssid, ssidError = null) }
+        // Real-time validation for SSID byte length (WiFi spec: max 32 bytes UTF-8)
+        val error = when {
+            ssid.isEmpty() -> null // Don't show error for empty (show on submit)
+            ssid.toByteArray(Charsets.UTF_8).size > 32 -> ERROR_SSID_TOO_LONG
+            else -> null
+        }
+        _uiState.update { it.copy(ssid = ssid, ssidError = error) }
     }
 
     fun onPasswordChanged(password: String) {

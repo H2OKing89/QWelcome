@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
 - Initial release of Q Welcome
 - Customer intake form with validation
 - SMS, Share, and Copy message options
@@ -20,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Rate limiting to prevent accidental double-sends
 
 ### Technical
+
 - MVVM architecture with Jetpack Compose
 - StateFlow for reactive state management
 - DataStore for local persistence
@@ -28,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.0] - 2026-01-25
 
 ### Added
+
 - First stable release
 - Complete customer intake workflow
 - Template management system

@@ -62,7 +62,7 @@ cd QWelcome
 
 ## Project Structure
 
-```
+```text
 app/src/main/java/com/kingpaging/qwelcome/
 ├── data/           # Data models, repository, DataStore
 ├── di/             # Dependency injection (CompositionLocal providers)

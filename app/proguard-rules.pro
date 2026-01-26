@@ -19,23 +19,27 @@
 -keep class io.github.alexzhirkevich.qrose.** { *; }
 
 # Kotlin serialization
--keepattributes *Annotation*, InnerClasses
+# Official rules are applied via consumer rules from the library.
+# These additional rules ensure @Serializable classes work with R8 full mode.
+-keepattributes *Annotation*, InnerClasses, RuntimeVisibleAnnotations, AnnotationDefault
 -dontnote kotlinx.serialization.AnnotationsKt
 
--keepclassmembers class kotlinx.serialization.json.** {
-    *** Companion;
+# Keep serializer for @Serializable classes in app package (conditional keeps)
+-if @kotlinx.serialization.Serializable class com.kingpaging.qwelcome.**
+-keepclassmembers class <1> {
+    static <1>$Companion Companion;
 }
--keepclasseswithmembers class kotlinx.serialization.json.** {
+
+-if @kotlinx.serialization.Serializable class com.kingpaging.qwelcome.** {
+    static **$* *;
+}
+-keepclassmembers class <1>$<2> {
     kotlinx.serialization.KSerializer serializer(...);
 }
 
-# Keep serializable classes in the app package
--keep,includedescriptorclasses class com.kingpaging.qwelcome.**$$serializer { *; }
--keepclassmembers class com.kingpaging.qwelcome.** {
-    *** Companion;
-}
--keepclasseswithmembers class com.kingpaging.qwelcome.** {
-    kotlinx.serialization.KSerializer serializer(...);
+# Keep serializer descriptor (official rule)
+-keepclassmembers public class **$$serializer {
+    private ** descriptor;
 }
 
 # DataStore
