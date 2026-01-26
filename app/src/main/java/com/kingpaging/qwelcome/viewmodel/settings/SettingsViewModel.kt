@@ -3,15 +3,20 @@ package com.kingpaging.qwelcome.viewmodel.settings
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.kingpaging.qwelcome.BuildConfig
 import com.kingpaging.qwelcome.data.SettingsStore
 import com.kingpaging.qwelcome.data.TechProfile
 import com.kingpaging.qwelcome.data.Template
+import com.kingpaging.qwelcome.data.UpdateCheckResult
+import com.kingpaging.qwelcome.data.UpdateChecker
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -112,4 +117,58 @@ class SettingsViewModel(
             }
         }
     }
+
+    // === UPDATE CHECKER ===
+    
+    /** Current app version from BuildConfig */
+    val currentVersion: String = BuildConfig.VERSION_NAME
+    val currentVersionCode: Int = BuildConfig.VERSION_CODE
+    
+    /** Update check state */
+    private val _updateState = MutableStateFlow<UpdateState>(UpdateState.Idle)
+    val updateState: StateFlow<UpdateState> = _updateState.asStateFlow()
+    
+    /** Check for updates from GitHub Releases */
+    fun checkForUpdate() {
+        if (_updateState.value is UpdateState.Checking) return // Prevent duplicate checks
+        
+        viewModelScope.launch {
+            _updateState.value = UpdateState.Checking
+            
+            when (val result = UpdateChecker.checkForUpdate(currentVersionCode, currentVersion)) {
+                is UpdateCheckResult.UpdateAvailable -> {
+                    _updateState.value = UpdateState.Available(
+                        version = result.latestVersion,
+                        downloadUrl = result.downloadUrl,
+                        releaseNotes = result.releaseNotes
+                    )
+                }
+                is UpdateCheckResult.UpToDate -> {
+                    _updateState.value = UpdateState.UpToDate
+                }
+                is UpdateCheckResult.Error -> {
+                    _updateState.value = UpdateState.Error(result.message)
+                }
+            }
+        }
+    }
+    
+    /** Dismiss update notification */
+    fun dismissUpdate() {
+        _updateState.value = UpdateState.Dismissed
+    }
+}
+
+/** State for update checking UI */
+sealed class UpdateState {
+    object Idle : UpdateState()
+    object Checking : UpdateState()
+    object UpToDate : UpdateState()
+    object Dismissed : UpdateState()
+    data class Available(
+        val version: String,
+        val downloadUrl: String,
+        val releaseNotes: String
+    ) : UpdateState()
+    data class Error(val message: String) : UpdateState()
 }
