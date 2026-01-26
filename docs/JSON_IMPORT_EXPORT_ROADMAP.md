@@ -104,7 +104,7 @@ Ideas for future schema versions (backward compatible with v1):
 ```json
 {
   "schemaVersion": 2,
-  "packageName": "com.example.allowelcome",  // Source app identifier
+  "packageName": "com.kingpaging.qwelcome",  // Source app identifier
   "deviceName": "Quentin-S22U",              // Optional: who exported this?
   "revision": 3                               // Monotonic version for smarter merge
 }
@@ -189,6 +189,6 @@ Detect where JSON came from and customize UX:
 
 - [JSON_IMPORT_EXPORT_v1_COMPLETE_2026-01-25.md](./ARCHIVE/JSON_IMPORT_EXPORT_v1_COMPLETE_2026-01-25.md) — Archived v1 design
 - [ANDROID_APP_PLAN.md](./ANDROID_APP_PLAN.md) — Overall app architecture
-- [Template.kt](../app/src/main/java/com/example/allowelcome/data/Template.kt)
-- [ExportModels.kt](../app/src/main/java/com/example/allowelcome/data/ExportModels.kt)
-- [ImportExportRepository.kt](../app/src/main/java/com/example/allowelcome/data/ImportExportRepository.kt)
+- [Template.kt](../app/src/main/java/com/kingpaging/qwelcome/data/Template.kt)
+- [ExportModels.kt](../app/src/main/java/com/kingpaging/qwelcome/data/ExportModels.kt)
+- [ImportExportRepository.kt](../app/src/main/java/com/kingpaging/qwelcome/data/ImportExportRepository.kt)

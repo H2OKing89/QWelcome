@@ -1,4 +1,4 @@
-# Code Audit Report: ALLO Welcome
+# Code Audit Report: Q Welcome
 
 **Date:** January 25, 2026
 **Reviewer:** Claude Code
@@ -34,13 +34,13 @@ For a first mobile app, this is well-structured. You've followed many modern And
 **File:** `app/build.gradle.kts:9`
 
 ```kotlin
-namespace = "com.example.allowelcome"
-applicationId = "com.example.allowelcome"
+namespace = "com.kingpaging.qwelcome"
+applicationId = "com.kingpaging.qwelcome"
 ```
 
 **Problem:** `com.example` is reserved for samples. Google Play will reject this.
 
-**Fix:** Change to your company domain (e.g., `com.yourcompany.allowelcome`).
+**Fix:** Change to your company domain (e.g., `com.kingpaging.qwelcome`).
 
 **Impact:** Cannot publish to Play Store without fixing this.
 
@@ -225,11 +225,11 @@ Verify that `proguard-rules.pro` includes proper keep rules for kotlinx.serializ
     kotlinx.serialization.KSerializer serializer(...);
 }
 
--keep,includedescriptorclasses class com.example.allowelcome.**$$serializer { *; }
--keepclassmembers class com.example.allowelcome.** {
+-keep,includedescriptorclasses class com.kingpaging.qwelcome.**$$serializer { *; }
+-keepclassmembers class com.kingpaging.qwelcome.** {
     *** Companion;
 }
--keepclasseswithmembers class com.example.allowelcome.** {
+-keepclasseswithmembers class com.kingpaging.qwelcome.** {
     kotlinx.serialization.KSerializer serializer(...);
 }
 ```

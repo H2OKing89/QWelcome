@@ -10,17 +10,37 @@
 -renamesourcefileattribute SourceFile
 
 # Keep data classes used for settings and customer data
--keep class com.example.allowelcome.data.** { *; }
+-keep class com.kingpaging.qwelcome.data.** { *; }
 
 # Keep ViewModel classes
--keep class com.example.allowelcome.viewmodel.** { *; }
+-keep class com.kingpaging.qwelcome.viewmodel.** { *; }
 
 # Keep QR code library classes
 -keep class io.github.alexzhirkevich.qrose.** { *; }
 
 # Kotlin serialization
--keepattributes *Annotation*, InnerClasses
+# Official rules are applied via consumer rules from the library.
+# These additional rules ensure @Serializable classes work with R8 full mode.
+-keepattributes *Annotation*, InnerClasses, RuntimeVisibleAnnotations, AnnotationDefault
 -dontnote kotlinx.serialization.AnnotationsKt
+
+# Keep serializer for @Serializable classes in app package (conditional keeps)
+-if @kotlinx.serialization.Serializable class com.kingpaging.qwelcome.**
+-keepclassmembers class <1> {
+    static <1>$Companion Companion;
+}
+
+-if @kotlinx.serialization.Serializable class com.kingpaging.qwelcome.** {
+    static **$* *;
+}
+-keepclassmembers class <1>$<2> {
+    kotlinx.serialization.KSerializer serializer(...);
+}
+
+# Keep serializer descriptor (official rule)
+-keepclassmembers public class **$$serializer {
+    private ** descriptor;
+}
 
 # DataStore
 -keep class androidx.datastore.** { *; }

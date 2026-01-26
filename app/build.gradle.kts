@@ -6,11 +6,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.allowelcome"
+    namespace = "com.kingpaging.qwelcome"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.example.allowelcome"
+        applicationId = "com.kingpaging.qwelcome"
         minSdk = 26
         targetSdk = 36
         versionCode = 1

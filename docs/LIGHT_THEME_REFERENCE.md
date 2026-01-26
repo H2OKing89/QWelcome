@@ -1,4 +1,4 @@
-# ALLOWelcome Light Theme Reference
+# QWelcome Light Theme Reference
 
 A comprehensive guide to the Cyberpunk Light Theme implementation in our Android Jetpack Compose app.
 
@@ -76,7 +76,7 @@ Horizontal lines only—simpler, cleaner:
 ## 📁 File Structure
 
 ```text
-app/src/main/java/com/example/allowelcome/ui/
+app/src/main/java/com/kingpaging/qwelcome/ui/
 ├── theme/
 │   ├── CyberpunkTheme.kt    # Theme setup, color schemes, CompositionLocals
 │   ├── Color.kt             # Semantic color constants
