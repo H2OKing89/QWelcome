@@ -1,0 +1,43 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="240dp"
+    android:height="240dp"
+    android:viewportWidth="240"
+    android:viewportHeight="240">
+
+    <!-- Q circle with gradient - centered and scaled to fit splash screen safe zone -->
+    <path
+        android:pathData="M120,60 C153,60 180,87 180,120 C180,153 153,180 120,180 C87,180 60,153 60,120 C60,87 87,60 120,60 Z M120,80 C98,80 80,98 80,120 C80,142 98,160 120,160 C142,160 160,142 160,120 C160,98 142,80 120,80 Z"
+        android:fillType="evenOdd">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="120"
+                android:startY="60"
+                android:endX="120"
+                android:endY="180">
+                <item android:offset="0.0" android:color="#FFFF10F0"/>
+                <item android:offset="0.3" android:color="#FFEC4899"/>
+                <item android:offset="0.5" android:color="#FFC19EE0"/>
+                <item android:offset="0.7" android:color="#FF9D4EDD"/>
+                <item android:offset="1.0" android:color="#FF6D28D9"/>
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Q tail - adjusted to match scaled Q -->
+    <path
+        android:pathData="M135,150 L175,195 L158,195 L125,160 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="125"
+                android:startY="150"
+                android:endX="175"
+                android:endY="195">
+                <item android:offset="0.0" android:color="#FF9D4EDD"/>
+                <item android:offset="1.0" android:color="#FF6D28D9"/>
+            </gradient>
+        </aapt:attr>
+    </path>
+</vector>
