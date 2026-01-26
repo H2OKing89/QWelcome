@@ -486,8 +486,8 @@ private fun TemplateEditDialog(
                     label = { Text("Template Content") },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(min = 200.dp, max = 300.dp),
-                    minLines = 8,
+                        .height(250.dp),
+                    maxLines = Int.MAX_VALUE,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = MaterialTheme.colorScheme.secondary,
                         unfocusedBorderColor = MaterialTheme.colorScheme.outline,
