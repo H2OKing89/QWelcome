@@ -122,7 +122,6 @@ class SettingsViewModel(
     
     /** Current app version from BuildConfig */
     val currentVersion: String = BuildConfig.VERSION_NAME
-    val currentVersionCode: Int = BuildConfig.VERSION_CODE
     
     /** Update check state */
     private val _updateState = MutableStateFlow<UpdateState>(UpdateState.Idle)
@@ -135,7 +134,7 @@ class SettingsViewModel(
         viewModelScope.launch {
             _updateState.value = UpdateState.Checking
             
-            when (val result = UpdateChecker.checkForUpdate(currentVersionCode, currentVersion)) {
+            when (val result = UpdateChecker.checkForUpdate(currentVersion)) {
                 is UpdateCheckResult.UpdateAvailable -> {
                     _updateState.value = UpdateState.Available(
                         version = result.latestVersion,

@@ -55,11 +55,9 @@ object UpdateChecker {
     
     /**
      * Check if an update is available.
-     * @param currentVersionCode The current app version code (from BuildConfig.VERSION_CODE)
      * @param currentVersionName The current app version name (from BuildConfig.VERSION_NAME)
      */
     suspend fun checkForUpdate(
-        currentVersionCode: Int,
         currentVersionName: String
     ): UpdateCheckResult = withContext(Dispatchers.IO) {
         var connection: HttpURLConnection? = null

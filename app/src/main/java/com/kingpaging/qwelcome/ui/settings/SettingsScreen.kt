@@ -557,8 +557,14 @@ fun SettingsScreen(
                     // View on GitHub link
                     TextButton(
                         onClick = {
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/H2OKing89/QWelcome"))
-                            context.startActivity(intent)
+                            val uri = Uri.parse("https://github.com/H2OKing89/QWelcome")
+                            val intent = Intent(Intent.ACTION_VIEW, uri)
+                                .addCategory(Intent.CATEGORY_BROWSABLE)
+                            try {
+                                context.startActivity(intent)
+                            } catch (e: android.content.ActivityNotFoundException) {
+                                // No browser installed - silently fail
+                            }
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) {
