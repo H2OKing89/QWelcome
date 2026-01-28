@@ -70,7 +70,7 @@ private val Context.protoDataStore: DataStore<UserPreferences> by dataStore(
                             // Log error with full context for debugging
                             Log.e(TAG, "Error decoding templates from preferences. JSON length: ${templatesJson.length}", e)
                             // Attempt partial recovery by trying to decode individual templates
-                            tryRecoverTemplates(json, templatesJson)
+                            logCorruptedTemplatesDiagnostics(json, templatesJson)
                         }
                     }
 
@@ -83,10 +83,11 @@ private val Context.protoDataStore: DataStore<UserPreferences> by dataStore(
 
                 /**
                  * Logs diagnostic information about corrupted template data.
-                 * Note: This function only logs and does not reconstruct data,
+                 * Note: This function only logs diagnostics and does NOT attempt recovery,
                  * as partial JSON recovery is unreliable and could introduce data corruption.
+                 * Always returns an empty list.
                  */
-                private fun tryRecoverTemplates(@Suppress("UNUSED_PARAMETER") json: Json, templatesJson: String): List<TemplateProto> {
+                private fun logCorruptedTemplatesDiagnostics(@Suppress("UNUSED_PARAMETER") json: Json, templatesJson: String): List<TemplateProto> {
                     Log.w(TAG, "Logging corrupted template data for diagnostics...")
                     // Try to identify potential template fragments for logging purposes
                     return try {
@@ -100,8 +101,13 @@ private val Context.protoDataStore: DataStore<UserPreferences> by dataStore(
                         }
                         // Return empty list as we can't reliably reconstruct full objects
                         emptyList()
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Failed to analyze corrupted template data", e)
+                    } catch (e: java.util.regex.PatternSyntaxException) {
+                        // Handle regex compilation errors (shouldn't happen with static pattern)
+                        Log.e(TAG, "Regex pattern error while analyzing corrupted data", e)
+                        emptyList()
+                    } catch (e: IllegalArgumentException) {
+                        // Handle invalid regex arguments
+                        Log.e(TAG, "Invalid argument while analyzing corrupted data", e)
                         emptyList()
                     }
                 }
@@ -333,7 +339,8 @@ fun Template.Companion.fromProto(proto: TemplateProto): Template = Template(
     id = proto.id,
     name = proto.name,
     content = proto.content,
-    createdAt = proto.createdAt.ifEmpty { java.time.Instant.now().toString() },
-    modifiedAt = proto.modifiedAt.ifEmpty { java.time.Instant.now().toString() },
+    // Use epoch as deterministic default for missing timestamps (not Instant.now())
+    createdAt = proto.createdAt.ifEmpty { "1970-01-01T00:00:00Z" },
+    modifiedAt = proto.modifiedAt.ifEmpty { "1970-01-01T00:00:00Z" },
     slug = proto.slug.ifEmpty { null }
 )

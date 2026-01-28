@@ -67,8 +67,9 @@ class ImportExportRepository(private val settingsStore: SettingsStore) {
 
             // Estimate export size to prevent memory exhaustion
             // First use cheap String.length estimate, then compute precise UTF-8 size if near limit
+            // Use 50% threshold to catch multi-byte content that could push actual size over limit
             val cheapEstimate = templatesToExport.sumOf { it.content.length + it.name.length + 200 }
-            if (cheapEstimate > MAX_EXPORT_SIZE_BYTES) {
+            if (cheapEstimate > MAX_EXPORT_SIZE_BYTES / 2) {
                 // Near limit - compute precise UTF-8 byte size
                 val preciseSize = templatesToExport.sumOf {
                     it.content.toByteArray(Charsets.UTF_8).size + it.name.toByteArray(Charsets.UTF_8).size + 200
@@ -107,9 +108,10 @@ class ImportExportRepository(private val settingsStore: SettingsStore) {
 
             // Estimate export size to prevent memory exhaustion
             // First use cheap String.length estimate, then compute precise UTF-8 size if near limit
+            // Use 50% threshold to catch multi-byte content that could push actual size over limit
             val cheapEstimate = userTemplates.sumOf { it.content.length + it.name.length + 200 } +
                 techProfile.name.length + techProfile.title.length + techProfile.dept.length + 500
-            if (cheapEstimate > MAX_EXPORT_SIZE_BYTES) {
+            if (cheapEstimate > MAX_EXPORT_SIZE_BYTES / 2) {
                 // Near limit - compute precise UTF-8 byte size
                 val preciseSize = userTemplates.sumOf {
                     it.content.toByteArray(Charsets.UTF_8).size + it.name.toByteArray(Charsets.UTF_8).size + 200

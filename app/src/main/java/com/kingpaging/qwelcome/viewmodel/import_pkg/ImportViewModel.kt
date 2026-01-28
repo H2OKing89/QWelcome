@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.kingpaging.qwelcome.data.ImportApplyResult
 import com.kingpaging.qwelcome.data.ImportExportRepository
 import com.kingpaging.qwelcome.data.ImportValidationResult
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -42,6 +43,9 @@ class ImportViewModel(
     private val _events = MutableSharedFlow<ImportEvent>(replay = 1)
     val events: SharedFlow<ImportEvent> = _events.asSharedFlow()
 
+    // Track in-flight import jobs for cancellation on reset
+    private var importJob: Job? = null
+
     fun onOpenFileRequest() = viewModelScope.launch {
         _events.emit(ImportEvent.RequestFileOpen)
     }
@@ -50,7 +54,7 @@ class ImportViewModel(
         if (_uiState.value.isImporting) return
         _uiState.update { it.copy(isImporting = true, error = null) }
 
-        viewModelScope.launch {
+        importJob = viewModelScope.launch {
             try {
                 when (val result = repository.validateImport(json)) {
                     is ImportValidationResult.ValidTemplatePack,
@@ -91,7 +95,7 @@ class ImportViewModel(
         if (currentStep !is ImportStep.Validated || _uiState.value.isImporting) return
 
         _uiState.update { it.copy(isImporting = true, error = null) }
-        viewModelScope.launch {
+        importJob = viewModelScope.launch {
             try {
                 // Apply the import based on the validation result type
                 val applyResult = when (val validationResult = currentStep.validationResult) {
@@ -159,6 +163,9 @@ class ImportViewModel(
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     fun reset() {
+        // Cancel any in-flight import operations
+        importJob?.cancel()
+        importJob = null
         _uiState.value = ImportUiState()
         _events.resetReplayCache()
     }

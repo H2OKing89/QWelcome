@@ -578,11 +578,11 @@ private fun copyToClipboard(context: Context, json: String) {
 
 /**
  * Format content for preview display.
- * Normalizes newlines to spaces and truncates to maxChars.
+ * Normalizes newlines to spaces first, then truncates to maxChars.
  * Does not append ellipsis - let TextOverflow.Ellipsis handle that.
  */
 private fun formatPreview(content: String, maxChars: Int = 60): String {
-    return content.take(maxChars).replace("\n", " ")
+    return content.replace("\n", " ").take(maxChars)
 }
 
 /**

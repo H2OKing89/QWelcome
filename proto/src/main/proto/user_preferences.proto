@@ -26,5 +26,5 @@ message TemplateProto {
   string slug = 6;          // URL-friendly identifier
 
   // Reserved for future use - prevents accidental tag reuse
-  // reserved 7 to 15;
+  reserved 7 to 15;
 }

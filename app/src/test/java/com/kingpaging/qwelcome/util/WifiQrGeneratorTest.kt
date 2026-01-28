@@ -32,15 +32,15 @@ class WifiQrGeneratorTest {
     @Test
     fun `validatePassword returns Error for empty password`() {
         val result = WifiQrGenerator.validatePassword("")
-        val error = result as WifiQrGenerator.ValidationResult.Error
-        assertEquals(R.string.error_password_empty, error.messageResId)
+        assertTrue(result is WifiQrGenerator.ValidationResult.Error)
+        assertEquals(R.string.error_password_empty, (result as WifiQrGenerator.ValidationResult.Error).messageResId)
     }
 
     @Test
     fun `validatePassword returns Error for blank password`() {
         val result = WifiQrGenerator.validatePassword("   ")
-        val error = result as WifiQrGenerator.ValidationResult.Error
-        assertEquals(R.string.error_password_empty, error.messageResId)
+        assertTrue(result is WifiQrGenerator.ValidationResult.Error)
+        assertEquals(R.string.error_password_empty, (result as WifiQrGenerator.ValidationResult.Error).messageResId)
     }
 
     @Test
