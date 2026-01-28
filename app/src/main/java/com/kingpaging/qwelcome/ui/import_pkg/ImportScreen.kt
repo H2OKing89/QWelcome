@@ -73,6 +73,11 @@ fun ImportScreen(
     val clipboardManager = LocalClipboardManager.current
     val uiState by vm.uiState.collectAsState()
 
+    // Reset ViewModel state when entering the screen to clear any stale events
+    LaunchedEffect(Unit) {
+        vm.reset()
+    }
+
     val filePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->

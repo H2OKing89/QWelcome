@@ -157,7 +157,9 @@ class ImportViewModel(
         onJsonContentReceived(json)
     }
 
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     fun reset() {
         _uiState.value = ImportUiState()
+        _events.resetReplayCache()
     }
 }

@@ -324,10 +324,16 @@ fun Template.toProto(): TemplateProto = TemplateProto.newBuilder()
     .setId(id)
     .setName(name)
     .setContent(content)
+    .setCreatedAt(createdAt)
+    .setModifiedAt(modifiedAt)
+    .setSlug(slug ?: "")
     .build()
 
 fun Template.Companion.fromProto(proto: TemplateProto): Template = Template(
     id = proto.id,
     name = proto.name,
-    content = proto.content
+    content = proto.content,
+    createdAt = proto.createdAt.ifEmpty { java.time.Instant.now().toString() },
+    modifiedAt = proto.modifiedAt.ifEmpty { java.time.Instant.now().toString() },
+    slug = proto.slug.ifEmpty { null }
 )

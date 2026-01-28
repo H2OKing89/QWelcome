@@ -21,4 +21,10 @@ message TemplateProto {
   string id = 1;
   string name = 2;
   string content = 3;
+  string created_at = 4;    // ISO-8601 timestamp
+  string modified_at = 5;   // ISO-8601 timestamp
+  string slug = 6;          // URL-friendly identifier
+
+  // Reserved for future use - prevents accidental tag reuse
+  // reserved 7 to 15;
 }

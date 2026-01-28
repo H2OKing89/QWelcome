@@ -90,6 +90,11 @@ fun ExportScreen(
     val context = LocalContext.current
     val uiState by vm.uiState.collectAsState()
 
+    // Reset ViewModel state when entering the screen to clear any stale events
+    LaunchedEffect(Unit) {
+        vm.reset()
+    }
+
     // File picker launcher for saving
     val saveFileLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/json")

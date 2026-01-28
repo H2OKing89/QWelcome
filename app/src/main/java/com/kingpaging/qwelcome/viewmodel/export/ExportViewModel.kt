@@ -259,4 +259,16 @@ class ExportViewModel(
         _pendingFileExportContent.value = null
         _pendingFileExportType.value = null
     }
+
+    /**
+     * Reset the ViewModel state when entering the screen.
+     * Clears any stale events from the replay cache.
+     */
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    fun reset() {
+        _uiState.value = ExportUiState()
+        _pendingFileExportContent.value = null
+        _pendingFileExportType.value = null
+        _events.resetReplayCache()
+    }
 }
