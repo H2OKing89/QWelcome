@@ -32,5 +32,5 @@
     <color name="cyber_on_error">#FFFFFFFF</color>
 
     <!-- Splash screen background - light mode uses light purple tint -->
-    <color name="splash_background">#FFFAF8FC</color>
+    <color name="splash_background">@color/cyber_background</color>
 </resources>

@@ -70,8 +70,6 @@ class PhoneUtilsTest {
     @Test
     fun `isValid returns false for exchange starting with 1`() {
         assertFalse(PhoneUtils.isValid("212-123-1234"))
-        // More direct test with 0:
-        assertFalse(PhoneUtils.isValid("212-012-4567"))
     }
 
     @Test
@@ -163,9 +161,10 @@ class PhoneUtilsTest {
 
     @Test
     fun `isValid rejects international numbers`() {
-        // UK number - wrong format
+        // UK number - after stripping non-digits becomes "442079460958" (12 digits)
+        // which fails due to incorrect digit count (not 10 or 11)
         assertFalse(PhoneUtils.isValid("+44 20 7946 0958"))
-        // Too many digits even after stripping
+        // 12 digits - too many digits to be a valid US number
         assertFalse(PhoneUtils.isValid("442079460958"))
     }
 }

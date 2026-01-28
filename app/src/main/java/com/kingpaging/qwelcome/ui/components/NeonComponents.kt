@@ -189,13 +189,15 @@ fun NeonOutlinedField(
         label = label,
         singleLine = singleLine,
         isError = isError,
-        supportingText = {
-            if (supportingText != null) {
-                Box(modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }) {
+        supportingText = if (supportingText != null) {
+            {
+                Box(modifier = Modifier.semantics {
+                    liveRegion = if (isError) LiveRegionMode.Assertive else LiveRegionMode.Polite
+                }) {
                     supportingText()
                 }
             }
-        },
+        } else null,
         trailingIcon = trailingIcon,
         visualTransformation = visualTransformation,
         keyboardOptions = keyboardOptions,

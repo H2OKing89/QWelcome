@@ -477,7 +477,7 @@ private fun TemplateSelectionItem(
                 overflow = TextOverflow.Ellipsis
             )
             Text(
-                text = template.content.take(60).replace("\n", " ") + if (template.content.length > 60) "..." else "",
+                text = formatPreview(template.content),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                 maxLines = 1,
@@ -569,6 +569,15 @@ private fun copyToClipboard(context: Context, json: String) {
     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
     val clip = ClipData.newPlainText("Q Welcome Export", json)
     clipboard.setPrimaryClip(clip)
+}
+
+/**
+ * Format content for preview display.
+ * Normalizes newlines to spaces and truncates to maxChars.
+ * Does not append ellipsis - let TextOverflow.Ellipsis handle that.
+ */
+private fun formatPreview(content: String, maxChars: Int = 60): String {
+    return content.take(maxChars).replace("\n", " ")
 }
 
 /**

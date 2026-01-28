@@ -41,7 +41,6 @@ import io.github.alexzhirkevich.qrose.options.roundCorners
 import io.github.alexzhirkevich.qrose.QrCodePainter
 import io.github.alexzhirkevich.qrose.rememberQrCodePainter
 import io.github.alexzhirkevich.qrose.toByteArray
-import io.github.alexzhirkevich.qrose.ImageFormat
 import java.io.File
 import java.io.FileOutputStream
 
@@ -233,7 +232,7 @@ private fun generateHighResQrBitmap(
     )
 
     // Export QR code to PNG bytes
-    val bytes = painter.toByteArray(size, size, android.graphics.Bitmap.CompressFormat.PNG)
+    val bytes = painter.toByteArray(size, size, Bitmap.CompressFormat.PNG)
 
     // Decode bytes to bitmap
     val qrBitmap = android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)

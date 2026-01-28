@@ -16,8 +16,8 @@ datastorePreferences = "1.2.0"
 splashscreen = "1.2.0"
 qrose = "1.1.0"
 kotlinxSerializationJson = "1.10.0"
-protobuf = "3.25.3"
-protobufPlugin = "0.9.6"
+protobuf = "3.25.5"
+protobufPlugin = "0.9.5"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }

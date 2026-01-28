@@ -143,7 +143,13 @@ object SoundManager {
             delay(durationMs.toLong() + 20)
         } finally {
             // Ensure AudioTrack is always released, even if delay() throws CancellationException
-            audioTrack.stop()
+            try {
+                if (audioTrack.playState == AudioTrack.PLAYSTATE_PLAYING) {
+                    audioTrack.stop()
+                }
+            } catch (_: IllegalStateException) {
+                // Ignore - stop() can throw if playback never started
+            }
             audioTrack.release()
         }
     }

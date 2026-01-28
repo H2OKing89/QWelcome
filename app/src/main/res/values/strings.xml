@@ -21,4 +21,5 @@
 
     <!-- Toast messages -->
     <string name="toast_copied_to_clipboard">Message copied to clipboard</string>
+    <string name="toast_rate_limit">Rate limit exceeded. Please wait.</string>
 </resources>

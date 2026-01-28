@@ -7,6 +7,7 @@ import com.kingpaging.qwelcome.data.ExportResult
 import com.kingpaging.qwelcome.data.ImportExportRepository
 import com.kingpaging.qwelcome.data.SettingsStore
 import com.kingpaging.qwelcome.data.Template
+import android.util.Log
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -16,6 +17,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.getAndUpdate
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 enum class ExportType {
     TEMPLATE_PACK, FULL_BACKUP
@@ -50,12 +53,17 @@ class ExportViewModel(
     private val _uiState = MutableStateFlow(ExportUiState())
     val uiState: StateFlow<ExportUiState> = _uiState.asStateFlow()
 
-    private val _events = MutableSharedFlow<ExportEvent>()
+    private val _events = MutableSharedFlow<ExportEvent>(replay = 1)
     val events: SharedFlow<ExportEvent> = _events.asSharedFlow()
 
-    // Thread-safe storage for pending file export content.
+    // Thread-safe storage for pending file export content and type.
     // Uses StateFlow to avoid race conditions when exporting twice rapidly.
     private val _pendingFileExportContent = MutableStateFlow<String?>(null)
+    private val _pendingFileExportType = MutableStateFlow<ExportType?>(null)
+
+    companion object {
+        private const val TAG = "ExportViewModel"
+    }
 
     // ========== Template Selection ==========
 
@@ -208,16 +216,17 @@ class ExportViewModel(
         val currentState = _uiState.value
         if (currentState.lastExportedJson != null && currentState.lastExportType != null) {
             _pendingFileExportContent.value = currentState.lastExportedJson
+            _pendingFileExportType.value = currentState.lastExportType
             val filename = generateFileNameForExport(currentState.lastExportType)
             _events.emit(ExportEvent.RequestFileSave(filename))
         }
     }
 
     private fun generateFileNameForExport(type: ExportType): String {
-        val timestamp = java.text.SimpleDateFormat(
-            "yyyy-MM-dd_HHmmss",
-            java.util.Locale.US
-        ).format(java.util.Date())
+        // Using java.time API for thread-safety (SimpleDateFormat is not thread-safe)
+        val timestamp = LocalDateTime.now().format(
+            DateTimeFormatter.ofPattern("yyyy-MM-dd_HHmmss")
+        )
 
         return when (type) {
             ExportType.TEMPLATE_PACK -> "qwelcome_templates_$timestamp.json"
@@ -234,13 +243,20 @@ class ExportViewModel(
     }
 
     fun onFileSaveComplete() = viewModelScope.launch {
-        _uiState.value.lastExportType?.let {
-            _events.emit(ExportEvent.FileSaved(it))
+        // Use stored pending type first, then fall back to UI state
+        val exportType = _pendingFileExportType.getAndUpdate { null }
+            ?: _uiState.value.lastExportType
+
+        if (exportType != null) {
+            _events.emit(ExportEvent.FileSaved(exportType))
+        } else {
+            Log.w(TAG, "onFileSaveComplete called but no export type available")
         }
         // Content already cleared by getPendingFileExportContent()
     }
 
     fun onFileSaveCancelled() {
         _pendingFileExportContent.value = null
+        _pendingFileExportType.value = null
     }
 }

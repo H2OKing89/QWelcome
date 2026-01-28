@@ -1,6 +1,6 @@
 package com.kingpaging.qwelcome.util
 
-import android.view.View
+import android.view.HapticFeedbackConstants
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalView
@@ -19,7 +19,7 @@ fun rememberHapticFeedback(): () -> Unit {
     val view = LocalView.current
     return remember(view) {
         {
-            view.performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP)
+            view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
         }
     }
 }

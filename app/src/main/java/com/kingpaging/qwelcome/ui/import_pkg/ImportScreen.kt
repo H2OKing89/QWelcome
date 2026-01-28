@@ -62,7 +62,6 @@ import com.kingpaging.qwelcome.ui.components.NeonPanel
 import com.kingpaging.qwelcome.ui.theme.LocalCyberColors
 import com.kingpaging.qwelcome.viewmodel.import_pkg.ImportEvent
 import com.kingpaging.qwelcome.viewmodel.import_pkg.ImportStep
-import java.io.InputStreamReader
 
 @Composable
 fun ImportScreen(
@@ -80,7 +79,7 @@ fun ImportScreen(
         if (uri != null) {
             try {
                 context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                    val json = InputStreamReader(inputStream).readText()
+                    val json = inputStream.bufferedReader().use { it.readText() }
                     vm.onJsonContentReceived(json)
                 } ?: Toast.makeText(context, "Could not open file", Toast.LENGTH_LONG).show()
             } catch (e: SecurityException) {
@@ -250,23 +249,21 @@ private fun IdleStep(
         }
 
         AnimatedVisibility(visible = error != null) {
-            if (error != null) {
-                NeonPanel(
-                    modifier = Modifier.padding(top = 24.dp)
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            Icons.Default.Info,
-                            contentDescription = "Error",
-                            tint = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.padding(end = 8.dp)
-                        )
-                        Text(
-                            text = error,
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
+            NeonPanel(
+                modifier = Modifier.padding(top = 24.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Default.Info,
+                        contentDescription = "Error",
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(end = 8.dp)
+                    )
+                    Text(
+                        text = error!!,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
                 }
             }
         }

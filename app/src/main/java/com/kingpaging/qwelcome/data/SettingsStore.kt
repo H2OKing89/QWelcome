@@ -82,28 +82,26 @@ private val Context.protoDataStore: DataStore<UserPreferences> by dataStore(
                 }
 
                 /**
-                 * Attempt to recover templates when full list deserialization fails.
-                 * This helps preserve user data even when some templates are corrupted.
+                 * Logs diagnostic information about corrupted template data.
+                 * Note: This function only logs and does not reconstruct data,
+                 * as partial JSON recovery is unreliable and could introduce data corruption.
                  */
-                private fun tryRecoverTemplates(json: Json, templatesJson: String): List<TemplateProto> {
-                    Log.w(TAG, "Attempting partial template recovery...")
-                    // Try to extract individual template objects using regex
-                    // This is a best-effort recovery for partially corrupted data
+                private fun tryRecoverTemplates(@Suppress("UNUSED_PARAMETER") json: Json, templatesJson: String): List<TemplateProto> {
+                    Log.w(TAG, "Logging corrupted template data for diagnostics...")
+                    // Try to identify potential template fragments for logging purposes
                     return try {
-                        // Simple approach: try parsing as a list and recover what we can
                         val templateRegex = """\{[^{}]*"id"\s*:\s*"[^"]+""".toRegex()
-                        val matches = templateRegex.findAll(templatesJson)
-                        if (matches.count() == 0) {
-                            Log.w(TAG, "No recoverable templates found")
-                            emptyList()
+                        val matchList = templateRegex.findAll(templatesJson).toList()
+                        val matchCount = matchList.size
+                        if (matchCount == 0) {
+                            Log.w(TAG, "No template fragments found in corrupted data")
                         } else {
-                            Log.w(TAG, "Found ${matches.count()} potential template(s) to recover")
-                            // Return empty list as we can't reliably reconstruct full objects
-                            // At least we've logged what we found
-                            emptyList()
+                            Log.w(TAG, "Found $matchCount template fragment(s) in corrupted data - manual recovery may be needed")
                         }
+                        // Return empty list as we can't reliably reconstruct full objects
+                        emptyList()
                     } catch (e: Exception) {
-                        Log.e(TAG, "Template recovery failed", e)
+                        Log.e(TAG, "Failed to analyze corrupted template data", e)
                         emptyList()
                     }
                 }
@@ -248,9 +246,17 @@ class SettingsStore(private val context: Context) {
         if (validTemplates.isEmpty()) return
 
         dataStore.updateData { prefs ->
-            val templateMap = prefs.templatesList.associateBy { it.id }.toMutableMap()
-            validTemplates.forEach { templateMap[it.id] = it.toProto() }
-            prefs.toBuilder().clearTemplates().addAllTemplates(templateMap.values).build()
+            // Preserve order by starting from existing list and updating/appending
+            val existingList = prefs.templatesList.toMutableList()
+            for (newTemplate in validTemplates) {
+                val existingIndex = existingList.indexOfFirst { it.id == newTemplate.id }
+                if (existingIndex >= 0) {
+                    existingList[existingIndex] = newTemplate.toProto()
+                } else {
+                    existingList.add(newTemplate.toProto())
+                }
+            }
+            prefs.toBuilder().clearTemplates().addAllTemplates(existingList).build()
         }
     }
 

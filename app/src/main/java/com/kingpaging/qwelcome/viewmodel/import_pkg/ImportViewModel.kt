@@ -2,6 +2,7 @@ package com.kingpaging.qwelcome.viewmodel.import_pkg
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.kingpaging.qwelcome.data.ImportApplyResult
 import com.kingpaging.qwelcome.data.ImportExportRepository
 import com.kingpaging.qwelcome.data.ImportValidationResult
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -38,7 +39,7 @@ class ImportViewModel(
     private val _uiState = MutableStateFlow(ImportUiState())
     val uiState: StateFlow<ImportUiState> = _uiState.asStateFlow()
 
-    private val _events = MutableSharedFlow<ImportEvent>()
+    private val _events = MutableSharedFlow<ImportEvent>(replay = 1)
     val events: SharedFlow<ImportEvent> = _events.asSharedFlow()
 
     fun onOpenFileRequest() = viewModelScope.launch {
@@ -114,7 +115,7 @@ class ImportViewModel(
                 }
 
                 when (applyResult) {
-                    is com.kingpaging.qwelcome.data.ImportApplyResult.Success -> {
+                    is ImportApplyResult.Success -> {
                         _uiState.update { it.copy(isImporting = false, step = ImportStep.Complete) }
                         val message = buildString {
                             append("Successfully imported ${applyResult.templatesImported} template")
@@ -125,7 +126,7 @@ class ImportViewModel(
                         }
                         _events.emit(ImportEvent.ImportSuccess(message))
                     }
-                    is com.kingpaging.qwelcome.data.ImportApplyResult.Error -> {
+                    is ImportApplyResult.Error -> {
                         _uiState.update {
                             it.copy(
                                 isImporting = false,

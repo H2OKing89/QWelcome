@@ -142,10 +142,21 @@ class MessageTemplateTest {
         val template = "{{ tech_signature }}"
         val data = createCustomerData()
         val profile = TechProfile(name = "", title = "Manager", dept = "Operations")
-        
+
         val result = MessageTemplate.generate(template, data, profile)
-        
+
         assertEquals("Manager, Operations", result)
+    }
+
+    @Test
+    fun `generate handles tech profile with name and dept`() {
+        val template = "{{ tech_signature }}"
+        val data = createCustomerData()
+        val profile = TechProfile(name = "Jane Doe", title = "", dept = "IT Department")
+
+        val result = MessageTemplate.generate(template, data, profile)
+
+        assertEquals("Jane Doe\nIT Department", result)
     }
 
     @Test
@@ -206,10 +217,20 @@ class MessageTemplateTest {
     fun `generate handles empty template`() {
         val template = ""
         val data = createCustomerData()
-        
+
         val result = MessageTemplate.generate(template, data)
-        
+
         assertEquals("", result)
+    }
+
+    @Test
+    fun `generate leaves unrecognized placeholders unchanged`() {
+        val template = "Hello {{ unknown_field }}!"
+        val data = createCustomerData()
+
+        val result = MessageTemplate.generate(template, data)
+
+        assertEquals("Hello {{ unknown_field }}!", result)
     }
 
     @Test
@@ -253,13 +274,16 @@ class MessageTemplateTest {
     @Test
     fun `PLACEHOLDERS contains all expected keys`() {
         val keys = MessageTemplate.PLACEHOLDERS.map { it.first }
-        
-        assertTrue(keys.contains(MessageTemplate.KEY_CUSTOMER_NAME))
-        assertTrue(keys.contains(MessageTemplate.KEY_SSID))
-        assertTrue(keys.contains(MessageTemplate.KEY_PASSWORD))
-        assertTrue(keys.contains(MessageTemplate.KEY_ACCOUNT_NUMBER))
-        assertTrue(keys.contains(MessageTemplate.KEY_TECH_SIGNATURE))
-        assertEquals(5, keys.size)
+
+        val expectedKeys = setOf(
+            MessageTemplate.KEY_CUSTOMER_NAME,
+            MessageTemplate.KEY_SSID,
+            MessageTemplate.KEY_PASSWORD,
+            MessageTemplate.KEY_ACCOUNT_NUMBER,
+            MessageTemplate.KEY_TECH_SIGNATURE
+        )
+
+        assertEquals(expectedKeys, keys.toSet())
     }
 
     @Test

@@ -22,19 +22,23 @@ navigation/Navigator.kt  # Abstraction for intents (SMS, Share, Clipboard)
 ## Critical Patterns
 
 ### Template System
+
 Templates use UUID-based `id` for conflict detection. The built-in default has `id = "default"` (constant `DEFAULT_TEMPLATE_ID`). When creating new templates in UI, use sentinel `id = "__new__"` (see `TemplateListScreen.kt`).
 
 Required placeholders: `{{ customer_name }}`, `{{ ssid }}` - validation in `Template.kt`.
 
 ### Theme: CyberpunkTheme
+
 Use `MaterialTheme.colorScheme.primary/secondary/tertiary` for standard colors. For non-Material colors (success, warning), use `LocalCyberColors.current`. Check dark mode with `LocalDarkTheme.current`.
 
 Custom components: `NeonPanel`, `NeonButton`, `NeonTextField`, `CyberpunkBackdrop` - all in `ui/components/`.
 
 ### Validation
+
 Phone validation is NANP-specific with progressive feedback. See `CustomerIntakeViewModel.validatePhoneNumber()`. SSID validation should check **bytes** (UTF-8), not characters - max 32 bytes.
 
 ### Testing Considerations
+
 - Use `Navigator` interface for testable intents (production: `AndroidNavigator`)
 - Call `AppViewModelProvider.resetForTesting()` in test teardown
 - CompositionLocals allow swapping ViewModels in tests

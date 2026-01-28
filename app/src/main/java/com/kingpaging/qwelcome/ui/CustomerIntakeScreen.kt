@@ -60,6 +60,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.di.LocalCustomerIntakeViewModel
 import com.kingpaging.qwelcome.di.LocalNavigator
 import com.kingpaging.qwelcome.di.LocalTemplateListViewModel
@@ -118,7 +119,7 @@ fun CustomerIntakeScreen(
                     Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
                 }
                 is UiEvent.RateLimitExceeded -> {
-                    Toast.makeText(context, "Rate limit exceeded. Please wait.", Toast.LENGTH_LONG).show()
+                    Toast.makeText(context, context.getString(R.string.toast_rate_limit), Toast.LENGTH_LONG).show()
                 }
             }
         }

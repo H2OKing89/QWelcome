@@ -13,3 +13,6 @@ captures/
 
 # Local
 /local.properties
+
+# Claude Code local settings (machine-specific)
+**/.claude/settings.local.json
