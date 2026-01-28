@@ -2,12 +2,14 @@ package com.kingpaging.qwelcome.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.data.MessageTemplate
 import com.kingpaging.qwelcome.data.SettingsStore
 import com.kingpaging.qwelcome.data.TechProfile
 import com.kingpaging.qwelcome.navigation.Navigator
 import com.kingpaging.qwelcome.ui.CustomerIntakeUiState
 import com.kingpaging.qwelcome.util.PhoneUtils
+import com.kingpaging.qwelcome.util.ResourceProvider
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -26,72 +28,73 @@ sealed class UiEvent {
     object RateLimitExceeded : UiEvent()
 }
 
-class CustomerIntakeViewModel(private val settingsStore: SettingsStore) : ViewModel() {
+class CustomerIntakeViewModel(
+    private val settingsStore: SettingsStore,
+    private val resourceProvider: ResourceProvider
+) : ViewModel() {
 
     companion object {
         private const val AUTO_CLEAR_TIMEOUT_MINUTES = 10
         private const val AUTO_CLEAR_TIMEOUT_MS = AUTO_CLEAR_TIMEOUT_MINUTES * 60 * 1000L
         private const val ACTION_COOLDOWN_MS = 2000L // 2 seconds between actions
-        
-        // Validation error messages
-        // TODO: Move these to strings.xml for proper localization support
-        // For now, keeping as constants for easier refactoring
-        const val ERROR_NAME_EMPTY = "Customer name is required"
-        const val ERROR_PHONE_EMPTY = "Phone number is required"
-        const val ERROR_PHONE_INVALID = "Enter a valid US phone number"
-        const val ERROR_SSID_EMPTY = "WiFi network name is required"
-        const val ERROR_SSID_TOO_LONG = "SSID cannot exceed 32 bytes (WiFi limit)"
-        const val ERROR_PASSWORD_EMPTY = "WiFi password is required"
-        const val ERROR_PASSWORD_TOO_SHORT = "Password must be at least 8 characters"
-        const val ERROR_PASSWORD_TOO_LONG = "Password cannot exceed 63 characters"
-        const val ERROR_ACCOUNT_EMPTY = "Account number is required"
-        
+
         // Regex for stripping non-digits from phone numbers - reused to avoid allocation
         private val NON_DIGIT_REGEX = Regex("\\D")
-        
+
         /**
          * Validates a US phone number following NANP rules.
          * @param phone The phone number string (may contain formatting characters)
          * @param progressiveMode If true, returns progressive typing feedback (e.g., "7/10 digits").
          *                        If false, returns short generic error suitable for submit validation.
+         * @param resourceProvider Provider to access string resources for error messages.
          * @return Error message string, or null if valid.
          */
-        fun validatePhoneNumber(phone: String, progressiveMode: Boolean): String? {
+        fun validatePhoneNumber(phone: String, progressiveMode: Boolean, resourceProvider: ResourceProvider): String? {
             val digits = phone.replace(NON_DIGIT_REGEX, "")
+            val invalidPhoneError = resourceProvider.getString(R.string.error_phone_invalid)
             return when {
                 phone.isEmpty() -> null // Don't show error for empty (handled at submit)
                 digits.length < 10 -> {
-                    if (progressiveMode) "Enter 10-digit US number (${digits.length}/10)"
-                    else ERROR_PHONE_INVALID
+                    if (progressiveMode) resourceProvider.getString(R.string.error_phone_partial, digits.length)
+                    else invalidPhoneError
                 }
                 digits.length == 10 || digits.length == 11 -> {
-                    validateNanpRules(digits, progressiveMode)
+                    validateNanpRules(digits, progressiveMode, invalidPhoneError, resourceProvider)
                 }
                 digits.length > 11 -> {
-                    if (progressiveMode) "Too many digits (${digits.length})" else ERROR_PHONE_INVALID
+                    if (progressiveMode) resourceProvider.getString(R.string.error_phone_too_many_digits, digits.length)
+                    else invalidPhoneError
                 }
                 else -> null
             }
         }
-        
+
         /**
          * Validates NANP-specific rules for 10 or 11 digit phone numbers.
          * Extracted to reduce cognitive complexity of validatePhoneNumber.
          */
-        private fun validateNanpRules(digits: String, progressiveMode: Boolean): String? {
+        private fun validateNanpRules(
+            digits: String,
+            progressiveMode: Boolean,
+            invalidPhoneError: String,
+            resourceProvider: ResourceProvider
+        ): String? {
             // Check NANP rules: area code and exchange must start with 2-9
             val areaStart = if (digits.length == 11) 1 else 0
             val areaCode = digits.substring(areaStart, areaStart + 3)
             val exchange = digits.substring(areaStart + 3, areaStart + 6)
             return when {
                 digits.length == 11 && digits[0] != '1' -> {
-                    if (progressiveMode) "US numbers start with 1" else ERROR_PHONE_INVALID
+                    if (progressiveMode) resourceProvider.getString(R.string.error_phone_us_start)
+                    else invalidPhoneError
                 }
                 areaCode[0] !in '2'..'9' -> {
-                    if (progressiveMode) "Area code can't start with ${areaCode[0]}" else ERROR_PHONE_INVALID
+                    if (progressiveMode) resourceProvider.getString(R.string.error_phone_area_code, areaCode[0])
+                    else invalidPhoneError
                 }
                 exchange[0] !in '2'..'9' -> {
-                    if (progressiveMode) "Exchange can't start with ${exchange[0]}" else ERROR_PHONE_INVALID
+                    if (progressiveMode) resourceProvider.getString(R.string.error_phone_exchange, exchange[0])
+                    else invalidPhoneError
                 }
                 else -> null // Valid!
             }
@@ -135,7 +138,7 @@ class CustomerIntakeViewModel(private val settingsStore: SettingsStore) : ViewMo
 
     fun onCustomerPhoneChanged(phone: String) {
         // Real-time validation with progressive feedback
-        val error = validatePhoneNumber(phone, progressiveMode = true)
+        val error = validatePhoneNumber(phone, progressiveMode = true, resourceProvider)
         _uiState.update { it.copy(customerPhone = phone, customerPhoneError = error) }
     }
 
@@ -143,7 +146,7 @@ class CustomerIntakeViewModel(private val settingsStore: SettingsStore) : ViewMo
         // Real-time validation for SSID byte length (WiFi spec: max 32 bytes UTF-8)
         val error = when {
             ssid.isEmpty() -> null // Don't show error for empty (show on submit)
-            ssid.toByteArray(Charsets.UTF_8).size > 32 -> ERROR_SSID_TOO_LONG
+            ssid.toByteArray(Charsets.UTF_8).size > 32 -> resourceProvider.getString(R.string.error_ssid_too_long)
             else -> null
         }
         _uiState.update { it.copy(ssid = ssid, ssidError = error) }
@@ -153,8 +156,8 @@ class CustomerIntakeViewModel(private val settingsStore: SettingsStore) : ViewMo
         // Real-time validation feedback for WiFi password (WPA/WPA2: 8-63 chars)
         val error = when {
             password.isEmpty() -> null // Don't show error for empty (show on submit)
-            password.length < 8 -> "Password must be at least 8 characters (${password.length}/8)"
-            password.length > 63 -> ERROR_PASSWORD_TOO_LONG
+            password.length < 8 -> resourceProvider.getString(R.string.error_password_partial, password.length)
+            password.length > 63 -> resourceProvider.getString(R.string.error_password_too_long)
             else -> null
         }
         _uiState.update { it.copy(password = password, passwordError = error) }
@@ -217,7 +220,7 @@ class CustomerIntakeViewModel(private val settingsStore: SettingsStore) : ViewMo
             val message = generateMessage()
             navigator.copyToClipboard("Customer Message", message)
             _uiEvent.emit(UiEvent.CopySuccess)
-            _uiEvent.emit(UiEvent.ShowToast("Message copied to clipboard"))
+            _uiEvent.emit(UiEvent.ShowToast(resourceProvider.getString(R.string.toast_copied_to_clipboard)))
         }
     }
 
@@ -227,32 +230,32 @@ class CustomerIntakeViewModel(private val settingsStore: SettingsStore) : ViewMo
      */
     private fun validateInputs(requirePhone: Boolean): Boolean {
         val currentState = _uiState.value
-        
+
         // Calculate all errors at once
-        val customerNameError = if (currentState.customerName.isBlank()) ERROR_NAME_EMPTY else null
-        
+        val customerNameError = if (currentState.customerName.isBlank()) resourceProvider.getString(R.string.error_name_empty) else null
+
         val customerPhoneError = if (requirePhone) {
             when {
-                currentState.customerPhone.isBlank() -> ERROR_PHONE_EMPTY
-                else -> validatePhoneNumber(currentState.customerPhone, progressiveMode = false)
+                currentState.customerPhone.isBlank() -> resourceProvider.getString(R.string.error_phone_empty)
+                else -> validatePhoneNumber(currentState.customerPhone, progressiveMode = false, resourceProvider)
             }
         } else null
-        
+
         val ssidError = when {
-            currentState.ssid.isBlank() -> ERROR_SSID_EMPTY
-            currentState.ssid.toByteArray(Charsets.UTF_8).size > 32 -> ERROR_SSID_TOO_LONG
+            currentState.ssid.isBlank() -> resourceProvider.getString(R.string.error_ssid_empty)
+            currentState.ssid.toByteArray(Charsets.UTF_8).size > 32 -> resourceProvider.getString(R.string.error_ssid_too_long)
             else -> null
         }
-        
+
         val passwordError = when {
-            currentState.password.isBlank() -> ERROR_PASSWORD_EMPTY
-            currentState.password.length < 8 -> ERROR_PASSWORD_TOO_SHORT
-            currentState.password.length > 63 -> ERROR_PASSWORD_TOO_LONG
+            currentState.password.isBlank() -> resourceProvider.getString(R.string.error_password_empty)
+            currentState.password.length < 8 -> resourceProvider.getString(R.string.error_password_too_short)
+            currentState.password.length > 63 -> resourceProvider.getString(R.string.error_password_too_long)
             else -> null
         }
-        
-        val accountNumberError = if (currentState.accountNumber.isBlank()) ERROR_ACCOUNT_EMPTY else null
-        
+
+        val accountNumberError = if (currentState.accountNumber.isBlank()) resourceProvider.getString(R.string.error_account_empty) else null
+
         // Batch all error updates into a single state change to minimize recompositions
         _uiState.update { state ->
             state.copy(
@@ -264,10 +267,10 @@ class CustomerIntakeViewModel(private val settingsStore: SettingsStore) : ViewMo
             )
         }
 
-        return customerNameError == null && 
-               customerPhoneError == null && 
-               ssidError == null && 
-               passwordError == null && 
+        return customerNameError == null &&
+               customerPhoneError == null &&
+               ssidError == null &&
+               passwordError == null &&
                accountNumberError == null
     }
 
@@ -293,7 +296,7 @@ class CustomerIntakeViewModel(private val settingsStore: SettingsStore) : ViewMo
             baseMessage + buildSignature(techProfile)
         }
     }
-    
+
     private fun buildSignature(profile: TechProfile): String {
         val lines = listOf(profile.name, profile.title, profile.dept)
             .map { it.trim() }

@@ -9,6 +9,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
@@ -38,15 +39,25 @@ import com.kingpaging.qwelcome.viewmodel.settings.SettingsViewModel
 import com.kingpaging.qwelcome.viewmodel.templates.TemplateListViewModel
 
 /**
- * Simple screen navigation state for the app.
+ * Simple screen navigation state for the app. Using a stable string `key`
+ * makes this robust against enum renaming during app updates.
  */
-private enum class Screen {
-    Main,
-    Settings,
-    Export,
-    Import,
-    TemplateList
+private enum class Screen(val key: String) {
+    Main("main"),
+    Settings("settings"),
+    Export("export"),
+    Import("import"),
+    TemplateList("template_list")
 }
+
+/**
+ * Custom Saver for the Screen enum to make it robust to enum name changes.
+ * It saves and restores the enum based on its stable `key` property.
+ */
+private val ScreenSaver = Saver<Screen, String>(
+    save = { it.key },
+    restore = { key -> Screen.entries.firstOrNull { it.key == key } ?: Screen.Main }
+)
 
 class MainActivity : ComponentActivity() {
 
@@ -104,9 +115,9 @@ class MainActivity : ComponentActivity() {
                         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
                     }
 
-                    var currentScreen by rememberSaveable { mutableStateOf(Screen.Main) }
+                    var currentScreen by rememberSaveable(stateSaver = ScreenSaver) { mutableStateOf(Screen.Main) }
                     // Track origin screen for TemplateList navigation
-                    var templateListOrigin by rememberSaveable { mutableStateOf(Screen.Settings) }
+                    var templateListOrigin by rememberSaveable(stateSaver = ScreenSaver) { mutableStateOf(Screen.Settings) }
 
                     // Handle system back button/gesture
                     BackHandler(enabled = currentScreen != Screen.Main) {

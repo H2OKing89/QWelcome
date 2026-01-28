@@ -20,6 +20,12 @@ private const val MAX_SUPPORTED_SCHEMA_VERSION = EXPORT_SCHEMA_VERSION
 private const val TEMPLATE_CONTENT_WARNING_LENGTH = 2000
 
 /**
+ * Maximum export size in bytes (10MB).
+ * Prevents memory exhaustion when encoding large exports.
+ */
+private const val MAX_EXPORT_SIZE_BYTES = 10 * 1024 * 1024
+
+/**
  * Repository for handling JSON import/export of templates and settings.
  *
  * Provides:
@@ -59,6 +65,20 @@ class ImportExportRepository(private val settingsStore: SettingsStore) {
                 return ExportResult.Error("No templates to export")
             }
 
+            // Estimate export size to prevent memory exhaustion
+            // First use cheap String.length estimate, then compute precise UTF-8 size if near limit
+            // Use 50% threshold to catch multi-byte content that could push actual size over limit
+            val cheapEstimate = templatesToExport.sumOf { it.content.length + it.name.length + 200 }
+            if (cheapEstimate > MAX_EXPORT_SIZE_BYTES / 2) {
+                // Near limit - compute precise UTF-8 byte size
+                val preciseSize = templatesToExport.sumOf {
+                    it.content.toByteArray(Charsets.UTF_8).size + it.name.toByteArray(Charsets.UTF_8).size + 200
+                }
+                if (preciseSize > MAX_EXPORT_SIZE_BYTES) {
+                    return ExportResult.Error("Export too large (max 10MB)")
+                }
+            }
+
             val pack = TemplatePack.create(
                 templates = templatesToExport,
                 appVersion = getAppVersion()
@@ -85,6 +105,23 @@ class ImportExportRepository(private val settingsStore: SettingsStore) {
             val allTemplates = settingsStore.getAllTemplates()
             val userTemplates = allTemplates.filter { it.id != DEFAULT_TEMPLATE_ID }
             val activeTemplateId = settingsStore.getActiveTemplateId()
+
+            // Estimate export size to prevent memory exhaustion
+            // First use cheap String.length estimate, then compute precise UTF-8 size if near limit
+            // Use 50% threshold to catch multi-byte content that could push actual size over limit
+            val cheapEstimate = userTemplates.sumOf { it.content.length + it.name.length + 200 } +
+                techProfile.name.length + techProfile.title.length + techProfile.dept.length + 500
+            if (cheapEstimate > MAX_EXPORT_SIZE_BYTES / 2) {
+                // Near limit - compute precise UTF-8 byte size
+                val preciseSize = userTemplates.sumOf {
+                    it.content.toByteArray(Charsets.UTF_8).size + it.name.toByteArray(Charsets.UTF_8).size + 200
+                } + techProfile.name.toByteArray(Charsets.UTF_8).size +
+                    techProfile.title.toByteArray(Charsets.UTF_8).size +
+                    techProfile.dept.toByteArray(Charsets.UTF_8).size + 500
+                if (preciseSize > MAX_EXPORT_SIZE_BYTES) {
+                    return ExportResult.Error("Export too large (max 10MB)")
+                }
+            }
 
             val backup = FullBackup.create(
                 techProfile = techProfile,

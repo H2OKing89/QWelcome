@@ -2,7 +2,6 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
-    // Note: kotlin-android is included transitively via kotlin.compose plugin
 }
 
 android {
@@ -40,6 +39,7 @@ android {
 }
 
 dependencies {
+    implementation(project(":proto"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -52,6 +52,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.datastore.preferences)
+    implementation(libs.androidx.datastore.core)
     implementation(libs.androidx.splashscreen)
     // QR Code generation with styling support
     implementation(libs.qrose)

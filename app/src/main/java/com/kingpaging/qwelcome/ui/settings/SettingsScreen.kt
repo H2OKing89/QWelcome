@@ -3,8 +3,8 @@
 package com.kingpaging.qwelcome.ui.settings
 
 import android.content.Intent
-import android.net.Uri
 import androidx.activity.compose.BackHandler
+import androidx.core.net.toUri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -239,7 +239,7 @@ fun SettingsScreen(
                 // === TECH PROFILE SECTION ===
                 Text(
                     "Tech Profile",
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.primary
                 )
                 NeonPanel {
@@ -265,7 +265,7 @@ fun SettingsScreen(
                 // === MESSAGE TEMPLATE SECTION ===
                 Text(
                     "Message Template",
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.primary
                 )
                 NeonPanel {
@@ -398,7 +398,7 @@ fun SettingsScreen(
                 // === EXPORT / IMPORT SECTION ===
                 Text(
                     "Export & Share",
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.primary
                 )
                 NeonPanel {
@@ -443,7 +443,7 @@ fun SettingsScreen(
                 // === ABOUT & UPDATES SECTION ===
                 Text(
                     "About",
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.primary
                 )
                 
@@ -497,7 +497,7 @@ fun SettingsScreen(
                             is UpdateState.Available -> {
                                 TextButton(
                                     onClick = {
-                                        val uri = Uri.parse(state.downloadUrl)
+                                        val uri = state.downloadUrl.toUri()
                                         // Only allow https URLs for security
                                         if (uri.scheme != "https" && uri.scheme != "http") return@TextButton
                                         val intent = Intent(Intent.ACTION_VIEW, uri)
@@ -557,7 +557,7 @@ fun SettingsScreen(
                     // View on GitHub link
                     TextButton(
                         onClick = {
-                            val uri = Uri.parse("https://github.com/H2OKing89/QWelcome")
+                            val uri = "https://github.com/H2OKing89/QWelcome".toUri()
                             val intent = Intent(Intent.ACTION_VIEW, uri)
                                 .addCategory(Intent.CATEGORY_BROWSABLE)
                             try {

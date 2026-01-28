@@ -1,11 +1,14 @@
 package com.kingpaging.qwelcome.navigation
 
+import android.content.ActivityNotFoundException
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.util.Log
+import android.widget.Toast
 
 /**
  * Abstraction for navigation and intent-based actions.
@@ -40,48 +43,79 @@ interface Navigator {
     fun copyToClipboard(label: String, text: String)
 }
 
+private const val TAG = "AndroidNavigator"
+
 /**
  * Production implementation of [Navigator] that uses Android APIs.
- * 
+ *
  * @param context Application context for starting activities and accessing system services.
  *                Using application context avoids memory leaks.
  */
 class AndroidNavigator(private val context: Context) : Navigator {
-    
+
     override fun openSms(phoneNumber: String, message: String) {
-        val intent = Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:$phoneNumber")).apply {
+        val smsUri = Uri.fromParts("smsto", phoneNumber, null)
+        val intent = Intent(Intent.ACTION_SENDTO, smsUri).apply {
             putExtra("sms_body", message)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
-        
-        // Check if there's a default handler for SMS intents
-        val hasDefaultHandler = context.packageManager.resolveActivity(
-            intent,
-            PackageManager.MATCH_DEFAULT_ONLY
-        ) != null
-        
-        if (hasDefaultHandler) {
-            // Launch directly to the default SMS app
-            context.startActivity(intent)
-        } else {
-            // No default handler, show chooser
-            context.startActivity(Intent.createChooser(intent, "Send message via...").apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            })
+
+        try {
+            // Check if there's a default handler for SMS intents
+            val hasDefaultHandler = context.packageManager.resolveActivity(
+                intent,
+                PackageManager.MATCH_DEFAULT_ONLY
+            ) != null
+
+            if (hasDefaultHandler) {
+                // Launch directly to the default SMS app
+                context.startActivity(intent)
+            } else {
+                // No default handler, show chooser
+                context.startActivity(Intent.createChooser(intent, "Send message via...").apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                })
+            }
+        } catch (e: ActivityNotFoundException) {
+            Log.e(TAG, "No SMS app available", e)
+            Toast.makeText(context, "No messaging app found", Toast.LENGTH_SHORT).show()
+        } catch (e: SecurityException) {
+            Log.e(TAG, "SecurityException opening SMS app", e)
+            Toast.makeText(context, "Unable to open messaging app", Toast.LENGTH_SHORT).show()
+        } catch (e: IllegalArgumentException) {
+            Log.e(TAG, "IllegalArgumentException opening SMS app", e)
+            Toast.makeText(context, "Unable to open messaging app", Toast.LENGTH_SHORT).show()
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to open SMS app: ${e::class.java.simpleName}", e)
+            Toast.makeText(context, "Unable to open messaging app", Toast.LENGTH_SHORT).show()
         }
     }
-    
+
     override fun shareText(message: String, chooserTitle: String) {
         val intent = Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"
             putExtra(Intent.EXTRA_TEXT, message)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
-        context.startActivity(Intent.createChooser(intent, chooserTitle).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        })
+        try {
+            context.startActivity(Intent.createChooser(intent, chooserTitle).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            })
+        } catch (e: ActivityNotFoundException) {
+            Log.e(TAG, "No share target available", e)
+            Toast.makeText(context, "No app available to share", Toast.LENGTH_SHORT).show()
+        } catch (e: SecurityException) {
+            Log.e(TAG, "SecurityException opening share sheet", e)
+            Toast.makeText(context, "Unable to share", Toast.LENGTH_SHORT).show()
+        } catch (e: IllegalArgumentException) {
+            Log.e(TAG, "IllegalArgumentException opening share sheet", e)
+            Toast.makeText(context, "Unable to share", Toast.LENGTH_SHORT).show()
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to open share sheet: ${e::class.java.simpleName}", e)
+            Toast.makeText(context, "Unable to share", Toast.LENGTH_SHORT).show()
+        }
     }
-    
+
     override fun copyToClipboard(label: String, text: String) {
         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
         clipboard.setPrimaryClip(ClipData.newPlainText(label, text))

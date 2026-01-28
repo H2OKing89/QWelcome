@@ -106,7 +106,7 @@ object SoundManager {
         for (i in 0 until numSamples) {
             val angle = 2.0 * PI * i / (sampleRate / frequency)
             var sample = sin(angle)
-            
+
             // Apply fade in/out envelope
             val envelope = when {
                 i < fadeLength -> i.toFloat() / fadeLength
@@ -135,12 +135,23 @@ object SoundManager {
             .setTransferMode(AudioTrack.MODE_STATIC)
             .build()
 
-        audioTrack.write(samples, 0, samples.size)
-        audioTrack.play()
-        
-        // Wait for playback to complete then release
-        delay(durationMs.toLong() + 20)
-        audioTrack.stop()
-        audioTrack.release()
+        try {
+            val written = audioTrack.write(samples, 0, samples.size)
+            if (written != samples.size) return
+            audioTrack.play()
+
+            // Wait for playback to complete
+            delay(durationMs.toLong() + 20)
+        } finally {
+            // Ensure AudioTrack is always released, even if delay() throws CancellationException
+            try {
+                if (audioTrack.playState == AudioTrack.PLAYSTATE_PLAYING) {
+                    audioTrack.stop()
+                }
+            } catch (_: IllegalStateException) {
+                // Ignore - stop() can throw if playback never started
+            }
+            audioTrack.release()
+        }
     }
 }

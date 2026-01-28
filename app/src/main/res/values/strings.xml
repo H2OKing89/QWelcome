@@ -1,18 +1,24 @@
 <resources>
     <string name="app_name">Q Welcome</string>
     <string name="welcome_template">Welcome, {{ customer_name }}! 🎉\n\nWe\'re excited to have you as a customer. Your fast, reliable fiber internet is now up and running. Below are your Wi-Fi details:\n\n📶 Wi-Fi Network (SSID): {{ ssid }}\n🔑 Password: {{ password }}\n👤 Account Number: {{ account_number }}\n\nYou can now connect all your devices and enjoy blazing-fast speeds, crystal-clear streaming, and seamless browsing.\n\nIf you ever need assistance, our friendly support team is here to help.\n\nWelcome aboard, {{ customer_name }} — let the streaming, browsing, and connecting begin! 🚀</string>
-    
+
     <!-- Validation error messages -->
     <string name="error_name_empty">Customer name is required</string>
     <string name="error_phone_empty">Phone number is required</string>
     <string name="error_phone_invalid">Enter a valid US phone number</string>
+    <string name="error_phone_partial">Enter 10-digit US number (%1$d/10)</string>
+    <string name="error_phone_too_many_digits">Too many digits (%1$d)</string>
+    <string name="error_phone_us_start">US numbers start with 1</string>
+    <string name="error_phone_area_code">Area code can\'t start with %1$c</string>
+    <string name="error_phone_exchange">Exchange can\'t start with %1$c</string>
     <string name="error_ssid_empty">WiFi network name is required</string>
-    <string name="error_ssid_too_long">SSID cannot exceed 32 characters</string>
+    <string name="error_ssid_too_long">SSID cannot exceed 32 bytes (WiFi limit)</string>
     <string name="error_password_empty">WiFi password is required</string>
     <string name="error_password_too_short">Password must be at least 8 characters</string>
+    <string name="error_password_partial">Password must be at least 8 characters (%1$d/8)</string>
     <string name="error_password_too_long">Password cannot exceed 63 characters</string>
     <string name="error_account_empty">Account number is required</string>
-    
+
     <!-- Toast messages -->
     <string name="toast_copied_to_clipboard">Message copied to clipboard</string>
     <string name="toast_rate_limit">Rate limit exceeded. Please wait.</string>

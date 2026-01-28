@@ -6,9 +6,13 @@ captures/
 
 # Build
 /build
+**/build/
 *.apk
 *.aab
 *.ap_
 
 # Local
 /local.properties
+
+# Claude Code local settings (machine-specific)
+**/.claude/settings.local.json
