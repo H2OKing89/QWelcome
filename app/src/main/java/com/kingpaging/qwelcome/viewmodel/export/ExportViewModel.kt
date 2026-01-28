@@ -2,7 +2,6 @@ package com.kingpaging.qwelcome.viewmodel.export
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.kingpaging.qwelcome.data.DEFAULT_TEMPLATE_ID
 import com.kingpaging.qwelcome.data.ExportResult
 import com.kingpaging.qwelcome.data.ImportExportRepository
 import com.kingpaging.qwelcome.data.SettingsStore
@@ -140,19 +139,7 @@ class ExportViewModel(
         }
     }
 
-    /**
-     * Check if there are user templates available for export.
-     */
-    fun hasUserTemplates(): Boolean = _uiState.value.availableTemplates.isNotEmpty()
-
     // ========== Direct Export Functions ==========
-
-    fun exportTemplatePack() {
-        if (_uiState.value.isExporting) return
-        export(ExportType.TEMPLATE_PACK) {
-            repository.exportTemplatePack()
-        }
-    }
 
     fun exportFullBackup() {
         if (_uiState.value.isExporting) return

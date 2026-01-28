@@ -135,6 +135,21 @@ private val Context.protoDataStore: DataStore<UserPreferences> by dataStore(
 const val DEFAULT_TEMPLATE_ID = "default"
 
 /**
+ * Catches [IOException] on a [Flow] of [UserPreferences], logging the error and emitting a default instance.
+ * Other exceptions are rethrown. Reduces duplication across DataStore flows.
+ */
+private fun Flow<UserPreferences>.catchIoException(
+    errorMessage: String
+): Flow<UserPreferences> = catch { exception ->
+    if (exception is IOException) {
+        Log.e(TAG, errorMessage, exception)
+        emit(UserPreferences.getDefaultInstance())
+    } else {
+        throw exception
+    }
+}
+
+/**
  * Manages app settings and template storage using Proto DataStore.
  */
 class SettingsStore(private val context: Context) {
@@ -157,14 +172,8 @@ class SettingsStore(private val context: Context) {
     // ========== Tech Profile ==========
 
     val techProfileFlow: Flow<TechProfile> = dataStore.data
-        .catch { exception ->
-            if (exception is IOException) {
-                Log.e(TAG, "Error reading tech profile.", exception)
-                emit(UserPreferences.getDefaultInstance())
-            } else {
-                throw exception
-            }
-        }.map { preferences -> TechProfile.fromProto(preferences.techProfile) }
+        .catchIoException("Error reading tech profile.")
+        .map { preferences -> TechProfile.fromProto(preferences.techProfile) }
 
     suspend fun saveTechProfile(profile: TechProfile) {
         dataStore.updateData { preferences ->
@@ -179,14 +188,7 @@ class SettingsStore(private val context: Context) {
     // ========== Templates ==========
 
     val userTemplatesFlow: Flow<List<Template>> = dataStore.data
-        .catch { exception ->
-            if (exception is IOException) {
-                Log.e(TAG, "Error reading user templates.", exception)
-                emit(UserPreferences.getDefaultInstance())
-            } else {
-                throw exception
-            }
-        }
+        .catchIoException("Error reading user templates.")
         .map { prefs -> prefs.templatesList.map { Template.fromProto(it) } }
 
     val allTemplatesFlow: Flow<List<Template>> = userTemplatesFlow.map { userTemplates ->
@@ -194,25 +196,11 @@ class SettingsStore(private val context: Context) {
     }
 
     val activeTemplateIdFlow: Flow<String> = dataStore.data
-        .catch { exception ->
-            if (exception is IOException) {
-                Log.e(TAG, "Error reading active template ID.", exception)
-                emit(UserPreferences.getDefaultInstance())
-            } else {
-                throw exception
-            }
-        }
+        .catchIoException("Error reading active template ID.")
         .map { prefs -> prefs.activeTemplateId.ifEmpty { DEFAULT_TEMPLATE_ID } }
 
     val activeTemplateFlow: Flow<Template> = dataStore.data
-        .catch { exception ->
-            if (exception is IOException) {
-                Log.e(TAG, "Error reading active template.", exception)
-                emit(UserPreferences.getDefaultInstance())
-            } else {
-                throw exception
-            }
-        }
+        .catchIoException("Error reading active template.")
         .map { prefs ->
             val activeId = prefs.activeTemplateId.ifEmpty { DEFAULT_TEMPLATE_ID }
             if (activeId == DEFAULT_TEMPLATE_ID) {

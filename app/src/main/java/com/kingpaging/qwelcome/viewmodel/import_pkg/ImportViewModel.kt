@@ -116,6 +116,7 @@ class ImportViewModel(
                     }
                     is ImportValidationResult.Invalid -> {
                         // This shouldn't happen as we check before calling this function
+                        _uiState.update { it.copy(isImporting = false) }
                         return@launch
                     }
                 }

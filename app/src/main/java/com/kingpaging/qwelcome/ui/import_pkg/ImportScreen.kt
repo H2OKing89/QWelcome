@@ -2,6 +2,7 @@
 
 package com.kingpaging.qwelcome.ui.import_pkg
 
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -88,10 +89,13 @@ fun ImportScreen(
                     vm.onJsonContentReceived(json)
                 } ?: Toast.makeText(context, "Could not open file", Toast.LENGTH_LONG).show()
             } catch (e: SecurityException) {
+                Log.w("ImportScreen", "File permission denied", e)
                 Toast.makeText(context, "Permission denied to read file", Toast.LENGTH_LONG).show()
             } catch (e: java.io.IOException) {
+                Log.w("ImportScreen", "File read error", e)
                 Toast.makeText(context, "Error reading file: ${e.message}", Toast.LENGTH_LONG).show()
             } catch (e: Exception) {
+                Log.e("ImportScreen", "Unexpected file error", e)
                 Toast.makeText(context, "Unexpected error: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }

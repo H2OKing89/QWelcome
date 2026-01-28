@@ -136,7 +136,8 @@ object SoundManager {
             .build()
 
         try {
-            audioTrack.write(samples, 0, samples.size)
+            val written = audioTrack.write(samples, 0, samples.size)
+            if (written != samples.size) return
             audioTrack.play()
 
             // Wait for playback to complete

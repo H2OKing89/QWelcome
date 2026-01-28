@@ -155,9 +155,10 @@ object UpdateChecker {
      * Handles malformed versions gracefully (e.g., "1.", "1.2.", ".1.2").
      */
     private fun parseVersionParts(versionBase: String): List<Int> {
-        return versionBase.split(".")
-            .filter { it.isNotEmpty() }
-            .mapNotNull { it.toIntOrNull() }
+        val segments = versionBase.split(".").filter { it.isNotEmpty() }
+        val parsed = segments.map { it.toIntOrNull() }
+        // If any segment is non-numeric, treat entire version as invalid
+        return if (parsed.any { it == null }) emptyList() else parsed.filterNotNull()
     }
 
     /**
