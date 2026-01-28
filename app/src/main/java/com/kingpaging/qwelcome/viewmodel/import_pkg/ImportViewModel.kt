@@ -54,6 +54,7 @@ class ImportViewModel(
         if (_uiState.value.isImporting) return
         _uiState.update { it.copy(isImporting = true, error = null) }
 
+        importJob?.cancel()
         importJob = viewModelScope.launch {
             try {
                 when (val result = repository.validateImport(json)) {
@@ -95,6 +96,7 @@ class ImportViewModel(
         if (currentStep !is ImportStep.Validated || _uiState.value.isImporting) return
 
         _uiState.update { it.copy(isImporting = true, error = null) }
+        importJob?.cancel()
         importJob = viewModelScope.launch {
             try {
                 // Apply the import based on the validation result type

@@ -70,7 +70,7 @@ private val Context.protoDataStore: DataStore<UserPreferences> by dataStore(
                             // Log error with full context for debugging
                             Log.e(TAG, "Error decoding templates from preferences. JSON length: ${templatesJson.length}", e)
                             // Attempt partial recovery by trying to decode individual templates
-                            logCorruptedTemplatesDiagnostics(json, templatesJson)
+                            logCorruptedTemplatesDiagnostics(templatesJson)
                         }
                     }
 
@@ -87,7 +87,7 @@ private val Context.protoDataStore: DataStore<UserPreferences> by dataStore(
                  * as partial JSON recovery is unreliable and could introduce data corruption.
                  * Always returns an empty list.
                  */
-                private fun logCorruptedTemplatesDiagnostics(@Suppress("UNUSED_PARAMETER") json: Json, templatesJson: String): List<TemplateProto> {
+                private fun logCorruptedTemplatesDiagnostics(templatesJson: String): List<TemplateProto> {
                     Log.w(TAG, "Logging corrupted template data for diagnostics...")
                     // Try to identify potential template fragments for logging purposes
                     return try {
