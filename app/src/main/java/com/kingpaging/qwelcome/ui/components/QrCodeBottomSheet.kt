@@ -42,6 +42,9 @@ import io.github.alexzhirkevich.qrose.options.roundCorners
 import io.github.alexzhirkevich.qrose.QrCodePainter
 import io.github.alexzhirkevich.qrose.rememberQrCodePainter
 import io.github.alexzhirkevich.qrose.toByteArray
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 
@@ -52,6 +55,9 @@ fun QrCodeBottomSheet(
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var isSaving by remember { mutableStateOf(false) }
+    var isSharing by remember { mutableStateOf(false) }
     val wifiString = remember(ssid, password) {
         WifiQrGenerator.generateWifiString(ssid, password)
     }
@@ -157,18 +163,48 @@ fun QrCodeBottomSheet(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 NeonCyanButton(
-                    onClick = { saveQrCodeToGallery(context, wifiString, ssid) },
+                    onClick = {
+                        scope.launch {
+                            isSaving = true
+                            saveQrCodeToGallery(context, wifiString, ssid)
+                            isSaving = false
+                        }
+                    },
+                    enabled = !isSaving && !isSharing,
                     modifier = Modifier.weight(1f)
                 ) {
-                    Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(18.dp))
+                    if (isSaving) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                    } else {
+                        Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(18.dp))
+                    }
                     Spacer(Modifier.width(8.dp))
                     Text("Save")
                 }
                 NeonMagentaButton(
-                    onClick = { shareQrCode(context, wifiString, ssid) },
+                    onClick = {
+                        scope.launch {
+                            isSharing = true
+                            shareQrCode(context, wifiString, ssid)
+                            isSharing = false
+                        }
+                    },
+                    enabled = !isSaving && !isSharing,
                     modifier = Modifier.weight(1f)
                 ) {
-                    Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp))
+                    if (isSharing) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                    } else {
+                        Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp))
+                    }
                     Spacer(Modifier.width(8.dp))
                     Text("Share")
                 }
@@ -256,36 +292,39 @@ private fun generateHighResQrBitmap(
     return finalBitmap
 }
 
-private fun saveQrCodeToGallery(
+private suspend fun saveQrCodeToGallery(
     context: Context,
     wifiString: String,
     ssid: String
 ) {
     var bitmap: Bitmap? = null
     try {
-        bitmap = generateHighResQrBitmap(wifiString)
-        val filename = "WiFi_QR_${ssid.replace(" ", "_")}_${System.currentTimeMillis()}.png"
+        bitmap = withContext(Dispatchers.IO) {
+            val bmp = generateHighResQrBitmap(wifiString)
+            val filename = "WiFi_QR_${ssid.replace(" ", "_")}_${System.currentTimeMillis()}.png"
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            val contentValues = ContentValues().apply {
-                put(MediaStore.Images.Media.DISPLAY_NAME, filename)
-                put(MediaStore.Images.Media.MIME_TYPE, "image/png")
-                put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/QWelcome")
-            }
-            context.contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)?.let { uri ->
-                context.contentResolver.openOutputStream(uri)?.use { stream ->
-                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                val contentValues = ContentValues().apply {
+                    put(MediaStore.Images.Media.DISPLAY_NAME, filename)
+                    put(MediaStore.Images.Media.MIME_TYPE, "image/png")
+                    put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/QWelcome")
+                }
+                context.contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)?.let { uri ->
+                    context.contentResolver.openOutputStream(uri)?.use { stream ->
+                        bmp.compress(Bitmap.CompressFormat.PNG, 100, stream)
+                    }
+                }
+            } else {
+                @Suppress("DEPRECATION")
+                val picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+                val qwelcomeDir = File(picturesDir, "QWelcome")
+                qwelcomeDir.mkdirs()
+                val file = File(qwelcomeDir, filename)
+                FileOutputStream(file).use { stream ->
+                    bmp.compress(Bitmap.CompressFormat.PNG, 100, stream)
                 }
             }
-        } else {
-            @Suppress("DEPRECATION")
-            val picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
-            val qwelcomeDir = File(picturesDir, "QWelcome")
-            qwelcomeDir.mkdirs()
-            val file = File(qwelcomeDir, filename)
-            FileOutputStream(file).use { stream ->
-                bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
-            }
+            bmp
         }
         Toast.makeText(context, R.string.toast_qr_saved, Toast.LENGTH_SHORT).show()
     } catch (e: Exception) {
@@ -295,23 +334,26 @@ private fun saveQrCodeToGallery(
     }
 }
 
-private fun shareQrCode(
+private suspend fun shareQrCode(
     context: Context,
     wifiString: String,
     ssid: String
 ) {
     var bitmap: Bitmap? = null
     try {
-        bitmap = generateHighResQrBitmap(wifiString)
-        val cacheDir = File(context.cacheDir, "qr_codes")
-        if (!cacheDir.exists() && !cacheDir.mkdirs()) {
-            throw Exception("Failed to create cache directory")
+        val (uri, bmp) = withContext(Dispatchers.IO) {
+            val bmp = generateHighResQrBitmap(wifiString)
+            val cacheDir = File(context.cacheDir, "qr_codes")
+            if (!cacheDir.exists() && !cacheDir.mkdirs()) {
+                throw Exception("Failed to create cache directory")
+            }
+            val file = File(cacheDir, "WiFi_QR_${ssid.replace(" ", "_")}.png")
+            FileOutputStream(file).use { stream ->
+                bmp.compress(Bitmap.CompressFormat.PNG, 100, stream)
+            }
+            FileProvider.getUriForFile(context, "${context.packageName}.provider", file) to bmp
         }
-        val file = File(cacheDir, "WiFi_QR_${ssid.replace(" ", "_")}.png")
-        FileOutputStream(file).use { stream ->
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
-        }
-        val uri = FileProvider.getUriForFile(context, "${context.packageName}.provider", file)
+        bitmap = bmp
         val intent = Intent(Intent.ACTION_SEND).apply {
             type = "image/png"
             putExtra(Intent.EXTRA_STREAM, uri)
