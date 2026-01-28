@@ -22,4 +22,53 @@
     <!-- Toast messages -->
     <string name="toast_copied_to_clipboard">Message copied to clipboard</string>
     <string name="toast_rate_limit">Rate limit exceeded. Please wait.</string>
+
+    <!-- Navigator -->
+    <string name="chooser_send_message">Send message via\u2026</string>
+    <string name="toast_no_messaging_app">No messaging app found</string>
+    <string name="toast_unable_open_messaging">Unable to open messaging app</string>
+    <string name="toast_no_share_app">No app available to share</string>
+    <string name="toast_unable_share">Unable to share</string>
+
+    <!-- Import screen -->
+    <string name="toast_could_not_open_file">Could not open file</string>
+    <string name="toast_permission_denied_read">Permission denied to read file</string>
+    <string name="toast_error_reading_file">Error reading file: %1$s</string>
+    <string name="toast_unexpected_error">Unexpected error: %1$s</string>
+    <string name="toast_clipboard_empty">Clipboard is empty</string>
+    <string name="toast_cannot_access_clipboard">Cannot access clipboard</string>
+
+    <!-- Export screen -->
+    <string name="toast_failed_save_file">Failed to save file: %1$s</string>
+    <string name="toast_type_copied">%1$s copied to clipboard</string>
+    <string name="toast_type_saved">%1$s saved to file</string>
+    <string name="chooser_share_type">Share %1$s</string>
+    <string name="export_type_template_pack">Template Pack</string>
+    <string name="export_type_full_backup">Full Backup</string>
+
+    <!-- QR code bottom sheet -->
+    <string name="toast_qr_saved">QR code saved to Pictures/QWelcome</string>
+    <string name="toast_failed_save">Failed to save: %1$s</string>
+    <string name="toast_permission_denied">Permission denied</string>
+    <string name="toast_failed_create_temp">Failed to create temporary file</string>
+    <string name="toast_failed_share">Failed to share: %1$s</string>
+    <string name="chooser_share_wifi_qr">Share WiFi QR Code</string>
+
+    <!-- Template list -->
+    <string name="toast_template_created">Created: %1$s</string>
+    <string name="toast_template_updated">Updated: %1$s</string>
+    <string name="toast_template_deleted">Deleted: %1$s</string>
+    <string name="toast_template_duplicated">Duplicated: %1$s</string>
+    <string name="toast_template_active">Active: %1$s</string>
+
+    <!-- Plurals -->
+    <plurals name="template_count">
+        <item quantity="one">%1$d template</item>
+        <item quantity="other">%1$d templates</item>
+    </plurals>
+    <plurals name="import_success">
+        <item quantity="one">Successfully imported %1$d template</item>
+        <item quantity="other">Successfully imported %1$d templates</item>
+    </plurals>
+    <string name="import_success_with_profile"> and tech profile</string>
 </resources>

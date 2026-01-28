@@ -54,6 +54,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.data.ImportValidationResult
 import com.kingpaging.qwelcome.di.LocalImportViewModel
 import com.kingpaging.qwelcome.ui.components.CyberpunkBackdrop
@@ -64,6 +65,7 @@ import com.kingpaging.qwelcome.ui.theme.LocalCyberColors
 import com.kingpaging.qwelcome.viewmodel.import_pkg.ImportEvent
 import com.kingpaging.qwelcome.viewmodel.import_pkg.ImportStep
 
+@Suppress("LocalContextGetResourceValueCall", "LocalContextResourcesRead")
 @Composable
 fun ImportScreen(
     onBack: () -> Unit,
@@ -87,16 +89,16 @@ fun ImportScreen(
                 context.contentResolver.openInputStream(uri)?.use { inputStream ->
                     val json = inputStream.bufferedReader().use { it.readText() }
                     vm.onJsonContentReceived(json)
-                } ?: Toast.makeText(context, "Could not open file", Toast.LENGTH_LONG).show()
+                } ?: Toast.makeText(context, R.string.toast_could_not_open_file, Toast.LENGTH_LONG).show()
             } catch (e: SecurityException) {
                 Log.w("ImportScreen", "File permission denied", e)
-                Toast.makeText(context, "Permission denied to read file", Toast.LENGTH_LONG).show()
+                Toast.makeText(context, R.string.toast_permission_denied_read, Toast.LENGTH_LONG).show()
             } catch (e: java.io.IOException) {
                 Log.w("ImportScreen", "File read error", e)
-                Toast.makeText(context, "Error reading file: ${e.message}", Toast.LENGTH_LONG).show()
+                Toast.makeText(context, context.getString(R.string.toast_error_reading_file, e.message), Toast.LENGTH_LONG).show()
             } catch (e: Exception) {
                 Log.e("ImportScreen", "Unexpected file error", e)
-                Toast.makeText(context, "Unexpected error: ${e.message}", Toast.LENGTH_LONG).show()
+                Toast.makeText(context, context.getString(R.string.toast_unexpected_error, e.message), Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -105,7 +107,17 @@ fun ImportScreen(
         vm.events.collect { event ->
             when (event) {
                 is ImportEvent.ImportSuccess -> {
-                    Toast.makeText(context, event.message, Toast.LENGTH_LONG).show()
+                    val message = buildString {
+                        append(context.resources.getQuantityString(
+                            R.plurals.import_success,
+                            event.templatesImported,
+                            event.templatesImported
+                        ))
+                        if (event.techProfileImported) {
+                            append(context.getString(R.string.import_success_with_profile))
+                        }
+                    }
+                    Toast.makeText(context, message, Toast.LENGTH_LONG).show()
                 }
                 is ImportEvent.ImportFailed -> {
                     Toast.makeText(context, event.message, Toast.LENGTH_LONG).show()
@@ -160,9 +172,9 @@ fun ImportScreen(
                                     try {
                                         clipboardManager.getText()?.let {
                                             vm.onPasteContent(it.text)
-                                        } ?: Toast.makeText(context, "Clipboard is empty", Toast.LENGTH_SHORT).show()
+                                        } ?: Toast.makeText(context, R.string.toast_clipboard_empty, Toast.LENGTH_SHORT).show()
                                     } catch (e: SecurityException) {
-                                        Toast.makeText(context, "Cannot access clipboard", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, R.string.toast_cannot_access_clipboard, Toast.LENGTH_SHORT).show()
                                     }
                                 }
                             )

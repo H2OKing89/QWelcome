@@ -78,6 +78,7 @@ import com.kingpaging.qwelcome.util.rememberHapticFeedback
 import com.kingpaging.qwelcome.viewmodel.UiEvent
 import kotlinx.coroutines.launch
 
+@Suppress("LocalContextGetResourceValueCall")
 @Composable
 fun CustomerIntakeScreen(
     onOpenSettings: () -> Unit,

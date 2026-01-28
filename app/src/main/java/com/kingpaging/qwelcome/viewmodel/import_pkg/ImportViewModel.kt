@@ -28,7 +28,10 @@ data class ImportUiState(
 )
 
 sealed class ImportEvent {
-    data class ImportSuccess(val message: String) : ImportEvent()
+    data class ImportSuccess(
+        val templatesImported: Int,
+        val techProfileImported: Boolean
+    ) : ImportEvent()
     data class ImportFailed(val message: String) : ImportEvent()
     object RequestFileOpen : ImportEvent()
 }
@@ -124,14 +127,10 @@ class ImportViewModel(
                 when (applyResult) {
                     is ImportApplyResult.Success -> {
                         _uiState.update { it.copy(isImporting = false, step = ImportStep.Complete) }
-                        val message = buildString {
-                            append("Successfully imported ${applyResult.templatesImported} template")
-                            if (applyResult.templatesImported != 1) append("s")
-                            if (applyResult.techProfileImported) {
-                                append(" and tech profile")
-                            }
-                        }
-                        _events.emit(ImportEvent.ImportSuccess(message))
+                        _events.emit(ImportEvent.ImportSuccess(
+                            templatesImported = applyResult.templatesImported,
+                            techProfileImported = applyResult.techProfileImported
+                        ))
                     }
                     is ImportApplyResult.Error -> {
                         _uiState.update {
