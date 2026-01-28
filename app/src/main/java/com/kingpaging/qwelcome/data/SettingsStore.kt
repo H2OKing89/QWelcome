@@ -174,26 +174,49 @@ class SettingsStore(private val context: Context) {
 
     // ========== Templates ==========
 
-    val userTemplatesFlow: Flow<List<Template>> = dataStore.data.map { prefs ->
-        prefs.templatesList.map { Template.fromProto(it) }
-    }
+    val userTemplatesFlow: Flow<List<Template>> = dataStore.data
+        .catch { exception ->
+            if (exception is IOException) {
+                Log.e(TAG, "Error reading user templates.", exception)
+                emit(UserPreferences.getDefaultInstance())
+            } else {
+                throw exception
+            }
+        }
+        .map { prefs -> prefs.templatesList.map { Template.fromProto(it) } }
 
     val allTemplatesFlow: Flow<List<Template>> = userTemplatesFlow.map { userTemplates ->
         listOf(builtInDefaultTemplate) + userTemplates
     }
 
-    val activeTemplateIdFlow: Flow<String> = dataStore.data.map { prefs ->
-        prefs.activeTemplateId.ifEmpty { DEFAULT_TEMPLATE_ID }
-    }
-
-    val activeTemplateFlow: Flow<Template> = dataStore.data.map { prefs ->
-        val activeId = prefs.activeTemplateId.ifEmpty { DEFAULT_TEMPLATE_ID }
-        if (activeId == DEFAULT_TEMPLATE_ID) {
-            builtInDefaultTemplate
-        } else {
-            prefs.templatesList.find { it.id == activeId }?.let { Template.fromProto(it) } ?: builtInDefaultTemplate
+    val activeTemplateIdFlow: Flow<String> = dataStore.data
+        .catch { exception ->
+            if (exception is IOException) {
+                Log.e(TAG, "Error reading active template ID.", exception)
+                emit(UserPreferences.getDefaultInstance())
+            } else {
+                throw exception
+            }
         }
-    }
+        .map { prefs -> prefs.activeTemplateId.ifEmpty { DEFAULT_TEMPLATE_ID } }
+
+    val activeTemplateFlow: Flow<Template> = dataStore.data
+        .catch { exception ->
+            if (exception is IOException) {
+                Log.e(TAG, "Error reading active template.", exception)
+                emit(UserPreferences.getDefaultInstance())
+            } else {
+                throw exception
+            }
+        }
+        .map { prefs ->
+            val activeId = prefs.activeTemplateId.ifEmpty { DEFAULT_TEMPLATE_ID }
+            if (activeId == DEFAULT_TEMPLATE_ID) {
+                builtInDefaultTemplate
+            } else {
+                prefs.templatesList.find { it.id == activeId }?.let { Template.fromProto(it) } ?: builtInDefaultTemplate
+            }
+        }
 
     suspend fun getUserTemplates(): List<Template> = userTemplatesFlow.first()
 
@@ -259,11 +282,27 @@ class SettingsStore(private val context: Context) {
 /** Maximum length for TechProfile string fields to prevent protobuf encoding issues */
 private const val MAX_PROFILE_FIELD_LENGTH = 500
 
-fun TechProfile.toProto(): TechProfileProto = TechProfileProto.newBuilder()
-    .setName(name.take(MAX_PROFILE_FIELD_LENGTH))
-    .setTitle(title.take(MAX_PROFILE_FIELD_LENGTH))
-    .setDept(dept.take(MAX_PROFILE_FIELD_LENGTH))
-    .build()
+fun TechProfile.toProto(): TechProfileProto {
+    val truncatedName = name.take(MAX_PROFILE_FIELD_LENGTH)
+    val truncatedTitle = title.take(MAX_PROFILE_FIELD_LENGTH)
+    val truncatedDept = dept.take(MAX_PROFILE_FIELD_LENGTH)
+
+    if (name.length > MAX_PROFILE_FIELD_LENGTH) {
+        Log.w(TAG, "TechProfile name truncated from ${name.length} to $MAX_PROFILE_FIELD_LENGTH chars")
+    }
+    if (title.length > MAX_PROFILE_FIELD_LENGTH) {
+        Log.w(TAG, "TechProfile title truncated from ${title.length} to $MAX_PROFILE_FIELD_LENGTH chars")
+    }
+    if (dept.length > MAX_PROFILE_FIELD_LENGTH) {
+        Log.w(TAG, "TechProfile dept truncated from ${dept.length} to $MAX_PROFILE_FIELD_LENGTH chars")
+    }
+
+    return TechProfileProto.newBuilder()
+        .setName(truncatedName)
+        .setTitle(truncatedTitle)
+        .setDept(truncatedDept)
+        .build()
+}
 
 fun TechProfile.Companion.fromProto(proto: TechProfileProto): TechProfile = TechProfile(
     name = proto.name,

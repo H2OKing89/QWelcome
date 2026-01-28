@@ -228,7 +228,7 @@ fun CustomerIntakeScreen(
                                         templateListViewModel.setActiveTemplate(template.id)
                                         templateDropdownExpanded = false
                                     }
-                                 )
+                                )
                             }
 
                             HorizontalDivider()

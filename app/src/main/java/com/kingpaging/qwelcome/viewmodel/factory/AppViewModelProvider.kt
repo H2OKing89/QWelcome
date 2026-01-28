@@ -1,5 +1,6 @@
 package com.kingpaging.qwelcome.viewmodel.factory
 
+import android.annotation.SuppressLint
 import android.content.Context
 import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ViewModel
@@ -28,6 +29,9 @@ import com.kingpaging.qwelcome.viewmodel.templates.TemplateListViewModel
 class AppViewModelProvider(private val context: Context) : ViewModelProvider.Factory {
 
     companion object {
+        // Suppress StaticFieldLeak: These singletons intentionally use applicationContext
+        // which is tied to the process lifetime, not any Activity/Fragment lifecycle.
+        @SuppressLint("StaticFieldLeak")
         @Volatile
         private var settingsStoreInstance: SettingsStore? = null
 
@@ -98,7 +102,10 @@ class AppViewModelProvider(private val context: Context) : ViewModelProvider.Fac
                 SettingsViewModel(getSettingsStore(context)) as T
             }
             modelClass.isAssignableFrom(ExportViewModel::class.java) -> {
-                ExportViewModel(getImportExportRepository(context)) as T
+                ExportViewModel(
+                    repository = getImportExportRepository(context),
+                    settingsStore = getSettingsStore(context)
+                ) as T
             }
             modelClass.isAssignableFrom(ImportViewModel::class.java) -> {
                 ImportViewModel(getImportExportRepository(context)) as T

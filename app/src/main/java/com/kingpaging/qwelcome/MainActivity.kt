@@ -56,7 +56,7 @@ private enum class Screen(val key: String) {
  */
 private val ScreenSaver = Saver<Screen, String>(
     save = { it.key },
-    restore = { key -> Screen.entries.first { it.key == key } }
+    restore = { key -> Screen.entries.firstOrNull { it.key == key } ?: Screen.Main }
 )
 
 class MainActivity : ComponentActivity() {

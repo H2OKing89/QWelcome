@@ -11,6 +11,7 @@ import android.os.Environment
 import android.provider.MediaStore
 import android.widget.Toast
 import androidx.compose.foundation.Image
+import androidx.core.graphics.createBitmap
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -236,11 +237,12 @@ private fun generateHighResQrBitmap(
 
     // Decode bytes to bitmap
     val qrBitmap = android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+        ?: throw IllegalStateException("Failed to decode QR code bitmap from bytes")
 
     // Create final bitmap with white background and padding
     val padding = size / 10
     val finalSize = size + padding * 2
-    val finalBitmap = Bitmap.createBitmap(finalSize, finalSize, Bitmap.Config.ARGB_8888)
+    val finalBitmap = createBitmap(finalSize, finalSize, Bitmap.Config.ARGB_8888)
     val canvas = android.graphics.Canvas(finalBitmap)
     canvas.drawColor(android.graphics.Color.WHITE)
 

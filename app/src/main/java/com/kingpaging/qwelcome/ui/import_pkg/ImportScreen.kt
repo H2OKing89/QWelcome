@@ -82,9 +82,13 @@ fun ImportScreen(
                 context.contentResolver.openInputStream(uri)?.use { inputStream ->
                     val json = InputStreamReader(inputStream).readText()
                     vm.onJsonContentReceived(json)
-                }
-            } catch (e: Exception) {
+                } ?: Toast.makeText(context, "Could not open file", Toast.LENGTH_LONG).show()
+            } catch (e: SecurityException) {
+                Toast.makeText(context, "Permission denied to read file", Toast.LENGTH_LONG).show()
+            } catch (e: java.io.IOException) {
                 Toast.makeText(context, "Error reading file: ${e.message}", Toast.LENGTH_LONG).show()
+            } catch (e: Exception) {
+                Toast.makeText(context, "Unexpected error: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -145,8 +149,12 @@ fun ImportScreen(
                                 error = uiState.error,
                                 onOpenFile = { vm.onOpenFileRequest() },
                                 onPaste = {
-                                    clipboardManager.getText()?.let {
-                                        vm.onPasteContent(it.text)
+                                    try {
+                                        clipboardManager.getText()?.let {
+                                            vm.onPasteContent(it.text)
+                                        } ?: Toast.makeText(context, "Clipboard is empty", Toast.LENGTH_SHORT).show()
+                                    } catch (e: SecurityException) {
+                                        Toast.makeText(context, "Cannot access clipboard", Toast.LENGTH_SHORT).show()
                                     }
                                 }
                             )

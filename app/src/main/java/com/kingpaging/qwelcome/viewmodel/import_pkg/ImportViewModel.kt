@@ -71,6 +71,8 @@ class ImportViewModel(
                         }
                     }
                 }
+            } catch (e: kotlin.coroutines.cancellation.CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(
@@ -134,6 +136,8 @@ class ImportViewModel(
                         _events.emit(ImportEvent.ImportFailed(applyResult.message))
                     }
                 }
+            } catch (e: kotlin.coroutines.cancellation.CancellationException) {
+                throw e
             } catch (e: Exception) {
                 val errorMessage = "An unexpected error occurred during import: ${e.message}"
                 _uiState.update {

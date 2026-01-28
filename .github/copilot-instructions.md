@@ -6,7 +6,7 @@ Android app for fiber technicians to send WiFi welcome messages. Kotlin + Jetpac
 
 **MVVM with CompositionLocals** - ViewModels are provided via `CompositionLocalProvider` in `MainActivity.kt`, not passed as parameters. Access them with `LocalCustomerIntakeViewModel.current`, `LocalSettingsViewModel.current`, etc.
 
-```
+```text
 ui/                  # Compose screens (CustomerIntakeScreen, SettingsScreen, etc.)
 viewmodel/           # ViewModels with StateFlow + SharedFlow for one-shot events
 data/                # Models, SettingsStore (DataStore), ImportExportRepository

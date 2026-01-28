@@ -2,8 +2,11 @@ package com.kingpaging.qwelcome.viewmodel.export
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.kingpaging.qwelcome.data.DEFAULT_TEMPLATE_ID
 import com.kingpaging.qwelcome.data.ExportResult
 import com.kingpaging.qwelcome.data.ImportExportRepository
+import com.kingpaging.qwelcome.data.SettingsStore
+import com.kingpaging.qwelcome.data.Template
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -23,7 +26,11 @@ data class ExportUiState(
     val currentlyExportingType: ExportType? = null,
     val lastExportedJson: String? = null,
     val lastExportType: ExportType? = null,
-    val templateCount: Int = 0
+    val templateCount: Int = 0,
+    // Template selection state
+    val availableTemplates: List<Template> = emptyList(),
+    val selectedTemplateIds: Set<String> = emptySet(),
+    val showTemplateSelectionDialog: Boolean = false
 )
 
 sealed class ExportEvent {
@@ -36,7 +43,8 @@ sealed class ExportEvent {
 }
 
 class ExportViewModel(
-    private val repository: ImportExportRepository
+    private val repository: ImportExportRepository,
+    private val settingsStore: SettingsStore
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ExportUiState())
@@ -44,10 +52,92 @@ class ExportViewModel(
 
     private val _events = MutableSharedFlow<ExportEvent>()
     val events: SharedFlow<ExportEvent> = _events.asSharedFlow()
-    
+
     // Thread-safe storage for pending file export content.
     // Uses StateFlow to avoid race conditions when exporting twice rapidly.
     private val _pendingFileExportContent = MutableStateFlow<String?>(null)
+
+    // ========== Template Selection ==========
+
+    /**
+     * Called when user clicks Template Pack - loads templates and shows selection dialog.
+     */
+    fun onTemplatePackRequested() {
+        if (_uiState.value.isExporting) return
+        viewModelScope.launch {
+            val templates = settingsStore.getUserTemplates()
+            if (templates.isEmpty()) {
+                _events.emit(ExportEvent.ExportError("No custom templates to export"))
+                return@launch
+            }
+            _uiState.update {
+                it.copy(
+                    availableTemplates = templates,
+                    selectedTemplateIds = templates.map { t -> t.id }.toSet(), // Select all by default
+                    showTemplateSelectionDialog = true
+                )
+            }
+        }
+    }
+
+    /**
+     * Toggle selection of a single template.
+     */
+    fun toggleTemplateSelection(templateId: String) {
+        _uiState.update { state ->
+            val newSelection = if (templateId in state.selectedTemplateIds) {
+                state.selectedTemplateIds - templateId
+            } else {
+                state.selectedTemplateIds + templateId
+            }
+            state.copy(selectedTemplateIds = newSelection)
+        }
+    }
+
+    /**
+     * Toggle select all / deselect all.
+     */
+    fun toggleSelectAll() {
+        _uiState.update { state ->
+            val allIds = state.availableTemplates.map { it.id }.toSet()
+            val newSelection = if (state.selectedTemplateIds == allIds) {
+                emptySet()
+            } else {
+                allIds
+            }
+            state.copy(selectedTemplateIds = newSelection)
+        }
+    }
+
+    /**
+     * Dismiss the template selection dialog.
+     */
+    fun dismissTemplateSelection() {
+        _uiState.update {
+            it.copy(showTemplateSelectionDialog = false)
+        }
+    }
+
+    /**
+     * Export only the selected templates.
+     */
+    fun exportSelectedTemplates() {
+        val selectedIds = _uiState.value.selectedTemplateIds.toList()
+        if (selectedIds.isEmpty()) return
+
+        _uiState.update { it.copy(showTemplateSelectionDialog = false) }
+
+        export(ExportType.TEMPLATE_PACK) {
+            repository.exportTemplatePack(templateIds = selectedIds)
+        }
+    }
+
+    /**
+     * Check if there are user templates available for export.
+     */
+    fun hasUserTemplates(): Boolean = _uiState.value.availableTemplates.isNotEmpty()
+
+    // ========== Direct Export Functions ==========
 
     fun exportTemplatePack() {
         if (_uiState.value.isExporting) return
@@ -92,6 +182,8 @@ class ExportViewModel(
                         _events.emit(ExportEvent.ExportError(result.message))
                     }
                 }
+            } catch (e: kotlin.coroutines.cancellation.CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _uiState.update { it.copy(isExporting = false, currentlyExportingType = null) }
                 _events.emit(ExportEvent.ExportError("An unexpected error occurred: ${e.message}"))
@@ -150,15 +242,5 @@ class ExportViewModel(
 
     fun onFileSaveCancelled() {
         _pendingFileExportContent.value = null
-    }
-
-    fun clearExport() {
-        _uiState.update {
-            it.copy(
-                lastExportedJson = null,
-                lastExportType = null,
-                templateCount = 0
-            )
-        }
     }
 }

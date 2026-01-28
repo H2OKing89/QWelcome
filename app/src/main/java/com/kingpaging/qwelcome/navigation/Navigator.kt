@@ -6,8 +6,8 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.util.Log
+import androidx.core.net.toUri
 import android.widget.Toast
 
 /**
@@ -54,7 +54,7 @@ private const val TAG = "AndroidNavigator"
 class AndroidNavigator(private val context: Context) : Navigator {
 
     override fun openSms(phoneNumber: String, message: String) {
-        val intent = Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:$phoneNumber")).apply {
+        val intent = Intent(Intent.ACTION_SENDTO, "smsto:$phoneNumber".toUri()).apply {
             putExtra("sms_body", message)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }

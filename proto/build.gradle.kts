@@ -1,17 +1,15 @@
 plugins {
     `java-library`
-    id("com.google.protobuf")
+    alias(libs.plugins.protobuf)
 }
 
-val protobufVersion = "3.25.3"
-
 dependencies {
-    api("com.google.protobuf:protobuf-javalite:$protobufVersion")
+    api(libs.protobuf.javalite)
 }
 
 protobuf {
     protoc {
-        artifact = "com.google.protobuf:protoc:$protobufVersion"
+        artifact = libs.protobuf.protoc.get().toString()
     }
     generateProtoTasks {
         all().forEach {
