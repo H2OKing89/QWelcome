@@ -122,10 +122,17 @@ object UpdateChecker {
         // Split off pre-release suffix (e.g., "1.2.0-beta" -> base="1.2.0", pre="beta")
         val (remoteBase, remotePre) = splitVersion(remote)
         val (currentBase, currentPre) = splitVersion(current)
-        
-        val remoteParts = remoteBase.split(".").mapNotNull { it.toIntOrNull() }
-        val currentParts = currentBase.split(".").mapNotNull { it.toIntOrNull() }
-        
+
+        // Parse version parts, filtering out any non-numeric segments
+        val remoteParts = parseVersionParts(remoteBase)
+        val currentParts = parseVersionParts(currentBase)
+
+        // If either version is completely invalid, don't suggest an update
+        if (remoteParts.isEmpty() || currentParts.isEmpty()) {
+            Log.w(TAG, "Invalid version format - remote: '$remote', current: '$current'")
+            return false
+        }
+
         val maxLen = maxOf(remoteParts.size, currentParts.size)
         for (i in 0 until maxLen) {
             val r = remoteParts.getOrElse(i) { 0 }
@@ -133,16 +140,26 @@ object UpdateChecker {
             if (r > c) return true
             if (r < c) return false
         }
-        
+
         // Base versions are equal - prefer stable over pre-release
         // If remote is stable (no pre-release) and current has pre-release, update available
         if (remotePre == null && currentPre != null) return true
         // If remote has pre-release and current is stable, no update
         if (remotePre != null && currentPre == null) return false
-        
+
         return false
     }
-    
+
+    /**
+     * Parse version string into numeric parts.
+     * Handles malformed versions gracefully (e.g., "1.", "1.2.", ".1.2").
+     */
+    private fun parseVersionParts(versionBase: String): List<Int> {
+        return versionBase.split(".")
+            .filter { it.isNotEmpty() }
+            .mapNotNull { it.toIntOrNull() }
+    }
+
     /**
      * Split version into base and optional pre-release suffix.
      */

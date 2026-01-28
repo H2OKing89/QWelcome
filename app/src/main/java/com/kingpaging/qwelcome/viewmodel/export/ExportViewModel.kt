@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.getAndUpdate
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -44,9 +45,9 @@ class ExportViewModel(
     private val _events = MutableSharedFlow<ExportEvent>()
     val events: SharedFlow<ExportEvent> = _events.asSharedFlow()
     
-    // To handle cases where file picker is cancelled, we need to hold the generated JSON
-    // temporarily until the user decides to save it.
-    private var pendingFileExportContent: String? = null
+    // Thread-safe storage for pending file export content.
+    // Uses StateFlow to avoid race conditions when exporting twice rapidly.
+    private val _pendingFileExportContent = MutableStateFlow<String?>(null)
 
     fun exportTemplatePack() {
         if (_uiState.value.isExporting) return
@@ -114,7 +115,7 @@ class ExportViewModel(
     fun onSaveToFileRequested() = viewModelScope.launch {
         val currentState = _uiState.value
         if (currentState.lastExportedJson != null && currentState.lastExportType != null) {
-            pendingFileExportContent = currentState.lastExportedJson
+            _pendingFileExportContent.value = currentState.lastExportedJson
             val filename = generateFileNameForExport(currentState.lastExportType)
             _events.emit(ExportEvent.RequestFileSave(filename))
         }
@@ -131,20 +132,24 @@ class ExportViewModel(
             ExportType.FULL_BACKUP -> "qwelcome_backup_$timestamp.json"
         }
     }
-    
+
+    /**
+     * Atomically retrieves and clears the pending export content.
+     * Thread-safe implementation using StateFlow.
+     */
     fun getPendingFileExportContent(): String? {
-        return pendingFileExportContent
+        return _pendingFileExportContent.getAndUpdate { null }
     }
-    
+
     fun onFileSaveComplete() = viewModelScope.launch {
         _uiState.value.lastExportType?.let {
             _events.emit(ExportEvent.FileSaved(it))
         }
-        pendingFileExportContent = null // Clear after use
+        // Content already cleared by getPendingFileExportContent()
     }
-    
+
     fun onFileSaveCancelled() {
-        pendingFileExportContent = null // Clear if user cancels
+        _pendingFileExportContent.value = null
     }
 
     fun clearExport() {

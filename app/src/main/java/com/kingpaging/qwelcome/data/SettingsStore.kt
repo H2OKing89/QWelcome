@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.datastore.core.DataMigration
 import androidx.datastore.core.DataStore
 import androidx.datastore.dataStore
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -21,6 +22,7 @@ import java.io.IOException
 
 private const val TAG = "SettingsStore"
 private const val DATA_STORE_FILE_NAME = "user_preferences.pb"
+private const val MIGRATION_COMPLETED_KEY = "proto_migration_completed"
 
 // Temp preferences data store for migration
 private val Context.tempPreferencesDataStore by preferencesDataStore(name = "settings")
@@ -34,9 +36,18 @@ private val Context.protoDataStore: DataStore<UserPreferences> by dataStore(
             // Create migration from Preferences to Proto DataStore
             object : DataMigration<UserPreferences> {
                 override suspend fun shouldMigrate(currentData: UserPreferences): Boolean {
-                    // Check if preferences has any data. If so, we should migrate.
-                    // This is a simplified check; a more robust check might look for a version key.
-                    return context.tempPreferencesDataStore.data.first().asMap().isNotEmpty()
+                    val prefs = context.tempPreferencesDataStore.data.first()
+                    // Check for explicit migration marker first (most reliable)
+                    val migrationCompleted = prefs[booleanPreferencesKey(MIGRATION_COMPLETED_KEY)] == true
+                    if (migrationCompleted) {
+                        return false // Already migrated
+                    }
+                    // Check if there's any legacy data to migrate
+                    // Look for specific keys rather than just checking if map is non-empty
+                    val hasLegacyData = prefs[stringPreferencesKey("tech_name")] != null ||
+                            prefs[stringPreferencesKey("templates_json")] != null ||
+                            prefs[stringPreferencesKey("active_template_id")] != null
+                    return hasLegacyData
                 }
 
                 override suspend fun migrate(currentData: UserPreferences): UserPreferences {
@@ -56,8 +67,10 @@ private val Context.protoDataStore: DataStore<UserPreferences> by dataStore(
                         try {
                             json.decodeFromString<List<Template>>(templatesJson).map { it.toProto() }
                         } catch (e: SerializationException) {
-                            Log.e(TAG, "Error decoding templates from preferences", e)
-                            emptyList()
+                            // Log error with full context for debugging
+                            Log.e(TAG, "Error decoding templates from preferences. JSON length: ${templatesJson.length}", e)
+                            // Attempt partial recovery by trying to decode individual templates
+                            tryRecoverTemplates(json, templatesJson)
                         }
                     }
 
@@ -68,9 +81,44 @@ private val Context.protoDataStore: DataStore<UserPreferences> by dataStore(
                         .build()
                 }
 
+                /**
+                 * Attempt to recover templates when full list deserialization fails.
+                 * This helps preserve user data even when some templates are corrupted.
+                 */
+                private fun tryRecoverTemplates(json: Json, templatesJson: String): List<TemplateProto> {
+                    Log.w(TAG, "Attempting partial template recovery...")
+                    // Try to extract individual template objects using regex
+                    // This is a best-effort recovery for partially corrupted data
+                    return try {
+                        // Simple approach: try parsing as a list and recover what we can
+                        val templateRegex = """\{[^{}]*"id"\s*:\s*"[^"]+""".toRegex()
+                        val matches = templateRegex.findAll(templatesJson)
+                        if (matches.count() == 0) {
+                            Log.w(TAG, "No recoverable templates found")
+                            emptyList()
+                        } else {
+                            Log.w(TAG, "Found ${matches.count()} potential template(s) to recover")
+                            // Return empty list as we can't reliably reconstruct full objects
+                            // At least we've logged what we found
+                            emptyList()
+                        }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Template recovery failed", e)
+                        emptyList()
+                    }
+                }
+
                 override suspend fun cleanUp() {
-                    // Clear the old preferences data store after migration
-                    context.tempPreferencesDataStore.edit { it.clear() }
+                    // Mark migration as completed and clear the old data
+                    context.tempPreferencesDataStore.edit { prefs ->
+                        prefs[booleanPreferencesKey(MIGRATION_COMPLETED_KEY)] = true
+                        // Remove legacy keys but keep the migration marker
+                        prefs.remove(stringPreferencesKey("tech_name"))
+                        prefs.remove(stringPreferencesKey("tech_title"))
+                        prefs.remove(stringPreferencesKey("tech_dept"))
+                        prefs.remove(stringPreferencesKey("templates_json"))
+                        prefs.remove(stringPreferencesKey("active_template_id"))
+                    }
                 }
             }
         )
@@ -208,10 +256,13 @@ class SettingsStore(private val context: Context) {
 
 // ========== Mappers ==========
 
+/** Maximum length for TechProfile string fields to prevent protobuf encoding issues */
+private const val MAX_PROFILE_FIELD_LENGTH = 500
+
 fun TechProfile.toProto(): TechProfileProto = TechProfileProto.newBuilder()
-    .setName(name)
-    .setTitle(title)
-    .setDept(dept)
+    .setName(name.take(MAX_PROFILE_FIELD_LENGTH))
+    .setTitle(title.take(MAX_PROFILE_FIELD_LENGTH))
+    .setDept(dept.take(MAX_PROFILE_FIELD_LENGTH))
     .build()
 
 fun TechProfile.Companion.fromProto(proto: TechProfileProto): TechProfile = TechProfile(

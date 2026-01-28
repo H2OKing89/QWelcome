@@ -55,14 +55,15 @@ class CustomerIntakeViewModel(
             return when {
                 phone.isEmpty() -> null // Don't show error for empty (handled at submit)
                 digits.length < 10 -> {
-                    if (progressiveMode) "Enter 10-digit US number (${digits.length}/10)"
+                    if (progressiveMode) resourceProvider.getString(R.string.error_phone_partial, digits.length)
                     else invalidPhoneError
                 }
                 digits.length == 10 || digits.length == 11 -> {
-                    validateNanpRules(digits, progressiveMode, invalidPhoneError)
+                    validateNanpRules(digits, progressiveMode, invalidPhoneError, resourceProvider)
                 }
                 digits.length > 11 -> {
-                    if (progressiveMode) "Too many digits (${digits.length})" else invalidPhoneError
+                    if (progressiveMode) resourceProvider.getString(R.string.error_phone_too_many_digits, digits.length)
+                    else invalidPhoneError
                 }
                 else -> null
             }
@@ -72,20 +73,28 @@ class CustomerIntakeViewModel(
          * Validates NANP-specific rules for 10 or 11 digit phone numbers.
          * Extracted to reduce cognitive complexity of validatePhoneNumber.
          */
-        private fun validateNanpRules(digits: String, progressiveMode: Boolean, invalidPhoneError: String): String? {
+        private fun validateNanpRules(
+            digits: String,
+            progressiveMode: Boolean,
+            invalidPhoneError: String,
+            resourceProvider: ResourceProvider
+        ): String? {
             // Check NANP rules: area code and exchange must start with 2-9
             val areaStart = if (digits.length == 11) 1 else 0
             val areaCode = digits.substring(areaStart, areaStart + 3)
             val exchange = digits.substring(areaStart + 3, areaStart + 6)
             return when {
                 digits.length == 11 && digits[0] != '1' -> {
-                    if (progressiveMode) "US numbers start with 1" else invalidPhoneError
+                    if (progressiveMode) resourceProvider.getString(R.string.error_phone_us_start)
+                    else invalidPhoneError
                 }
                 areaCode[0] !in '2'..'9' -> {
-                    if (progressiveMode) "Area code can't start with ${areaCode[0]}" else invalidPhoneError
+                    if (progressiveMode) resourceProvider.getString(R.string.error_phone_area_code, areaCode[0])
+                    else invalidPhoneError
                 }
                 exchange[0] !in '2'..'9' -> {
-                    if (progressiveMode) "Exchange can't start with ${exchange[0]}" else invalidPhoneError
+                    if (progressiveMode) resourceProvider.getString(R.string.error_phone_exchange, exchange[0])
+                    else invalidPhoneError
                 }
                 else -> null // Valid!
             }
@@ -147,7 +156,7 @@ class CustomerIntakeViewModel(
         // Real-time validation feedback for WiFi password (WPA/WPA2: 8-63 chars)
         val error = when {
             password.isEmpty() -> null // Don't show error for empty (show on submit)
-            password.length < 8 -> "Password must be at least 8 characters (${password.length}/8)"
+            password.length < 8 -> resourceProvider.getString(R.string.error_password_partial, password.length)
             password.length > 63 -> resourceProvider.getString(R.string.error_password_too_long)
             else -> null
         }
