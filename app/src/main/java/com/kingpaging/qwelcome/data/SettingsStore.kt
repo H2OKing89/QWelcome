@@ -2,26 +2,79 @@ package com.kingpaging.qwelcome.data
 
 import android.content.Context
 import android.util.Log
+import androidx.datastore.core.DataMigration
+import androidx.datastore.core.DataStore
+import androidx.datastore.dataStore
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.kingpaging.qwelcome.R
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.catch
 import kotlinx.serialization.SerializationException
-import kotlinx.serialization.encodeToString
+import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
+import java.io.IOException
 
-private val Context.dataStore by preferencesDataStore(name = "settings")
+private const val TAG = "SettingsStore"
+private const val DATA_STORE_FILE_NAME = "user_preferences.pb"
 
-/**
- * Tech profile information - stored locally per device.
- */
-data class TechProfile(
-    val name: String = "",
-    val title: String = "",
-    val dept: String = ""
+// Temp preferences data store for migration
+private val Context.tempPreferencesDataStore by preferencesDataStore(name = "settings")
+
+// Proto DataStore
+private val Context.protoDataStore: DataStore<UserPreferences> by dataStore(
+    fileName = DATA_STORE_FILE_NAME,
+    serializer = UserPreferencesSerializer,
+    produceMigrations = { context ->
+        listOf(
+            // Create migration from Preferences to Proto DataStore
+            object : DataMigration<UserPreferences> {
+                override suspend fun shouldMigrate(currentData: UserPreferences): Boolean {
+                    // Check if preferences has any data. If so, we should migrate.
+                    // This is a simplified check; a more robust check might look for a version key.
+                    return context.tempPreferencesDataStore.data.first().asMap().isNotEmpty()
+                }
+
+                override suspend fun migrate(currentData: UserPreferences): UserPreferences {
+                    val prefs = context.tempPreferencesDataStore.data.first()
+                    val json = Json { ignoreUnknownKeys = true }
+
+                    val techProfile = TechProfileProto.newBuilder()
+                        .setName(prefs[stringPreferencesKey("tech_name")].orEmpty())
+                        .setTitle(prefs[stringPreferencesKey("tech_title")].orEmpty())
+                        .setDept(prefs[stringPreferencesKey("tech_dept")].orEmpty())
+                        .build()
+
+                    val templatesJson = prefs[stringPreferencesKey("templates_json")]
+                    val templates = if (templatesJson.isNullOrBlank()) {
+                        emptyList()
+                    } else {
+                        try {
+                            json.decodeFromString<List<Template>>(templatesJson).map { it.toProto() }
+                        } catch (e: SerializationException) {
+                            Log.e(TAG, "Error decoding templates from preferences", e)
+                            emptyList()
+                        }
+                    }
+
+                    return UserPreferences.newBuilder()
+                        .setActiveTemplateId(prefs[stringPreferencesKey("active_template_id")] ?: DEFAULT_TEMPLATE_ID)
+                        .setTechProfile(techProfile)
+                        .addAllTemplates(templates)
+                        .build()
+                }
+
+                override suspend fun cleanUp() {
+                    // Clear the old preferences data store after migration
+                    context.tempPreferencesDataStore.edit { it.clear() }
+                }
+            }
+        )
+    }
 )
 
 /**
@@ -29,291 +82,156 @@ data class TechProfile(
  */
 const val DEFAULT_TEMPLATE_ID = "default"
 
-private const val TAG = "SettingsStore"
-
 /**
- * Manages app settings and template storage using DataStore.
- *
- * Supports multiple templates with JSON serialization for storage.
- * Templates can be exported/imported using the ExportModels classes.
+ * Manages app settings and template storage using Proto DataStore.
  */
 class SettingsStore(private val context: Context) {
 
-    private val json = Json {
-        ignoreUnknownKeys = true
-        prettyPrint = false
-    }
-
-    private object Keys {
-        val TECH_NAME = stringPreferencesKey("tech_name")
-        val TECH_TITLE = stringPreferencesKey("tech_title")
-        val TECH_DEPT = stringPreferencesKey("tech_dept")
-        val TEMPLATES_JSON = stringPreferencesKey("templates_json")
-        val ACTIVE_TEMPLATE_ID = stringPreferencesKey("active_template_id")
-    }
-
     /** The default template that ships with the app */
-    val defaultTemplateContent: String = context.getString(R.string.welcome_template)
-
-    /** Built-in default template as a Template object (lazily initialized once) */
     private val builtInDefaultTemplate: Template by lazy {
         Template(
             id = DEFAULT_TEMPLATE_ID,
             name = "Default",
-            content = defaultTemplateContent,
-            createdAt = "2024-01-01T00:00:00Z",
-            modifiedAt = "2024-01-01T00:00:00Z"
+            content = context.getString(R.string.welcome_template)
         )
     }
 
+    /** Public accessor for the default template content */
+    val defaultTemplateContent: String
+        get() = builtInDefaultTemplate.content
+
+    private val dataStore = context.protoDataStore
+
     // ========== Tech Profile ==========
 
-    val techProfileFlow: Flow<TechProfile> =
-        context.dataStore.data.map { prefs ->
-            TechProfile(
-                name = prefs[Keys.TECH_NAME].orEmpty(),
-                title = prefs[Keys.TECH_TITLE].orEmpty(),
-                dept = prefs[Keys.TECH_DEPT].orEmpty()
-            )
-        }
+    val techProfileFlow: Flow<TechProfile> = dataStore.data
+        .catch { exception ->
+            if (exception is IOException) {
+                Log.e(TAG, "Error reading tech profile.", exception)
+                emit(UserPreferences.getDefaultInstance())
+            } else {
+                throw exception
+            }
+        }.map { preferences -> TechProfile.fromProto(preferences.techProfile) }
 
     suspend fun saveTechProfile(profile: TechProfile) {
-        context.dataStore.edit { prefs ->
-            prefs[Keys.TECH_NAME] = profile.name.trim()
-            prefs[Keys.TECH_TITLE] = profile.title.trim()
-            prefs[Keys.TECH_DEPT] = profile.dept.trim()
+        dataStore.updateData { preferences ->
+            preferences.toBuilder()
+                .setTechProfile(profile.toProto())
+                .build()
         }
     }
 
-    suspend fun getTechProfile(): TechProfile {
-        return techProfileFlow.first()
-    }
+    suspend fun getTechProfile(): TechProfile = techProfileFlow.first()
 
     // ========== Templates ==========
 
-    /**
-     * Flow of all user-created templates (excludes built-in default).
-     */
-    val userTemplatesFlow: Flow<List<Template>> =
-        context.dataStore.data.map { prefs ->
-            val jsonString = prefs[Keys.TEMPLATES_JSON]
-            if (jsonString.isNullOrBlank()) {
-                emptyList()
-            } else {
-                try {
-                    json.decodeFromString<List<Template>>(jsonString)
-                } catch (e: SerializationException) {
-                    Log.e(TAG, "Failed to decode templates JSON", e)
-                    emptyList()
-                }
-            }
-        }
-
-    /**
-     * Flow of all templates (built-in default + user templates).
-     */
-    val allTemplatesFlow: Flow<List<Template>> =
-        userTemplatesFlow.map { userTemplates ->
-            listOf(builtInDefaultTemplate) + userTemplates
-        }
-
-    /**
-     * Flow of the currently active template ID.
-     */
-    val activeTemplateIdFlow: Flow<String> =
-        context.dataStore.data.map { prefs ->
-            prefs[Keys.ACTIVE_TEMPLATE_ID] ?: DEFAULT_TEMPLATE_ID
-        }
-
-    /**
-     * Flow of the currently active template.
-     */
-    val activeTemplateFlow: Flow<Template> =
-        context.dataStore.data.map { prefs ->
-            val activeId = prefs[Keys.ACTIVE_TEMPLATE_ID] ?: DEFAULT_TEMPLATE_ID
-            val userTemplates = prefs[Keys.TEMPLATES_JSON]?.let { jsonString ->
-                try {
-                    json.decodeFromString<List<Template>>(jsonString)
-                } catch (e: SerializationException) {
-                    Log.e(TAG, "Failed to decode templates JSON in activeTemplateFlow", e)
-                    emptyList()
-                }
-            } ?: emptyList()
-
-            if (activeId == DEFAULT_TEMPLATE_ID) {
-                builtInDefaultTemplate
-            } else {
-                userTemplates.find { it.id == activeId } ?: builtInDefaultTemplate
-            }
-        }
-
-    /**
-     * Flow that returns the active template's content (for backward compatibility).
-     */
-    val activeTemplateContentFlow: Flow<String> =
-        activeTemplateFlow.map { it.content }
-
-    /**
-     * Get all user templates (suspend version).
-     */
-    suspend fun getUserTemplates(): List<Template> {
-        return userTemplatesFlow.first()
+    val userTemplatesFlow: Flow<List<Template>> = dataStore.data.map { prefs ->
+        prefs.templatesList.map { Template.fromProto(it) }
     }
 
-    /**
-     * Get all templates including built-in default.
-     */
-    suspend fun getAllTemplates(): List<Template> {
-        return allTemplatesFlow.first()
+    val allTemplatesFlow: Flow<List<Template>> = userTemplatesFlow.map { userTemplates ->
+        listOf(builtInDefaultTemplate) + userTemplates
     }
 
-    /**
-     * Get a specific template by ID.
-     */
+    val activeTemplateIdFlow: Flow<String> = dataStore.data.map { prefs ->
+        prefs.activeTemplateId.ifEmpty { DEFAULT_TEMPLATE_ID }
+    }
+
+    val activeTemplateFlow: Flow<Template> = dataStore.data.map { prefs ->
+        val activeId = prefs.activeTemplateId.ifEmpty { DEFAULT_TEMPLATE_ID }
+        if (activeId == DEFAULT_TEMPLATE_ID) {
+            builtInDefaultTemplate
+        } else {
+            prefs.templatesList.find { it.id == activeId }?.let { Template.fromProto(it) } ?: builtInDefaultTemplate
+        }
+    }
+
+    suspend fun getUserTemplates(): List<Template> = userTemplatesFlow.first()
+
+    suspend fun getAllTemplates(): List<Template> = allTemplatesFlow.first()
+
     suspend fun getTemplate(id: String): Template? {
-        if (id == DEFAULT_TEMPLATE_ID) {
-            return builtInDefaultTemplate
-        }
+        if (id == DEFAULT_TEMPLATE_ID) return builtInDefaultTemplate
         return getUserTemplates().find { it.id == id }
     }
 
-    /**
-     * Get the currently active template ID.
-     */
-    suspend fun getActiveTemplateId(): String {
-        return activeTemplateIdFlow.first()
-    }
+    suspend fun getActiveTemplateId(): String = activeTemplateIdFlow.first()
 
-    /**
-     * Get the currently active template.
-     */
-    suspend fun getActiveTemplate(): Template {
-        return activeTemplateFlow.first()
-    }
+    suspend fun getActiveTemplate(): Template = activeTemplateFlow.first()
 
-    /**
-     * Set the active template by ID.
-     */
     suspend fun setActiveTemplate(templateId: String) {
-        context.dataStore.edit { prefs ->
-            prefs[Keys.ACTIVE_TEMPLATE_ID] = templateId
-        }
+        dataStore.updateData { it.toBuilder().setActiveTemplateId(templateId).build() }
     }
 
-    /**
-     * Save a new template or update an existing one.
-     * Cannot update the built-in default template.
-     */
     suspend fun saveTemplate(template: Template) {
-        require(template.id != DEFAULT_TEMPLATE_ID) {
-            "Cannot modify the built-in default template"
-        }
-
-        context.dataStore.edit { prefs ->
-            val currentTemplates = prefs[Keys.TEMPLATES_JSON]?.let { jsonString ->
-                try {
-                    json.decodeFromString<List<Template>>(jsonString)
-                } catch (e: SerializationException) {
-                    Log.e(TAG, "Failed to decode templates JSON in saveTemplate", e)
-                    emptyList()
-                }
-            } ?: emptyList()
-
-            val updatedTemplates = currentTemplates
-                .filter { it.id != template.id } + template
-
-            prefs[Keys.TEMPLATES_JSON] = json.encodeToString(updatedTemplates)
+        require(template.id != DEFAULT_TEMPLATE_ID) { "Cannot modify the default template" }
+        dataStore.updateData { prefs ->
+            val newTemplates = prefs.templatesList.filterNot { it.id == template.id } + template.toProto()
+            prefs.toBuilder().clearTemplates().addAllTemplates(newTemplates).build()
         }
     }
 
-    /**
-     * Save multiple templates at once (for import).
-     */
     suspend fun saveTemplates(templates: List<Template>) {
         val validTemplates = templates.filter { it.id != DEFAULT_TEMPLATE_ID }
         if (validTemplates.isEmpty()) return
 
-        context.dataStore.edit { prefs ->
-            val currentTemplates = prefs[Keys.TEMPLATES_JSON]?.let { jsonString ->
-                try {
-                    json.decodeFromString<List<Template>>(jsonString)
-                } catch (e: SerializationException) {
-                    Log.e(TAG, "Failed to decode templates JSON in saveTemplates", e)
-                    emptyList()
-                }
-            } ?: emptyList()
-
-            // Use LinkedHashMap to preserve insertion order
-            val templateMap = LinkedHashMap<String, Template>()
-            currentTemplates.forEach { templateMap[it.id] = it }
-            validTemplates.forEach { templateMap[it.id] = it }
-
-            prefs[Keys.TEMPLATES_JSON] = json.encodeToString(templateMap.values.toList())
+        dataStore.updateData { prefs ->
+            val templateMap = prefs.templatesList.associateBy { it.id }.toMutableMap()
+            validTemplates.forEach { templateMap[it.id] = it.toProto() }
+            prefs.toBuilder().clearTemplates().addAllTemplates(templateMap.values).build()
         }
     }
 
-    /**
-     * Delete a template by ID.
-     * Cannot delete the built-in default template.
-     * If the deleted template was active, switches to default.
-     */
     suspend fun deleteTemplate(templateId: String) {
-        require(templateId != DEFAULT_TEMPLATE_ID) {
-            "Cannot delete the built-in default template"
-        }
-
-        context.dataStore.edit { prefs ->
-            val currentTemplates = prefs[Keys.TEMPLATES_JSON]?.let { jsonString ->
-                try {
-                    json.decodeFromString<List<Template>>(jsonString)
-                } catch (e: SerializationException) {
-                    Log.e(TAG, "Failed to decode templates JSON in deleteTemplate", e)
-                    emptyList()
-                }
-            } ?: emptyList()
-
-            val updatedTemplates = currentTemplates.filter { it.id != templateId }
-            prefs[Keys.TEMPLATES_JSON] = json.encodeToString(updatedTemplates)
-
-            // If we deleted the active template, switch to default
-            if (prefs[Keys.ACTIVE_TEMPLATE_ID] == templateId) {
-                prefs[Keys.ACTIVE_TEMPLATE_ID] = DEFAULT_TEMPLATE_ID
+        require(templateId != DEFAULT_TEMPLATE_ID) { "Cannot delete the default template" }
+        dataStore.updateData { prefs ->
+            val builder = prefs.toBuilder()
+            val newTemplates = prefs.templatesList.filterNot { it.id == templateId }
+            builder.clearTemplates().addAllTemplates(newTemplates)
+            if (builder.activeTemplateId == templateId) {
+                builder.activeTemplateId = DEFAULT_TEMPLATE_ID
             }
+            builder.build()
         }
     }
 
-    /**
-     * Delete all user templates and reset to default.
-     */
     suspend fun resetToDefaultTemplate() {
-        context.dataStore.edit { prefs ->
-            prefs[Keys.TEMPLATES_JSON] = "[]"
-            prefs[Keys.ACTIVE_TEMPLATE_ID] = DEFAULT_TEMPLATE_ID
+        dataStore.updateData { prefs ->
+            prefs.toBuilder()
+                .clearTemplates()
+                .setActiveTemplateId(DEFAULT_TEMPLATE_ID)
+                .build()
         }
     }
-
-    // ========== Legacy Compatibility ==========
-    // These methods provide backward compatibility with old single-template code
-
-    @Deprecated("Use activeTemplateContentFlow instead", ReplaceWith("activeTemplateContentFlow"))
-    val templateSettingsFlow: Flow<TemplateSettings>
-        get() = activeTemplateFlow.map { template ->
-            TemplateSettings(
-                useCustomTemplate = template.id != DEFAULT_TEMPLATE_ID,
-                customTemplate = if (template.id != DEFAULT_TEMPLATE_ID) template.content else ""
-            )
-        }
-
-    @Deprecated("Use allTemplatesFlow instead")
-    val defaultTemplate: String
-        get() = defaultTemplateContent
 }
 
-/**
- * Legacy data class for backward compatibility.
- */
-@Deprecated("Use Template class instead")
-data class TemplateSettings(
-    val useCustomTemplate: Boolean = false,
-    val customTemplate: String = ""
+// ========== Mappers ==========
+
+fun TechProfile.toProto(): TechProfileProto = TechProfileProto.newBuilder()
+    .setName(name)
+    .setTitle(title)
+    .setDept(dept)
+    .build()
+
+fun TechProfile.Companion.fromProto(proto: TechProfileProto): TechProfile = TechProfile(
+    name = proto.name,
+    title = proto.title,
+    dept = proto.dept
+)
+
+// Add a companion object to allow extending TechProfile
+val TechProfile.Companion.empty: TechProfile get() = TechProfile()
+
+
+fun Template.toProto(): TemplateProto = TemplateProto.newBuilder()
+    .setId(id)
+    .setName(name)
+    .setContent(content)
+    .build()
+
+fun Template.Companion.fromProto(proto: TemplateProto): Template = Template(
+    id = proto.id,
+    name = proto.name,
+    content = proto.content
 )

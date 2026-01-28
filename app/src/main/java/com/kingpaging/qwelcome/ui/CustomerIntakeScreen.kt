@@ -2,8 +2,19 @@
 
 package com.kingpaging.qwelcome.ui
 
-import androidx.compose.foundation.layout.*
+import android.widget.Toast
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
@@ -15,20 +26,40 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuAnchorType
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import android.widget.Toast
-import androidx.compose.foundation.text.KeyboardOptions
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kingpaging.qwelcome.di.LocalCustomerIntakeViewModel
 import com.kingpaging.qwelcome.di.LocalNavigator
 import com.kingpaging.qwelcome.di.LocalTemplateListViewModel
@@ -42,6 +73,7 @@ import com.kingpaging.qwelcome.ui.components.QrCodeBottomSheet
 import com.kingpaging.qwelcome.ui.components.QWelcomeHeader
 import com.kingpaging.qwelcome.ui.theme.LocalCyberColors
 import com.kingpaging.qwelcome.ui.theme.LocalDarkTheme
+import com.kingpaging.qwelcome.util.rememberHapticFeedback
 import com.kingpaging.qwelcome.viewmodel.UiEvent
 import kotlinx.coroutines.launch
 
@@ -54,9 +86,10 @@ fun CustomerIntakeScreen(
     val customerIntakeViewModel = LocalCustomerIntakeViewModel.current
     val templateListViewModel = LocalTemplateListViewModel.current
     val navigator = LocalNavigator.current
-    
-    val uiState by customerIntakeViewModel.uiState.collectAsState()
-    val templateUiState by templateListViewModel.uiState.collectAsState()
+    val hapticFeedback = rememberHapticFeedback()
+
+    val uiState by customerIntakeViewModel.uiState.collectAsStateWithLifecycle()
+    val templateUiState by templateListViewModel.uiState.collectAsStateWithLifecycle()
     // Use rememberSaveable so rotation/process death doesn't reset these
     var passwordVisible by rememberSaveable { mutableStateOf(false) }
     var showQrSheet by rememberSaveable { mutableStateOf(false) }
@@ -107,10 +140,16 @@ fun CustomerIntakeScreen(
                 TopAppBar(
                     title = { QWelcomeHeader() },
                     actions = {
-                        IconButton(onClick = { customerIntakeViewModel.clearForm() }) {
+                        IconButton(onClick = {
+                            hapticFeedback()
+                            customerIntakeViewModel.clearForm()
+                        }) {
                             Icon(Icons.Filled.PersonAdd, contentDescription = "New Customer")
                         }
-                        IconButton(onClick = onOpenSettings) {
+                        IconButton(onClick = {
+                            hapticFeedback()
+                            onOpenSettings()
+                        }) {
                             Icon(Icons.Filled.Settings, contentDescription = "Settings")
                         }
                     },
@@ -139,7 +178,7 @@ fun CustomerIntakeScreen(
                     ) {
                         templateUiState.templates.find { it.id == templateUiState.activeTemplateId }
                     }
-                    
+
                     // ExposedDropdownMenuBox provides proper anchoring and sizing for light UI
                     ExposedDropdownMenuBox(
                         expanded = templateDropdownExpanded,
@@ -189,7 +228,7 @@ fun CustomerIntakeScreen(
                                         templateListViewModel.setActiveTemplate(template.id)
                                         templateDropdownExpanded = false
                                     }
-                                )
+                                 )
                             }
 
                             HorizontalDivider()
@@ -204,8 +243,10 @@ fun CustomerIntakeScreen(
                         }
                     }
                 }
-                
-                NeonPanel {
+
+                NeonPanel(
+                    modifier = Modifier.semantics(mergeDescendants = true) {}
+                ) {
                     NeonOutlinedField(
                         value = uiState.customerName,
                         onValueChange = { customerIntakeViewModel.onCustomerNameChanged(it) },
@@ -238,7 +279,10 @@ fun CustomerIntakeScreen(
                         trailingIcon = {
                             val image = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
                             val description = if (passwordVisible) "Hide password" else "Show password"
-                            IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                            IconButton(onClick = {
+                                hapticFeedback()
+                                passwordVisible = !passwordVisible
+                            }) {
                                 Icon(imageVector = image, description)
                             }
                         }
@@ -257,9 +301,10 @@ fun CustomerIntakeScreen(
                 Text(
                     "Send",
                     style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.semantics { heading() }
                 )
-                
+
                 // Button hierarchy: SMS = primary (hero), Share = secondary, Copy = tertiary
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -267,13 +312,16 @@ fun CustomerIntakeScreen(
                 ) {
                     // SMS = Primary action (filled, most prominent - the hero button)
                     NeonCyanButton(
-                        onClick = { customerIntakeViewModel.onSmsClicked(navigator) },
+                        onClick = {
+                            hapticFeedback()
+                            customerIntakeViewModel.onSmsClicked(navigator)
+                        },
                         modifier = Modifier.weight(1f),
                         style = NeonButtonStyle.PRIMARY
                     ) {
                         Icon(
                             Icons.Filled.Send,
-                            contentDescription = null,
+                            contentDescription = "Send SMS",
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(Modifier.width(6.dp))
@@ -281,13 +329,16 @@ fun CustomerIntakeScreen(
                     }
                     // Share = Secondary (outlined, important but not main)
                     NeonCyanButton(
-                        onClick = { customerIntakeViewModel.onShareClicked(navigator) },
+                        onClick = {
+                            hapticFeedback()
+                            customerIntakeViewModel.onShareClicked(navigator)
+                        },
                         modifier = Modifier.weight(1f),
                         style = NeonButtonStyle.SECONDARY
                     ) {
                         Icon(
                             Icons.Filled.Share,
-                            contentDescription = null,
+                            contentDescription = "Share",
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(Modifier.width(4.dp))
@@ -297,7 +348,10 @@ fun CustomerIntakeScreen(
                     // Success state provides visual feedback on action completion
                     val cyberColors = LocalCyberColors.current
                     NeonButton(
-                        onClick = { customerIntakeViewModel.onCopyClicked(navigator) },
+                        onClick = {
+                            hapticFeedback()
+                            customerIntakeViewModel.onCopyClicked(navigator)
+                        },
                         modifier = Modifier.weight(1f),
                         style = NeonButtonStyle.TERTIARY,
                         // Success state: Switch to success green color
@@ -306,7 +360,7 @@ fun CustomerIntakeScreen(
                         Icon(
                             // Success state: Show check icon instead of copy icon
                             if (copySuccess) Icons.Filled.Check else Icons.Filled.ContentCopy,
-                            contentDescription = null,
+                            contentDescription = "Copy to clipboard",
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(Modifier.width(4.dp))
@@ -318,24 +372,25 @@ fun CustomerIntakeScreen(
                 // WPA/WPA2 passwords must be 8-63 characters
                 val passwordValid = uiState.password.length >= 8
                 val qrEnabled = uiState.ssid.isNotBlank() && passwordValid
-                
+
                 val qrHint = when {
                     uiState.ssid.isBlank() && uiState.password.isBlank() -> "Enter SSID + password to generate"
                     uiState.ssid.isBlank() -> "Enter SSID"
                     !passwordValid -> "Password needs 8+ characters (${uiState.password.length}/8)"
                     else -> uiState.ssid
                 }
-                
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column {
+                    Column(modifier = Modifier.semantics(mergeDescendants = true) {}) {
                         Text(
                             "WiFi QR Code",
                             style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.semantics { heading() }
                         )
                         Text(
                             qrHint,
@@ -344,14 +399,17 @@ fun CustomerIntakeScreen(
                         )
                     }
                     NeonButton(
-                        onClick = { showQrSheet = true },
+                        onClick = {
+                            hapticFeedback()
+                            showQrSheet = true
+                        },
                         glowColor = MaterialTheme.colorScheme.tertiary,
                         style = NeonButtonStyle.TERTIARY,
                         enabled = qrEnabled
                     ) {
                         Icon(
                             Icons.Filled.QrCode2,
-                            contentDescription = null,
+                            contentDescription = "Show QR Code",
                             modifier = Modifier.size(18.dp)
                         )
                         Spacer(Modifier.width(6.dp))

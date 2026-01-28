@@ -7,7 +7,7 @@
     <string name="error_phone_empty">Phone number is required</string>
     <string name="error_phone_invalid">Enter a valid US phone number</string>
     <string name="error_ssid_empty">WiFi network name is required</string>
-    <string name="error_ssid_too_long">SSID cannot exceed 32 characters</string>
+    <string name="error_ssid_too_long">SSID cannot exceed 32 bytes (WiFi limit)</string>
     <string name="error_password_empty">WiFi password is required</string>
     <string name="error_password_too_short">Password must be at least 8 characters</string>
     <string name="error_password_too_long">Password cannot exceed 63 characters</string>

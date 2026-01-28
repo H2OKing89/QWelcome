@@ -248,7 +248,7 @@ fun ExportScreen(
                             ) {
                                 Icon(
                                     Icons.Default.ContentCopy,
-                                    contentDescription = null,
+                                    contentDescription = "Copy to clipboard",
                                     modifier = Modifier.size(18.dp)
                                 )
                                 Spacer(Modifier.width(8.dp))
@@ -263,7 +263,7 @@ fun ExportScreen(
                             ) {
                                 Icon(
                                     Icons.Default.Share,
-                                    contentDescription = null,
+                                    contentDescription = "Share",
                                     modifier = Modifier.size(18.dp)
                                 )
                                 Spacer(Modifier.width(8.dp))
@@ -280,7 +280,7 @@ fun ExportScreen(
                         ) {
                             Icon(
                                 Icons.Default.SaveAlt,
-                                contentDescription = null,
+                                contentDescription = "Save to file",
                                 modifier = Modifier.size(18.dp)
                             )
                             Spacer(Modifier.width(8.dp))

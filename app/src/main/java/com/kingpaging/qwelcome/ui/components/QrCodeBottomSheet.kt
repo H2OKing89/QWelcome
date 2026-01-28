@@ -232,7 +232,7 @@ private fun generateHighResQrBitmap(
     )
 
     // Export QR code to PNG bytes
-    val bytes = painter.toByteArray(size, size, ImageFormat.PNG)
+    val bytes = painter.toByteArray(size, size, android.graphics.Bitmap.CompressFormat.PNG)
 
     // Decode bytes to bitmap
     val qrBitmap = android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)

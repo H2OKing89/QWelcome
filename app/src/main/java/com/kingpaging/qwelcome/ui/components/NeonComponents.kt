@@ -20,6 +20,9 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.kingpaging.qwelcome.data.Template
@@ -48,7 +51,7 @@ enum class NeonButtonStyle {
 
 /**
  * Cyberpunk-styled panel with signature neon top-edge accent.
- * 
+ *
  * Light mode: Clean white surface + neon gradient edge = cyberpunk identity
  * Dark mode: Gradient background + subtle border
  */
@@ -158,7 +161,7 @@ fun NeonPanel(
 /**
  * Cyberpunk-styled outlined text field.
  * Adapts border and label colors based on theme.
- * 
+ *
  * ChatGPT feedback: Focus state should feel like "hacking a terminal"
  * - Dark mode: thin cyan glow on focused field
  * - Error: neon red with NO infinite pulse (prevents rave mode)
@@ -186,7 +189,13 @@ fun NeonOutlinedField(
         label = label,
         singleLine = singleLine,
         isError = isError,
-        supportingText = supportingText,
+        supportingText = {
+            if (supportingText != null) {
+                Box(modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }) {
+                    supportingText()
+                }
+            }
+        },
         trailingIcon = trailingIcon,
         visualTransformation = visualTransformation,
         keyboardOptions = keyboardOptions,
@@ -219,12 +228,12 @@ fun NeonOutlinedField(
 
 /**
  * A neon-styled button with proper visual hierarchy.
- * 
+ *
  * Style guide per ChatGPT feedback:
  * - PRIMARY: Main action (filled with glow/elevation) - SMS, Save All
  * - SECONDARY: Important alt actions (outlined) - Share, Copy, Export
  * - TERTIARY: Less prominent (subtle outlined) - QR Code, Import
- * 
+ *
  * Includes haptic feedback and sound.
  */
 @Composable
@@ -263,20 +272,20 @@ fun NeonButton(
             colorScheme.surfaceVariant.copy(alpha = 0.5f)
         }
     }
-    
+
     val contentColor = when (style) {
         NeonButtonStyle.PRIMARY -> if (isDark) glowColor else colorScheme.onPrimary
         NeonButtonStyle.SECONDARY -> glowColor
         NeonButtonStyle.TERTIARY -> glowColor.copy(alpha = if (isDark) 0.8f else 1f)
     }
-    
+
     // Light mode: thinner, more precise borders (0.5dp max unless deliberate)
     val borderWidth = when (style) {
         NeonButtonStyle.PRIMARY -> if (isDark) 1.dp else 0.dp  // NO border on filled
         NeonButtonStyle.SECONDARY -> if (isDark) 1.dp else 1.dp  // Deliberate outline
         NeonButtonStyle.TERTIARY -> 0.dp  // Text button - no border
     }
-    
+
     // SECONDARY is STATIC (not animated) - this preserves hierarchy.
     // PRIMARY has glow, SECONDARY has static outline, TERTIARY is subtle.
     val borderAlpha = when (style) {
@@ -399,7 +408,7 @@ fun PlaceholderChip(
     val isDark = LocalDarkTheme.current
     val colorScheme = MaterialTheme.colorScheme
     val chipColor = if (isRequired) colorScheme.secondary else colorScheme.tertiary
-    
+
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(4.dp),
@@ -449,7 +458,7 @@ fun PlaceholderChipsRow(
 /**
  * Cyberpunk HUD grid background modifier.
  * Adds a subtle scanline/grid effect for that "control panel" vibe.
- * 
+ *
  * Light mode: Very faint (3-5% alpha) to maintain readability
  * Dark mode: Slightly more visible (5-8% alpha)
  */
@@ -460,11 +469,11 @@ fun Modifier.cyberGrid(
 ): Modifier {
     val isDark = LocalDarkTheme.current
     val alpha = if (isDark) 0.06f else 0.03f
-    
+
     return this.drawBehind {
         // Coerce to safe minimum to prevent infinite loop if cellSize <= 0
         val gridSpacing = max(1f, cellSize.dp.toPx())
-        
+
         // Vertical lines
         var x = 0f
         while (x < size.width) {
@@ -476,7 +485,7 @@ fun Modifier.cyberGrid(
             )
             x += gridSpacing
         }
-        
+
         // Horizontal lines
         var y = 0f
         while (y < size.height) {
@@ -502,7 +511,7 @@ fun Modifier.cyberScanlines(
 ): Modifier {
     val isDark = LocalDarkTheme.current
     val alpha = if (isDark) 0.04f else 0.02f
-    
+
     return this.drawBehind {
         // Coerce to safe minimum to prevent infinite loop if lineSpacing <= 0
         val spacing = max(1f, lineSpacing.dp.toPx())
