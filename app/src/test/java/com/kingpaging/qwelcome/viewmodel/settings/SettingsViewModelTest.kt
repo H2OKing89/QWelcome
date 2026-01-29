@@ -7,6 +7,7 @@ import com.kingpaging.qwelcome.data.Template
 import com.kingpaging.qwelcome.data.UpdateCheckResult
 import com.kingpaging.qwelcome.data.UpdateChecker
 import com.kingpaging.qwelcome.testutil.MainDispatcherRule
+import com.kingpaging.qwelcome.viewmodel.factory.AppViewModelProvider
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -51,6 +52,7 @@ class SettingsViewModelTest {
     @After
     fun teardown() {
         unmockkObject(UpdateChecker)
+        AppViewModelProvider.resetForTesting()
     }
 
     @Test

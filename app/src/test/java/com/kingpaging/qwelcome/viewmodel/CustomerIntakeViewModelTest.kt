@@ -7,6 +7,7 @@ import com.kingpaging.qwelcome.data.Template
 import com.kingpaging.qwelcome.testutil.FakeNavigator
 import com.kingpaging.qwelcome.testutil.FakeResourceProvider
 import com.kingpaging.qwelcome.testutil.MainDispatcherRule
+import com.kingpaging.qwelcome.viewmodel.factory.AppViewModelProvider
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -14,6 +15,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -33,7 +35,7 @@ class CustomerIntakeViewModelTest {
     private lateinit var vm: CustomerIntakeViewModel
 
     private val testTemplate = Template(
-        id = "test-template",
+        id = "550e8400-e29b-41d4-a716-446655440000",
         name = "Test",
         content = "Hello {{ customer_name }}, SSID: {{ ssid }}, PW: {{ password }}, Acct: {{ account_number }}"
     )
@@ -43,6 +45,11 @@ class CustomerIntakeViewModelTest {
         every { mockStore.techProfileFlow } returns flowOf(TechProfile("Tech", "Sr Tech", "IT"))
         every { mockStore.activeTemplateFlow } returns flowOf(testTemplate)
         vm = CustomerIntakeViewModel(mockStore, fakeResourceProvider)
+    }
+
+    @After
+    fun tearDown() {
+        AppViewModelProvider.resetForTesting()
     }
 
     @Test
@@ -182,7 +189,7 @@ class CustomerIntakeViewModelTest {
     @Test
     fun `clearForm resets all fields`() {
         fillValidFields()
-        assertNotNull(vm.uiState.value.customerName.isNotBlank())
+        assertTrue(vm.uiState.value.customerName.isNotBlank())
 
         vm.clearForm()
 

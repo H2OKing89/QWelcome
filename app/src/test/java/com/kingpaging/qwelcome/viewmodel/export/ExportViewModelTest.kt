@@ -6,12 +6,14 @@ import com.kingpaging.qwelcome.data.ImportExportRepository
 import com.kingpaging.qwelcome.data.SettingsStore
 import com.kingpaging.qwelcome.data.Template
 import com.kingpaging.qwelcome.testutil.MainDispatcherRule
+import com.kingpaging.qwelcome.viewmodel.factory.AppViewModelProvider
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -40,6 +42,11 @@ class ExportViewModelTest {
     fun setup() {
         coEvery { mockStore.getUserTemplates() } returns testTemplates
         vm = ExportViewModel(mockRepo, mockStore)
+    }
+
+    @After
+    fun tearDown() {
+        AppViewModelProvider.resetForTesting()
     }
 
     @Test

@@ -95,10 +95,12 @@ fun ImportScreen(
                 Toast.makeText(context, R.string.toast_permission_denied_read, Toast.LENGTH_LONG).show()
             } catch (e: java.io.IOException) {
                 Log.w("ImportScreen", "File read error", e)
-                Toast.makeText(context, context.getString(R.string.toast_error_reading_file, e.message), Toast.LENGTH_LONG).show()
+                val detail = e.message ?: e.javaClass.simpleName
+                Toast.makeText(context, context.getString(R.string.toast_error_reading_file, detail), Toast.LENGTH_LONG).show()
             } catch (e: Exception) {
                 Log.e("ImportScreen", "Unexpected file error", e)
-                Toast.makeText(context, context.getString(R.string.toast_unexpected_error, e.message), Toast.LENGTH_LONG).show()
+                val detail = e.message ?: e.javaClass.simpleName
+                Toast.makeText(context, context.getString(R.string.toast_unexpected_error, detail), Toast.LENGTH_LONG).show()
             }
         }
     }

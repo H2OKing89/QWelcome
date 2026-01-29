@@ -5,6 +5,7 @@ import com.kingpaging.qwelcome.data.DEFAULT_TEMPLATE_ID
 import com.kingpaging.qwelcome.data.SettingsStore
 import com.kingpaging.qwelcome.data.Template
 import com.kingpaging.qwelcome.testutil.MainDispatcherRule
+import com.kingpaging.qwelcome.viewmodel.factory.AppViewModelProvider
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -13,6 +14,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -33,10 +35,10 @@ class TemplateListViewModelTest {
     private val defaultTemplate = Template(
         id = DEFAULT_TEMPLATE_ID,
         name = "Default Welcome",
-        content = "Hello {{ customer_name }}"
+        content = "Hello {{ customer_name }}, SSID: {{ ssid }}"
     )
     private val userTemplate = Template(
-        id = "user-1",
+        id = "650e8400-e29b-41d4-a716-446655440001",
         name = "Custom Template",
         content = "Hi {{ customer_name }}, your SSID is {{ ssid }}"
     )
@@ -47,6 +49,11 @@ class TemplateListViewModelTest {
         every { mockStore.activeTemplateIdFlow } returns flowOf(DEFAULT_TEMPLATE_ID)
         every { mockStore.defaultTemplateContent } returns defaultTemplate.content
         vm = TemplateListViewModel(mockStore)
+    }
+
+    @After
+    fun tearDown() {
+        AppViewModelProvider.resetForTesting()
     }
 
     @Test
@@ -61,13 +68,13 @@ class TemplateListViewModelTest {
 
     @Test
     fun `setActiveTemplate calls store and emits event`() = runTest {
-        coEvery { mockStore.getTemplate("user-1") } returns userTemplate
+        coEvery { mockStore.getTemplate("650e8400-e29b-41d4-a716-446655440001") } returns userTemplate
 
         vm.events.test {
-            vm.setActiveTemplate("user-1")
+            vm.setActiveTemplate("650e8400-e29b-41d4-a716-446655440001")
             advanceUntilIdle()
 
-            coVerify { mockStore.setActiveTemplate("user-1") }
+            coVerify { mockStore.setActiveTemplate("650e8400-e29b-41d4-a716-446655440001") }
 
             val event = awaitItem()
             assertTrue(event is TemplateListEvent.ActiveTemplateChanged)
@@ -103,10 +110,10 @@ class TemplateListViewModelTest {
 
     @Test
     fun `updateTemplate saves and emits TemplateUpdated event`() = runTest {
-        coEvery { mockStore.getTemplate("user-1") } returns userTemplate
+        coEvery { mockStore.getTemplate("650e8400-e29b-41d4-a716-446655440001") } returns userTemplate
 
         vm.events.test {
-            vm.updateTemplate("user-1", "Updated Name", "Updated content")
+            vm.updateTemplate("650e8400-e29b-41d4-a716-446655440001", "Updated Name", "Updated content")
             advanceUntilIdle()
 
             coVerify { mockStore.saveTemplate(match { it.name == "Updated Name" && it.content == "Updated content" }) }
@@ -119,13 +126,13 @@ class TemplateListViewModelTest {
 
     @Test
     fun `deleteTemplate removes and emits TemplateDeleted event`() = runTest {
-        coEvery { mockStore.getTemplate("user-1") } returns userTemplate
+        coEvery { mockStore.getTemplate("650e8400-e29b-41d4-a716-446655440001") } returns userTemplate
 
         vm.events.test {
-            vm.deleteTemplate("user-1")
+            vm.deleteTemplate("650e8400-e29b-41d4-a716-446655440001")
             advanceUntilIdle()
 
-            coVerify { mockStore.deleteTemplate("user-1") }
+            coVerify { mockStore.deleteTemplate("650e8400-e29b-41d4-a716-446655440001") }
 
             val event = awaitItem()
             assertTrue(event is TemplateListEvent.TemplateDeleted)
@@ -135,19 +142,19 @@ class TemplateListViewModelTest {
 
     @Test
     fun `delete active template switches to default first`() = runTest {
-        // Set up so user-1 is active
-        every { mockStore.activeTemplateIdFlow } returns flowOf("user-1")
+        // Set up so 650e8400-e29b-41d4-a716-446655440001 is active
+        every { mockStore.activeTemplateIdFlow } returns flowOf("650e8400-e29b-41d4-a716-446655440001")
         vm = TemplateListViewModel(mockStore)
         advanceUntilIdle()
 
-        coEvery { mockStore.getTemplate("user-1") } returns userTemplate
+        coEvery { mockStore.getTemplate("650e8400-e29b-41d4-a716-446655440001") } returns userTemplate
 
-        vm.deleteTemplate("user-1")
+        vm.deleteTemplate("650e8400-e29b-41d4-a716-446655440001")
         advanceUntilIdle()
 
         // Should switch to default before deleting
         coVerify { mockStore.setActiveTemplate(DEFAULT_TEMPLATE_ID) }
-        coVerify { mockStore.deleteTemplate("user-1") }
+        coVerify { mockStore.deleteTemplate("650e8400-e29b-41d4-a716-446655440001") }
     }
 
     @Test

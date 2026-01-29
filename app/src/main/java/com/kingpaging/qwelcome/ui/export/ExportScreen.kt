@@ -370,7 +370,6 @@ private fun TemplateSelectionDialog(
     onDismiss: () -> Unit,
     onExport: () -> Unit
 ) {
-    val context = LocalContext.current
     val isDark = LocalDarkTheme.current
     val allSelected = templates.isNotEmpty() && selectedIds.size == templates.size
     val selectedCount = selectedIds.size
