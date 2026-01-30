@@ -59,18 +59,21 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.data.Template
 import com.kingpaging.qwelcome.di.LocalExportViewModel
 import com.kingpaging.qwelcome.ui.components.CyberpunkBackdrop
@@ -82,13 +85,14 @@ import com.kingpaging.qwelcome.ui.theme.LocalDarkTheme
 import com.kingpaging.qwelcome.viewmodel.export.ExportEvent
 import com.kingpaging.qwelcome.viewmodel.export.ExportType
 
+@Suppress("LocalContextGetResourceValueCall")
 @Composable
 fun ExportScreen(
     onBack: () -> Unit
 ) {
     val vm = LocalExportViewModel.current
     val context = LocalContext.current
-    val uiState by vm.uiState.collectAsState()
+    val uiState by vm.uiState.collectAsStateWithLifecycle()
 
     // Reset ViewModel state when entering the screen to clear any stale events
     LaunchedEffect(Unit) {
@@ -109,7 +113,7 @@ fun ExportScreen(
                     }
                     vm.onFileSaveComplete()
                 } catch (e: Exception) {
-                    Toast.makeText(context, "Failed to save file: ${e.message}", Toast.LENGTH_LONG).show()
+                    Toast.makeText(context, context.getString(R.string.toast_failed_save_file, e.message), Toast.LENGTH_LONG).show()
                     vm.onFileSaveCancelled()
                 }
             }
@@ -132,11 +136,13 @@ fun ExportScreen(
                     Toast.makeText(context, event.message, Toast.LENGTH_LONG).show()
                 }
                 is ExportEvent.CopiedToClipboard -> {
-                    val typeName = when (event.type) {
-                        ExportType.TEMPLATE_PACK -> "Template Pack"
-                        ExportType.FULL_BACKUP -> "Full Backup"
-                    }
-                    Toast.makeText(context, "$typeName copied to clipboard", Toast.LENGTH_SHORT).show()
+                    val typeName = context.getString(
+                        when (event.type) {
+                            ExportType.TEMPLATE_PACK -> R.string.export_type_template_pack
+                            ExportType.FULL_BACKUP -> R.string.export_type_full_backup
+                        }
+                    )
+                    Toast.makeText(context, context.getString(R.string.toast_type_copied, typeName), Toast.LENGTH_SHORT).show()
                 }
                 is ExportEvent.ShareReady -> {
                     shareJson(context, event.json, event.type)
@@ -145,11 +151,13 @@ fun ExportScreen(
                     saveFileLauncher.launch(event.suggestedName)
                 }
                 is ExportEvent.FileSaved -> {
-                    val typeName = when (event.type) {
-                        ExportType.TEMPLATE_PACK -> "Template Pack"
-                        ExportType.FULL_BACKUP -> "Full Backup"
-                    }
-                    Toast.makeText(context, "$typeName saved to file", Toast.LENGTH_SHORT).show()
+                    val typeName = context.getString(
+                        when (event.type) {
+                            ExportType.TEMPLATE_PACK -> R.string.export_type_template_pack
+                            ExportType.FULL_BACKUP -> R.string.export_type_full_backup
+                        }
+                    )
+                    Toast.makeText(context, context.getString(R.string.toast_type_saved, typeName), Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -236,12 +244,17 @@ fun ExportScreen(
 
                         // Result Header
                         val typeName = when (uiState.lastExportType) {
-                            ExportType.TEMPLATE_PACK -> "Template Pack"
-                            ExportType.FULL_BACKUP -> "Full Backup"
+                            ExportType.TEMPLATE_PACK -> stringResource(R.string.export_type_template_pack)
+                            ExportType.FULL_BACKUP -> stringResource(R.string.export_type_full_backup)
                             null -> ""
                         }
+                        val templateCountText = pluralStringResource(
+                            R.plurals.template_count,
+                            uiState.templateCount,
+                            uiState.templateCount
+                        )
                         Text(
-                            "✅ $typeName Ready (${uiState.templateCount} template${if (uiState.templateCount != 1) "s" else ""})",
+                            "\u2705 $typeName Ready ($templateCountText)",
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.secondary
                         )
@@ -442,8 +455,12 @@ private fun TemplateSelectionDialog(
                         glowColor = MaterialTheme.colorScheme.primary,
                         style = NeonButtonStyle.PRIMARY
                     ) {
-                        val templateWord = if (selectedCount == 1) "Template" else "Templates"
-                        Text("Export $selectedCount $templateWord")
+                        val templateCountText = pluralStringResource(
+                            R.plurals.template_count,
+                            selectedCount,
+                            selectedCount
+                        )
+                        Text("Export $templateCountText")
                     }
                 }
             }
@@ -589,18 +606,20 @@ private fun formatPreview(content: String, maxChars: Int = 60): String {
  * Share JSON via Android share sheet.
  */
 private fun shareJson(context: Context, json: String, type: ExportType) {
-    val typeName = when (type) {
-        ExportType.TEMPLATE_PACK -> "Template Pack"
-        ExportType.FULL_BACKUP -> "Full Backup"
-    }
-    
+    val typeName = context.getString(
+        when (type) {
+            ExportType.TEMPLATE_PACK -> R.string.export_type_template_pack
+            ExportType.FULL_BACKUP -> R.string.export_type_full_backup
+        }
+    )
+
     val intent = Intent(Intent.ACTION_SEND).apply {
         this.type = "text/plain"
         putExtra(Intent.EXTRA_SUBJECT, "Q Welcome $typeName")
         putExtra(Intent.EXTRA_TEXT, json)
     }
-    
+
     context.startActivity(
-        Intent.createChooser(intent, "Share $typeName")
+        Intent.createChooser(intent, context.getString(R.string.chooser_share_type, typeName))
     )
 }

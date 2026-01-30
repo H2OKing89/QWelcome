@@ -9,6 +9,7 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.util.Log
 import android.widget.Toast
+import com.kingpaging.qwelcome.R
 
 /**
  * Abstraction for navigation and intent-based actions.
@@ -72,22 +73,22 @@ class AndroidNavigator(private val context: Context) : Navigator {
                 context.startActivity(intent)
             } else {
                 // No default handler, show chooser
-                context.startActivity(Intent.createChooser(intent, "Send message via...").apply {
+                context.startActivity(Intent.createChooser(intent, context.getString(R.string.chooser_send_message)).apply {
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 })
             }
         } catch (e: ActivityNotFoundException) {
             Log.e(TAG, "No SMS app available", e)
-            Toast.makeText(context, "No messaging app found", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, R.string.toast_no_messaging_app, Toast.LENGTH_SHORT).show()
         } catch (e: SecurityException) {
             Log.e(TAG, "SecurityException opening SMS app", e)
-            Toast.makeText(context, "Unable to open messaging app", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, R.string.toast_unable_open_messaging, Toast.LENGTH_SHORT).show()
         } catch (e: IllegalArgumentException) {
             Log.e(TAG, "IllegalArgumentException opening SMS app", e)
-            Toast.makeText(context, "Unable to open messaging app", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, R.string.toast_unable_open_messaging, Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
             Log.e(TAG, "Failed to open SMS app: ${e::class.java.simpleName}", e)
-            Toast.makeText(context, "Unable to open messaging app", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, R.string.toast_unable_open_messaging, Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -103,16 +104,16 @@ class AndroidNavigator(private val context: Context) : Navigator {
             })
         } catch (e: ActivityNotFoundException) {
             Log.e(TAG, "No share target available", e)
-            Toast.makeText(context, "No app available to share", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, R.string.toast_no_share_app, Toast.LENGTH_SHORT).show()
         } catch (e: SecurityException) {
             Log.e(TAG, "SecurityException opening share sheet", e)
-            Toast.makeText(context, "Unable to share", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, R.string.toast_unable_share, Toast.LENGTH_SHORT).show()
         } catch (e: IllegalArgumentException) {
             Log.e(TAG, "IllegalArgumentException opening share sheet", e)
-            Toast.makeText(context, "Unable to share", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, R.string.toast_unable_share, Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
             Log.e(TAG, "Failed to open share sheet: ${e::class.java.simpleName}", e)
-            Toast.makeText(context, "Unable to share", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, R.string.toast_unable_share, Toast.LENGTH_SHORT).show()
         }
     }
 

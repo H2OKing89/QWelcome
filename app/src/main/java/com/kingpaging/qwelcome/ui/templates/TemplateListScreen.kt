@@ -74,6 +74,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.data.DEFAULT_TEMPLATE_ID
 import com.kingpaging.qwelcome.data.Template
 import com.kingpaging.qwelcome.di.LocalTemplateListViewModel
@@ -90,6 +91,7 @@ import com.kingpaging.qwelcome.viewmodel.templates.TemplateListEvent
  */
 private const val NEW_TEMPLATE_ID = "__new__"
 
+@Suppress("LocalContextGetResourceValueCall")
 @Composable
 fun TemplateListScreen(
     onBack: () -> Unit
@@ -115,19 +117,19 @@ fun TemplateListScreen(
                     Toast.makeText(context, event.message, Toast.LENGTH_LONG).show()
                 }
                 is TemplateListEvent.TemplateCreated -> {
-                    Toast.makeText(context, "Created: ${event.template.name}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, context.getString(R.string.toast_template_created, event.template.name), Toast.LENGTH_SHORT).show()
                 }
                 is TemplateListEvent.TemplateUpdated -> {
-                    Toast.makeText(context, "Updated: ${event.template.name}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, context.getString(R.string.toast_template_updated, event.template.name), Toast.LENGTH_SHORT).show()
                 }
                 is TemplateListEvent.TemplateDeleted -> {
-                    Toast.makeText(context, "Deleted: ${event.name}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, context.getString(R.string.toast_template_deleted, event.name), Toast.LENGTH_SHORT).show()
                 }
                 is TemplateListEvent.TemplateDuplicated -> {
-                    Toast.makeText(context, "Duplicated: ${event.template.name}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, context.getString(R.string.toast_template_duplicated, event.template.name), Toast.LENGTH_SHORT).show()
                 }
                 is TemplateListEvent.ActiveTemplateChanged -> {
-                    Toast.makeText(context, "Active: ${event.template.name}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, context.getString(R.string.toast_template_active, event.template.name), Toast.LENGTH_SHORT).show()
                 }
             }
         }

@@ -42,6 +42,9 @@
     private ** descriptor;
 }
 
+# Protobuf-lite generated classes
+-keep class * extends com.google.protobuf.GeneratedMessageLite { *; }
+
 # DataStore
 -keep class androidx.datastore.** { *; }
 

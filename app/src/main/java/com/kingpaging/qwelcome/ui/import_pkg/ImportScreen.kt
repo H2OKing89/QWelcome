@@ -42,7 +42,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -54,6 +54,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.data.ImportValidationResult
 import com.kingpaging.qwelcome.di.LocalImportViewModel
 import com.kingpaging.qwelcome.ui.components.CyberpunkBackdrop
@@ -64,6 +66,7 @@ import com.kingpaging.qwelcome.ui.theme.LocalCyberColors
 import com.kingpaging.qwelcome.viewmodel.import_pkg.ImportEvent
 import com.kingpaging.qwelcome.viewmodel.import_pkg.ImportStep
 
+@Suppress("LocalContextGetResourceValueCall", "LocalContextResourcesRead")
 @Composable
 fun ImportScreen(
     onBack: () -> Unit,
@@ -72,7 +75,7 @@ fun ImportScreen(
     val vm = LocalImportViewModel.current
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
-    val uiState by vm.uiState.collectAsState()
+    val uiState by vm.uiState.collectAsStateWithLifecycle()
 
     // Reset ViewModel state when entering the screen to clear any stale events
     LaunchedEffect(Unit) {
@@ -87,16 +90,18 @@ fun ImportScreen(
                 context.contentResolver.openInputStream(uri)?.use { inputStream ->
                     val json = inputStream.bufferedReader().use { it.readText() }
                     vm.onJsonContentReceived(json)
-                } ?: Toast.makeText(context, "Could not open file", Toast.LENGTH_LONG).show()
+                } ?: Toast.makeText(context, R.string.toast_could_not_open_file, Toast.LENGTH_LONG).show()
             } catch (e: SecurityException) {
                 Log.w("ImportScreen", "File permission denied", e)
-                Toast.makeText(context, "Permission denied to read file", Toast.LENGTH_LONG).show()
+                Toast.makeText(context, R.string.toast_permission_denied_read, Toast.LENGTH_LONG).show()
             } catch (e: java.io.IOException) {
                 Log.w("ImportScreen", "File read error", e)
-                Toast.makeText(context, "Error reading file: ${e.message}", Toast.LENGTH_LONG).show()
+                val detail = e.message ?: e.javaClass.simpleName
+                Toast.makeText(context, context.getString(R.string.toast_error_reading_file, detail), Toast.LENGTH_LONG).show()
             } catch (e: Exception) {
                 Log.e("ImportScreen", "Unexpected file error", e)
-                Toast.makeText(context, "Unexpected error: ${e.message}", Toast.LENGTH_LONG).show()
+                val detail = e.message ?: e.javaClass.simpleName
+                Toast.makeText(context, context.getString(R.string.toast_unexpected_error, detail), Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -105,7 +110,17 @@ fun ImportScreen(
         vm.events.collect { event ->
             when (event) {
                 is ImportEvent.ImportSuccess -> {
-                    Toast.makeText(context, event.message, Toast.LENGTH_LONG).show()
+                    val message = buildString {
+                        append(context.resources.getQuantityString(
+                            R.plurals.import_success,
+                            event.templatesImported,
+                            event.templatesImported
+                        ))
+                        if (event.techProfileImported) {
+                            append(context.getString(R.string.import_success_with_profile))
+                        }
+                    }
+                    Toast.makeText(context, message, Toast.LENGTH_LONG).show()
                 }
                 is ImportEvent.ImportFailed -> {
                     Toast.makeText(context, event.message, Toast.LENGTH_LONG).show()
@@ -160,9 +175,10 @@ fun ImportScreen(
                                     try {
                                         clipboardManager.getText()?.let {
                                             vm.onPasteContent(it.text)
-                                        } ?: Toast.makeText(context, "Clipboard is empty", Toast.LENGTH_SHORT).show()
+                                        } ?: Toast.makeText(context, R.string.toast_clipboard_empty, Toast.LENGTH_SHORT).show()
                                     } catch (e: SecurityException) {
-                                        Toast.makeText(context, "Cannot access clipboard", Toast.LENGTH_SHORT).show()
+                                        Log.w("ImportScreen", "Clipboard access denied", e)
+                                        Toast.makeText(context, R.string.toast_cannot_access_clipboard, Toast.LENGTH_SHORT).show()
                                     }
                                 }
                             )
@@ -305,7 +321,7 @@ private fun ConfirmStep(
 
             when (validationResult) {
                 is ImportValidationResult.ValidTemplatePack -> {
-                    InfoRow("Backup Type", "Template Pack")
+                    InfoRow("Backup Type", stringResource(R.string.export_type_template_pack))
                     InfoRow("Template Count", validationResult.pack.templates.size.toString())
                     InfoRow("Tech Profile", "Not Included")
                     if (validationResult.hasConflicts) {
@@ -313,7 +329,7 @@ private fun ConfirmStep(
                     }
                 }
                 is ImportValidationResult.ValidFullBackup -> {
-                    InfoRow("Backup Type", "Full Backup")
+                    InfoRow("Backup Type", stringResource(R.string.export_type_full_backup))
                     InfoRow("Template Count", validationResult.backup.templates.size.toString())
                     InfoRow("Tech Profile", "Included")
                     if (validationResult.hasConflicts) {
