@@ -18,9 +18,9 @@ qrose = "1.1.0"
 kotlinxSerializationJson = "1.10.0"
 protobuf = "3.25.5"
 protobufPlugin = "0.9.5"
-coroutinesTest = "1.10.0"
-turbine = "1.1.0"
-mockk = "1.13.16"
+coroutinesTest = "1.10.2"
+turbine = "1.2.1"
+mockk = "1.14.7"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
