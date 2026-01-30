@@ -42,7 +42,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -54,6 +54,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.data.ImportValidationResult
 import com.kingpaging.qwelcome.di.LocalImportViewModel
@@ -74,7 +75,7 @@ fun ImportScreen(
     val vm = LocalImportViewModel.current
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
-    val uiState by vm.uiState.collectAsState()
+    val uiState by vm.uiState.collectAsStateWithLifecycle()
 
     // Reset ViewModel state when entering the screen to clear any stale events
     LaunchedEffect(Unit) {
@@ -176,6 +177,7 @@ fun ImportScreen(
                                             vm.onPasteContent(it.text)
                                         } ?: Toast.makeText(context, R.string.toast_clipboard_empty, Toast.LENGTH_SHORT).show()
                                     } catch (e: SecurityException) {
+                                        Log.w("ImportScreen", "Clipboard access denied", e)
                                         Toast.makeText(context, R.string.toast_cannot_access_clipboard, Toast.LENGTH_SHORT).show()
                                     }
                                 }
@@ -319,7 +321,7 @@ private fun ConfirmStep(
 
             when (validationResult) {
                 is ImportValidationResult.ValidTemplatePack -> {
-                    InfoRow("Backup Type", "Template Pack")
+                    InfoRow("Backup Type", stringResource(R.string.export_type_template_pack))
                     InfoRow("Template Count", validationResult.pack.templates.size.toString())
                     InfoRow("Tech Profile", "Not Included")
                     if (validationResult.hasConflicts) {
@@ -327,7 +329,7 @@ private fun ConfirmStep(
                     }
                 }
                 is ImportValidationResult.ValidFullBackup -> {
-                    InfoRow("Backup Type", "Full Backup")
+                    InfoRow("Backup Type", stringResource(R.string.export_type_full_backup))
                     InfoRow("Template Count", validationResult.backup.templates.size.toString())
                     InfoRow("Tech Profile", "Included")
                     if (validationResult.hasConflicts) {

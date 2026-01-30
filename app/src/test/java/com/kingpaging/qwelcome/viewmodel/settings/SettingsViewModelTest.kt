@@ -39,6 +39,7 @@ class SettingsViewModelTest {
 
     @Before
     fun setup() {
+        AppViewModelProvider.resetForTesting()
         every { mockStore.techProfileFlow } returns flowOf(testProfile)
         every { mockStore.allTemplatesFlow } returns flowOf(listOf(testTemplate))
         every { mockStore.activeTemplateFlow } returns flowOf(testTemplate)
