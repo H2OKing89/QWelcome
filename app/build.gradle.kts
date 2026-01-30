@@ -1,7 +1,13 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
+}
+
+val versionProps = Properties().apply {
+    load(rootProject.file("version.properties").inputStream())
 }
 
 android {
@@ -12,8 +18,8 @@ android {
         applicationId = "com.kingpaging.qwelcome"
         minSdk = 26
         targetSdk = 36
-        versionCode = 2
-        versionName = "2.0.0"
+        versionCode = versionProps.getProperty("VERSION_CODE").toInt()
+        versionName = versionProps.getProperty("VERSION_NAME")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

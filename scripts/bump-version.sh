@@ -1,0 +1,153 @@
+#!/usr/bin/env bash
+#
+# bump-version.sh — Bump version, update changelog, commit, and tag.
+#
+# Usage:
+#   scripts/bump-version.sh <major|minor|patch|X.Y.Z> [--push] [--force]
+#
+# Options:
+#   --push   Push commit and tag to remote after creation
+#   --force  Skip changelog content validation
+#
+
+set -euo pipefail
+
+# ── Resolve project root ──────────────────────────────────────────────
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+VERSION_FILE="$ROOT_DIR/version.properties"
+CHANGELOG_FILE="$ROOT_DIR/CHANGELOG.md"
+
+# ── Parse arguments ───────────────────────────────────────────────────
+BUMP=""
+PUSH=false
+FORCE=false
+
+for arg in "$@"; do
+    case "$arg" in
+        --push)  PUSH=true ;;
+        --force) FORCE=true ;;
+        *)       BUMP="$arg" ;;
+    esac
+done
+
+if [ -z "$BUMP" ]; then
+    echo "Usage: scripts/bump-version.sh <major|minor|patch|X.Y.Z> [--push] [--force]"
+    exit 1
+fi
+
+# ── Read current version ──────────────────────────────────────────────
+if [ ! -f "$VERSION_FILE" ]; then
+    echo "Error: $VERSION_FILE not found."
+    exit 1
+fi
+
+CURRENT_NAME=$(grep '^VERSION_NAME=' "$VERSION_FILE" | cut -d= -f2)
+CURRENT_CODE=$(grep '^VERSION_CODE=' "$VERSION_FILE" | cut -d= -f2)
+
+if [ -z "$CURRENT_NAME" ] || [ -z "$CURRENT_CODE" ]; then
+    echo "Error: Could not read VERSION_NAME or VERSION_CODE from $VERSION_FILE"
+    exit 1
+fi
+
+IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_NAME"
+
+# ── Compute new version ──────────────────────────────────────────────
+case "$BUMP" in
+    major)
+        MAJOR=$((MAJOR + 1))
+        MINOR=0
+        PATCH=0
+        ;;
+    minor)
+        MINOR=$((MINOR + 1))
+        PATCH=0
+        ;;
+    patch)
+        PATCH=$((PATCH + 1))
+        ;;
+    *)
+        # Treat as explicit version (X.Y.Z)
+        if ! echo "$BUMP" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "Error: Invalid version '$BUMP'. Use major, minor, patch, or X.Y.Z."
+            exit 1
+        fi
+        IFS='.' read -r MAJOR MINOR PATCH <<< "$BUMP"
+        ;;
+esac
+
+NEW_NAME="${MAJOR}.${MINOR}.${PATCH}"
+NEW_CODE=$((CURRENT_CODE + 1))
+
+echo "Version: $CURRENT_NAME -> $NEW_NAME"
+echo "Code:    $CURRENT_CODE -> $NEW_CODE"
+
+# ── Validate changelog ────────────────────────────────────────────────
+if [ "$FORCE" = false ]; then
+    if [ ! -f "$CHANGELOG_FILE" ]; then
+        echo "Error: $CHANGELOG_FILE not found. Use --force to skip."
+        exit 1
+    fi
+
+    # Extract content between [Unreleased] and the next ## heading
+    UNRELEASED=$(awk '/^## \[Unreleased\]/{found=1; next} /^## \[/{found=0} found{print}' "$CHANGELOG_FILE" \
+        | sed '/^[[:space:]]*$/d')
+
+    if [ -z "$UNRELEASED" ] || [ "$UNRELEASED" = "No unreleased changes." ]; then
+        echo "Error: No content under [Unreleased] in CHANGELOG.md."
+        echo "       Add changelog entries before bumping, or use --force to skip."
+        exit 1
+    fi
+fi
+
+# ── Update version.properties ────────────────────────────────────────
+printf 'VERSION_NAME=%s\nVERSION_CODE=%s\n' "$NEW_NAME" "$NEW_CODE" > "$VERSION_FILE"
+echo "Updated $VERSION_FILE"
+
+# ── Update CHANGELOG.md ──────────────────────────────────────────────
+if [ -f "$CHANGELOG_FILE" ]; then
+    TODAY=$(date +%Y-%m-%d)
+
+    # Use awk to:
+    # 1. When we hit [Unreleased], print it, then print the sentinel + blank + new heading
+    # 2. Skip the old sentinel line if present
+    # 3. Pass everything else through
+    awk -v ver="$NEW_NAME" -v date="$TODAY" '
+    /^## \[Unreleased\]/ {
+        print $0
+        print ""
+        print "No unreleased changes."
+        print ""
+        print "## [" ver "] - " date
+        found_unreleased = 1
+        next
+    }
+    found_unreleased && /^No unreleased changes\.$/ {
+        # Skip the old sentinel line (it was already reprinted above)
+        found_unreleased = 0
+        next
+    }
+    { print }
+    ' "$CHANGELOG_FILE" > "$CHANGELOG_FILE.tmp" && mv "$CHANGELOG_FILE.tmp" "$CHANGELOG_FILE"
+
+    echo "Updated $CHANGELOG_FILE"
+fi
+
+# ── Git commit and tag ────────────────────────────────────────────────
+cd "$ROOT_DIR"
+git add version.properties CHANGELOG.md
+git commit --no-verify -m "release: v${NEW_NAME} (code ${NEW_CODE})"
+git tag -a "v${NEW_NAME}" -m "Release v${NEW_NAME}"
+
+echo ""
+echo "Created commit and tag v${NEW_NAME}"
+
+# ── Optional push ─────────────────────────────────────────────────────
+if [ "$PUSH" = true ]; then
+    git push && git push --tags
+    echo "Pushed to remote."
+fi
+
+echo ""
+echo "Done! Release v${NEW_NAME} (code ${NEW_CODE}) is ready."
