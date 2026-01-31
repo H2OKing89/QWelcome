@@ -136,6 +136,15 @@ fi
 
 # ── Git commit and tag ────────────────────────────────────────────────
 cd "$ROOT_DIR"
+
+STAGED=$(git diff --cached --name-only)
+if [ -n "$STAGED" ]; then
+    echo "Error: There are already staged changes in the index:"
+    echo "$STAGED"
+    echo "       Please unstage them before running this script."
+    exit 1
+fi
+
 git add "$VERSION_FILE"
 if [ -f "$CHANGELOG_FILE" ]; then
     git add "$CHANGELOG_FILE"
