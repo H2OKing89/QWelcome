@@ -6,8 +6,8 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
-val versionProps = Properties().apply {
-    load(rootProject.file("version.properties").inputStream())
+val versionProps = rootProject.file("version.properties").inputStream().use { stream ->
+    Properties().apply { load(stream) }
 }
 
 android {
@@ -18,8 +18,12 @@ android {
         applicationId = "com.kingpaging.qwelcome"
         minSdk = 26
         targetSdk = 36
-        versionCode = versionProps.getProperty("VERSION_CODE").toInt()
-        versionName = versionProps.getProperty("VERSION_NAME")
+        versionCode = requireNotNull(versionProps.getProperty("VERSION_CODE")) {
+            "VERSION_CODE missing from version.properties"
+        }.toInt()
+        versionName = requireNotNull(versionProps.getProperty("VERSION_NAME")) {
+            "VERSION_NAME missing from version.properties"
+        }
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

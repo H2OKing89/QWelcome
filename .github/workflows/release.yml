@@ -37,14 +37,19 @@ jobs:
       id: changelog
       run: |
         VERSION="${{ steps.get_version.outputs.VERSION }}"
-        BODY=$(sed -n "/^## \[$VERSION\]/,/^## \[/{/^## \[/!p}" CHANGELOG.md \
-          | sed '/./,$!d' | sed -e :a -e '/^\n*$/{$d;N;ba}')
+        BODY=$(awk -v ver="$VERSION" '
+          $0 ~ "^## \\[" ver "\\]" { found=1; next }
+          found && /^## \[/ { exit }
+          found { print }
+        ' CHANGELOG.md | sed '/./,$!d' | sed -e :a -e '/^\n*$/{$d;N;ba}')
         if [ -z "$BODY" ]; then
           BODY="No changelog entry found for version $VERSION."
         fi
-        echo "BODY<<CHANGELOG_EOF" >> $GITHUB_OUTPUT
-        echo "$BODY" >> $GITHUB_OUTPUT
-        echo "CHANGELOG_EOF" >> $GITHUB_OUTPUT
+        {
+          echo "BODY<<CHANGELOG_EOF"
+          echo "$BODY"
+          echo "CHANGELOG_EOF"
+        } >> "$GITHUB_OUTPUT"
 
     - name: Create Release
       uses: softprops/action-gh-release@v2

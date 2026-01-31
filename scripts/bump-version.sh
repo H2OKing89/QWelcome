@@ -43,8 +43,8 @@ if [ ! -f "$VERSION_FILE" ]; then
     exit 1
 fi
 
-CURRENT_NAME=$(grep '^VERSION_NAME=' "$VERSION_FILE" | cut -d= -f2)
-CURRENT_CODE=$(grep '^VERSION_CODE=' "$VERSION_FILE" | cut -d= -f2)
+CURRENT_NAME="$(grep '^VERSION_NAME=' "$VERSION_FILE" | cut -d= -f2-)"
+CURRENT_CODE="$(grep '^VERSION_CODE=' "$VERSION_FILE" | cut -d= -f2-)"
 
 if [ -z "$CURRENT_NAME" ] || [ -z "$CURRENT_CODE" ]; then
     echo "Error: Could not read VERSION_NAME or VERSION_CODE from $VERSION_FILE"
@@ -136,7 +136,7 @@ fi
 
 # ── Git commit and tag ────────────────────────────────────────────────
 cd "$ROOT_DIR"
-git add version.properties CHANGELOG.md
+git add "$VERSION_FILE" "$CHANGELOG_FILE"
 git commit --no-verify -m "release: v${NEW_NAME} (code ${NEW_CODE})"
 git tag -a "v${NEW_NAME}" -m "Release v${NEW_NAME}"
 
@@ -145,7 +145,7 @@ echo "Created commit and tag v${NEW_NAME}"
 
 # ── Optional push ─────────────────────────────────────────────────────
 if [ "$PUSH" = true ]; then
-    git push && git push --tags
+    git push --follow-tags
     echo "Pushed to remote."
 fi
 
