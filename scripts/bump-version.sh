@@ -136,7 +136,10 @@ fi
 
 # ── Git commit and tag ────────────────────────────────────────────────
 cd "$ROOT_DIR"
-git add "$VERSION_FILE" "$CHANGELOG_FILE"
+git add "$VERSION_FILE"
+if [ -f "$CHANGELOG_FILE" ]; then
+    git add "$CHANGELOG_FILE"
+fi
 git commit --no-verify -m "release: v${NEW_NAME} (code ${NEW_CODE})"
 git tag -a "v${NEW_NAME}" -m "Release v${NEW_NAME}"
 
