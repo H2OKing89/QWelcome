@@ -155,6 +155,14 @@ Existing tests cover `PhoneUtils`, `WifiQrGenerator`, `MessageTemplate`.
 - Apply `Modifier.imePadding()` for keyboard insets in dialogs
 - Use `key(item.id)` when swapping/editing items
 
+## Version Management
+
+- Single source of truth: `version.properties` at project root (`VERSION_NAME`, `VERSION_CODE`)
+- `app/build.gradle.kts` reads from this file — never hardcode versions in build files
+- To release: add entries under `[Unreleased]` in `CHANGELOG.md`, then run `scripts/bump-version.sh <major|minor|patch>`
+- The script updates the properties file, rewrites the changelog, commits, and creates a git tag
+- Pushing a `v*` tag triggers the GitHub Actions release workflow which extracts the changelog into the release body
+
 ## SDK Requirements
 
 - **minSdk:** 26 (Android 8.0)
