@@ -9,6 +9,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No unreleased changes.
 
+## [2.1.0] - 2026-01-30
+
+### Added
+
+- Version bump script (`scripts/bump-version.sh`) for one-command releases
+- `version.properties` as single source of truth for app versioning
+- `.gitattributes` to enforce LF line endings for scripts
+
+### Changed
+
+- App version is now read dynamically from `version.properties` instead of hardcoded in `build.gradle.kts`
+- GitHub Actions release workflow now extracts real changelog content into the release body
+
+### Technical
+
+- ViewModel unit tests with test infrastructure
+- Updated dependencies for coroutinesTest, turbine, and mockk
+- Improved state collection with `collectAsStateWithLifecycle`
+- Cleaned up ProGuard rules and error handling in import/export screens
+
 ## [1.0.0] - 2026-01-25
 
 ### Added
