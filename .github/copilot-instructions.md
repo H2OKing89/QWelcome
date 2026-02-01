@@ -11,13 +11,25 @@ ui/                  # Compose screens (CustomerIntakeScreen, SettingsScreen, et
 viewmodel/           # ViewModels with StateFlow + SharedFlow for one-shot events
 data/                # Models, SettingsStore (DataStore), ImportExportRepository
 di/CompositionLocals.kt  # All LocalXxxViewModel providers
-navigation/Navigator.kt  # Abstraction for intents (SMS, Share, Clipboard)
+navigation/          # Routes.kt (type-safe routes), AppNavGraph.kt, Navigator.kt
+build-logic/         # Gradle convention plugins for shared build config
 ```
 
 **Key Data Flow:**
 - `SettingsStore` wraps DataStore for persistence (templates, tech profile, settings)
 - `AppViewModelProvider` creates ViewModels with shared singleton `SettingsStore`
 - One-shot events (Toasts) use `SharedFlow`, not state
+
+**Navigation:**
+- Uses Jetpack Navigation Compose with type-safe routes (see `navigation/Routes.kt`)
+- Routes are `@Serializable` objects/data classes for type safety
+- `AppNavGraph.kt` defines the navigation graph
+- Back navigation is handled automatically by the framework
+
+**Crash Reporting:**
+- Firebase Crashlytics is integrated (disabled in debug builds)
+- `QWelcomeApplication` handles initialization
+- Replace `app/google-services.json` placeholder with your Firebase project config
 
 ## Critical Patterns
 
@@ -60,17 +72,21 @@ JSON export uses versioned schema (`EXPORT_SCHEMA_VERSION` in `ExportModels.kt`)
 
 Imports validate schema version and detect conflicts by template UUID.
 
-## Known Issues (from CODE_AUDIT.md)
+## Resolved Issues (from CODE_AUDIT.md)
 
-- Error messages are hardcoded in `CustomerIntakeViewModel` companion object - should move to `strings.xml`
-- SSID validation checks characters instead of bytes in ViewModel (QR generator does it correctly)
-- Screen navigation uses enum with `rememberSaveable` - renaming enum values breaks saved state
+All audit items have been resolved:
+- ✅ Error messages now use `ResourceProvider` for string resources
+- ✅ SSID validation correctly checks bytes (UTF-8)
+- ✅ Navigation uses Jetpack Navigation Compose with type-safe routes
+- ✅ Firebase Crashlytics integrated for production crash tracking
+- ✅ Gradle convention plugins in `build-logic/` for shared config
 
 ## File Naming Conventions
 
 - ViewModels: `XxxViewModel.kt` in `viewmodel/` or `viewmodel/feature/`
 - Screens: `XxxScreen.kt` in `ui/` or `ui/feature/`
 - Kotlin package for imports: `import_pkg` (not `import` - reserved keyword)
+- Navigation routes: `Routes.kt` with `@Serializable` objects/data classes
 
 ## Compose & Kotlin Requirements
 
