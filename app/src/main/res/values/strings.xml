@@ -119,6 +119,9 @@
     </plurals>
     <string name="import_success_with_profile"> and tech profile</string>
 
+    <!-- Open Network / QR labels -->
+    <string name="label_open_no_password">Open (No Password)</string>
+
     <!-- Template variables sheet -->
     <string name="template_var_tech_signature">Technician signature block</string>
 </resources>
