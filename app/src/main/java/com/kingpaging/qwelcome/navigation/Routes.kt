@@ -24,10 +24,7 @@ object Routes {
     @Serializable
     object Import
 
-    /**
-     * Template list screen with origin tracking for proper back navigation.
-     * @param originRoute The route to navigate back to (serialized route name)
-     */
+    /** Template list screen */
     @Serializable
-    data class TemplateList(val originRoute: String = "Main")
+    object TemplateList
 }

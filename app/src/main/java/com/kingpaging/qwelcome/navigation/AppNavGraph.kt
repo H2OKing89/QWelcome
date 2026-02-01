@@ -27,7 +27,7 @@ fun AppNavGraph(navController: NavHostController) {
             CustomerIntakeScreen(
                 onOpenSettings = { navController.navigate(Routes.Settings) },
                 onOpenTemplates = {
-                    navController.navigate(Routes.TemplateList(originRoute = "Main"))
+                    navController.navigate(Routes.TemplateList)
                 }
             )
         }
@@ -38,7 +38,7 @@ fun AppNavGraph(navController: NavHostController) {
                 onOpenExport = { navController.navigate(Routes.Export) },
                 onOpenImport = { navController.navigate(Routes.Import) },
                 onOpenTemplates = {
-                    navController.navigate(Routes.TemplateList(originRoute = "Settings"))
+                    navController.navigate(Routes.TemplateList)
                 }
             )
         }

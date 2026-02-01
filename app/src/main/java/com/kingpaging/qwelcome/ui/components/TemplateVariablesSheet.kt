@@ -75,7 +75,7 @@ fun TemplateVariablesSheet(
             Spacer(Modifier.height(4.dp))
 
             Text(
-                text = "Tap the copy icon to copy a variable",
+                text = stringResource(R.string.help_tap_copy),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
             )
@@ -135,7 +135,7 @@ private fun VariableItem(
             IconButton(onClick = onCopy) {
                 Icon(
                     Icons.Default.ContentCopy,
-                    contentDescription = "Copy $placeholder",
+                    contentDescription = stringResource(R.string.action_copy_placeholder, placeholder),
                     tint = MaterialTheme.colorScheme.tertiary,
                     modifier = Modifier.size(20.dp)
                 )

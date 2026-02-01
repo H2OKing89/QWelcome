@@ -423,10 +423,8 @@ fun CustomerIntakeScreen(
                 }
 
                 // === WIFI QR CODE SECTION ===
-                // For open networks, only SSID is required
-                // For secured networks, WPA/WPA2 passwords must be 8-63 characters
-                val passwordValid = uiState.isOpenNetwork || uiState.password.length >= 8
-                val qrSectionEnabled = uiState.ssid.isNotBlank() && passwordValid
+                // QR code validation (reuse qrEnabled from above)
+                val qrSectionEnabled = qrEnabled
 
                 val qrHint = when {
                     uiState.isOpenNetwork && uiState.ssid.isBlank() -> "Enter SSID to generate"

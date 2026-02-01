@@ -124,4 +124,6 @@
 
     <!-- Template variables sheet -->
     <string name="template_var_tech_signature">Technician signature block</string>
+    <string name="help_tap_copy">Tap the copy icon to copy a variable</string>
+    <string name="action_copy_placeholder">Copy %1$s</string>
 </resources>
