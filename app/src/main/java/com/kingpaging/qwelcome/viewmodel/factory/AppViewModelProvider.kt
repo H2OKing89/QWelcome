@@ -5,6 +5,8 @@ import android.content.Context
 import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.createSavedStateHandle
+import androidx.lifecycle.viewmodel.CreationExtras
 import com.kingpaging.qwelcome.data.ImportExportRepository
 import com.kingpaging.qwelcome.data.SettingsStore
 import com.kingpaging.qwelcome.util.AndroidResourceProvider
@@ -90,10 +92,12 @@ class AppViewModelProvider(private val context: Context) : ViewModelProvider.Fac
     }
 
     @Suppress("UNCHECKED_CAST")
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+    override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {
         return when {
             modelClass.isAssignableFrom(CustomerIntakeViewModel::class.java) -> {
+                val savedStateHandle = extras.createSavedStateHandle()
                 CustomerIntakeViewModel(
+                    savedStateHandle = savedStateHandle,
                     settingsStore = getSettingsStore(context),
                     resourceProvider = getResourceProvider(context)
                 ) as T

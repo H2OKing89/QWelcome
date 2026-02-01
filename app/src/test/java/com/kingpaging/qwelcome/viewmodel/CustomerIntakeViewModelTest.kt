@@ -1,14 +1,15 @@
 package com.kingpaging.qwelcome.viewmodel
 
+import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
 import com.kingpaging.qwelcome.data.SettingsStore
 import com.kingpaging.qwelcome.data.TechProfile
 import com.kingpaging.qwelcome.data.Template
 import com.kingpaging.qwelcome.testutil.FakeNavigator
 import com.kingpaging.qwelcome.testutil.FakeResourceProvider
+import com.kingpaging.qwelcome.testutil.FakeTimeProvider
 import com.kingpaging.qwelcome.testutil.MainDispatcherRule
 import com.kingpaging.qwelcome.viewmodel.factory.AppViewModelProvider
-import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -32,6 +33,8 @@ class CustomerIntakeViewModelTest {
 
     private val mockStore = mockk<SettingsStore>(relaxed = true)
     private val fakeResourceProvider = FakeResourceProvider()
+    private val fakeTimeProvider = FakeTimeProvider(10000L) // Start at 10 seconds
+    private val savedStateHandle = SavedStateHandle()
     private lateinit var vm: CustomerIntakeViewModel
 
     private val testTemplate = Template(
@@ -42,9 +45,15 @@ class CustomerIntakeViewModelTest {
 
     @Before
     fun setup() {
+        AppViewModelProvider.resetForTesting()
         every { mockStore.techProfileFlow } returns flowOf(TechProfile("Tech", "Sr Tech", "IT"))
         every { mockStore.activeTemplateFlow } returns flowOf(testTemplate)
-        vm = CustomerIntakeViewModel(mockStore, fakeResourceProvider)
+        vm = CustomerIntakeViewModel(
+            savedStateHandle = savedStateHandle,
+            settingsStore = mockStore,
+            resourceProvider = fakeResourceProvider,
+            timeProvider = fakeTimeProvider
+        )
     }
 
     @After
@@ -173,11 +182,12 @@ class CustomerIntakeViewModelTest {
         fillValidFields()
 
         vm.uiEvent.test {
-            // First call succeeds
+            // First call succeeds - advance time to ensure cooldown passes
+            fakeTimeProvider.advanceBy(3000L) // More than 2 second cooldown
             vm.onSmsClicked(navigator)
             advanceUntilIdle()
 
-            // Immediate second call should be rate limited
+            // Immediate second call should be rate limited (no time advance)
             vm.onSmsClicked(navigator)
             advanceUntilIdle()
 
@@ -187,17 +197,26 @@ class CustomerIntakeViewModelTest {
     }
 
     @Test
-    fun `clearForm resets all fields`() {
+    fun `clearForm resets all fields and shows toast`() = runTest {
         fillValidFields()
         assertTrue(vm.uiState.value.customerName.isNotBlank())
 
-        vm.clearForm()
+        vm.uiEvent.test {
+            vm.clearForm()
+            advanceUntilIdle()
 
-        assertEquals("", vm.uiState.value.customerName)
-        assertEquals("", vm.uiState.value.customerPhone)
-        assertEquals("", vm.uiState.value.ssid)
-        assertEquals("", vm.uiState.value.password)
-        assertEquals("", vm.uiState.value.accountNumber)
+            // Verify fields are cleared
+            assertEquals("", vm.uiState.value.customerName)
+            assertEquals("", vm.uiState.value.customerPhone)
+            assertEquals("", vm.uiState.value.ssid)
+            assertEquals("", vm.uiState.value.password)
+            assertEquals("", vm.uiState.value.accountNumber)
+
+            // Verify toast event is emitted (FakeResourceProvider returns "string_resId")
+            val event = awaitItem()
+            assertTrue(event is UiEvent.ShowToast)
+            assertTrue((event as UiEvent.ShowToast).message.startsWith("string_"))
+        }
     }
 
     @Test
@@ -246,6 +265,83 @@ class CustomerIntakeViewModelTest {
         assertEquals(1, navigator.shareCalls.size)
     }
 
+    @Test
+    fun `auto-clear clears form after timeout on resume`() = runTest {
+        fillValidFields()
+        assertTrue(vm.uiState.value.customerName.isNotBlank())
+
+        vm.uiEvent.test {
+            // Simulate going to background
+            vm.onPause()
+
+            // Advance time by more than 10 minutes
+            fakeTimeProvider.advanceBy(11 * 60 * 1000L)
+
+            // Resume - should auto-clear and show toast
+            vm.onResume()
+            advanceUntilIdle()
+
+            // Verify fields are cleared
+            assertEquals("", vm.uiState.value.customerName)
+            assertEquals("", vm.uiState.value.customerPhone)
+
+            // Verify toast event is emitted
+            val event = awaitItem()
+            assertTrue(event is UiEvent.ShowToast)
+        }
+    }
+
+    @Test
+    fun `auto-clear does not clear form if timeout not reached`() = runTest {
+        fillValidFields()
+        val originalName = vm.uiState.value.customerName
+
+        // Simulate going to background
+        vm.onPause()
+
+        // Advance time by less than 10 minutes
+        fakeTimeProvider.advanceBy(5 * 60 * 1000L)
+
+        // Resume - should NOT clear
+        vm.onResume()
+        advanceUntilIdle()
+
+        // Verify fields are NOT cleared
+        assertEquals(originalName, vm.uiState.value.customerName)
+    }
+
+    @Test
+    fun `auto-clear survives process death with SavedStateHandle`() = runTest {
+        fillValidFields()
+
+        // Simulate going to background
+        vm.onPause()
+
+        // Advance time
+        fakeTimeProvider.advanceBy(11 * 60 * 1000L)
+
+        // Simulate process death and recreation with same SavedStateHandle
+        val newVm = CustomerIntakeViewModel(
+            savedStateHandle = savedStateHandle, // Same SavedStateHandle
+            settingsStore = mockStore,
+            resourceProvider = fakeResourceProvider,
+            timeProvider = fakeTimeProvider
+        )
+
+        newVm.uiEvent.test {
+            // Resume on new instance - should auto-clear
+            newVm.onResume()
+            advanceUntilIdle()
+
+            // Verify fields are cleared
+            assertEquals("", newVm.uiState.value.customerName)
+
+            // Verify toast event is emitted
+            val event = awaitItem()
+            assertTrue(event is UiEvent.ShowToast)
+        }
+    }
+
     private fun fillValidFields() {
         vm.onCustomerNameChanged("Alice")
         vm.onCustomerPhoneChanged("2125551234")
@@ -254,3 +350,5 @@ class CustomerIntakeViewModelTest {
         vm.onAccountNumberChanged("ACC-001")
     }
 }
+
+

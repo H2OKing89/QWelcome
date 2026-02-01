@@ -40,8 +40,9 @@ interface Navigator {
      * Copies text to the system clipboard.
      * @param label A user-visible label for the clipboard data
      * @param text The text content to copy
+     * @return true if the operation succeeded, false if it failed
      */
-    fun copyToClipboard(label: String, text: String)
+    fun copyToClipboard(label: String, text: String): Boolean
 }
 
 private const val TAG = "AndroidNavigator"
@@ -117,8 +118,21 @@ class AndroidNavigator(private val context: Context) : Navigator {
         }
     }
 
-    override fun copyToClipboard(label: String, text: String) {
-        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-        clipboard.setPrimaryClip(ClipData.newPlainText(label, text))
+    override fun copyToClipboard(label: String, text: String): Boolean {
+        return try {
+            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+            if (clipboard == null) {
+                Log.e(TAG, "Failed to get ClipboardManager")
+                return false
+            }
+            clipboard.setPrimaryClip(ClipData.newPlainText(label, text))
+            true
+        } catch (e: SecurityException) {
+            Log.e(TAG, "SecurityException accessing clipboard", e)
+            false
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to copy to clipboard: ${e::class.java.simpleName}", e)
+            false
+        }
     }
 }

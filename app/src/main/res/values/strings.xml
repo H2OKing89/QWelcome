@@ -12,7 +12,7 @@
     <string name="error_phone_area_code">Area code can\'t start with %1$c</string>
     <string name="error_phone_exchange">Exchange can\'t start with %1$c</string>
     <string name="error_ssid_empty">WiFi network name is required</string>
-    <string name="error_ssid_too_long">SSID cannot exceed 32 bytes (WiFi limit)</string>
+    <string name="error_ssid_too_long">SSID exceeds 32 bytes (multi-byte chars count more)</string>
     <string name="error_password_empty">WiFi password is required</string>
     <string name="error_password_too_short">Password must be at least 8 characters</string>
     <string name="error_password_partial">Password must be at least 8 characters (%1$d/8)</string>
@@ -21,7 +21,13 @@
 
     <!-- Toast messages -->
     <string name="toast_copied_to_clipboard">Message copied to clipboard</string>
+    <string name="toast_copy_failed">Failed to copy to clipboard</string>
+    <string name="toast_form_cleared">Form cleared for new customer</string>
     <string name="toast_rate_limit">Rate limit exceeded. Please wait.</string>
+    <string name="toast_no_browser">No browser available to open link</string>
+    <string name="toast_check_cooldown">Checked recently, try again in %1$ds</string>
+    <string name="toast_rate_limited_retry">Rate limited by GitHub. Try again in %1$ds.</string>
+    <string name="toast_rate_limited">Rate limited by GitHub. Try again later.</string>
 
     <!-- Navigator -->
     <string name="chooser_send_message">Send message via\u2026</string>
@@ -60,6 +66,47 @@
     <string name="toast_template_deleted">Deleted: %1$s</string>
     <string name="toast_template_duplicated">Duplicated: %1$s</string>
     <string name="toast_template_active">Active: %1$s</string>
+
+    <!-- Customer Intake Screen -->
+    <string name="label_template">Template</string>
+    <string name="label_active">Active</string>
+    <string name="action_manage_templates">Manage Templates…</string>
+    <string name="label_customer_name">Customer Name</string>
+    <string name="label_customer_phone">Customer Phone</string>
+    <string name="label_wifi_ssid">WiFi SSID</string>
+    <string name="label_wifi_password">WiFi Password</string>
+    <string name="content_desc_hide_password">Hide password</string>
+    <string name="content_desc_show_password">Show password</string>
+    <string name="label_account_number">Account Number</string>
+    <string name="header_send">Send</string>
+    <string name="action_sms">SMS</string>
+    <string name="action_share">Share</string>
+    <string name="action_copy">Copy</string>
+    <string name="action_copied">Copied!</string>
+    <string name="header_wifi_qr">WiFi QR Code</string>
+    <string name="action_show_qr">Show QR</string>
+    <string name="hint_qr_enter_both">Enter SSID + password to generate</string>
+    <string name="hint_qr_enter_ssid">Enter SSID</string>
+    <string name="hint_qr_password_length">Password needs 8+ characters (%1$d/8)</string>
+    <string name="content_desc_new_customer">New Customer</string>
+    <string name="content_desc_settings">Settings</string>
+    <string name="content_desc_send_sms">Send SMS</string>
+    <string name="content_desc_copy_clipboard">Copy to clipboard</string>
+    <string name="content_desc_show_qr">Show QR Code</string>
+
+    <!-- Open Network Support -->
+    <string name="label_open_network">Open Network (No Password)</string>
+    <string name="hint_password_disabled">Password not required for open networks</string>
+
+    <!-- Template Help -->
+    <string name="title_template_variables">Available Variables</string>
+    <string name="template_var_customer_name">Customer\'s name</string>
+    <string name="template_var_ssid">WiFi network name</string>
+    <string name="template_var_password">WiFi password</string>
+    <string name="template_var_tech_name">Your name (from profile)</string>
+    <string name="template_var_tech_phone">Your phone (from profile)</string>
+    <string name="template_var_account_number">Customer account number</string>
+    <string name="button_show_variables">Show Variables</string>
 
     <!-- Plurals -->
     <plurals name="template_count">
