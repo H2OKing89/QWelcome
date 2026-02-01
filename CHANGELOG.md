@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+No unreleased changes.
+
+## [2.3.0] - 2026-02-01
+
 ### Added
 
 - **Real-time Placeholder Validation** - Template editor shows missing required placeholders as you type
