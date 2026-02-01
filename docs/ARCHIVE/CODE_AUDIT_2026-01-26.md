@@ -104,9 +104,10 @@ Overall, Q Welcome is a **well-architected Android application** with modern pat
 **Locations:** Various UI components
 
 **Resolution:**
-1.  Added meaningful `contentDescription` to all interactive icons.
-2.  Grouped form fields using `Modifier.semantics` for better screen reader navigation.
-3.  Wrapped error messages in a `liveRegion` to ensure they are announced by TalkBack.
+
+1. Added meaningful `contentDescription` to all interactive icons.
+2. Grouped form fields using `Modifier.semantics` for better screen reader navigation.
+3. Wrapped error messages in a `liveRegion` to ensure they are announced by TalkBack.
 
 ---
 
@@ -120,32 +121,24 @@ Overall, Q Welcome is a **well-architected Android application** with modern pat
 
 ## 🟢 Nice-to-Have Enhancements
 
-### 11. Consider Jetpack Navigation Compose - ✅ IMPLEMENTED
+### 11. Consider Jetpack Navigation Compose
 
-**Previous:** Manual screen switching with enum and `when` statement.
-**Resolution:** Migrated to Jetpack Navigation Compose with type-safe routes using Kotlin serialization. Created `Routes.kt` for route definitions and `AppNavGraph.kt` for the navigation graph. Back navigation is now handled automatically by the navigation framework.
-
----
-
-### 12. Add Crash Reporting - ✅ IMPLEMENTED
-
-**Resolution:** Added Firebase Crashlytics integration:
-- Created `QWelcomeApplication` class for initialization
-- Crashlytics disabled in debug builds for cleaner development
-- Custom keys added for app version and build type context
-- ProGuard rules added for proper stack trace symbolication
-
-**Setup Required:** Replace placeholder `google-services.json` with actual Firebase project config.
+**Current:** Manual screen switching with enum and `when` statement.
+**Status:** Future consideration. The current navigation is simple and effective, but Jetpack Navigation remains a viable option for future expansion.
 
 ---
 
-### 13. Consider Gradle Convention Plugins - ✅ IMPLEMENTED
+### 12. Add Crash Reporting
 
-**Resolution:** Created `build-logic` composite build with convention plugins:
-- `qwelcome.android.application` - Centralizes Android SDK versions and common settings
-- `qwelcome.android.compose` - Centralizes Compose configuration
+**Recommendation:** Add Firebase Crashlytics for production error tracking.
+**Status:** Future consideration.
 
-This provides a foundation for future multi-module expansion.
+---
+
+### 13. Consider Gradle Convention Plugins
+
+**Recommendation:** Create convention plugins in `build-logic/` to centralize common Gradle configuration.
+**Status:** Future consideration for multi-module projects.
 
 ---
 

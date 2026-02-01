@@ -45,6 +45,7 @@ class CustomerIntakeViewModelTest {
 
     @Before
     fun setup() {
+        AppViewModelProvider.resetForTesting()
         every { mockStore.techProfileFlow } returns flowOf(TechProfile("Tech", "Sr Tech", "IT"))
         every { mockStore.activeTemplateFlow } returns flowOf(testTemplate)
         vm = CustomerIntakeViewModel(
