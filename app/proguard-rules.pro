@@ -59,7 +59,6 @@
 }
 
 # Firebase Crashlytics - keep file names and line numbers for stack traces
--keepattributes SourceFile,LineNumberTable
+# Note: SourceFile,LineNumberTable already preserved above (line 9)
+# Note: *Annotation* already preserved above (line 24)
 -keep public class * extends java.lang.Exception
-# Keep custom Crashlytics keys
--keepattributes *Annotation*

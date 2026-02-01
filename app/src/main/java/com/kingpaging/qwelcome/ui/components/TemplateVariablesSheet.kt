@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
-
 package com.kingpaging.qwelcome.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
@@ -40,6 +38,7 @@ import com.kingpaging.qwelcome.data.MessageTemplate
  * Shows a list of all available variables that can be used in message templates,
  * with a copy button for each to allow easy insertion.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TemplateVariablesSheet(
     onDismiss: () -> Unit

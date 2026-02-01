@@ -82,7 +82,8 @@ object UpdateChecker {
                 // 403 often means rate-limited by GitHub
                 if (responseCode == HttpURLConnection.HTTP_FORBIDDEN) {
                     val remaining = connection.getHeaderField("X-RateLimit-Remaining")
-                    if (remaining == "0" || remaining == null) {
+                    // Only treat as rate-limited when header is present and equals "0"
+                    if (remaining == "0") {
                         val resetEpoch = connection.getHeaderField("X-RateLimit-Reset")
                             ?.toLongOrNull()
                         val retrySeconds = if (resetEpoch != null) {
@@ -93,6 +94,7 @@ object UpdateChecker {
                         Log.w(TAG, "Rate limited by GitHub, retry in ${retrySeconds}s")
                         return@withContext UpdateCheckResult.RateLimited(retrySeconds)
                     }
+                    // Fall through to generic error if not rate-limited
                 }
                 return@withContext UpdateCheckResult.Error("HTTP $responseCode")
             }

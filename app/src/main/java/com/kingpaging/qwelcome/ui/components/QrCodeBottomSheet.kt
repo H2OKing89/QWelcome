@@ -27,6 +27,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
@@ -160,7 +161,7 @@ fun QrCodeBottomSheet(
                 ) {
                     Text("Security:", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
                     if (isOpenNetwork) {
-                        Text("Open (No Password)", color = MaterialTheme.colorScheme.tertiary, fontWeight = FontWeight.Medium)
+                        Text(stringResource(R.string.label_open_no_password), color = MaterialTheme.colorScheme.tertiary, fontWeight = FontWeight.Medium)
                     } else {
                         Text(password, color = MaterialTheme.colorScheme.secondary, fontWeight = FontWeight.Medium)
                     }

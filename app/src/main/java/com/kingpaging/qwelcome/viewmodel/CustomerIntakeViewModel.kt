@@ -167,6 +167,16 @@ class CustomerIntakeViewModel(
         _uiState.update { it.copy(accountNumber = accountNumber, accountNumberError = null) }
     }
 
+    fun onOpenNetworkChanged(isOpen: Boolean) {
+        _uiState.update { 
+            it.copy(
+                isOpenNetwork = isOpen,
+                // Clear password error when switching to open network
+                passwordError = if (isOpen) null else it.passwordError
+            )
+        }
+    }
+
     /**
      * Check if enough time has passed since last action to prevent accidental spam.
      * Emits RateLimitExceeded event if rate limited.

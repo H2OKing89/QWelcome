@@ -71,4 +71,23 @@
         <item quantity="other">Successfully imported %1$d templates</item>
     </plurals>
     <string name="import_success_with_profile"> and tech profile</string>
+
+    <!-- Settings screen toasts -->
+    <string name="toast_update_check_cooldown">Checked recently, try again in %1$ds</string>
+    <string name="toast_rate_limited_with_retry">Rate limited by GitHub. Try again in %1$ds.</string>
+    <string name="toast_rate_limited_generic">Rate limited by GitHub. Try again later.</string>
+    <string name="toast_no_browser">No browser app found</string>
+
+    <!-- QR/WiFi labels -->
+    <string name="label_open_no_password">Open (No Password)</string>
+    <string name="label_open_network">Open Network</string>
+    <string name="hint_password_disabled">Password not required for open networks</string>
+
+    <!-- Template variables sheet -->
+    <string name="title_template_variables">Template Variables</string>
+    <string name="template_var_customer_name">Customer name</string>
+    <string name="template_var_ssid">Network name (SSID)</string>
+    <string name="template_var_password">WiFi password</string>
+    <string name="template_var_account_number">Account number</string>
+    <string name="template_var_tech_name">Technician signature</string>
 </resources>

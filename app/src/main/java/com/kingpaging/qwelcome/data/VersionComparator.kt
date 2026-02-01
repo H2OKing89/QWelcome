@@ -113,10 +113,13 @@ object VersionComparator {
 
     /**
      * Split version into base and optional pre-release suffix.
-     * e.g. "1.2.0-beta.1" → ("1.2.0", "beta.1")
+     * Strips build metadata per SemVer 2.0 (the +... suffix).
+     * e.g. "1.2.0-beta.1+001" → ("1.2.0", "beta.1")
+     * e.g. "1.2.3+001" → ("1.2.3", null)
      */
     internal fun splitVersion(version: String): Pair<String, String?> {
-        val parts = version.split("-", limit = 2)
+        val noBuild = version.split("+", limit = 2)[0]
+        val parts = noBuild.split("-", limit = 2)
         return parts[0] to parts.getOrNull(1)
     }
 }

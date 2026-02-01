@@ -38,7 +38,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.kingpaging.qwelcome.R
@@ -152,13 +155,16 @@ fun SettingsScreen(
     }
 
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
 
-    // Collect one-shot settings events (Toasts)
-    LaunchedEffect(Unit) {
-        vm.settingsEvents.collect { event ->
-            when (event) {
-                is SettingsEvent.ShowToast -> {
-                    Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
+    // Collect one-shot settings events (Toasts) with lifecycle awareness
+    LaunchedEffect(lifecycleOwner, vm.settingsEvents) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            vm.settingsEvents.collect { event ->
+                when (event) {
+                    is SettingsEvent.ShowToast -> {
+                        Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
+                    }
                 }
             }
         }
@@ -499,17 +505,11 @@ fun SettingsScreen(
                     )
                     Spacer(Modifier.height(8.dp))
 
-                    OutlinedButton(
+                    NeonButton(
                         onClick = { showRestoreDialog = true },
                         modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = MaterialTheme.colorScheme.error
-                        ),
-                        border = ButtonDefaults.outlinedButtonBorder(enabled = true).copy(
-                            brush = androidx.compose.ui.graphics.SolidColor(
-                                MaterialTheme.colorScheme.error.copy(alpha = 0.5f)
-                            )
-                        )
+                        glowColor = MaterialTheme.colorScheme.error,
+                        style = NeonButtonStyle.SECONDARY
                     ) {
                         Icon(
                             Icons.Filled.Warning,

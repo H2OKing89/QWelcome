@@ -1,7 +1,10 @@
 package com.kingpaging.qwelcome.data
 
+import com.kingpaging.qwelcome.viewmodel.factory.AppViewModelProvider
+import org.junit.After
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 
 /**
@@ -12,9 +15,20 @@ import org.junit.Test
  * - Pre-release vs stable precedence
  * - Pre-release to pre-release ordering (the gap this fixes)
  * - Numeric vs string identifiers
+ * - Build metadata stripping per SemVer 2.0
  * - Edge cases (empty strings, different-length version parts)
  */
 class VersionComparatorTest {
+
+    @Before
+    fun setup() {
+        AppViewModelProvider.resetForTesting()
+    }
+
+    @After
+    fun teardown() {
+        AppViewModelProvider.resetForTesting()
+    }
 
     // ========== Basic version bumps ==========
 
@@ -168,5 +182,28 @@ class VersionComparatorTest {
     @Test
     fun `non-numeric in multi-part base returns false`() {
         assertFalse(VersionComparator.isNewerVersion("1.x.0", "1.0.0"))
+    }
+
+    // ========== Build metadata handling (SemVer 2.0) ==========
+
+    @Test
+    fun `build metadata is ignored - stable versions`() {
+        // 1.2.3+001 and 1.2.3+002 should be considered equal (build metadata ignored)
+        assertFalse(VersionComparator.isNewerVersion("1.2.3+002", "1.2.3+001"))
+        assertFalse(VersionComparator.isNewerVersion("1.2.3+001", "1.2.3+002"))
+    }
+
+    @Test
+    fun `build metadata is ignored - pre-release versions`() {
+        // 1.2.3-alpha+001 and 1.2.3-alpha+002 should be considered equal
+        assertFalse(VersionComparator.isNewerVersion("1.2.3-alpha+002", "1.2.3-alpha+001"))
+        assertFalse(VersionComparator.isNewerVersion("1.2.3-alpha+001", "1.2.3-alpha+002"))
+    }
+
+    @Test
+    fun `build metadata does not affect comparison`() {
+        // Version comparison should work the same with or without build metadata
+        assertTrue(VersionComparator.isNewerVersion("1.2.4+001", "1.2.3+999"))
+        assertTrue(VersionComparator.isNewerVersion("1.2.3-beta.2+001", "1.2.3-beta.1+999"))
     }
 }
