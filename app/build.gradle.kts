@@ -33,10 +33,15 @@ android {
     signingConfigs {
         create("release") {
             // Read from environment variables (CI) or local properties
-            val keystoreFile = System.getenv("KEYSTORE_FILE")?.let { file(it) }
-                ?: rootProject.file("qwelcome-release.keystore").takeIf { it.exists() }
+            val envKeystorePath = System.getenv("KEYSTORE_FILE")
+            val keystoreFile = when {
+                // CI: use environment variable path (relative to root project)
+                envKeystorePath != null -> rootProject.file(envKeystorePath)
+                // Local: check for keystore in root project
+                else -> rootProject.file("qwelcome-release.keystore")
+            }
             
-            if (keystoreFile != null && keystoreFile.exists()) {
+            if (keystoreFile.exists()) {
                 storeFile = keystoreFile
                 storePassword = System.getenv("KEYSTORE_PASSWORD") ?: ""
                 keyAlias = System.getenv("KEY_ALIAS") ?: "qwelcome"
