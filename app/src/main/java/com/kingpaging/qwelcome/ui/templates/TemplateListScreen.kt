@@ -467,6 +467,7 @@ private fun TemplateCard(
  * If there's a selection, replaces the selected text.
  */
 private fun insertAtCursor(state: TextFieldState, textToInsert: String) {
+    if (textToInsert.isEmpty()) return
     state.edit {
         val selection = this.selection
         // Delete any selected text first

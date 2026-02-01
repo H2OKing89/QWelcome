@@ -27,32 +27,32 @@ Q Welcome Config Generator is a web-based tool for technicians and support staff
 
 ## ✨ Key Features
 
-**📝 Smart Template Editor**
+### 📝 Smart Template Editor
 
 - Real-time character counter
 - SMS segment calculator (know if your message splits)
 - Live preview with sample data
 - Click-to-insert placeholders
 
-**💾 Two Export Modes**
+### 💾 Two Export Modes
 
 - **Template Pack** - Share with your team (no personal info)
 - **Full Backup** - Save everything including your tech profile
 
-**🔄 Import & Merge**
+### 🔄 Import & Merge
 
 - Import templates from teammates
 - Automatically skip duplicates
 - Validate before importing
 
-**🎨 Comfortable Interface**
+### 🎨 Comfortable Interface
 
 - Dark theme (easy on the eyes)
 - Density toggle (compact or spacious)
 - Works on phone, tablet, or desktop
 - Keyboard shortcuts for power users
 
-**🔒 Your Data Stays Private**
+### 🔒 Your Data Stays Private
 
 - Everything saved in your browser
 - Works 100% offline
@@ -63,7 +63,7 @@ Q Welcome Config Generator is a web-based tool for technicians and support staff
 
 ## 🚀 Getting Started
 
-### First Time Setup
+### First-Time Setup
 
 1. **Choose Your Export Type**
 
@@ -205,7 +205,7 @@ For longer templates, click **⛶ Expand Editor**:
 
 ---
 
-## � Understanding Placeholders
+## 🧩 Understanding Placeholders
 
 Placeholders are replaced with real data when you use templates in the Q Welcome app.
 
@@ -264,7 +264,7 @@ Placeholders are replaced with real data when you use templates in the Q Welcome
 
 ---
 
-## � Tips & Tricks
+## 💡 Tips & Tricks
 
 ### Working Faster
 
@@ -458,7 +458,7 @@ A: No hard limit, but browser storage is typically 5-10MB per site.
 
 ---
 
-## � Need Help?
+## 🆘 Need Help?
 
 **Found a bug?**  
 Report it on [GitHub Issues](https://github.com/H2OKing89/QWelcome/issues)

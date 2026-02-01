@@ -174,7 +174,7 @@ class TemplateListViewModel(
                 if (existing != null) {
                     val updated = existing.copy(
                         name = name.trim(),
-                        content = content,
+                        content = Template.normalizeContent(content),
                         modifiedAt = java.time.Instant.now().toString()
                     )
                     settingsStore.saveTemplate(updated)
@@ -259,8 +259,8 @@ class TemplateListViewModel(
                 val duplicate = template.duplicate()
                 settingsStore.saveTemplate(duplicate)
                 _events.emit(TemplateListEvent.TemplateDuplicated(duplicate))
-                // Immediately open the duplicate for editing
-                _uiState.update { it.copy(editingTemplate = duplicate) }
+                // Immediately open the duplicate for editing, clear any stale validation error
+                _uiState.update { it.copy(editingTemplate = duplicate, validationError = null) }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {

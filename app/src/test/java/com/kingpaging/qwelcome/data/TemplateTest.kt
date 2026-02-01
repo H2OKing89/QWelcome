@@ -139,4 +139,41 @@ class TemplateTest {
         val content = "Hi {{ customer_name_extra }}, {{ ssid_extra }}"
         assertFalse(Template.hasRequiredPlaceholders(content))
     }
+    
+    // ===== normalizeContent tests =====
+    
+    @Test
+    fun `normalizeContent converts no-space placeholders to canonical form`() {
+        val content = "Hi {{customer_name}}, {{ssid}}"
+        val normalized = Template.normalizeContent(content)
+        assertEquals("Hi {{ customer_name }}, {{ ssid }}", normalized)
+    }
+    
+    @Test
+    fun `normalizeContent converts extra-space placeholders to canonical form`() {
+        val content = "Hi {{  customer_name  }}, {{   ssid   }}"
+        val normalized = Template.normalizeContent(content)
+        assertEquals("Hi {{ customer_name }}, {{ ssid }}", normalized)
+    }
+    
+    @Test
+    fun `normalizeContent preserves already-canonical placeholders`() {
+        val content = "Hi {{ customer_name }}, {{ ssid }}"
+        val normalized = Template.normalizeContent(content)
+        assertEquals(content, normalized)
+    }
+    
+    @Test
+    fun `normalizeContent handles mixed whitespace styles`() {
+        val content = "{{customer_name}} {{ ssid }} {{  password  }}"
+        val normalized = Template.normalizeContent(content)
+        assertEquals("{{ customer_name }} {{ ssid }} {{ password }}", normalized)
+    }
+    
+    @Test
+    fun `normalizeContent preserves non-placeholder text`() {
+        val content = "Hello {{customer_name}}! Your network {{ ssid }} is ready."
+        val normalized = Template.normalizeContent(content)
+        assertEquals("Hello {{ customer_name }}! Your network {{ ssid }} is ready.", normalized)
+    }
 }

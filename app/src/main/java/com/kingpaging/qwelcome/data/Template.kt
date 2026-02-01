@@ -61,15 +61,33 @@ data class Template(
             findMissingPlaceholders(content).isEmpty()
         
         /**
+         * Regex pattern to match any placeholder with flexible whitespace.
+         * Captures the placeholder name (e.g., "customer_name", "ssid").
+         */
+        private val PLACEHOLDER_PATTERN = Regex("""\{\{\s*(\w+)\s*\}\}""")
+        
+        /**
+         * Normalizes placeholder whitespace to canonical form: {{ name }}
+         * This ensures templates saved with {{name}} or {{  name  }} are
+         * stored as {{ name }} so applyPlaceholders() replacement works.
+         */
+        fun normalizeContent(content: String): String {
+            return PLACEHOLDER_PATTERN.replace(content) { match ->
+                "{{ ${match.groupValues[1]} }}"
+            }
+        }
+        
+        /**
          * Create a template from just name and content (common use case).
          * Auto-generates a slug from the name for readability.
+         * Normalizes placeholder whitespace for consistent storage.
          */
         fun create(name: String, content: String): Template {
             val now = currentIsoTimestamp()
             return Template(
                 id = UUID.randomUUID().toString(),
                 name = name,
-                content = content,
+                content = normalizeContent(content),
                 createdAt = now,
                 modifiedAt = now,
                 slug = generateSlug(name)

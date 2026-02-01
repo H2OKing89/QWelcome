@@ -34,9 +34,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -65,8 +66,8 @@ fun SettingsScreen(
     // Discard confirmation dialog state
     var showDiscardDialog by rememberSaveable { mutableStateOf(false) }
 
-    val currentProfile by vm.techProfile.collectAsState()
-    val activeTemplate by vm.activeTemplate.collectAsState()
+    val currentProfile by vm.techProfile.collectAsStateWithLifecycle()
+    val activeTemplate by vm.activeTemplate.collectAsStateWithLifecycle()
 
     // Tech profile state - use rememberSaveable so rotation doesn't lose edits
     var name by rememberSaveable(currentProfile) { mutableStateOf(currentProfile.name) }
@@ -282,7 +283,7 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.primary
                 )
                 
-                val updateState by vm.updateState.collectAsState()
+                val updateState by vm.updateState.collectAsStateWithLifecycle()
                 // Capture string resource outside onClick for lint compliance
                 val noBrowserMessage = stringResource(R.string.toast_no_browser)
 
