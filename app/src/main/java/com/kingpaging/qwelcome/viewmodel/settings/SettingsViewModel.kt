@@ -1,6 +1,7 @@
 package com.kingpaging.qwelcome.viewmodel.settings
 
 import android.util.Log
+import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kingpaging.qwelcome.BuildConfig
@@ -52,6 +53,10 @@ class SettingsViewModel(
     // Error events for UI to observe (buffered to avoid missing events)
     private val _errorEvents = MutableSharedFlow<String>(replay = 0, extraBufferCapacity = 1)
     val errorEvents: SharedFlow<String> = _errorEvents.asSharedFlow()
+
+    // One-shot settings events (Toasts)
+    private val _settingsEvents = MutableSharedFlow<SettingsEvent>(replay = 0, extraBufferCapacity = 1)
+    val settingsEvents: SharedFlow<SettingsEvent> = _settingsEvents.asSharedFlow()
 
     fun save(profile: TechProfile) {
         viewModelScope.launch {
@@ -119,21 +124,38 @@ class SettingsViewModel(
     }
 
     // === UPDATE CHECKER ===
-    
+
     /** Current app version from BuildConfig */
     val currentVersion: String = BuildConfig.VERSION_NAME
-    
+
     /** Update check state */
     private val _updateState = MutableStateFlow<UpdateState>(UpdateState.Idle)
     val updateState: StateFlow<UpdateState> = _updateState.asStateFlow()
-    
+
+    /** Timestamp of last successful update check start (milliseconds). */
+    @VisibleForTesting
+    internal var lastCheckTimeMillis: Long = 0L
+
     /** Check for updates from GitHub Releases */
     fun checkForUpdate() {
         if (_updateState.value is UpdateState.Checking) return // Prevent duplicate checks
-        
+
+        // Enforce 60-second cooldown between checks
+        val now = System.currentTimeMillis()
+        val elapsed = now - lastCheckTimeMillis
+        val cooldownMs = COOLDOWN_SECONDS * 1000L
+        if (lastCheckTimeMillis != 0L && elapsed < cooldownMs) {
+            val remainingSeconds = ((cooldownMs - elapsed) / 1000).coerceAtLeast(1)
+            viewModelScope.launch {
+                _settingsEvents.emit(SettingsEvent.ShowToast("Checked recently, try again in ${remainingSeconds}s"))
+            }
+            return
+        }
+        lastCheckTimeMillis = now
+
         viewModelScope.launch {
             _updateState.value = UpdateState.Checking
-            
+
             when (val result = UpdateChecker.checkForUpdate(currentVersion)) {
                 is UpdateCheckResult.UpdateAvailable -> {
                     _updateState.value = UpdateState.Available(
@@ -148,8 +170,20 @@ class SettingsViewModel(
                 is UpdateCheckResult.Error -> {
                     _updateState.value = UpdateState.Error(result.message)
                 }
+                is UpdateCheckResult.RateLimited -> {
+                    val message = if (result.retryAfterSeconds != null) {
+                        "Rate limited by GitHub. Try again in ${result.retryAfterSeconds}s."
+                    } else {
+                        "Rate limited by GitHub. Try again later."
+                    }
+                    _updateState.value = UpdateState.Error(message)
+                }
             }
         }
+    }
+
+    companion object {
+        internal const val COOLDOWN_SECONDS = 60
     }
     
     /** Dismiss update notification */
@@ -170,4 +204,9 @@ sealed class UpdateState {
         val releaseNotes: String
     ) : UpdateState()
     data class Error(val message: String) : UpdateState()
+}
+
+/** One-shot events emitted by [SettingsViewModel]. */
+sealed class SettingsEvent {
+    data class ShowToast(val message: String) : SettingsEvent()
 }

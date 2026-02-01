@@ -2,7 +2,9 @@
 
 package com.kingpaging.qwelcome.ui.settings
 
+import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.core.net.toUri
 import androidx.compose.foundation.layout.Arrangement
@@ -21,6 +23,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.ExpandLess
@@ -35,8 +38,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.data.DEFAULT_TEMPLATE_ID
 import com.kingpaging.qwelcome.data.MessageTemplate
 import com.kingpaging.qwelcome.data.TechProfile
@@ -49,6 +54,7 @@ import com.kingpaging.qwelcome.ui.components.NeonMagentaButton
 import com.kingpaging.qwelcome.ui.components.NeonOutlinedField
 import com.kingpaging.qwelcome.ui.components.NeonPanel
 import com.kingpaging.qwelcome.ui.components.PlaceholderChipsRow
+import com.kingpaging.qwelcome.viewmodel.settings.SettingsEvent
 import com.kingpaging.qwelcome.viewmodel.settings.UpdateState
 
 /**
@@ -146,6 +152,17 @@ fun SettingsScreen(
     }
 
     val context = LocalContext.current
+
+    // Collect one-shot settings events (Toasts)
+    LaunchedEffect(Unit) {
+        vm.settingsEvents.collect { event ->
+            when (event) {
+                is SettingsEvent.ShowToast -> {
+                    Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
 
     // Discard changes confirmation dialog
     if (showDiscardDialog) {
@@ -393,17 +410,49 @@ fun SettingsScreen(
                     }
                 }
 
+                Spacer(Modifier.height(24.dp))
+
+                // === SAVE BUTTON - PRIMARY action, disabled until changes exist ===
+                NeonMagentaButton(
+                    onClick = {
+                        vm.save(TechProfile(name, title, dept))
+
+                        if (useCustom && customTemplate.isNotBlank()) {
+                            // Save or update the custom template
+                            val templateToSave = if (!isUsingDefault) {
+                                // Update existing non-default template - preserve name using copy()
+                                activeTemplate.copy(content = customTemplate)
+                            } else {
+                                // Create new custom template from default
+                                Template.create(name = "Custom", content = customTemplate)
+                            }
+                            vm.saveTemplate(templateToSave)
+                            vm.setActiveTemplate(templateToSave.id)
+                        } else {
+                            // Switch to default template
+                            vm.setActiveTemplate(DEFAULT_TEMPLATE_ID)
+                        }
+
+                        onBack()
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = hasUnsavedChanges,
+                    style = NeonButtonStyle.PRIMARY
+                ) {
+                    Text(if (hasUnsavedChanges) "Save All" else "No changes")
+                }
+
                 Spacer(Modifier.height(16.dp))
 
-                // === EXPORT / IMPORT SECTION ===
+                // === DATA MANAGEMENT SECTION ===
                 Text(
-                    "Export & Share",
+                    "Data Management",
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.primary
                 )
                 NeonPanel {
                     Text(
-                        "Share templates with your team via Slack, Teams, or email.",
+                        "Export templates to share with your team, or import from a backup.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                     )
@@ -438,9 +487,43 @@ fun SettingsScreen(
                     }
                 }
 
-                Spacer(Modifier.height(16.dp))
 
-                // === ABOUT & UPDATES SECTION ===
+                // === DANGER ZONE === (only show when using custom template)
+                if (useCustom && customTemplate != defaultTemplateContent) {
+                    Spacer(Modifier.height(24.dp))
+
+                    Text(
+                        "Danger Zone",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
+                    )
+                    Spacer(Modifier.height(8.dp))
+
+                    OutlinedButton(
+                        onClick = { showRestoreDialog = true },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
+                        ),
+                        border = ButtonDefaults.outlinedButtonBorder(enabled = true).copy(
+                            brush = androidx.compose.ui.graphics.SolidColor(
+                                MaterialTheme.colorScheme.error.copy(alpha = 0.5f)
+                            )
+                        )
+                    ) {
+                        Icon(
+                            Icons.Filled.Warning,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text("Restore Default Template")
+                    }
+                }
+
+                Spacer(Modifier.height(32.dp))
+
+                // === ABOUT SECTION === (at bottom - less frequently accessed)
                 Text(
                     "About",
                     style = MaterialTheme.typography.titleLarge,
@@ -448,7 +531,9 @@ fun SettingsScreen(
                 )
                 
                 val updateState by vm.updateState.collectAsState()
-                
+                // Capture string resource outside onClick for lint compliance
+                val noBrowserMessage = stringResource(R.string.toast_no_browser)
+
                 NeonPanel {
                     // Version info
                     Row(
@@ -495,28 +580,40 @@ fun SettingsScreen(
                                 }
                             }
                             is UpdateState.Available -> {
-                                TextButton(
-                                    onClick = {
-                                        val uri = state.downloadUrl.toUri()
-                                        // Only allow https URLs for security
-                                        if (uri.scheme != "https" && uri.scheme != "http") return@TextButton
-                                        val intent = Intent(Intent.ACTION_VIEW, uri)
-                                            .addCategory(Intent.CATEGORY_BROWSABLE)
-                                        try {
-                                            context.startActivity(intent)
-                                        } catch (e: android.content.ActivityNotFoundException) {
-                                            // No browser installed - silently fail
-                                            // Could show toast but unlikely edge case
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    TextButton(
+                                        onClick = {
+                                            val uri = state.downloadUrl.toUri()
+                                            // Only allow https URLs for security
+                                            if (uri.scheme != "https" && uri.scheme != "http") return@TextButton
+                                            val intent = Intent(Intent.ACTION_VIEW, uri)
+                                                .addCategory(Intent.CATEGORY_BROWSABLE)
+                                            try {
+                                                context.startActivity(intent)
+                                            } catch (_: ActivityNotFoundException) {
+                                                Toast.makeText(context, noBrowserMessage, Toast.LENGTH_SHORT).show()
+                                            }
                                         }
+                                    ) {
+                                        Icon(
+                                            Icons.Filled.Download,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Spacer(Modifier.width(4.dp))
+                                        Text("v${state.version} available")
                                     }
-                                ) {
-                                    Icon(
-                                        Icons.Filled.Download,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                    Spacer(Modifier.width(4.dp))
-                                    Text("v${state.version} available")
+                                    IconButton(
+                                        onClick = { vm.dismissUpdate() },
+                                        modifier = Modifier.size(24.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Filled.Close,
+                                            contentDescription = "Dismiss update",
+                                            modifier = Modifier.size(16.dp),
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
                                 }
                             }
                             is UpdateState.Error -> {
@@ -562,8 +659,8 @@ fun SettingsScreen(
                                 .addCategory(Intent.CATEGORY_BROWSABLE)
                             try {
                                 context.startActivity(intent)
-                            } catch (e: android.content.ActivityNotFoundException) {
-                                // No browser installed - silently fail
+                            } catch (_: ActivityNotFoundException) {
+                                Toast.makeText(context, noBrowserMessage, Toast.LENGTH_SHORT).show()
                             }
                         },
                         modifier = Modifier.fillMaxWidth()
@@ -578,70 +675,6 @@ fun SettingsScreen(
                     }
                 }
 
-                Spacer(Modifier.height(16.dp))
-
-                // === SAVE BUTTON - PRIMARY action, disabled until changes exist ===
-                NeonMagentaButton(
-                    onClick = {
-                        vm.save(TechProfile(name, title, dept))
-                        
-                        if (useCustom && customTemplate.isNotBlank()) {
-                            // Save or update the custom template
-                            val templateToSave = if (!isUsingDefault) {
-                                // Update existing non-default template - preserve name using copy()
-                                activeTemplate.copy(content = customTemplate)
-                            } else {
-                                // Create new custom template from default
-                                Template.create(name = "Custom", content = customTemplate)
-                            }
-                            vm.saveTemplate(templateToSave)
-                            vm.setActiveTemplate(templateToSave.id)
-                        } else {
-                            // Switch to default template
-                            vm.setActiveTemplate(DEFAULT_TEMPLATE_ID)
-                        }
-                        
-                        onBack()
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = hasUnsavedChanges,
-                    style = NeonButtonStyle.PRIMARY
-                ) {
-                    Text(if (hasUnsavedChanges) "Save All" else "No changes")
-                }
-
-                // === DANGER ZONE === (only show when using custom template)
-                if (useCustom && customTemplate != defaultTemplateContent) {
-                    Spacer(Modifier.height(24.dp))
-                    
-                    Text(
-                        "Danger Zone",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    
-                    OutlinedButton(
-                        onClick = { showRestoreDialog = true },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = MaterialTheme.colorScheme.error
-                        ),
-                        border = ButtonDefaults.outlinedButtonBorder(enabled = true).copy(
-                            brush = androidx.compose.ui.graphics.SolidColor(
-                                MaterialTheme.colorScheme.error.copy(alpha = 0.5f)
-                            )
-                        )
-                    ) {
-                        Icon(
-                            Icons.Filled.Warning,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text("Restore Default Template")
-                    }
-                }
 
                 Spacer(Modifier.height(32.dp))
             }
