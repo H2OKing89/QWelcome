@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Version Comparator** - Full SemVer 2.0 support with proper pre-release and build metadata handling
 - **Build-Logic Convention Plugins** - Gradle convention plugins for centralized Android and Compose configuration
 - New string resources for update check feedback and WiFi labels
+- `TimeProvider` interface for testable, monotonic time sources
+- `FakeTimeProvider` for unit tests with manual time control
+- 3 new unit tests for auto-clear and process death scenarios
 
 ### Changed
 
@@ -25,6 +28,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Password Validation** - Automatically skipped for open networks, enabling password-free WiFi configurations
 - **QR Section** - Shows "Open (No Password)" for unsecured networks instead of requiring password
 - **Error Handling** - Better browser failure handling and rate-limit detection for update checks
+- `CustomerIntakeViewModel` now uses `SavedStateHandle` to persist background timestamp
+- `Navigator.copyToClipboard()` now returns `Boolean` to indicate success/failure
+- All interval timing uses monotonic clock instead of wall clock
 
 ### Fixed
 
@@ -37,16 +43,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Lifecycle Awareness** - Settings events now collected with `repeatOnLifecycle` to prevent off-screen toasts
 - **ProGuard Rules** - Removed duplicate Firebase Crashlytics attribute rules
 - **Build-Logic** - Added package declaration and defensive checks for `ApplicationExtension` availability
+- **Tech Signature Formatting** - Consistent newline formatting between placeholder and auto-append paths
 
 ### Technical
 
-- `TimeProvider` interface for testable, monotonic time sources
-- `FakeTimeProvider` for unit tests with manual time control
 - 20 comprehensive unit tests for `VersionComparator` (including build metadata handling)
 - 4 new tests for settings rate limiting
-- `CustomerIntakeViewModel` now uses `SavedStateHandle` to persist background timestamp
-- `Navigator.copyToClipboard()` now returns `Boolean` to indicate success/failure
-- All interval timing uses monotonic clock instead of wall clock
 - Navigation uses `NavController` for automatic back navigation handling
 - Convention plugins in `build-logic/` for shared Gradle configuration
 

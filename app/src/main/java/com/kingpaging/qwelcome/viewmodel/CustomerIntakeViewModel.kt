@@ -1,5 +1,6 @@
 package com.kingpaging.qwelcome.viewmodel
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kingpaging.qwelcome.R
@@ -10,6 +11,8 @@ import com.kingpaging.qwelcome.navigation.Navigator
 import com.kingpaging.qwelcome.ui.CustomerIntakeUiState
 import com.kingpaging.qwelcome.util.PhoneUtils
 import com.kingpaging.qwelcome.util.ResourceProvider
+import com.kingpaging.qwelcome.util.SystemTimeProvider
+import com.kingpaging.qwelcome.util.TimeProvider
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -29,14 +32,17 @@ sealed class UiEvent {
 }
 
 class CustomerIntakeViewModel(
+    private val savedStateHandle: SavedStateHandle,
     private val settingsStore: SettingsStore,
-    private val resourceProvider: ResourceProvider
+    private val resourceProvider: ResourceProvider,
+    private val timeProvider: TimeProvider = SystemTimeProvider()
 ) : ViewModel() {
 
     companion object {
         private const val AUTO_CLEAR_TIMEOUT_MINUTES = 10
         private const val AUTO_CLEAR_TIMEOUT_MS = AUTO_CLEAR_TIMEOUT_MINUTES * 60 * 1000L
         private const val ACTION_COOLDOWN_MS = 2000L // 2 seconds between actions
+        private const val KEY_BACKGROUND_TIMESTAMP = "background_timestamp"
 
         // Regex for stripping non-digits from phone numbers - reused to avoid allocation
         private val NON_DIGIT_REGEX = Regex("\\D")
@@ -61,11 +67,11 @@ class CustomerIntakeViewModel(
                 digits.length == 10 || digits.length == 11 -> {
                     validateNanpRules(digits, progressiveMode, invalidPhoneError, resourceProvider)
                 }
-                digits.length > 11 -> {
+                else -> {
+                    // digits.length > 11
                     if (progressiveMode) resourceProvider.getString(R.string.error_phone_too_many_digits, digits.length)
                     else invalidPhoneError
                 }
-                else -> null
             }
         }
 
@@ -108,28 +114,29 @@ class CustomerIntakeViewModel(
     private val _uiEvent = MutableSharedFlow<UiEvent>()
     val uiEvent: SharedFlow<UiEvent> = _uiEvent.asSharedFlow()
 
-    // Track when app went to background for auto-clear
-    private var backgroundTimestamp: Long = 0L
-
     // Track last action time for rate limiting
     private var lastActionTime: Long = 0L
 
     fun onPause() {
-        backgroundTimestamp = System.currentTimeMillis()
+        savedStateHandle[KEY_BACKGROUND_TIMESTAMP] = timeProvider.elapsedRealtime()
     }
 
     fun onResume() {
-        if (backgroundTimestamp > 0) {
-            val elapsed = System.currentTimeMillis() - backgroundTimestamp
+        val backgroundTimestamp = savedStateHandle.get<Long>(KEY_BACKGROUND_TIMESTAMP)
+        if (backgroundTimestamp != null && backgroundTimestamp > 0) {
+            val elapsed = timeProvider.elapsedRealtime() - backgroundTimestamp
             if (elapsed >= AUTO_CLEAR_TIMEOUT_MS) {
                 clearForm()
             }
-            backgroundTimestamp = 0L
+            savedStateHandle[KEY_BACKGROUND_TIMESTAMP] = 0L
         }
     }
 
     fun clearForm() {
         _uiState.update { CustomerIntakeUiState() }
+        viewModelScope.launch {
+            _uiEvent.emit(UiEvent.ShowToast(resourceProvider.getString(R.string.toast_form_cleared)))
+        }
     }
 
     fun onCustomerNameChanged(name: String) {
@@ -178,11 +185,26 @@ class CustomerIntakeViewModel(
     }
 
     /**
+     * Toggles open network mode. When enabled, password validation is skipped
+     * and the password field is cleared/disabled (for guest networks without passwords).
+     */
+    fun onOpenNetworkChanged(isOpen: Boolean) {
+        _uiState.update { state ->
+            state.copy(
+                isOpenNetwork = isOpen,
+                // Clear password and error when switching to open network
+                password = if (isOpen) "" else state.password,
+                passwordError = null
+            )
+        }
+    }
+
+    /**
      * Check if enough time has passed since last action to prevent accidental spam.
      * Emits RateLimitExceeded event if rate limited.
      */
     private suspend fun checkRateLimit(): Boolean {
-        val now = System.currentTimeMillis()
+        val now = timeProvider.elapsedRealtime()
         if (now - lastActionTime < ACTION_COOLDOWN_MS) {
             _uiEvent.emit(UiEvent.RateLimitExceeded)
             return false
@@ -228,9 +250,13 @@ class CustomerIntakeViewModel(
         if (!checkRateLimit()) return@launch
         if (validateInputs(requirePhone = false)) {
             val message = generateMessage()
-            navigator.copyToClipboard("Customer Message", message)
-            _uiEvent.emit(UiEvent.CopySuccess)
-            _uiEvent.emit(UiEvent.ShowToast(resourceProvider.getString(R.string.toast_copied_to_clipboard)))
+            val success = navigator.copyToClipboard("Customer Message", message)
+            if (success) {
+                _uiEvent.emit(UiEvent.CopySuccess)
+                _uiEvent.emit(UiEvent.ShowToast(resourceProvider.getString(R.string.toast_copied_to_clipboard)))
+            } else {
+                _uiEvent.emit(UiEvent.ShowToast(resourceProvider.getString(R.string.toast_copy_failed)))
+            }
         }
     }
 
@@ -257,11 +283,16 @@ class CustomerIntakeViewModel(
             else -> null
         }
 
-        val passwordError = when {
-            currentState.password.isBlank() -> resourceProvider.getString(R.string.error_password_empty)
-            currentState.password.length < 8 -> resourceProvider.getString(R.string.error_password_too_short)
-            currentState.password.length > 63 -> resourceProvider.getString(R.string.error_password_too_long)
-            else -> null
+        // Skip password validation for open networks
+        val passwordError = if (currentState.isOpenNetwork) {
+            null // Open networks don't require passwords
+        } else {
+            when {
+                currentState.password.isBlank() -> resourceProvider.getString(R.string.error_password_empty)
+                currentState.password.length < 8 -> resourceProvider.getString(R.string.error_password_too_short)
+                currentState.password.length > 63 -> resourceProvider.getString(R.string.error_password_too_long)
+                else -> null
+            }
         }
 
         val accountNumberError = if (currentState.accountNumber.isBlank()) resourceProvider.getString(R.string.error_account_empty) else null
@@ -277,11 +308,8 @@ class CustomerIntakeViewModel(
             )
         }
 
-        return customerNameError == null &&
-               customerPhoneError == null &&
-               ssidError == null &&
-               passwordError == null &&
-               accountNumberError == null
+        // Use the isValid property from UiState (handles open network logic)
+        return _uiState.value.isValid
     }
 
     /**
