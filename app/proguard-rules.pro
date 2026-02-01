@@ -57,3 +57,9 @@
 -keepclassmembernames class kotlinx.** {
     volatile <fields>;
 }
+
+# Firebase Crashlytics - keep file names and line numbers for stack traces
+-keepattributes SourceFile,LineNumberTable
+-keep public class * extends java.lang.Exception
+# Keep custom Crashlytics keys
+-keepattributes *Annotation*

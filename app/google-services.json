@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "485478923777",
+    "project_id": "qwelcome-7de54187",
+    "storage_bucket": "qwelcome-7de54187.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:485478923777:android:351b802ecee6a11d434a00",
+        "android_client_info": {
+          "package_name": "com.kingpaging.qwelcome"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBBPdreAw8RynrSRw2vJQLq0t7t58KsTIA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
