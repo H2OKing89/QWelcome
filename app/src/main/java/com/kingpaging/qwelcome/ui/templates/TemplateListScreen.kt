@@ -4,12 +4,11 @@ package com.kingpaging.qwelcome.ui.templates
 
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,7 +17,6 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -27,7 +25,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.foundation.text.input.delete
+import androidx.compose.foundation.text.input.insert
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -37,6 +40,7 @@ import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -51,7 +55,6 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -61,14 +64,19 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -76,14 +84,20 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.data.DEFAULT_TEMPLATE_ID
+import com.kingpaging.qwelcome.data.MessageTemplate
 import com.kingpaging.qwelcome.data.Template
 import com.kingpaging.qwelcome.di.LocalTemplateListViewModel
 import com.kingpaging.qwelcome.ui.components.CyberpunkBackdrop
+import com.kingpaging.qwelcome.ui.components.InteractivePlaceholderChip
 import com.kingpaging.qwelcome.ui.components.NeonButton
 import com.kingpaging.qwelcome.ui.components.NeonButtonStyle
-import com.kingpaging.qwelcome.ui.components.NeonMagentaButton
+import com.kingpaging.qwelcome.ui.components.NeonOutlinedField
 import com.kingpaging.qwelcome.ui.theme.LocalDarkTheme
 import com.kingpaging.qwelcome.viewmodel.templates.TemplateListEvent
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.launch
 
 /**
  * Marker ID for new templates being created (not yet persisted).
@@ -211,6 +225,21 @@ fun TemplateListScreen(
                     CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 }
             } else {
+                // Filter templates by search query (default always shown at top)
+                val filteredTemplates = remember(uiState.templates, uiState.searchQuery) {
+                    val query = uiState.searchQuery.trim().lowercase()
+                    if (query.isEmpty()) {
+                        uiState.templates
+                    } else {
+                        // Default template always shown at top, then filtered user templates
+                        val defaultTemplate = uiState.templates.find { it.id == DEFAULT_TEMPLATE_ID }
+                        val userTemplates = uiState.templates
+                            .filter { it.id != DEFAULT_TEMPLATE_ID }
+                            .filter { it.name.lowercase().contains(query) }
+                        listOfNotNull(defaultTemplate) + userTemplates
+                    }
+                }
+                
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
@@ -218,17 +247,46 @@ fun TemplateListScreen(
                         .padding(horizontal = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
+                    // Search bar
+                    item(key = "search") {
+                        NeonOutlinedField(
+                            value = uiState.searchQuery,
+                            onValueChange = { vm.updateSearchQuery(it) },
+                            label = { Text("Search templates") },
+                            singleLine = true,
+                            trailingIcon = {
+                                if (uiState.searchQuery.isNotEmpty()) {
+                                    IconButton(onClick = { vm.updateSearchQuery("") }) {
+                                        Icon(
+                                            Icons.Default.Search,
+                                            contentDescription = "Clear search",
+                                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                        )
+                                    }
+                                } else {
+                                    Icon(
+                                        Icons.Default.Search,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                    )
+                                }
+                            },
+                            modifier = Modifier.padding(bottom = 4.dp)
+                        )
+                    }
+                    
+                    // Help text
                     item(key = "header") {
                         Text(
-                            "Tap a template to select it. Long press for more options.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                            modifier = Modifier.padding(vertical = 8.dp)
+                            "Tap to select. Actions: edit, duplicate, delete.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                            modifier = Modifier.padding(vertical = 4.dp)
                         )
                     }
 
                     items(
-                        items = uiState.templates,
+                        items = filteredTemplates,
                         key = { it.id }
                     ) { template ->
                         TemplateCard(
@@ -240,6 +298,18 @@ fun TemplateListScreen(
                             onDuplicate = { vm.duplicateTemplate(template) },
                             onDelete = { vm.showDeleteConfirmation(template) }
                         )
+                    }
+                    
+                    // No results message
+                    if (filteredTemplates.isEmpty() || (filteredTemplates.size == 1 && filteredTemplates.first().id == DEFAULT_TEMPLATE_ID && uiState.searchQuery.isNotEmpty())) {
+                        item(key = "no_results") {
+                            Text(
+                                "No templates match \"${uiState.searchQuery}\"",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                                modifier = Modifier.padding(vertical = 16.dp)
+                            )
+                        }
                     }
 
                     item(key = "bottom_spacer") {
@@ -261,7 +331,6 @@ private fun TemplateCard(
     onDuplicate: () -> Unit,
     onDelete: () -> Unit
 ) {
-    var showActions by remember { mutableStateOf(false) }
     val isDark = LocalDarkTheme.current
 
     Card(
@@ -274,10 +343,8 @@ private fun TemplateCard(
                 if (isDark) MaterialTheme.colorScheme.surface.copy(alpha = 0.6f) else MaterialTheme.colorScheme.surface
             }
         ),
-        // No elevation - Material3 elevation creates tonal overlays (gray tint in light mode)
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         border = if (!isDark) {
-            // Light mode: thin border for definition instead of elevation
             androidx.compose.foundation.BorderStroke(
                 0.5.dp,
                 if (isActive) MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
@@ -291,16 +358,17 @@ private fun TemplateCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(12.dp)
         ) {
-            // Header row
+            // Header row with title and action icons
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                // Title and status icons
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.weight(1f)
                 ) {
@@ -322,28 +390,64 @@ private fun TemplateCard(
                     if (isDefault) {
                         Icon(
                             Icons.Default.Lock,
-                            contentDescription = "Built-in",
+                            contentDescription = "Built-in (duplicate to customize)",
                             tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                             modifier = Modifier.size(16.dp)
                         )
                     }
                 }
 
-                // Toggle actions button
-                TextButton(
-                    onClick = { showActions = !showActions }
+                // Always-visible action icon buttons
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(0.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        if (showActions) "Less" else "More",
-                        color = MaterialTheme.colorScheme.tertiary,
-                        style = MaterialTheme.typography.labelMedium
-                    )
+                    // Edit button - for default template, triggers duplicate instead
+                    IconButton(
+                        onClick = if (isDefault) onDuplicate else onEdit,
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(
+                            if (isDefault) Icons.Default.ContentCopy else Icons.Default.Edit,
+                            contentDescription = if (isDefault) "Duplicate to edit" else "Edit",
+                            tint = MaterialTheme.colorScheme.secondary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+
+                    // Duplicate button
+                    IconButton(
+                        onClick = onDuplicate,
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.ContentCopy,
+                            contentDescription = "Duplicate",
+                            tint = MaterialTheme.colorScheme.tertiary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+
+                    // Delete button (hidden for default template)
+                    if (!isDefault) {
+                        IconButton(
+                            onClick = onDelete,
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Delete,
+                                contentDescription = "Delete",
+                                tint = MaterialTheme.colorScheme.error.copy(alpha = 0.8f),
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
                 }
             }
 
             // Content preview
             Text(
-                text = template.content.take(120).replace("\n", " ") + if (template.content.length > 120) "..." else "",
+                text = template.content.take(100).replace("\n", " ") + if (template.content.length > 100) "..." else "",
                 style = MaterialTheme.typography.bodySmall.copy(
                     fontFamily = FontFamily.Monospace,
                     fontSize = 11.sp,
@@ -352,98 +456,31 @@ private fun TemplateCard(
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(top = 8.dp)
+                modifier = Modifier.padding(top = 6.dp)
             )
-
-            // Expanded actions
-            AnimatedVisibility(
-                visible = showActions,
-                enter = fadeIn() + expandVertically(),
-                exit = fadeOut() + shrinkVertically()
-            ) {
-                TemplateActionButtons(
-                    isDefault = isDefault,
-                    onEdit = onEdit,
-                    onDuplicate = onDuplicate,
-                    onDelete = onDelete,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 12.dp)
-                )
-            }
         }
     }
 }
 
 /**
- * Action buttons for template cards (Edit, Copy, Delete).
- * Extracted to reduce cognitive complexity of TemplateCard.
+ * Inserts text at the current cursor position in a TextFieldState.
+ * If there's a selection, replaces the selected text.
  */
-@Composable
-private fun TemplateActionButtons(
-    isDefault: Boolean,
-    onEdit: () -> Unit,
-    onDuplicate: () -> Unit,
-    onDelete: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        // Edit button (disabled for default template)
-        // Using SECONDARY style - these are card-level actions, not screen-level primary actions
-        NeonButton(
-            onClick = onEdit,
-            enabled = !isDefault,
-            glowColor = MaterialTheme.colorScheme.secondary,
-            style = NeonButtonStyle.SECONDARY,
-            modifier = Modifier.weight(1f)
-        ) {
-            Icon(
-                Icons.Default.Edit,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp)
-            )
-            Spacer(Modifier.width(4.dp))
-            Text("Edit", style = MaterialTheme.typography.labelMedium)
+private fun insertAtCursor(state: TextFieldState, textToInsert: String) {
+    state.edit {
+        val selection = this.selection
+        // Delete any selected text first
+        if (selection.start != selection.end) {
+            delete(selection.start, selection.end)
         }
-
-        // Duplicate button
-        NeonButton(
-            onClick = onDuplicate,
-            glowColor = MaterialTheme.colorScheme.tertiary,
-            style = NeonButtonStyle.SECONDARY,
-            modifier = Modifier.weight(1f)
-        ) {
-            Icon(
-                Icons.Default.ContentCopy,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp)
-            )
-            Spacer(Modifier.width(4.dp))
-            Text("Copy", style = MaterialTheme.typography.labelMedium)
-        }
-
-        // Delete button (disabled for default template)
-        NeonButton(
-            onClick = onDelete,
-            enabled = !isDefault,
-            glowColor = MaterialTheme.colorScheme.error,
-            style = NeonButtonStyle.SECONDARY,
-            modifier = Modifier.weight(1f)
-        ) {
-            Icon(
-                Icons.Default.Delete,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp)
-            )
-            Spacer(Modifier.width(4.dp))
-            Text("Delete", style = MaterialTheme.typography.labelMedium)
-        }
+        // Insert at cursor position
+        insert(selection.start, textToInsert)
+        // Move cursor to end of inserted text
+        placeCursorAfterCharAt(selection.start + textToInsert.length - 1)
     }
 }
 
+@OptIn(FlowPreview::class, ExperimentalLayoutApi::class, ExperimentalFoundationApi::class)
 @Composable
 private fun TemplateEditDialog(
     template: Template,
@@ -452,18 +489,89 @@ private fun TemplateEditDialog(
     onSave: (name: String, content: String) -> Unit,
     onDismiss: () -> Unit
 ) {
+    val secondaryColor = MaterialTheme.colorScheme.secondary
+    
     // Key the composable so editor state resets cleanly per-template
     key(template.id) {
-        var name by remember { mutableStateOf(if (isNew) "" else template.name) }
-        var nameError by remember { mutableStateOf<String?>(null) }
+        // Track original values for dirty detection
+        val originalName = remember { if (isNew) "" else template.name }
+        val originalContent = remember { if (isNew) defaultContent else template.content }
         
-        // Use the new state-based text input API for better selection/scrolling behavior
-        val contentState = rememberTextFieldState(
-            initialText = if (isNew) defaultContent else template.content
-        )
+        var name by remember { mutableStateOf(originalName) }
+        var nameError by remember { mutableStateOf<String?>(null) }
+        var contentError by remember { mutableStateOf<String?>(null) }
+        var showDiscardDialog by remember { mutableStateOf(false) }
+        
+        val contentState = rememberTextFieldState(initialText = originalContent)
+        val contentFocusRequester = remember { FocusRequester() }
+        val scope = rememberCoroutineScope()
+        
+        // Compute dirty state
+        val currentContent = contentState.text.toString()
+        val isDirty = name != originalName || currentContent != originalContent
+        
+        // Handle dismiss with unsaved changes check
+        val handleDismiss: () -> Unit = {
+            if (isDirty) {
+                showDiscardDialog = true
+            } else {
+                onDismiss()
+            }
+        }
+        
+        // Validate on content changes (debounced, skip initial)
+        LaunchedEffect(Unit) {
+            snapshotFlow { contentState.text.toString() }
+                .drop(1) // Skip initial value to avoid flash
+                .debounce(150)
+                .collect { text ->
+                    val missing = Template.findMissingPlaceholders(text)
+                    contentError = if (missing.isNotEmpty()) {
+                        "Missing: ${missing.joinToString(", ") { it.removePrefix("{{ ").removeSuffix(" }}") }}"
+                    } else {
+                        null
+                    }
+                }
+        }
+        
+        // Discard changes confirmation dialog
+        if (showDiscardDialog) {
+            AlertDialog(
+                onDismissRequest = { showDiscardDialog = false },
+                containerColor = MaterialTheme.colorScheme.surface,
+                title = { Text("Discard changes?", color = MaterialTheme.colorScheme.secondary) },
+                text = {
+                    Text(
+                        "You have unsaved changes. Are you sure you want to discard them?",
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                },
+                confirmButton = {
+                    NeonButton(
+                        onClick = { 
+                            showDiscardDialog = false
+                            onDismiss() 
+                        },
+                        glowColor = MaterialTheme.colorScheme.error,
+                        style = NeonButtonStyle.PRIMARY
+                    ) {
+                        Text("Discard")
+                    }
+                },
+                dismissButton = {
+                    NeonButton(
+                        onClick = { showDiscardDialog = false },
+                        glowColor = secondaryColor,
+                        style = NeonButtonStyle.TERTIARY
+                    ) {
+                        Text("Keep Editing")
+                    }
+                }
+            )
+        }
         
         Dialog(
-            onDismissRequest = onDismiss,
+            onDismissRequest = handleDismiss,
             properties = DialogProperties(
                 usePlatformDefaultWidth = false,
                 decorFitsSystemWindows = false
@@ -481,47 +589,90 @@ private fun TemplateEditDialog(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(24.dp)
+                        .padding(16.dp)
                 ) {
-                    // Title
+                    // Title - compact
                     Text(
                         text = if (isNew) "Create Template" else "Edit Template",
-                        style = MaterialTheme.typography.headlineSmall,
-                        color = MaterialTheme.colorScheme.primary
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.secondary
                     )
                     
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
                     
-                    // Template Name field
+                    // Template Name field - compact with keyboard navigation
                     OutlinedTextField(
                         value = name,
-                        onValueChange = {
-                            name = it
-                            nameError = null
+                        onValueChange = { newValue ->
+                            // Max 50 chars for template name
+                            if (newValue.length <= 50) {
+                                name = newValue
+                                nameError = null
+                            }
                         },
-                        label = { Text("Template Name") },
-                        placeholder = { Text("e.g., Business Welcome") },
+                        label = { Text("Name") },
                         isError = nameError != null,
                         supportingText = nameError?.let { { Text(it) } },
                         singleLine = true,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                        keyboardActions = KeyboardActions(
+                            onNext = { contentFocusRequester.requestFocus() }
+                        ),
                         modifier = Modifier.fillMaxWidth(),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.secondary,
+                            focusedBorderColor = secondaryColor,
                             unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                            cursorColor = MaterialTheme.colorScheme.secondary,
-                            focusedLabelColor = MaterialTheme.colorScheme.secondary,
-                            unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                            focusedContainerColor = MaterialTheme.colorScheme.surface,
-                            unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                            cursorColor = secondaryColor,
+                            focusedLabelColor = secondaryColor,
+                            unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     )
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
+                    
+                    // Inline placeholder chips with legend
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text(
+                            "Insert",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        )
+                        Text(
+                            "·",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                        )
+                        Text(
+                            "Customer, SSID required",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.7f)
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        MessageTemplate.PLACEHOLDERS.forEach { (placeholder, _) ->
+                            InteractivePlaceholderChip(
+                                placeholder = placeholder,
+                                onClick = {
+                                    insertAtCursor(contentState, placeholder)
+                                    contentFocusRequester.requestFocus()
+                                },
+                                isRequired = placeholder in Template.REQUIRED_PLACEHOLDERS
+                            )
+                        }
+                    }
 
-                    // Template Content field - uses state-based BasicTextField for proper selection/scroll
-                    // Wrapped in OutlinedTextFieldDefaults.DecorationBox for Material3 styling
-                    // weight(1f) takes remaining space; small min height ensures buttons visible on tiny screens
-                    val contentInteractionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Template Content field - expands to fill space, handles own scrolling
+                    val contentInteractionSource = remember { MutableInteractionSource() }
+                    val hasContentError = contentError != null
                     BasicTextField(
                         state = contentState,
                         lineLimits = TextFieldLineLimits.MultiLine(
@@ -531,11 +682,11 @@ private fun TemplateEditDialog(
                         modifier = Modifier
                             .fillMaxWidth()
                             .weight(1f)
-                            .heightIn(min = 100.dp), // Low min ensures buttons stay visible on small screens/large fonts
-                        textStyle = MaterialTheme.typography.bodyLarge.copy(
+                            .focusRequester(contentFocusRequester),
+                        textStyle = MaterialTheme.typography.bodyMedium.copy(
                             color = MaterialTheme.colorScheme.onSurface
                         ),
-                        cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.secondary),
+                        cursorBrush = androidx.compose.ui.graphics.SolidColor(secondaryColor),
                         interactionSource = contentInteractionSource,
                         decorator = { innerTextField ->
                             OutlinedTextFieldDefaults.DecorationBox(
@@ -545,24 +696,26 @@ private fun TemplateEditDialog(
                                 singleLine = false,
                                 visualTransformation = androidx.compose.ui.text.input.VisualTransformation.None,
                                 interactionSource = contentInteractionSource,
-                                label = { Text("Template Content") },
+                                label = { Text("Message") },
+                                isError = hasContentError,
+                                supportingText = if (hasContentError) {
+                                    { Text(contentError ?: "", color = MaterialTheme.colorScheme.error) }
+                                } else null,
                                 colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = MaterialTheme.colorScheme.secondary,
-                                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                                    cursorColor = MaterialTheme.colorScheme.secondary,
-                                    focusedLabelColor = MaterialTheme.colorScheme.secondary,
-                                    unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    focusedContainerColor = MaterialTheme.colorScheme.surface,
-                                    unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                                    focusedBorderColor = if (hasContentError) MaterialTheme.colorScheme.error else secondaryColor,
+                                    unfocusedBorderColor = if (hasContentError) MaterialTheme.colorScheme.error.copy(alpha = 0.6f) else MaterialTheme.colorScheme.outline,
+                                    cursorColor = secondaryColor,
+                                    focusedLabelColor = if (hasContentError) MaterialTheme.colorScheme.error else secondaryColor,
+                                    unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
                                 ),
                                 container = {
                                     OutlinedTextFieldDefaults.Container(
                                         enabled = true,
-                                        isError = false,
+                                        isError = hasContentError,
                                         interactionSource = contentInteractionSource,
                                         colors = OutlinedTextFieldDefaults.colors(
-                                            focusedBorderColor = MaterialTheme.colorScheme.secondary,
-                                            unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                                            focusedBorderColor = if (hasContentError) MaterialTheme.colorScheme.error else secondaryColor,
+                                            unfocusedBorderColor = if (hasContentError) MaterialTheme.colorScheme.error.copy(alpha = 0.6f) else MaterialTheme.colorScheme.outline
                                         )
                                     )
                                 }
@@ -571,36 +724,37 @@ private fun TemplateEditDialog(
                     )
 
                     Spacer(modifier = Modifier.height(12.dp))
-
-                    // Placeholder hints
-                    Text(
-                        "Placeholders: {{ customer_name }}, {{ ssid }}, {{ password }}, {{ account_number }}, {{ tech_signature }}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                    )
                     
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
-                    // Button row - always visible at bottom
+                    // Button row - both magenta for consistency
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.End,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        TextButton(onClick = onDismiss) {
-                            Text("Cancel", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
+                        // Cancel - tertiary magenta (checks for unsaved changes)
+                        NeonButton(
+                            onClick = handleDismiss,
+                            glowColor = secondaryColor,
+                            style = NeonButtonStyle.TERTIARY
+                        ) {
+                            Text("Cancel")
                         }
                         
                         Spacer(modifier = Modifier.width(8.dp))
                         
-                        NeonMagentaButton(
+                        // Save - primary magenta (filled)
+                        val canSave = name.isNotBlank() && contentError == null
+                        NeonButton(
                             onClick = {
                                 if (name.isBlank()) {
                                     nameError = "Name is required"
-                                } else {
+                                } else if (contentError == null) {
                                     onSave(name, contentState.text.toString())
                                 }
-                            }
+                            },
+                            enabled = canSave,
+                            glowColor = secondaryColor,
+                            style = NeonButtonStyle.PRIMARY
                         ) {
                             Text(if (isNew) "Create" else "Save")
                         }
@@ -640,8 +794,13 @@ private fun DeleteConfirmationDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
+            // Cancel - TERTIARY magenta for consistency
+            NeonButton(
+                onClick = onDismiss,
+                glowColor = MaterialTheme.colorScheme.secondary,
+                style = NeonButtonStyle.TERTIARY
+            ) {
+                Text("Cancel")
             }
         }
     )

@@ -85,7 +85,7 @@ class TemplateListViewModelTest {
     @Test
     fun `createTemplate saves and emits TemplateCreated event`() = runTest {
         vm.events.test {
-            vm.createTemplate("New Template", "New content")
+            vm.createTemplate("New Template", "Hello {{ customer_name }}, SSID: {{ ssid }}")
             advanceUntilIdle()
 
             coVerify { mockStore.saveTemplate(match { it.name == "New Template" }) }
@@ -99,7 +99,7 @@ class TemplateListViewModelTest {
     @Test
     fun `createTemplate trims whitespace from name`() = runTest {
         vm.events.test {
-            vm.createTemplate("  Spaced Name  ", "Content")
+            vm.createTemplate("  Spaced Name  ", "Hello {{ customer_name }}, your SSID is {{ ssid }}")
             advanceUntilIdle()
 
             coVerify { mockStore.saveTemplate(match { it.name == "Spaced Name" }) }
@@ -113,10 +113,10 @@ class TemplateListViewModelTest {
         coEvery { mockStore.getTemplate("650e8400-e29b-41d4-a716-446655440001") } returns userTemplate
 
         vm.events.test {
-            vm.updateTemplate("650e8400-e29b-41d4-a716-446655440001", "Updated Name", "Updated content")
+            vm.updateTemplate("650e8400-e29b-41d4-a716-446655440001", "Updated Name", "Hi {{ customer_name }}, SSID: {{ ssid }}")
             advanceUntilIdle()
 
-            coVerify { mockStore.saveTemplate(match { it.name == "Updated Name" && it.content == "Updated content" }) }
+            coVerify { mockStore.saveTemplate(match { it.name == "Updated Name" && it.content == "Hi {{ customer_name }}, SSID: {{ ssid }}" }) }
 
             val event = awaitItem()
             assertTrue(event is TemplateListEvent.TemplateUpdated)
@@ -203,5 +203,42 @@ class TemplateListViewModelTest {
     @Test
     fun `getDefaultTemplateContent returns store default`() {
         assertEquals(defaultTemplate.content, vm.getDefaultTemplateContent())
+    }
+    
+    @Test
+    fun `createTemplate rejects content without required placeholders`() = runTest {
+        vm.events.test {
+            vm.createTemplate("Invalid Template", "Content without placeholders")
+            advanceUntilIdle()
+
+            // Should emit an error event instead of creating
+            val event = awaitItem()
+            assertTrue(event is TemplateListEvent.Error)
+            assertTrue((event as TemplateListEvent.Error).message.contains("Required placeholders missing"))
+            
+            // UI state should have validation error
+            assertTrue(vm.uiState.value.validationError?.contains("Required placeholders missing") == true)
+            
+            // Store should NOT have been called to save
+            coVerify(exactly = 0) { mockStore.saveTemplate(any()) }
+        }
+    }
+    
+    @Test
+    fun `updateTemplate rejects content without required placeholders`() = runTest {
+        coEvery { mockStore.getTemplate("650e8400-e29b-41d4-a716-446655440001") } returns userTemplate
+
+        vm.events.test {
+            vm.updateTemplate("650e8400-e29b-41d4-a716-446655440001", "Updated Name", "Missing placeholders")
+            advanceUntilIdle()
+
+            // Should emit an error event instead of updating
+            val event = awaitItem()
+            assertTrue(event is TemplateListEvent.Error)
+            assertTrue((event as TemplateListEvent.Error).message.contains("Required placeholders missing"))
+            
+            // Store should NOT have been called to save
+            coVerify(exactly = 0) { mockStore.saveTemplate(any()) }
+        }
     }
 }

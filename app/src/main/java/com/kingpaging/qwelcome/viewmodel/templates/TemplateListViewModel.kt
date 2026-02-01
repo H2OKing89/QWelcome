@@ -27,7 +27,9 @@ data class TemplateListUiState(
     val activeTemplateId: String = DEFAULT_TEMPLATE_ID,
     val isLoading: Boolean = true,
     val editingTemplate: Template? = null,
-    val showDeleteConfirmation: Template? = null
+    val showDeleteConfirmation: Template? = null,
+    val searchQuery: String = "",
+    val validationError: String? = null // For required placeholder errors
 )
 
 /**
@@ -121,13 +123,25 @@ class TemplateListViewModel(
 
     /**
      * Create a new template.
+     * Validates that required placeholders are present before saving.
      */
     fun createTemplate(name: String, content: String) {
+        // Validate required placeholders (belt + suspenders with UI layer)
+        val missingPlaceholders = Template.findMissingPlaceholders(content)
+        if (missingPlaceholders.isNotEmpty()) {
+            val errorMsg = "Required placeholders missing: ${missingPlaceholders.joinToString(", ")}"
+            _uiState.update { it.copy(validationError = errorMsg) }
+            viewModelScope.launch {
+                _events.emit(TemplateListEvent.Error(errorMsg))
+            }
+            return
+        }
+        
         viewModelScope.launch {
             try {
                 val template = Template.create(name.trim(), content)
                 settingsStore.saveTemplate(template)
-                _uiState.update { it.copy(editingTemplate = null) }
+                _uiState.update { it.copy(editingTemplate = null, validationError = null) }
                 _events.emit(TemplateListEvent.TemplateCreated(template))
             } catch (e: CancellationException) {
                 throw e
@@ -140,8 +154,20 @@ class TemplateListViewModel(
 
     /**
      * Update an existing template.
+     * Validates that required placeholders are present before saving.
      */
     fun updateTemplate(templateId: String, name: String, content: String) {
+        // Validate required placeholders (belt + suspenders with UI layer)
+        val missingPlaceholders = Template.findMissingPlaceholders(content)
+        if (missingPlaceholders.isNotEmpty()) {
+            val errorMsg = "Required placeholders missing: ${missingPlaceholders.joinToString(", ")}"
+            _uiState.update { it.copy(validationError = errorMsg) }
+            viewModelScope.launch {
+                _events.emit(TemplateListEvent.Error(errorMsg))
+            }
+            return
+        }
+        
         viewModelScope.launch {
             try {
                 val existing = settingsStore.getTemplate(templateId)
@@ -152,7 +178,7 @@ class TemplateListViewModel(
                         modifiedAt = java.time.Instant.now().toString()
                     )
                     settingsStore.saveTemplate(updated)
-                    _uiState.update { it.copy(editingTemplate = null) }
+                    _uiState.update { it.copy(editingTemplate = null, validationError = null) }
                     _events.emit(TemplateListEvent.TemplateUpdated(updated))
                 }
             } catch (e: CancellationException) {
@@ -221,5 +247,40 @@ class TemplateListViewModel(
                 _events.emit(TemplateListEvent.Error("Failed to duplicate template: ${e.message}"))
             }
         }
+    }
+    
+    /**
+     * Duplicate a template and immediately open it for editing.
+     * This is the recommended flow for customizing the default template.
+     */
+    fun duplicateAndEdit(template: Template) {
+        viewModelScope.launch {
+            try {
+                val duplicate = template.duplicate()
+                settingsStore.saveTemplate(duplicate)
+                _events.emit(TemplateListEvent.TemplateDuplicated(duplicate))
+                // Immediately open the duplicate for editing
+                _uiState.update { it.copy(editingTemplate = duplicate) }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to duplicate template", e)
+                _events.emit(TemplateListEvent.Error("Failed to duplicate template: ${e.message}"))
+            }
+        }
+    }
+    
+    /**
+     * Update the search query for filtering templates.
+     */
+    fun updateSearchQuery(query: String) {
+        _uiState.update { it.copy(searchQuery = query) }
+    }
+    
+    /**
+     * Clear any validation errors (e.g., when user starts typing in editor).
+     */
+    fun clearValidationError() {
+        _uiState.update { it.copy(validationError = null) }
     }
 }

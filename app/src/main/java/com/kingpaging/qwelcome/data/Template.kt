@@ -12,6 +12,8 @@ import java.util.UUID
  * @property createdAt ISO-8601 timestamp when the template was created
  * @property modifiedAt ISO-8601 timestamp when the template was last modified
  * @property slug Optional human-readable identifier for readability in exports (not used for merging)
+ * @property sortOrder Display order (lower = first). Default template uses Int.MIN_VALUE to stay pinned.
+ * @property tags Optional tags for future categorization (not used in UI yet)
  */
 @Serializable
 data class Template(
@@ -20,7 +22,9 @@ data class Template(
     val content: String,
     val createdAt: String = currentIsoTimestamp(),
     val modifiedAt: String = createdAt,
-    val slug: String? = null
+    val slug: String? = null,
+    val sortOrder: Int = 0,
+    val tags: List<String> = emptyList()
 ) {
     companion object {
         /**
@@ -28,6 +32,33 @@ data class Template(
          * These are essential for the app's core functionality.
          */
         val REQUIRED_PLACEHOLDERS = setOf("{{ customer_name }}", "{{ ssid }}")
+        
+        // Regex patterns for flexible placeholder matching (tolerates whitespace)
+        private val PATTERN_CUSTOMER_NAME = Regex("""\{\{\s*customer_name\s*\}\}""")
+        private val PATTERN_SSID = Regex("""\{\{\s*ssid\s*\}\}""")
+        
+        /**
+         * Validates template content and returns a list of missing required placeholders.
+         * Uses regex to tolerate whitespace variations like {{customer_name}} or {{ customer_name }}.
+         * 
+         * @return List of canonical placeholder strings that are missing (empty if all present)
+         */
+        fun findMissingPlaceholders(content: String): List<String> {
+            val missing = mutableListOf<String>()
+            if (!PATTERN_CUSTOMER_NAME.containsMatchIn(content)) {
+                missing += "{{ customer_name }}"
+            }
+            if (!PATTERN_SSID.containsMatchIn(content)) {
+                missing += "{{ ssid }}"
+            }
+            return missing
+        }
+        
+        /**
+         * Checks if template content has all required placeholders.
+         */
+        fun hasRequiredPlaceholders(content: String): Boolean = 
+            findMissingPlaceholders(content).isEmpty()
         
         /**
          * Create a template from just name and content (common use case).
