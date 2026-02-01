@@ -20,7 +20,8 @@ class FakeNavigator : Navigator {
         shareCalls.add(ShareCall(message, chooserTitle))
     }
 
-    override fun copyToClipboard(label: String, text: String) {
+    override fun copyToClipboard(label: String, text: String): Boolean {
         copyCalls.add(CopyCall(label, text))
+        return true
     }
 }

@@ -3,7 +3,7 @@
 **Date:** January 26, 2026  
 **Auditor:** GitHub Copilot  
 **App Version:** 1.2 (Audit Follow-up)
-**Status:** ✅ All Actionable Items Resolved
+**Status:** ✅ All Actionable Items Resolved - ARCHIVED - 2026/01/31
 
 ---
 
@@ -120,24 +120,32 @@ Overall, Q Welcome is a **well-architected Android application** with modern pat
 
 ## 🟢 Nice-to-Have Enhancements
 
-### 11. Consider Jetpack Navigation Compose
+### 11. Consider Jetpack Navigation Compose - ✅ IMPLEMENTED
 
-**Current:** Manual screen switching with enum and `when` statement.
-**Status:** Future consideration. The current navigation is simple and effective, but Jetpack Navigation remains a viable option for future expansion.
-
----
-
-### 12. Add Crash Reporting
-
-**Recommendation:** Add Firebase Crashlytics for production error tracking.
-**Status:** Future consideration.
+**Previous:** Manual screen switching with enum and `when` statement.
+**Resolution:** Migrated to Jetpack Navigation Compose with type-safe routes using Kotlin serialization. Created `Routes.kt` for route definitions and `AppNavGraph.kt` for the navigation graph. Back navigation is now handled automatically by the navigation framework.
 
 ---
 
-### 13. Consider Gradle Convention Plugins
+### 12. Add Crash Reporting - ✅ IMPLEMENTED
 
-**Current:** Single module with all build logic in `app/build.gradle.kts`.
-**Status:** Future consideration, relevant if the app grows to multiple modules.
+**Resolution:** Added Firebase Crashlytics integration:
+- Created `QWelcomeApplication` class for initialization
+- Crashlytics disabled in debug builds for cleaner development
+- Custom keys added for app version and build type context
+- ProGuard rules added for proper stack trace symbolication
+
+**Setup Required:** Replace placeholder `google-services.json` with actual Firebase project config.
+
+---
+
+### 13. Consider Gradle Convention Plugins - ✅ IMPLEMENTED
+
+**Resolution:** Created `build-logic` composite build with convention plugins:
+- `qwelcome.android.application` - Centralizes Android SDK versions and common settings
+- `qwelcome.android.compose` - Centralizes Compose configuration
+
+This provides a foundation for future multi-module expansion.
 
 ---
 
@@ -155,8 +163,9 @@ Overall, Q Welcome is a **well-architected Android application** with modern pat
 | 🟡 Medium | Add haptic feedback | Low | Low | ✅ Done |
 | 🟡 Medium | Add loading states | Medium | Medium | ✅ Done |
 | 🟡 Medium | Migrate to Proto DataStore | High | High | ✅ Done |
-| 🟢 Low | Consider Navigation Compose | High | Medium | 🔄 Future |
-| 🟢 Low | Add crash reporting | Low | Medium | 🔄 Future |
+| 🟢 Low | Jetpack Navigation Compose | High | Medium | ✅ Done |
+| 🟢 Low | Firebase Crashlytics | Low | Medium | ✅ Done |
+| 🟢 Low | Gradle Convention Plugins | Medium | Low | ✅ Done |
 
 ---
 
@@ -167,3 +176,4 @@ Overall, Q Welcome is a **well-architected Android application** with modern pat
 | 2026-01-26 | 1.0 | Initial audit |
 | 2026-01-26 | 1.1 | Fixed lifecycle-aware collection, SSID error, updated dependencies, added 71 unit tests |
 | 2026-01-27 | 1.2 | Resolved all remaining actionable items from the audit, including string consolidation, navigation fragility, accessibility, and a data layer migration to Proto DataStore. |
+| 2026-01-31 | 1.3 | Implemented all "nice-to-have" enhancements: Jetpack Navigation Compose, Firebase Crashlytics, and Gradle Convention Plugins. All audit items now complete. |
