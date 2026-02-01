@@ -14,27 +14,30 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.QrCode2
-import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
@@ -52,6 +55,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
@@ -127,10 +132,19 @@ fun CustomerIntakeScreen(
     }
 
     // QR Code Bottom Sheet
-    if (showQrSheet && uiState.ssid.isNotBlank() && uiState.password.isNotBlank()) {
+    // For open networks, only SSID is required
+    // For secured networks, both SSID and valid password are required
+    val qrEnabled = if (uiState.isOpenNetwork) {
+        uiState.ssid.isNotBlank()
+    } else {
+        uiState.ssid.isNotBlank() && uiState.password.length >= 8
+    }
+
+    if (showQrSheet && qrEnabled) {
         QrCodeBottomSheet(
             ssid = uiState.ssid,
             password = uiState.password,
+            isOpenNetwork = uiState.isOpenNetwork,
             onDismiss = { showQrSheet = false }
         )
     }
@@ -200,7 +214,7 @@ fun CustomerIntakeScreen(
                                 unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
                             ),
                             modifier = Modifier
-                                .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
                                 .fillMaxWidth()
                         )
 
@@ -271,21 +285,59 @@ fun CustomerIntakeScreen(
                         isError = uiState.ssidError != null,
                         supportingText = { uiState.ssidError?.let { Text(it) } }
                     )
+
+                    // Open Network toggle - allows skipping password for guest networks
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .toggleable(
+                                value = uiState.isOpenNetwork,
+                                onValueChange = { customerIntakeViewModel.onOpenNetworkChanged(it) },
+                                role = Role.Checkbox
+                            )
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = uiState.isOpenNetwork,
+                            onCheckedChange = null, // Handled by Row's toggleable
+                            colors = CheckboxDefaults.colors(
+                                checkedColor = MaterialTheme.colorScheme.secondary,
+                                uncheckedColor = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        )
+                        Text(
+                            text = stringResource(R.string.label_open_network),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.padding(start = 8.dp)
+                        )
+                    }
+
                     NeonOutlinedField(
-                        value = uiState.password,
+                        value = if (uiState.isOpenNetwork) "" else uiState.password,
                         onValueChange = { customerIntakeViewModel.onPasswordChanged(it) },
                         label = { Text("WiFi Password") },
+                        enabled = !uiState.isOpenNetwork,
                         isError = uiState.passwordError != null,
-                        supportingText = { uiState.passwordError?.let { Text(it) } },
+                        supportingText = {
+                            if (uiState.isOpenNetwork) {
+                                Text(stringResource(R.string.hint_password_disabled))
+                            } else {
+                                uiState.passwordError?.let { Text(it) }
+                            }
+                        },
                         visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                         trailingIcon = {
-                            val image = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
-                            val description = if (passwordVisible) "Hide password" else "Show password"
-                            IconButton(onClick = {
-                                hapticFeedback()
-                                passwordVisible = !passwordVisible
-                            }) {
-                                Icon(imageVector = image, description)
+                            if (!uiState.isOpenNetwork) {
+                                val image = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
+                                val description = if (passwordVisible) "Hide password" else "Show password"
+                                IconButton(onClick = {
+                                    hapticFeedback()
+                                    passwordVisible = !passwordVisible
+                                }) {
+                                    Icon(imageVector = image, description)
+                                }
                             }
                         }
                     )
@@ -322,7 +374,7 @@ fun CustomerIntakeScreen(
                         style = NeonButtonStyle.PRIMARY
                     ) {
                         Icon(
-                            Icons.Filled.Send,
+                            Icons.AutoMirrored.Filled.Send,
                             contentDescription = "Send SMS",
                             modifier = Modifier.size(16.dp)
                         )
@@ -371,14 +423,17 @@ fun CustomerIntakeScreen(
                 }
 
                 // === WIFI QR CODE SECTION ===
-                // WPA/WPA2 passwords must be 8-63 characters
-                val passwordValid = uiState.password.length >= 8
-                val qrEnabled = uiState.ssid.isNotBlank() && passwordValid
+                // For open networks, only SSID is required
+                // For secured networks, WPA/WPA2 passwords must be 8-63 characters
+                val passwordValid = uiState.isOpenNetwork || uiState.password.length >= 8
+                val qrSectionEnabled = uiState.ssid.isNotBlank() && passwordValid
 
                 val qrHint = when {
+                    uiState.isOpenNetwork && uiState.ssid.isBlank() -> "Enter SSID to generate"
+                    uiState.isOpenNetwork && uiState.ssid.isNotBlank() -> "${uiState.ssid} (Open Network)"
                     uiState.ssid.isBlank() && uiState.password.isBlank() -> "Enter SSID + password to generate"
                     uiState.ssid.isBlank() -> "Enter SSID"
-                    !passwordValid -> "Password needs 8+ characters (${uiState.password.length}/8)"
+                    uiState.password.length < 8 -> "Password needs 8+ characters (${uiState.password.length}/8)"
                     else -> uiState.ssid
                 }
 
@@ -397,7 +452,7 @@ fun CustomerIntakeScreen(
                         Text(
                             qrHint,
                             style = MaterialTheme.typography.bodySmall,
-                            color = if (qrEnabled) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                            color = if (qrSectionEnabled) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                         )
                     }
                     NeonButton(
@@ -407,7 +462,7 @@ fun CustomerIntakeScreen(
                         },
                         glowColor = MaterialTheme.colorScheme.tertiary,
                         style = NeonButtonStyle.TERTIARY,
-                        enabled = qrEnabled
+                        enabled = qrSectionEnabled
                     ) {
                         Icon(
                             Icons.Filled.QrCode2,

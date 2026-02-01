@@ -173,6 +173,7 @@ fun NeonOutlinedField(
     onValueChange: (String) -> Unit,
     label: @Composable (() -> Unit),
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
     singleLine: Boolean = true,
     isError: Boolean = false,
     supportingText: @Composable (() -> Unit)? = null,
@@ -187,6 +188,7 @@ fun NeonOutlinedField(
         value = value,
         onValueChange = onValueChange,
         label = label,
+        enabled = enabled,
         singleLine = singleLine,
         isError = isError,
         supportingText = if (supportingText != null) {
@@ -219,6 +221,12 @@ fun NeonOutlinedField(
             // Container - slight tint on focus in dark mode
             focusedContainerColor = if (isDark) colorScheme.primary.copy(alpha = 0.05f) else colorScheme.surface,
             unfocusedContainerColor = if (isDark) Color.Transparent else colorScheme.surface,
+            // Disabled states - dimmed appearance
+            disabledBorderColor = colorScheme.outline.copy(alpha = 0.3f),
+            disabledLabelColor = colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+            disabledTextColor = colorScheme.onSurface.copy(alpha = 0.5f),
+            disabledContainerColor = if (isDark) Color.Transparent else colorScheme.surfaceVariant.copy(alpha = 0.3f),
+            disabledSupportingTextColor = colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
             // Error states - neon red (no animation, per motion budget)
             errorBorderColor = colorScheme.error,
             errorLabelColor = colorScheme.error,

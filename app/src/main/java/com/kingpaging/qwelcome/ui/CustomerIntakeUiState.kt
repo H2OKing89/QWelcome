@@ -11,6 +11,7 @@ import com.kingpaging.qwelcome.util.StringUtils
  * represents validated, ready-to-use customer information.
  * 
  * Use [toCustomerData] to convert validated UI state to a CustomerData instance.
+ * Use [isValid] to check if the form is ready for submission.
  */
 data class CustomerIntakeUiState(
     val customerName: String = "",
@@ -23,7 +24,25 @@ data class CustomerIntakeUiState(
     val passwordError: String? = null,
     val accountNumber: String = "",
     val accountNumberError: String? = null,
+    /** When true, password validation is skipped (for open/guest networks) */
+    val isOpenNetwork: Boolean = false,
 ) {
+
+    /**
+     * Returns true if all form fields pass validation (no errors present).
+     *
+     * Note: This only checks if error fields are null - it does NOT perform
+     * validation itself. Call validation methods first to populate error fields,
+     * then check this property to determine if submission should proceed.
+     *
+     * For open networks, password errors are ignored since passwords aren't required.
+     */
+    val isValid: Boolean
+        get() = customerNameError == null &&
+                customerPhoneError == null &&
+                ssidError == null &&
+                (isOpenNetwork || passwordError == null) &&
+                accountNumberError == null
     /**
      * Converts the UI state to a [CustomerData] instance.
      * 

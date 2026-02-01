@@ -90,7 +90,25 @@ object WifiQrGenerator {
         val escapedPassword = escapeWifiString(password)
         return "WIFI:T:WPA;S:$escapedSsid;P:$escapedPassword;;"
     }
-    
+
+    /**
+     * Generates a WiFi QR string for open networks (no password required).
+     *
+     * Format: WIFI:T:nopass;S:<ssid>;;
+     *
+     * @param ssid The network name (will be escaped)
+     * @return The WiFi URI string for QR code encoding
+     * @throws IllegalArgumentException if ssid is invalid
+     */
+    fun generateOpenNetworkString(ssid: String): String {
+        validateSsid(ssid).let {
+            if (it is ValidationResult.Error) throw IllegalArgumentException("Invalid SSID")
+        }
+
+        val escapedSsid = escapeWifiString(ssid)
+        return "WIFI:T:nopass;S:$escapedSsid;;"
+    }
+
     /**
      * Generates a WiFi string without validation (for cases where validation
      * has already been performed elsewhere).
