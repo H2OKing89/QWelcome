@@ -24,6 +24,7 @@ sealed class UpdateCheckResult {
     
     object UpToDate : UpdateCheckResult()
     data class Error(val message: String) : UpdateCheckResult()
+    data class RateLimited(val retryAfterSeconds: Long?) : UpdateCheckResult()
 }
 
 /**
@@ -78,6 +79,23 @@ object UpdateChecker {
                     Log.d(TAG, "No releases found on GitHub")
                     return@withContext UpdateCheckResult.UpToDate
                 }
+                // 403 often means rate-limited by GitHub
+                if (responseCode == HttpURLConnection.HTTP_FORBIDDEN) {
+                    val remaining = connection.getHeaderField("X-RateLimit-Remaining")
+                    // Only treat as rate-limited when header is present and equals "0"
+                    if (remaining == "0") {
+                        val resetEpoch = connection.getHeaderField("X-RateLimit-Reset")
+                            ?.toLongOrNull()
+                        val retrySeconds = if (resetEpoch != null) {
+                            (resetEpoch - System.currentTimeMillis() / 1000).coerceAtLeast(0)
+                        } else {
+                            null
+                        }
+                        Log.w(TAG, "Rate limited by GitHub, retry in ${retrySeconds}s")
+                        return@withContext UpdateCheckResult.RateLimited(retrySeconds)
+                    }
+                    // Fall through to generic error if not rate-limited
+                }
                 return@withContext UpdateCheckResult.Error("HTTP $responseCode")
             }
             
@@ -89,7 +107,7 @@ object UpdateChecker {
             Log.d(TAG, "Current: $currentVersionName, Latest: $latestVersion")
             
             // Compare versions
-            if (isNewerVersion(latestVersion, currentVersionName)) {
+            if (VersionComparator.isNewerVersion(latestVersion, currentVersionName)) {
                 // Find APK asset
                 val apkAsset = release.assets.find { it.name.endsWith(".apk") }
                 val downloadUrl = apkAsset?.browser_download_url ?: release.html_url
@@ -113,59 +131,4 @@ object UpdateChecker {
         }
     }
     
-    /**
-     * Compare semantic versions (e.g., "1.2.0" vs "1.1.0").
-     * Handles pre-release suffixes: stable releases are preferred over pre-releases.
-     * Returns true if remote is newer than current.
-     */
-    private fun isNewerVersion(remote: String, current: String): Boolean {
-        // Split off pre-release suffix (e.g., "1.2.0-beta" -> base="1.2.0", pre="beta")
-        val (remoteBase, remotePre) = splitVersion(remote)
-        val (currentBase, currentPre) = splitVersion(current)
-
-        // Parse version parts, filtering out any non-numeric segments
-        val remoteParts = parseVersionParts(remoteBase)
-        val currentParts = parseVersionParts(currentBase)
-
-        // If either version is completely invalid, don't suggest an update
-        if (remoteParts.isEmpty() || currentParts.isEmpty()) {
-            Log.w(TAG, "Invalid version format - remote: '$remote', current: '$current'")
-            return false
-        }
-
-        val maxLen = maxOf(remoteParts.size, currentParts.size)
-        for (i in 0 until maxLen) {
-            val r = remoteParts.getOrElse(i) { 0 }
-            val c = currentParts.getOrElse(i) { 0 }
-            if (r > c) return true
-            if (r < c) return false
-        }
-
-        // Base versions are equal - prefer stable over pre-release
-        // If remote is stable (no pre-release) and current has pre-release, update available
-        if (remotePre == null && currentPre != null) return true
-        // If remote has pre-release and current is stable, no update
-        if (remotePre != null && currentPre == null) return false
-
-        return false
-    }
-
-    /**
-     * Parse version string into numeric parts.
-     * Handles malformed versions gracefully (e.g., "1.", "1.2.", ".1.2").
-     */
-    private fun parseVersionParts(versionBase: String): List<Int> {
-        val segments = versionBase.split(".").filter { it.isNotEmpty() }
-        val parsed = segments.map { it.toIntOrNull() }
-        // If any segment is non-numeric, treat entire version as invalid
-        return if (parsed.any { it == null }) emptyList() else parsed.filterNotNull()
-    }
-
-    /**
-     * Split version into base and optional pre-release suffix.
-     */
-    private fun splitVersion(version: String): Pair<String, String?> {
-        val parts = version.split("-", limit = 2)
-        return parts[0] to parts.getOrNull(1)
-    }
 }

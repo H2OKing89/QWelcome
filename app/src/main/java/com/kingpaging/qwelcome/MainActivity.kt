@@ -2,21 +2,16 @@ package com.kingpaging.qwelcome
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.Saver
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.compose.rememberNavController
 import com.kingpaging.qwelcome.di.LocalCustomerIntakeViewModel
 import com.kingpaging.qwelcome.di.LocalExportViewModel
 import com.kingpaging.qwelcome.di.LocalImportViewModel
@@ -24,12 +19,8 @@ import com.kingpaging.qwelcome.di.LocalNavigator
 import com.kingpaging.qwelcome.di.LocalSettingsViewModel
 import com.kingpaging.qwelcome.di.LocalTemplateListViewModel
 import com.kingpaging.qwelcome.navigation.AndroidNavigator
+import com.kingpaging.qwelcome.navigation.AppNavGraph
 import com.kingpaging.qwelcome.navigation.Navigator
-import com.kingpaging.qwelcome.ui.CustomerIntakeScreen
-import com.kingpaging.qwelcome.ui.export.ExportScreen
-import com.kingpaging.qwelcome.ui.import_pkg.ImportScreen
-import com.kingpaging.qwelcome.ui.settings.SettingsScreen
-import com.kingpaging.qwelcome.ui.templates.TemplateListScreen
 import com.kingpaging.qwelcome.ui.theme.CyberpunkTheme
 import com.kingpaging.qwelcome.viewmodel.CustomerIntakeViewModel
 import com.kingpaging.qwelcome.viewmodel.export.ExportViewModel
@@ -37,27 +28,6 @@ import com.kingpaging.qwelcome.viewmodel.import_pkg.ImportViewModel
 import com.kingpaging.qwelcome.viewmodel.factory.AppViewModelProvider
 import com.kingpaging.qwelcome.viewmodel.settings.SettingsViewModel
 import com.kingpaging.qwelcome.viewmodel.templates.TemplateListViewModel
-
-/**
- * Simple screen navigation state for the app. Using a stable string `key`
- * makes this robust against enum renaming during app updates.
- */
-private enum class Screen(val key: String) {
-    Main("main"),
-    Settings("settings"),
-    Export("export"),
-    Import("import"),
-    TemplateList("template_list")
-}
-
-/**
- * Custom Saver for the Screen enum to make it robust to enum name changes.
- * It saves and restores the enum based on its stable `key` property.
- */
-private val ScreenSaver = Saver<Screen, String>(
-    save = { it.key },
-    restore = { key -> Screen.entries.firstOrNull { it.key == key } ?: Screen.Main }
-)
 
 class MainActivity : ComponentActivity() {
 
@@ -90,6 +60,9 @@ class MainActivity : ComponentActivity() {
                 factory = AppViewModelProvider(applicationContext)
             )
 
+            // Navigation controller for Jetpack Navigation Compose
+            val navController = rememberNavController()
+
             // Theme follows system setting automatically
             CyberpunkTheme {
                 // Provide ViewModels and Navigator via CompositionLocal for easier testing
@@ -115,57 +88,8 @@ class MainActivity : ComponentActivity() {
                         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
                     }
 
-                    var currentScreen by rememberSaveable(stateSaver = ScreenSaver) { mutableStateOf(Screen.Main) }
-                    // Track origin screen for TemplateList navigation
-                    var templateListOrigin by rememberSaveable(stateSaver = ScreenSaver) { mutableStateOf(Screen.Settings) }
-
-                    // Handle system back button/gesture
-                    BackHandler(enabled = currentScreen != Screen.Main) {
-                        currentScreen = when (currentScreen) {
-                            Screen.TemplateList -> templateListOrigin
-                            Screen.Export, Screen.Import -> Screen.Settings
-                            else -> Screen.Main
-                        }
-                    }
-
-                    when (currentScreen) {
-                        Screen.Main -> {
-                            CustomerIntakeScreen(
-                                onOpenSettings = { currentScreen = Screen.Settings },
-                                onOpenTemplates = {
-                                    templateListOrigin = Screen.Main
-                                    currentScreen = Screen.TemplateList
-                                }
-                            )
-                        }
-                        Screen.Settings -> {
-                            SettingsScreen(
-                                onBack = { currentScreen = Screen.Main },
-                                onOpenExport = { currentScreen = Screen.Export },
-                                onOpenImport = { currentScreen = Screen.Import },
-                                onOpenTemplates = {
-                                    templateListOrigin = Screen.Settings
-                                    currentScreen = Screen.TemplateList
-                                }
-                            )
-                        }
-                        Screen.Export -> {
-                            ExportScreen(
-                                onBack = { currentScreen = Screen.Settings }
-                            )
-                        }
-                        Screen.Import -> {
-                            ImportScreen(
-                                onBack = { currentScreen = Screen.Settings },
-                                onImportComplete = { currentScreen = Screen.Settings }
-                            )
-                        }
-                        Screen.TemplateList -> {
-                            TemplateListScreen(
-                                onBack = { currentScreen = templateListOrigin }
-                            )
-                        }
-                    }
+                    // Use Jetpack Navigation Compose for screen management
+                    AppNavGraph(navController = navController)
                 }
             }
         }

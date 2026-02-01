@@ -62,27 +62,13 @@ object MessageTemplate {
 
     /**
      * Builds a formatted tech signature from profile info.
-     * Format: "Name\nTitle, Department" (non-empty fields only)
+     * Format: "Name\nTitle\nDepartment" - each non-empty field on its own line.
      */
     private fun buildTechSignature(profile: TechProfile): String {
-        val parts = mutableListOf<String>()
-
-        // Name on its own line if present
-        if (profile.name.isNotBlank()) {
-            parts.add(profile.name)
-        }
-
-        // Title and dept on second line, comma-separated
-        val titleDept = listOfNotNull(
-            profile.title.takeIf { it.isNotBlank() },
-            profile.dept.takeIf { it.isNotBlank() }
-        ).joinToString(", ")
-
-        if (titleDept.isNotBlank()) {
-            parts.add(titleDept)
-        }
-
-        return parts.joinToString("\n")
+        return listOf(profile.name, profile.title, profile.dept)
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+            .joinToString("\n")
     }
 }
 

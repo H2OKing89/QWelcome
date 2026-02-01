@@ -304,8 +304,8 @@ class CustomerIntakeViewModel(
 
     /**
      * Generates the welcome message from template and current UI state.
-     * Uses the {{ tech_signature }} placeholder if present in template,
-     * otherwise appends signature at the end for backward compatibility.
+     * Uses the {{ tech_signature }} placeholder if present in template.
+     * If placeholder is absent, signature is NOT added (user controls placement).
      */
     private suspend fun generateMessage(): String {
         val uiState = _uiState.value
@@ -313,23 +313,14 @@ class CustomerIntakeViewModel(
         val template = settingsStore.activeTemplateFlow.first()
         val customerData = uiState.toCustomerData()
 
-        // Check if template uses {{ tech_signature }} placeholder
+        // Only include signature if {{ tech_signature }} placeholder is present
         val templateContent = template.content
         return if (templateContent.contains(MessageTemplate.KEY_TECH_SIGNATURE)) {
-            // Use placeholder system - signature is embedded in template
+            // Use placeholder system - signature is embedded where user placed it
             MessageTemplate.generate(templateContent, customerData, techProfile)
         } else {
-            // Legacy behavior - append signature at end for templates without placeholder
-            val baseMessage = MessageTemplate.generate(templateContent, customerData)
-            baseMessage + buildSignature(techProfile)
+            // No placeholder = no signature (user opted out)
+            MessageTemplate.generate(templateContent, customerData)
         }
-    }
-
-    private fun buildSignature(profile: TechProfile): String {
-        val lines = listOf(profile.name, profile.title, profile.dept)
-            .map { it.trim() }
-            .filter { it.isNotBlank() }
-
-        return if (lines.isEmpty()) "" else "\n\n" + lines.joinToString("\n")
     }
 }

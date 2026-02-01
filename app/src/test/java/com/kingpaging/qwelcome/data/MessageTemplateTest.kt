@@ -90,7 +90,7 @@ class MessageTemplateTest {
         
         val result = MessageTemplate.generate(template, data, profile)
         
-        assertEquals("Message\n\nJohn Tech\nInstaller, Field Services", result)
+        assertEquals("Message\n\nJohn Tech\nInstaller\nField Services", result)
     }
 
     @Test
@@ -145,7 +145,7 @@ class MessageTemplateTest {
 
         val result = MessageTemplate.generate(template, data, profile)
 
-        assertEquals("Manager, Operations", result)
+        assertEquals("Manager\nOperations", result)
     }
 
     @Test

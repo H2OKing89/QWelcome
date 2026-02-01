@@ -87,6 +87,8 @@
     <string name="action_show_qr">Show QR</string>
     <string name="hint_qr_enter_both">Enter SSID + password to generate</string>
     <string name="hint_qr_enter_ssid">Enter SSID</string>
+    <string name="hint_qr_enter_ssid_open">Enter SSID to generate</string>
+    <string name="hint_qr_open_network">%1$s (Open Network)</string>
     <string name="hint_qr_password_length">Password needs 8+ characters (%1$d/8)</string>
     <string name="content_desc_new_customer">New Customer</string>
     <string name="content_desc_settings">Settings</string>
@@ -118,4 +120,12 @@
         <item quantity="other">Successfully imported %1$d templates</item>
     </plurals>
     <string name="import_success_with_profile"> and tech profile</string>
+
+    <!-- Open Network / QR labels -->
+    <string name="label_open_no_password">Open (No Password)</string>
+
+    <!-- Template variables sheet -->
+    <string name="template_var_tech_signature">Technician signature block</string>
+    <string name="help_tap_copy">Tap the copy icon to copy a variable</string>
+    <string name="action_copy_placeholder">Copy %1$s</string>
 </resources>

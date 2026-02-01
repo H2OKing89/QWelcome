@@ -4,6 +4,8 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.google.services)
+    alias(libs.plugins.firebase.crashlytics)
 }
 
 val versionProps = rootProject.file("version.properties").inputStream().use { stream ->
@@ -67,10 +69,16 @@ dependencies {
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.datastore.core)
     implementation(libs.androidx.splashscreen)
+    // Navigation Compose
+    implementation(libs.androidx.navigation.compose)
     // QR Code generation with styling support
     implementation(libs.qrose)
     // JSON serialization for import/export
     implementation(libs.kotlinx.serialization.json)
+    // Firebase (BOM manages versions)
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.crashlytics)
+    implementation(libs.firebase.analytics)
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)

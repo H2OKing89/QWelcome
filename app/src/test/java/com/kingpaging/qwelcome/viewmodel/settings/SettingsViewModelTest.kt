@@ -213,4 +213,78 @@ class SettingsViewModelTest {
         assertTrue(vm.updateState.value is UpdateState.UpToDate)
         coVerify(exactly = 1) { UpdateChecker.checkForUpdate(any()) }
     }
+
+    // === COOLDOWN TESTS ===
+
+    @Test
+    fun `checkForUpdate within cooldown emits toast event and does not call UpdateChecker`() = runTest {
+        coEvery { UpdateChecker.checkForUpdate(any()) } returns UpdateCheckResult.UpToDate
+
+        // First check succeeds
+        vm.checkForUpdate()
+        advanceUntilIdle()
+        assertTrue(vm.updateState.value is UpdateState.UpToDate)
+
+        // Second check within cooldown should emit toast, not call UpdateChecker again
+        vm.settingsEvents.test {
+            vm.checkForUpdate()
+            advanceUntilIdle()
+
+            val event = awaitItem()
+            assertTrue(event is SettingsEvent.ShowToast)
+            assertTrue((event as SettingsEvent.ShowToast).message.contains("try again in"))
+        }
+
+        // UpdateChecker should only have been called once
+        coVerify(exactly = 1) { UpdateChecker.checkForUpdate(any()) }
+    }
+
+    @Test
+    fun `checkForUpdate after cooldown expired proceeds normally`() = runTest {
+        coEvery { UpdateChecker.checkForUpdate(any()) } returns UpdateCheckResult.UpToDate
+
+        // First check
+        vm.checkForUpdate()
+        advanceUntilIdle()
+
+        // Reset cooldown by setting lastCheckTimeMillis to 0
+        vm.lastCheckTimeMillis = 0L
+
+        // Second check should proceed
+        vm.checkForUpdate()
+        advanceUntilIdle()
+
+        coVerify(exactly = 2) { UpdateChecker.checkForUpdate(any()) }
+    }
+
+    // === RATE LIMIT TESTS ===
+
+    @Test
+    fun `rate limited with retry seconds sets Error state with retry info`() = runTest {
+        coEvery { UpdateChecker.checkForUpdate(any()) } returns
+                UpdateCheckResult.RateLimited(retryAfterSeconds = 42)
+
+        vm.checkForUpdate()
+        advanceUntilIdle()
+
+        val state = vm.updateState.value
+        assertTrue(state is UpdateState.Error)
+        val message = (state as UpdateState.Error).message
+        assertTrue(message.contains("42"))
+        assertTrue(message.contains("Rate limited"))
+    }
+
+    @Test
+    fun `rate limited without retry seconds sets Error state with generic message`() = runTest {
+        coEvery { UpdateChecker.checkForUpdate(any()) } returns
+                UpdateCheckResult.RateLimited(retryAfterSeconds = null)
+
+        vm.checkForUpdate()
+        advanceUntilIdle()
+
+        val state = vm.updateState.value
+        assertTrue(state is UpdateState.Error)
+        val message = (state as UpdateState.Error).message
+        assertTrue(message.contains("Try again later"))
+    }
 }
