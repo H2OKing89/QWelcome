@@ -154,7 +154,7 @@ private fun getPlaceholderDescription(key: String): String {
         MessageTemplate.KEY_SSID -> stringResource(R.string.template_var_ssid)
         MessageTemplate.KEY_PASSWORD -> stringResource(R.string.template_var_password)
         MessageTemplate.KEY_ACCOUNT_NUMBER -> stringResource(R.string.template_var_account_number)
-        MessageTemplate.KEY_TECH_SIGNATURE -> stringResource(R.string.template_var_tech_name)
+        MessageTemplate.KEY_TECH_SIGNATURE -> stringResource(R.string.template_var_tech_signature)
         else -> ""
     }
 }

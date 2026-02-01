@@ -427,11 +427,11 @@ fun CustomerIntakeScreen(
                 val qrSectionEnabled = qrEnabled
 
                 val qrHint = when {
-                    uiState.isOpenNetwork && uiState.ssid.isBlank() -> "Enter SSID to generate"
-                    uiState.isOpenNetwork && uiState.ssid.isNotBlank() -> "${uiState.ssid} (Open Network)"
-                    uiState.ssid.isBlank() && uiState.password.isBlank() -> "Enter SSID + password to generate"
-                    uiState.ssid.isBlank() -> "Enter SSID"
-                    uiState.password.length < 8 -> "Password needs 8+ characters (${uiState.password.length}/8)"
+                    uiState.isOpenNetwork && uiState.ssid.isBlank() -> stringResource(R.string.hint_qr_enter_ssid_open)
+                    uiState.isOpenNetwork && uiState.ssid.isNotBlank() -> stringResource(R.string.hint_qr_open_network, uiState.ssid)
+                    uiState.ssid.isBlank() && uiState.password.isBlank() -> stringResource(R.string.hint_qr_enter_both)
+                    uiState.ssid.isBlank() -> stringResource(R.string.hint_qr_enter_ssid)
+                    uiState.password.length < 8 -> stringResource(R.string.hint_qr_password_length, uiState.password.length)
                     else -> uiState.ssid
                 }
 

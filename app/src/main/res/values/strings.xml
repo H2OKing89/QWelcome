@@ -87,6 +87,8 @@
     <string name="action_show_qr">Show QR</string>
     <string name="hint_qr_enter_both">Enter SSID + password to generate</string>
     <string name="hint_qr_enter_ssid">Enter SSID</string>
+    <string name="hint_qr_enter_ssid_open">Enter SSID to generate</string>
+    <string name="hint_qr_open_network">%1$s (Open Network)</string>
     <string name="hint_qr_password_length">Password needs 8+ characters (%1$d/8)</string>
     <string name="content_desc_new_customer">New Customer</string>
     <string name="content_desc_settings">Settings</string>
