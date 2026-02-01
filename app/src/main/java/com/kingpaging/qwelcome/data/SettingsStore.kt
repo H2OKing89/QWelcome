@@ -159,7 +159,8 @@ class SettingsStore(private val context: Context) {
         Template(
             id = DEFAULT_TEMPLATE_ID,
             name = "Default",
-            content = context.getString(R.string.welcome_template)
+            content = context.getString(R.string.welcome_template),
+            sortOrder = Int.MIN_VALUE  // Pin built-in default at top
         )
     }
 

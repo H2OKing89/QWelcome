@@ -7,7 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-No unreleased changes.
+### Added
+
+- **Real-time Placeholder Validation** - Template editor shows missing required placeholders as you type
+- **Discard Changes Dialog** - Confirmation prompt when dismissing editor with unsaved changes
+- **Template Search** - Filter templates by name in the template list
+- **Interactive Placeholder Chips** - Tap chips to insert placeholders at cursor position
+- **Keyboard Navigation** - Name field → Next → focuses Content field in template editor
+- `Template.sortOrder` field for custom template ordering (default pinned at top)
+- `Template.tags` field for future categorization features
+- `Template.findMissingPlaceholders()` with whitespace-tolerant regex validation
+- `Template.hasRequiredPlaceholders()` convenience helper
+- `InteractivePlaceholderChip` component with haptic feedback
+- `CollapsiblePlaceholderChips` FlowRow component with expand/collapse
+- `PlaceholderLabels` object for short display labels
+- `TemplateTest` with 16 test cases for placeholder validation
+- `docs/WEB_PORTAL_README.md` for companion config generator web tool
+
+### Changed
+
+- **Template Editor Dialog** - Increased height to 85% for comfortable editing
+- **Template Cards** - Compact layout with always-visible action icons (edit, duplicate, delete)
+- **Settings Screen** - Removed inline template editing, now links to dedicated Templates screen
+- `TemplateListViewModel` validates required placeholders before save
+- `TemplateListUiState` now includes `searchQuery` and `validationError` fields
+
+### Removed
+
+- Inline template editing from Settings screen (~200 lines of code)
+- `safeTruncate()` helper function (no longer needed)
 
 ## [2.2.0] - 2026-02-01
 

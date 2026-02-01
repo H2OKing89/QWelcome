@@ -1,12 +1,21 @@
 package com.kingpaging.qwelcome.ui.components
 
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
@@ -461,6 +470,148 @@ fun PlaceholderChipsRow(
                 // Mark required placeholders from centralized constant
                 isRequired = placeholder in Template.REQUIRED_PLACEHOLDERS
             )
+        }
+    }
+}
+
+/**
+ * Short display labels for placeholder chips.
+ * Keeps the UI clean while inserting the full canonical token.
+ */
+object PlaceholderLabels {
+    private val SHORT_LABELS = mapOf(
+        "{{ customer_name }}" to "Customer",
+        "{{ ssid }}" to "SSID",
+        "{{ password }}" to "Password",
+        "{{ account_number }}" to "Account #",
+        "{{ tech_signature }}" to "Signature"
+    )
+    
+    fun getShortLabel(placeholder: String): String =
+        SHORT_LABELS[placeholder] ?: placeholder.removePrefix("{{ ").removeSuffix(" }}")
+}
+
+/**
+ * Interactive placeholder chip for template editing.
+ * Tapping inserts the full placeholder token at cursor.
+ * 
+ * Uses short labels for cleaner UI on small screens.
+ * Required chips have subtle emphasis (thicker border, full opacity).
+ * Optional chips are same magenta family but dimmer.
+ */
+@Composable
+fun InteractivePlaceholderChip(
+    placeholder: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    isRequired: Boolean = false
+) {
+    val isDark = LocalDarkTheme.current
+    val colorScheme = MaterialTheme.colorScheme
+    // All chips use secondary (magenta) - required is brighter, optional is dimmer
+    val chipColor = colorScheme.secondary
+    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
+    
+    // Subtle distinction: required = full emphasis, optional = reduced
+    val containerAlpha = if (isRequired) {
+        if (isDark) 0.22f else 0.16f
+    } else {
+        if (isDark) 0.12f else 0.08f
+    }
+    val borderAlpha = if (isRequired) 1f else 0.6f
+    val borderWidth = if (isRequired) 1.5.dp else 1.dp
+    val textAlpha = if (isRequired) 1f else 0.8f
+    
+    Surface(
+        onClick = {
+            haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+            onClick()
+        },
+        modifier = modifier,
+        shape = RoundedCornerShape(6.dp),
+        color = chipColor.copy(alpha = containerAlpha),
+        border = BorderStroke(
+            width = borderWidth,
+            color = chipColor.copy(alpha = borderAlpha)
+        )
+    ) {
+        Text(
+            text = PlaceholderLabels.getShortLabel(placeholder),
+            style = MaterialTheme.typography.labelSmall,
+            color = chipColor.copy(alpha = textAlpha),
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+        )
+    }
+}
+
+/**
+ * Collapsible flow row of interactive placeholder chips for template editor.
+ * 
+ * Features:
+ * - Wraps chips into multiple rows (no horizontal scroll)
+ * - Collapsed mode shows maxRows with "More" toggle
+ * - Smooth expand/collapse animation
+ * - Haptic feedback on chip tap
+ * 
+ * @param placeholders List of (placeholder, description) pairs
+ * @param onChipClick Called with full placeholder token when chip is tapped
+ * @param collapsedMaxRows Maximum rows to show when collapsed (0 = no limit)
+ * @param showOverflowToggle Whether to show "More/Less" toggle when content overflows
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun CollapsiblePlaceholderChips(
+    placeholders: List<Pair<String, String>>,
+    onChipClick: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    collapsedMaxRows: Int = 2,
+    showOverflowToggle: Boolean = true
+) {
+    var isExpanded by remember { mutableStateOf(false) }
+    // Track if content actually overflows (more than collapsedMaxRows)
+    var hasOverflow by remember { mutableStateOf(false) }
+    
+    Column(modifier = modifier) {
+        FlowRow(
+            modifier = Modifier
+                .fillMaxWidth()
+                .animateContentSize(),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+            // Use maxLines to limit visible rows when collapsed (no deprecated overflow param)
+            maxLines = if (!isExpanded && collapsedMaxRows > 0) collapsedMaxRows else Int.MAX_VALUE
+        ) {
+            placeholders.forEachIndexed { index, (placeholder, _) ->
+                val isRequired = placeholder in Template.REQUIRED_PLACEHOLDERS
+                InteractivePlaceholderChip(
+                    placeholder = placeholder,
+                    onClick = { onChipClick(placeholder) },
+                    isRequired = isRequired
+                )
+            }
+        }
+        
+        // Measure if we need overflow toggle (simplified: show if > 4 chips and collapsing)
+        val needsToggle = showOverflowToggle && placeholders.size > 4 && collapsedMaxRows > 0
+        
+        if (needsToggle) {
+            NeonButton(
+                onClick = { isExpanded = !isExpanded },
+                style = NeonButtonStyle.TERTIARY,
+                modifier = Modifier
+                    .align(Alignment.End)
+                    .padding(top = 4.dp)
+            ) {
+                Text(
+                    if (isExpanded) "Less" else "More",
+                    style = MaterialTheme.typography.labelSmall
+                )
+                Icon(
+                    if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
         }
     }
 }
