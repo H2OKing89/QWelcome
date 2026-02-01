@@ -12,6 +12,12 @@ class FakeNavigator : Navigator {
     val shareCalls = mutableListOf<ShareCall>()
     val copyCalls = mutableListOf<CopyCall>()
 
+    /**
+     * Controls whether copyToClipboard succeeds or fails.
+     * Set to false to test clipboard failure handling.
+     */
+    var clipboardSucceeds: Boolean = true
+
     override fun openSms(phoneNumber: String, message: String) {
         smsCalls.add(SmsCall(phoneNumber, message))
     }
@@ -22,6 +28,6 @@ class FakeNavigator : Navigator {
 
     override fun copyToClipboard(label: String, text: String): Boolean {
         copyCalls.add(CopyCall(label, text))
-        return true
+        return clipboardSucceeds
     }
 }
