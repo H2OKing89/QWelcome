@@ -7,7 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-No unreleased changes.
+### Fixed
+
+- **Issue 2:** Removed unused `template_var_service_type` string resource
+- **Issue 3:** Auto-clear timeout now persists across process death using `SavedStateHandle`
+- **Issue 4:** Switched to `SystemClock.elapsedRealtime()` for interval timing (immune to clock changes)
+- **Issue 5:** Added error handling and accurate feedback for clipboard operations
+
+### Added
+
+- `TimeProvider` interface for testable, monotonic time sources
+- `FakeTimeProvider` for unit tests with manual time control
+- 3 new unit tests for auto-clear and process death scenarios
+
+### Changed
+
+- `CustomerIntakeViewModel` now uses `SavedStateHandle` to persist background timestamp
+- `Navigator.copyToClipboard()` now returns `Boolean` to indicate success/failure
+- All interval timing uses monotonic clock instead of wall clock
 
 ## [2.1.0] - 2026-01-30
 
