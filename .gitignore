@@ -17,5 +17,9 @@ captures/
 # Firebase - contains API keys and should not be committed
 app/google-services.json
 
+# Release signing keystore - NEVER commit this!
+*.keystore
+*.jks
+
 # Claude Code local settings (machine-specific)
 **/.claude/settings.local.json

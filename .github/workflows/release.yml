@@ -61,8 +61,17 @@ jobs:
         }
         EOF
 
-    - name: Build release APK
+    - name: Decode keystore
+      run: |
+        echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > app/qwelcome-release.keystore
+
+    - name: Build signed release APK
       run: ./gradlew assembleRelease
+      env:
+        KEYSTORE_FILE: app/qwelcome-release.keystore
+        KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        KEY_ALIAS: qwelcome
+        KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
     - name: Get version from tag
       id: get_version
@@ -93,14 +102,14 @@ jobs:
         draft: false
         prerelease: false
         files: |
-          app/build/outputs/apk/release/app-release-unsigned.apk
+          app/build/outputs/apk/release/app-release.apk
         body: |
           ## Q Welcome v${{ steps.get_version.outputs.VERSION }}
 
           ${{ steps.changelog.outputs.BODY }}
 
           ### Installation
-          1. Download `app-release-unsigned.apk`
+          1. Download `app-release.apk`
           2. Enable "Install from unknown sources" on your Android device
           3. Install the APK
       env:
