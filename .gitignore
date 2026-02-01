@@ -14,5 +14,8 @@ captures/
 # Local
 /local.properties
 
+# Firebase - contains API keys and should not be committed
+app/google-services.json
+
 # Claude Code local settings (machine-specific)
 **/.claude/settings.local.json
