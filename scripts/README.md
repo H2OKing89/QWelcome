@@ -24,7 +24,9 @@ Use sparingly — PRs exist for a reason!
 
 ## Version Bumps
 
-Use `bump-version.sh` to create releases. It updates the version, rewrites the changelog, commits, and tags in one step.
+Use `bump-version.sh` (Linux/Mac/Git Bash) or `bump-version.ps1` (Windows PowerShell) to create releases. It updates the version, rewrites the changelog, commits, and tags in one step.
+
+### Linux / Mac / Git Bash
 
 ```bash
 # Increment patch version (e.g., 2.0.0 -> 2.0.1)
@@ -44,6 +46,28 @@ scripts/bump-version.sh patch --push
 
 # Skip changelog validation (not recommended)
 scripts/bump-version.sh patch --force
+```
+
+### Windows PowerShell
+
+```powershell
+# Increment patch version (e.g., 2.0.0 -> 2.0.1)
+.\scripts\bump-version.ps1 patch
+
+# Increment minor version (e.g., 2.0.0 -> 2.1.0)
+.\scripts\bump-version.ps1 minor
+
+# Increment major version (e.g., 2.0.0 -> 3.0.0)
+.\scripts\bump-version.ps1 major
+
+# Set an explicit version
+.\scripts\bump-version.ps1 2.5.0
+
+# Bump and push to remote in one step
+.\scripts\bump-version.ps1 patch -Push
+
+# Skip changelog validation (not recommended)
+.\scripts\bump-version.ps1 patch -Force
 ```
 
 ### What the script does
