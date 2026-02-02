@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No unreleased changes.
 
+## [2.3.1] - 2026-02-02
+
+### Fixed
+
+- **Tech Profile Import Sync** - Settings screen now immediately displays imported tech profile data (name, title, dept) without requiring navigation away and back
+- **Legacy JSON Support** - Added backward compatibility for older exports using `"area"` field instead of `"dept"`
+
+### Changed
+
+- Added `LaunchedEffect` in SettingsScreen to sync local state with imported data
+- Enhanced `ExportedTechProfile` with fallback logic for area/dept fields
+
 ## [2.3.0] - 2026-02-01
 
 ### Added
