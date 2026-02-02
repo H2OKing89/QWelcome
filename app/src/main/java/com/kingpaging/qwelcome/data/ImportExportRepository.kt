@@ -367,7 +367,7 @@ class ImportExportRepository(private val settingsStore: SettingsStore) {
                     TechProfile(
                         name = backup.techProfile.name,
                         title = backup.techProfile.title,
-                        dept = backup.techProfile.dept
+                        dept = backup.techProfile.getDepartment()
                     )
                 )
             }

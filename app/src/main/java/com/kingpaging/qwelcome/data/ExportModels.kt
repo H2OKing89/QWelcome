@@ -96,10 +96,17 @@ data class TemplatePack(
  */
 @Serializable
 data class ExportedTechProfile(
-    val name: String,
-    val title: String,
-    val dept: String
-)
+    val name: String = "",
+    val title: String = "",
+    @kotlinx.serialization.SerialName("dept") val dept: String = "",
+    // Legacy field name for backward compatibility - mapped to dept
+    @kotlinx.serialization.SerialName("area") val area: String = ""
+) {
+    /**
+     * Get the department/area value, preferring dept over legacy area field.
+     */
+    fun getDepartment(): String = dept.ifEmpty { area }
+}
 
 /**
  * Default settings for templates.

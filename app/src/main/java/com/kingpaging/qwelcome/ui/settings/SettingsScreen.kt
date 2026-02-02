@@ -74,6 +74,13 @@ fun SettingsScreen(
     var title by rememberSaveable(currentProfile) { mutableStateOf(currentProfile.title) }
     var dept by rememberSaveable(currentProfile) { mutableStateOf(currentProfile.dept) }
 
+    // Update local state when currentProfile changes (e.g., after import on another screen)
+    LaunchedEffect(currentProfile) {
+        name = currentProfile.name
+        title = currentProfile.title
+        dept = currentProfile.dept
+    }
+
     // Detect unsaved changes - only profile changes now (template editing moved to TemplateListScreen)
     val hasUnsavedChanges by remember(name, title, dept, currentProfile) {
         derivedStateOf {
