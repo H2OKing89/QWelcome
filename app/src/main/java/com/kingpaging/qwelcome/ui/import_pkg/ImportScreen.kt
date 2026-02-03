@@ -63,6 +63,7 @@ import com.kingpaging.qwelcome.ui.components.NeonButton
 import com.kingpaging.qwelcome.ui.components.NeonButtonStyle
 import com.kingpaging.qwelcome.ui.components.NeonPanel
 import com.kingpaging.qwelcome.ui.theme.LocalCyberColors
+import com.kingpaging.qwelcome.util.rememberHapticFeedback
 import com.kingpaging.qwelcome.viewmodel.import_pkg.ImportEvent
 import com.kingpaging.qwelcome.viewmodel.import_pkg.ImportStep
 
@@ -134,6 +135,8 @@ fun ImportScreen(
 
     BackHandler { onBack() }
 
+    val haptic = rememberHapticFeedback()
+
     CyberpunkBackdrop {
         Scaffold(
             containerColor = Color.Transparent,
@@ -141,7 +144,7 @@ fun ImportScreen(
                 TopAppBar(
                     title = { Text("Import", color = MaterialTheme.colorScheme.primary) },
                     navigationIcon = {
-                        IconButton(onClick = onBack) {
+                        IconButton(onClick = { haptic(); onBack() }) {
                             Icon(
                                 Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = "Back",

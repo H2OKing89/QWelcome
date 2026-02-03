@@ -93,6 +93,7 @@ import com.kingpaging.qwelcome.ui.components.NeonButton
 import com.kingpaging.qwelcome.ui.components.NeonButtonStyle
 import com.kingpaging.qwelcome.ui.components.NeonOutlinedField
 import com.kingpaging.qwelcome.ui.theme.LocalDarkTheme
+import com.kingpaging.qwelcome.util.rememberHapticFeedback
 import com.kingpaging.qwelcome.viewmodel.templates.TemplateListEvent
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
@@ -113,6 +114,7 @@ fun TemplateListScreen(
     val vm = LocalTemplateListViewModel.current
     val context = LocalContext.current
     val uiState by vm.uiState.collectAsState()
+    val haptic = rememberHapticFeedback()
 
     // Handle system back button
     BackHandler {
@@ -184,6 +186,7 @@ fun TemplateListScreen(
                     title = { Text("Templates", color = MaterialTheme.colorScheme.primary) },
                     navigationIcon = {
                         IconButton(onClick = {
+                            haptic()
                             if (uiState.editingTemplate != null) {
                                 vm.cancelEditing()
                             } else {
@@ -205,6 +208,7 @@ fun TemplateListScreen(
             floatingActionButton = {
                 FloatingActionButton(
                     onClick = {
+                        haptic()
                         // Create a placeholder template for "new" using explicit marker
                         vm.startEditing(Template(id = NEW_TEMPLATE_ID, name = "", content = ""))
                     },
@@ -256,7 +260,7 @@ fun TemplateListScreen(
                             singleLine = true,
                             trailingIcon = {
                                 if (uiState.searchQuery.isNotEmpty()) {
-                                    IconButton(onClick = { vm.updateSearchQuery("") }) {
+                                    IconButton(onClick = { haptic(); vm.updateSearchQuery("") }) {
                                         Icon(
                                             Icons.Default.Search,
                                             contentDescription = "Clear search",
@@ -293,10 +297,10 @@ fun TemplateListScreen(
                             template = template,
                             isActive = template.id == uiState.activeTemplateId,
                             isDefault = template.id == DEFAULT_TEMPLATE_ID,
-                            onSelect = { vm.setActiveTemplate(template.id) },
-                            onEdit = { vm.startEditing(template) },
-                            onDuplicate = { vm.duplicateTemplate(template) },
-                            onDelete = { vm.showDeleteConfirmation(template) }
+                            onSelect = { haptic(); vm.setActiveTemplate(template.id) },
+                            onEdit = { haptic(); vm.startEditing(template) },
+                            onDuplicate = { haptic(); vm.duplicateTemplate(template) },
+                            onDelete = { haptic(); vm.showDeleteConfirmation(template) }
                         )
                     }
                     
@@ -332,6 +336,7 @@ private fun TemplateCard(
     onDelete: () -> Unit
 ) {
     val isDark = LocalDarkTheme.current
+    val haptic = rememberHapticFeedback()
 
     Card(
         onClick = onSelect,
@@ -404,7 +409,10 @@ private fun TemplateCard(
                 ) {
                     // Edit button - for default template, triggers duplicate instead
                     IconButton(
-                        onClick = if (isDefault) onDuplicate else onEdit,
+                        onClick = {
+                            haptic()
+                            if (isDefault) onDuplicate() else onEdit()
+                        },
                         modifier = Modifier.size(36.dp)
                     ) {
                         Icon(
@@ -417,7 +425,10 @@ private fun TemplateCard(
 
                     // Duplicate button
                     IconButton(
-                        onClick = onDuplicate,
+                        onClick = {
+                            haptic()
+                            onDuplicate()
+                        },
                         modifier = Modifier.size(36.dp)
                     ) {
                         Icon(
@@ -431,7 +442,10 @@ private fun TemplateCard(
                     // Delete button (hidden for default template)
                     if (!isDefault) {
                         IconButton(
-                            onClick = onDelete,
+                            onClick = {
+                                haptic()
+                                onDelete()
+                            },
                             modifier = Modifier.size(36.dp)
                         ) {
                             Icon(

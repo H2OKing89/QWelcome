@@ -50,6 +50,7 @@ import com.kingpaging.qwelcome.ui.components.NeonButtonStyle
 import com.kingpaging.qwelcome.ui.components.NeonMagentaButton
 import com.kingpaging.qwelcome.ui.components.NeonOutlinedField
 import com.kingpaging.qwelcome.ui.components.NeonPanel
+import com.kingpaging.qwelcome.util.rememberHapticFeedback
 import com.kingpaging.qwelcome.viewmodel.settings.SettingsEvent
 import com.kingpaging.qwelcome.viewmodel.settings.UpdateState
 
@@ -92,6 +93,7 @@ fun SettingsScreen(
 
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    val haptic = rememberHapticFeedback()
 
     // Collect one-shot settings events (Toasts) with lifecycle awareness
     LaunchedEffect(lifecycleOwner, vm.settingsEvents) {
@@ -114,6 +116,7 @@ fun SettingsScreen(
             text = { Text("You have unsaved changes that will be lost.") },
             confirmButton = {
                 TextButton(onClick = {
+                    haptic()
                     showDiscardDialog = false
                     onBack()
                 }) {
@@ -121,7 +124,7 @@ fun SettingsScreen(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDiscardDialog = false }) {
+                TextButton(onClick = { haptic(); showDiscardDialog = false }) {
                     Text("Keep editing")
                 }
             }
@@ -141,6 +144,7 @@ fun SettingsScreen(
                     title = { Text("Settings") },
                     navigationIcon = {
                         IconButton(onClick = {
+                            haptic()
                             if (hasUnsavedChanges) showDiscardDialog = true else onBack()
                         }) {
                             Icon(
@@ -343,6 +347,7 @@ fun SettingsScreen(
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     TextButton(
                                         onClick = {
+                                            haptic()
                                             val uri = state.downloadUrl.toUri()
                                             // Only allow https URLs for security
                                             if (uri.scheme != "https" && uri.scheme != "http") return@TextButton
@@ -364,7 +369,7 @@ fun SettingsScreen(
                                         Text("v${state.version} available")
                                     }
                                     IconButton(
-                                        onClick = { vm.dismissUpdate() },
+                                        onClick = { haptic(); vm.dismissUpdate() },
                                         modifier = Modifier.size(24.dp)
                                     ) {
                                         Icon(
@@ -391,7 +396,7 @@ fun SettingsScreen(
                     
                     // Check for updates button
                     OutlinedButton(
-                        onClick = { vm.checkForUpdate() },
+                        onClick = { haptic(); vm.checkForUpdate() },
                         modifier = Modifier.fillMaxWidth(),
                         enabled = updateState !is UpdateState.Checking
                     ) {

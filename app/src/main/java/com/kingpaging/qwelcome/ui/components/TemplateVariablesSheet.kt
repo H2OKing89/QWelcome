@@ -31,6 +31,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.data.MessageTemplate
+import com.kingpaging.qwelcome.util.rememberHapticFeedback
 
 /**
  * Bottom sheet displaying available template placeholders.
@@ -109,6 +110,7 @@ private fun VariableItem(
     description: String,
     onCopy: () -> Unit
 ) {
+    val haptic = rememberHapticFeedback()
     NeonPanel(
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -132,7 +134,7 @@ private fun VariableItem(
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                 )
             }
-            IconButton(onClick = onCopy) {
+            IconButton(onClick = { haptic(); onCopy() }) {
                 Icon(
                     Icons.Default.ContentCopy,
                     contentDescription = stringResource(R.string.action_copy_placeholder, placeholder),

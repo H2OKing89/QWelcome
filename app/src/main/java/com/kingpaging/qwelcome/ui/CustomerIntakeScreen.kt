@@ -241,6 +241,7 @@ fun CustomerIntakeScreen(
                                         }
                                     },
                                     onClick = {
+                                        hapticFeedback()
                                         templateListViewModel.setActiveTemplate(template.id)
                                         templateDropdownExpanded = false
                                     }
@@ -252,6 +253,7 @@ fun CustomerIntakeScreen(
                             DropdownMenuItem(
                                 text = { Text("Manage Templates…", color = MaterialTheme.colorScheme.tertiary) },
                                 onClick = {
+                                    hapticFeedback()
                                     templateDropdownExpanded = false
                                     onOpenTemplates()
                                 }
@@ -292,7 +294,10 @@ fun CustomerIntakeScreen(
                             .fillMaxWidth()
                             .toggleable(
                                 value = uiState.isOpenNetwork,
-                                onValueChange = { customerIntakeViewModel.onOpenNetworkChanged(it) },
+                                onValueChange = {
+                                    hapticFeedback()
+                                    customerIntakeViewModel.onOpenNetworkChanged(it)
+                                },
                                 role = Role.Checkbox
                             )
                             .padding(vertical = 4.dp),

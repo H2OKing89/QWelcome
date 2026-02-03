@@ -82,6 +82,7 @@ import com.kingpaging.qwelcome.ui.components.NeonButtonStyle
 import com.kingpaging.qwelcome.ui.components.NeonMagentaButton
 import com.kingpaging.qwelcome.ui.components.NeonPanel
 import com.kingpaging.qwelcome.ui.theme.LocalDarkTheme
+import com.kingpaging.qwelcome.util.rememberHapticFeedback
 import com.kingpaging.qwelcome.viewmodel.export.ExportEvent
 import com.kingpaging.qwelcome.viewmodel.export.ExportType
 
@@ -93,6 +94,7 @@ fun ExportScreen(
     val vm = LocalExportViewModel.current
     val context = LocalContext.current
     val uiState by vm.uiState.collectAsStateWithLifecycle()
+    val haptic = rememberHapticFeedback()
 
     // Reset ViewModel state when entering the screen to clear any stale events
     LaunchedEffect(Unit) {
@@ -170,7 +172,7 @@ fun ExportScreen(
                 TopAppBar(
                     title = { Text("Export", color = MaterialTheme.colorScheme.primary) },
                     navigationIcon = {
-                        IconButton(onClick = onBack) {
+                        IconButton(onClick = { haptic(); onBack() }) {
                             Icon(
                                 Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = "Back",
@@ -373,6 +375,7 @@ private fun TemplateSelectionDialog(
     val isDark = LocalDarkTheme.current
     val allSelected = templates.isNotEmpty() && selectedIds.size == templates.size
     val selectedCount = selectedIds.size
+    val haptic = rememberHapticFeedback()
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(
@@ -398,13 +401,13 @@ private fun TemplateSelectionDialog(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { onToggleSelectAll() }
+                        .clickable { haptic(); onToggleSelectAll() }
                         .padding(vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Checkbox(
                         checked = allSelected,
-                        onCheckedChange = { onToggleSelectAll() },
+                        onCheckedChange = { haptic(); onToggleSelectAll() },
                         colors = CheckboxDefaults.colors(
                             checkedColor = MaterialTheme.colorScheme.primary,
                             uncheckedColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
@@ -445,7 +448,7 @@ private fun TemplateSelectionDialog(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End
                 ) {
-                    TextButton(onClick = onDismiss) {
+                    TextButton(onClick = { haptic(); onDismiss() }) {
                         Text("Cancel")
                     }
                     Spacer(Modifier.width(8.dp))
@@ -474,16 +477,17 @@ private fun TemplateSelectionItem(
     isSelected: Boolean,
     onToggle: () -> Unit
 ) {
+    val haptic = rememberHapticFeedback()
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onToggle() }
+            .clickable { haptic(); onToggle() }
             .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Checkbox(
             checked = isSelected,
-            onCheckedChange = { onToggle() },
+            onCheckedChange = { haptic(); onToggle() },
             colors = CheckboxDefaults.colors(
                 checkedColor = MaterialTheme.colorScheme.secondary,
                 uncheckedColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
