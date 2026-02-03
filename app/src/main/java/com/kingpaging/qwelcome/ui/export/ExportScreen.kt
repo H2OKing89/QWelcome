@@ -523,9 +523,13 @@ private fun ExportOptionCard(
     onClick: () -> Unit
 ) {
     val isDark = LocalDarkTheme.current
+    val haptic = rememberHapticFeedback()
     
     Card(
-        onClick = onClick,
+        onClick = {
+            haptic()
+            onClick()
+        },
         enabled = !isLoading,
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
