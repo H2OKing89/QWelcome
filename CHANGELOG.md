@@ -7,7 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-No unreleased changes.
+### Added
+
+- **Comprehensive Haptic Feedback** - All interactive UI elements now provide tactile feedback for improved user experience:
+  - Back navigation buttons across all screens
+  - Template list actions (create, edit, duplicate, delete)
+  - Export screen checkboxes and export option cards
+  - Settings screen buttons (save, discard, check for updates)
+  - Customer intake dropdown menu items and network toggle
+  - Template variable copy buttons
+  - Search field clear button
 
 ## [2.3.1] - 2026-02-02
 
