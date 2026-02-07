@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+No unreleased changes.
+
+## [2.3.3] - 2026-02-07
+
 ### Added
 
 - **Comprehensive Haptic Feedback** - All interactive UI elements now provide tactile feedback for improved user experience:
