@@ -80,6 +80,7 @@ import com.kingpaging.qwelcome.ui.components.QWelcomeHeader
 import com.kingpaging.qwelcome.ui.theme.LocalCyberColors
 import com.kingpaging.qwelcome.ui.theme.LocalDarkTheme
 import com.kingpaging.qwelcome.util.rememberHapticFeedback
+import com.kingpaging.qwelcome.util.SoundManager
 import com.kingpaging.qwelcome.viewmodel.UiEvent
 import kotlinx.coroutines.launch
 
@@ -124,7 +125,12 @@ fun CustomerIntakeScreen(
                 is UiEvent.ShowToast -> {
                     Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
                 }
+                is UiEvent.ValidationFailed,
+                is UiEvent.ActionFailed -> {
+                    SoundManager.playBeep()
+                }
                 is UiEvent.RateLimitExceeded -> {
+                    SoundManager.playBeep()
                     Toast.makeText(context, context.getString(R.string.toast_rate_limit), Toast.LENGTH_LONG).show()
                 }
             }

@@ -42,6 +42,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -56,7 +57,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
 import com.kingpaging.qwelcome.R
+import com.kingpaging.qwelcome.data.MAX_IMPORT_SIZE_BYTES
 import com.kingpaging.qwelcome.data.ImportValidationResult
+import com.kingpaging.qwelcome.data.formatBytesAsMb
 import com.kingpaging.qwelcome.di.LocalImportViewModel
 import com.kingpaging.qwelcome.ui.components.CyberpunkBackdrop
 import com.kingpaging.qwelcome.ui.components.NeonButton
@@ -64,8 +67,11 @@ import com.kingpaging.qwelcome.ui.components.NeonButtonStyle
 import com.kingpaging.qwelcome.ui.components.NeonPanel
 import com.kingpaging.qwelcome.ui.theme.LocalCyberColors
 import com.kingpaging.qwelcome.util.rememberHapticFeedback
+import com.kingpaging.qwelcome.util.SoundManager
 import com.kingpaging.qwelcome.viewmodel.import_pkg.ImportEvent
 import com.kingpaging.qwelcome.viewmodel.import_pkg.ImportStep
+import java.io.ByteArrayOutputStream
+import java.io.IOException
 
 @Suppress("LocalContextGetResourceValueCall", "LocalContextResourcesRead")
 @Composable
@@ -76,6 +82,7 @@ fun ImportScreen(
     val vm = LocalImportViewModel.current
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
+    val maxImportSizeLabel = remember { formatBytesAsMb(MAX_IMPORT_SIZE_BYTES.toLong()) }
     val uiState by vm.uiState.collectAsStateWithLifecycle()
 
     // Reset ViewModel state when entering the screen to clear any stale events
@@ -89,18 +96,29 @@ fun ImportScreen(
         if (uri != null) {
             try {
                 context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                    val json = inputStream.bufferedReader().use { it.readText() }
+                    val json = readUtf8TextWithLimit(inputStream, MAX_IMPORT_SIZE_BYTES)
                     vm.onJsonContentReceived(json)
                 } ?: Toast.makeText(context, R.string.toast_could_not_open_file, Toast.LENGTH_LONG).show()
+            } catch (e: InputTooLargeException) {
+                Log.w("ImportScreen", "Import input exceeds size limit", e)
+                SoundManager.playBeep()
+                Toast.makeText(
+                    context,
+                    context.getString(R.string.toast_import_too_large, maxImportSizeLabel),
+                    Toast.LENGTH_LONG
+                ).show()
             } catch (e: SecurityException) {
                 Log.w("ImportScreen", "File permission denied", e)
+                SoundManager.playBeep()
                 Toast.makeText(context, R.string.toast_permission_denied_read, Toast.LENGTH_LONG).show()
-            } catch (e: java.io.IOException) {
+            } catch (e: IOException) {
                 Log.w("ImportScreen", "File read error", e)
+                SoundManager.playBeep()
                 val detail = e.message ?: e.javaClass.simpleName
                 Toast.makeText(context, context.getString(R.string.toast_error_reading_file, detail), Toast.LENGTH_LONG).show()
             } catch (e: Exception) {
                 Log.e("ImportScreen", "Unexpected file error", e)
+                SoundManager.playBeep()
                 val detail = e.message ?: e.javaClass.simpleName
                 Toast.makeText(context, context.getString(R.string.toast_unexpected_error, detail), Toast.LENGTH_LONG).show()
             }
@@ -124,6 +142,7 @@ fun ImportScreen(
                     Toast.makeText(context, message, Toast.LENGTH_LONG).show()
                 }
                 is ImportEvent.ImportFailed -> {
+                    SoundManager.playBeep()
                     Toast.makeText(context, event.message, Toast.LENGTH_LONG).show()
                 }
                 is ImportEvent.RequestFileOpen -> {
@@ -177,10 +196,20 @@ fun ImportScreen(
                                 onPaste = {
                                     try {
                                         clipboardManager.getText()?.let {
-                                            vm.onPasteContent(it.text)
+                                            if (exceedsImportLimit(it.text, MAX_IMPORT_SIZE_BYTES)) {
+                                                SoundManager.playBeep()
+                                                Toast.makeText(
+                                                    context,
+                                                    context.getString(R.string.toast_import_too_large, maxImportSizeLabel),
+                                                    Toast.LENGTH_LONG
+                                                ).show()
+                                            } else {
+                                                vm.onPasteContent(it.text)
+                                            }
                                         } ?: Toast.makeText(context, R.string.toast_clipboard_empty, Toast.LENGTH_SHORT).show()
                                     } catch (e: SecurityException) {
                                         Log.w("ImportScreen", "Clipboard access denied", e)
+                                        SoundManager.playBeep()
                                         Toast.makeText(context, R.string.toast_cannot_access_clipboard, Toast.LENGTH_SHORT).show()
                                     }
                                 }
@@ -202,6 +231,33 @@ fun ImportScreen(
             }
         }
     }
+}
+
+private class InputTooLargeException(maxBytes: Int) :
+    IOException("Input exceeds ${formatBytesAsMb(maxBytes.toLong())} limit")
+
+private fun readUtf8TextWithLimit(inputStream: java.io.InputStream, maxBytes: Int): String {
+    val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+    val output = ByteArrayOutputStream(minOf(maxBytes, 1024 * 1024))
+    var totalRead = 0
+
+    while (true) {
+        val bytesRead = inputStream.read(buffer)
+        if (bytesRead == -1) break
+        totalRead += bytesRead
+        if (totalRead > maxBytes) {
+            throw InputTooLargeException(maxBytes)
+        }
+        output.write(buffer, 0, bytesRead)
+    }
+
+    return output.toString(Charsets.UTF_8.name())
+}
+
+private fun exceedsImportLimit(text: CharSequence, maxBytes: Int): Boolean {
+    if (text.length > maxBytes) return true
+    if (text.length <= maxBytes / 2) return false
+    return text.toString().toByteArray(Charsets.UTF_8).size > maxBytes
 }
 
 @Composable

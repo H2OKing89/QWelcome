@@ -28,6 +28,10 @@ sealed class UiEvent {
     data class ShowToast(val message: String) : UiEvent()
     /** Emitted when message is successfully copied to clipboard - triggers visual feedback */
     object CopySuccess : UiEvent()
+    /** Emitted when user action is blocked by validation or other issue */
+    object ValidationFailed : UiEvent()
+    /** Emitted when an action fails after button press */
+    object ActionFailed : UiEvent()
     object RateLimitExceeded : UiEvent()
 }
 
@@ -209,12 +213,14 @@ class CustomerIntakeViewModel(
      */
     fun onSmsClicked(navigator: Navigator) = viewModelScope.launch {
         if (!checkRateLimit()) return@launch
-        if (validateInputs(requirePhone = true)) {
-            val message = generateMessage()
-            val normalizedPhone = PhoneUtils.normalize(_uiState.value.customerPhone)
-            if (normalizedPhone != null) {
-                navigator.openSms(normalizedPhone, message)
-            }
+        if (!validateInputs(requirePhone = true)) {
+            _uiEvent.emit(UiEvent.ValidationFailed)
+            return@launch
+        }
+        val message = generateMessage()
+        val normalizedPhone = PhoneUtils.normalize(_uiState.value.customerPhone)
+        if (normalizedPhone != null) {
+            navigator.openSms(normalizedPhone, message)
         }
     }
 
@@ -225,10 +231,12 @@ class CustomerIntakeViewModel(
      */
     fun onShareClicked(navigator: Navigator) = viewModelScope.launch {
         if (!checkRateLimit()) return@launch
-        if (validateInputs(requirePhone = false)) {
-            val message = generateMessage()
-            navigator.shareText(message)
+        if (!validateInputs(requirePhone = false)) {
+            _uiEvent.emit(UiEvent.ValidationFailed)
+            return@launch
         }
+        val message = generateMessage()
+        navigator.shareText(message)
     }
 
     /**
@@ -238,15 +246,18 @@ class CustomerIntakeViewModel(
      */
     fun onCopyClicked(navigator: Navigator) = viewModelScope.launch {
         if (!checkRateLimit()) return@launch
-        if (validateInputs(requirePhone = false)) {
-            val message = generateMessage()
-            val success = navigator.copyToClipboard("Customer Message", message)
-            if (success) {
-                _uiEvent.emit(UiEvent.CopySuccess)
-                _uiEvent.emit(UiEvent.ShowToast(resourceProvider.getString(R.string.toast_copied_to_clipboard)))
-            } else {
-                _uiEvent.emit(UiEvent.ShowToast(resourceProvider.getString(R.string.toast_copy_failed)))
-            }
+        if (!validateInputs(requirePhone = false)) {
+            _uiEvent.emit(UiEvent.ValidationFailed)
+            return@launch
+        }
+        val message = generateMessage()
+        val success = navigator.copyToClipboard("Customer Message", message)
+        if (success) {
+            _uiEvent.emit(UiEvent.CopySuccess)
+            _uiEvent.emit(UiEvent.ShowToast(resourceProvider.getString(R.string.toast_copied_to_clipboard)))
+        } else {
+            _uiEvent.emit(UiEvent.ActionFailed)
+            _uiEvent.emit(UiEvent.ShowToast(resourceProvider.getString(R.string.toast_copy_failed)))
         }
     }
 

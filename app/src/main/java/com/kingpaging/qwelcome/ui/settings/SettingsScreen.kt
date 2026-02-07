@@ -51,6 +51,7 @@ import com.kingpaging.qwelcome.ui.components.NeonMagentaButton
 import com.kingpaging.qwelcome.ui.components.NeonOutlinedField
 import com.kingpaging.qwelcome.ui.components.NeonPanel
 import com.kingpaging.qwelcome.util.rememberHapticFeedback
+import com.kingpaging.qwelcome.util.SoundManager
 import com.kingpaging.qwelcome.viewmodel.settings.SettingsEvent
 import com.kingpaging.qwelcome.viewmodel.settings.UpdateState
 
@@ -101,6 +102,7 @@ fun SettingsScreen(
             vm.settingsEvents.collect { event ->
                 when (event) {
                     is SettingsEvent.ShowToast -> {
+                        SoundManager.playBeep()
                         Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
                     }
                 }
@@ -350,7 +352,13 @@ fun SettingsScreen(
                                             haptic()
                                             val uri = state.downloadUrl.toUri()
                                             // Only allow https URLs for security
-                                            if (uri.scheme != "https" && uri.scheme != "http") return@TextButton
+                                            val isTrustedHttps = uri.scheme.equals("https", ignoreCase = true) &&
+                                                !uri.host.isNullOrBlank()
+                                            if (!isTrustedHttps) {
+                                                SoundManager.playBeep()
+                                                Toast.makeText(context, R.string.toast_untrusted_update_link, Toast.LENGTH_SHORT).show()
+                                                return@TextButton
+                                            }
                                             val intent = Intent(Intent.ACTION_VIEW, uri)
                                                 .addCategory(Intent.CATEGORY_BROWSABLE)
                                             try {

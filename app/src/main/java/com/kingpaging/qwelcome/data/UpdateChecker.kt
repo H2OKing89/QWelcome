@@ -11,6 +11,12 @@ import java.net.URL
 
 private const val TAG = "UpdateChecker"
 private const val GITHUB_API_URL = "https://api.github.com/repos/H2OKing89/QWelcome/releases/latest"
+private val TRUSTED_UPDATE_HOSTS = setOf(
+    "github.com",
+    "objects.githubusercontent.com",
+    "release-assets.githubusercontent.com",
+    "github-releases.githubusercontent.com"
+)
 
 /**
  * Represents the result of an update check.
@@ -110,7 +116,12 @@ object UpdateChecker {
             if (VersionComparator.isNewerVersion(latestVersion, currentVersionName)) {
                 // Find APK asset
                 val apkAsset = release.assets.find { it.name.endsWith(".apk") }
-                val downloadUrl = apkAsset?.browser_download_url ?: release.html_url
+                val apkUrl = apkAsset?.browser_download_url
+                val downloadUrl = when {
+                    apkUrl != null && isTrustedHttpsUrl(apkUrl) -> apkUrl
+                    isTrustedHttpsUrl(release.html_url) -> release.html_url
+                    else -> return@withContext UpdateCheckResult.Error("Invalid release URL")
+                }
                 
                 UpdateCheckResult.UpdateAvailable(
                     latestVersion = latestVersion,
@@ -131,4 +142,15 @@ object UpdateChecker {
         }
     }
     
+    private fun isTrustedHttpsUrl(url: String): Boolean {
+        return try {
+            val parsed = URL(url)
+            parsed.protocol.equals("https", ignoreCase = true) &&
+                parsed.host.orEmpty().lowercase() in TRUSTED_UPDATE_HOSTS
+        } catch (_: java.net.MalformedURLException) {
+            false
+        } catch (_: IllegalArgumentException) {
+            false
+        }
+    }
 }

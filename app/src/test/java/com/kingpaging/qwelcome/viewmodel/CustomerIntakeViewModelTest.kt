@@ -133,6 +133,19 @@ class CustomerIntakeViewModelTest {
     }
 
     @Test
+    fun `onSmsClicked with invalid fields emits ValidationFailed`() = runTest {
+        val navigator = FakeNavigator()
+
+        vm.uiEvent.test {
+            vm.onSmsClicked(navigator)
+            advanceUntilIdle()
+
+            val event = awaitItem()
+            assertTrue(event is UiEvent.ValidationFailed)
+        }
+    }
+
+    @Test
     fun `onSmsClicked with valid fields calls navigator openSms`() = runTest {
         val navigator = FakeNavigator()
         fillValidFields()
@@ -171,6 +184,22 @@ class CustomerIntakeViewModelTest {
 
             val event1 = awaitItem()
             assertTrue(event1 is UiEvent.CopySuccess)
+            val event2 = awaitItem()
+            assertTrue(event2 is UiEvent.ShowToast)
+        }
+    }
+
+    @Test
+    fun `onCopyClicked when clipboard fails emits ActionFailed and toast`() = runTest {
+        val navigator = FakeNavigator().apply { clipboardSucceeds = false }
+        fillValidFields()
+
+        vm.uiEvent.test {
+            vm.onCopyClicked(navigator)
+            advanceUntilIdle()
+
+            val event1 = awaitItem()
+            assertTrue(event1 is UiEvent.ActionFailed)
             val event2 = awaitItem()
             assertTrue(event2 is UiEvent.ShowToast)
         }

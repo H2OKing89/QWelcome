@@ -20,6 +20,7 @@ Android app for fiber technicians to send WiFi welcome messages. Kotlin + Jetpac
 - Build: `./gradlew assembleDebug`, `./gradlew assembleRelease` (signing needed), `./gradlew test`, `./gradlew connectedAndroidTest`, `./gradlew lintDebug`.
 - Proto changes: run `./gradlew clean` before major `.proto` edits.
 - Versioning: single source of truth in `version.properties`; release with `scripts/bump-version.sh <major|minor|patch>` which updates `CHANGELOG.md`, commits, and tags.
+- Releases: complete workflow documented in `docs/RELEASE_GUIDE.md` — covers branch strategy, PR creation, changelog formatting, tag pushing, and GitHub Release automation.
 - Git hooks: `scripts/git-hooks/pre-commit` blocks commits directly to `master`/`main` unless `--no-verify`.
 
 ## Conventions

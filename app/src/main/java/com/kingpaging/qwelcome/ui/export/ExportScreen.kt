@@ -83,8 +83,10 @@ import com.kingpaging.qwelcome.ui.components.NeonMagentaButton
 import com.kingpaging.qwelcome.ui.components.NeonPanel
 import com.kingpaging.qwelcome.ui.theme.LocalDarkTheme
 import com.kingpaging.qwelcome.util.rememberHapticFeedback
+import com.kingpaging.qwelcome.util.SoundManager
 import com.kingpaging.qwelcome.viewmodel.export.ExportEvent
 import com.kingpaging.qwelcome.viewmodel.export.ExportType
+import java.io.IOException
 
 @Suppress("LocalContextGetResourceValueCall")
 @Composable
@@ -110,11 +112,18 @@ fun ExportScreen(
             val json = vm.getPendingFileExportContent()
             if (json != null) {
                 try {
-                    context.contentResolver.openOutputStream(uri)?.use { outputStream ->
-                        outputStream.write(json.toByteArray(Charsets.UTF_8))
+                    val outputStream = context.contentResolver.openOutputStream(uri)
+                        ?: throw IOException("Could not open output stream")
+                    outputStream.use { stream ->
+                        stream.write(json.toByteArray(Charsets.UTF_8))
                     }
                     vm.onFileSaveComplete()
-                } catch (e: Exception) {
+                } catch (e: SecurityException) {
+                    SoundManager.playBeep()
+                    Toast.makeText(context, context.getString(R.string.toast_failed_save_file, e.message), Toast.LENGTH_LONG).show()
+                    vm.onFileSaveCancelled()
+                } catch (e: IOException) {
+                    SoundManager.playBeep()
                     Toast.makeText(context, context.getString(R.string.toast_failed_save_file, e.message), Toast.LENGTH_LONG).show()
                     vm.onFileSaveCancelled()
                 }
@@ -135,6 +144,7 @@ fun ExportScreen(
                     // Success is shown in UI state
                 }
                 is ExportEvent.ExportError -> {
+                    SoundManager.playBeep()
                     Toast.makeText(context, event.message, Toast.LENGTH_LONG).show()
                 }
                 is ExportEvent.CopiedToClipboard -> {

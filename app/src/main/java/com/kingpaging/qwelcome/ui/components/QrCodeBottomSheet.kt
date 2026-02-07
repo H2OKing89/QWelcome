@@ -2,6 +2,7 @@
 
 package com.kingpaging.qwelcome.ui.components
 
+import android.content.ActivityNotFoundException
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
@@ -9,6 +10,7 @@ import android.graphics.Bitmap
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
+import android.util.Log
 import android.widget.Toast
 import com.kingpaging.qwelcome.R
 import androidx.compose.foundation.Image
@@ -48,6 +50,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
+import java.io.IOException
 
 @Composable
 fun QrCodeBottomSheet(
@@ -314,30 +317,53 @@ private suspend fun saveQrCodeToGallery(
             val filename = "WiFi_QR_${ssid.replace(" ", "_")}_${System.currentTimeMillis()}.png"
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                val resolver = context.contentResolver
                 val contentValues = ContentValues().apply {
                     put(MediaStore.Images.Media.DISPLAY_NAME, filename)
                     put(MediaStore.Images.Media.MIME_TYPE, "image/png")
                     put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/QWelcome")
                 }
-                context.contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)?.let { uri ->
-                    context.contentResolver.openOutputStream(uri)?.use { stream ->
-                        bmp.compress(Bitmap.CompressFormat.PNG, 100, stream)
+                val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+                    ?: throw IOException("Failed to create media entry")
+                try {
+                    val outputStream = resolver.openOutputStream(uri)
+                        ?: throw IOException("Failed to open media output stream")
+                    outputStream.use { stream ->
+                        val encoded = bmp.compress(Bitmap.CompressFormat.PNG, 100, stream)
+                        if (!encoded) {
+                            throw IOException("Failed to encode QR PNG")
+                        }
                     }
+                } catch (e: IOException) {
+                    resolver.delete(uri, null, null)
+                    throw e
+                } catch (e: SecurityException) {
+                    resolver.delete(uri, null, null)
+                    throw e
                 }
             } else {
                 @Suppress("DEPRECATION")
                 val picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
                 val qwelcomeDir = File(picturesDir, "QWelcome")
-                qwelcomeDir.mkdirs()
+                if (!qwelcomeDir.exists() && !qwelcomeDir.mkdirs()) {
+                    throw IOException("Failed to create pictures directory")
+                }
                 val file = File(qwelcomeDir, filename)
                 FileOutputStream(file).use { stream ->
-                    bmp.compress(Bitmap.CompressFormat.PNG, 100, stream)
+                    val encoded = bmp.compress(Bitmap.CompressFormat.PNG, 100, stream)
+                    if (!encoded) {
+                        throw IOException("Failed to encode QR PNG")
+                    }
                 }
             }
             bmp
         }
         Toast.makeText(context, R.string.toast_qr_saved, Toast.LENGTH_SHORT).show()
-    } catch (e: Exception) {
+    } catch (e: SecurityException) {
+        Log.e("QrCodeBottomSheet", "Failed to save QR image", e)
+        Toast.makeText(context, R.string.toast_permission_denied, Toast.LENGTH_SHORT).show()
+    } catch (e: IOException) {
+        Log.e("QrCodeBottomSheet", "Failed to save QR image", e)
         Toast.makeText(context, context.getString(R.string.toast_failed_save, e.message), Toast.LENGTH_SHORT).show()
     } finally {
         bitmap?.recycle()
@@ -372,11 +398,16 @@ private suspend fun shareQrCode(
         }
         context.startActivity(Intent.createChooser(intent, context.getString(R.string.chooser_share_wifi_qr)))
     } catch (e: SecurityException) {
+        Log.e("QrCodeBottomSheet", "Permission denied while sharing QR code", e)
         Toast.makeText(context, R.string.toast_permission_denied, Toast.LENGTH_SHORT).show()
-    } catch (e: java.io.IOException) {
+    } catch (e: IOException) {
+        Log.e("QrCodeBottomSheet", "Failed to share QR code", e)
         Toast.makeText(context, R.string.toast_failed_create_temp, Toast.LENGTH_SHORT).show()
-    } catch (e: Exception) {
-        android.util.Log.e("QrCodeBottomSheet", "Failed to share QR code", e)
+    } catch (e: ActivityNotFoundException) {
+        Log.e("QrCodeBottomSheet", "No activity found for share intent", e)
+        Toast.makeText(context, context.getString(R.string.toast_failed_share, e.message), Toast.LENGTH_SHORT).show()
+    } catch (e: IllegalArgumentException) {
+        Log.e("QrCodeBottomSheet", "Failed to share QR code", e)
         Toast.makeText(context, context.getString(R.string.toast_failed_share, e.message), Toast.LENGTH_SHORT).show()
     } finally {
         bitmap?.recycle()
