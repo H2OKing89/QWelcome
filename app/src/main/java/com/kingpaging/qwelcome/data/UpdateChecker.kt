@@ -110,7 +110,12 @@ object UpdateChecker {
             if (VersionComparator.isNewerVersion(latestVersion, currentVersionName)) {
                 // Find APK asset
                 val apkAsset = release.assets.find { it.name.endsWith(".apk") }
-                val downloadUrl = apkAsset?.browser_download_url ?: release.html_url
+                val preferredUrl = apkAsset?.browser_download_url ?: release.html_url
+                val downloadUrl = when {
+                    isTrustedHttpsUrl(preferredUrl) -> preferredUrl
+                    isTrustedHttpsUrl(release.html_url) -> release.html_url
+                    else -> return@withContext UpdateCheckResult.Error("Invalid release URL")
+                }
                 
                 UpdateCheckResult.UpdateAvailable(
                     latestVersion = latestVersion,
@@ -128,6 +133,15 @@ object UpdateChecker {
             UpdateCheckResult.Error(e.message ?: "Unknown error")
         } finally {
             connection?.disconnect()
+        }
+    }
+    
+    private fun isTrustedHttpsUrl(url: String): Boolean {
+        return try {
+            val parsed = URL(url)
+            parsed.protocol.equals("https", ignoreCase = true) && parsed.host.isNotBlank()
+        } catch (_: Exception) {
+            false
         }
     }
     

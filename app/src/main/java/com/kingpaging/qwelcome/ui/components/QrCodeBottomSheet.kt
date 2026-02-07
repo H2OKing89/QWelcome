@@ -314,24 +314,40 @@ private suspend fun saveQrCodeToGallery(
             val filename = "WiFi_QR_${ssid.replace(" ", "_")}_${System.currentTimeMillis()}.png"
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                val resolver = context.contentResolver
                 val contentValues = ContentValues().apply {
                     put(MediaStore.Images.Media.DISPLAY_NAME, filename)
                     put(MediaStore.Images.Media.MIME_TYPE, "image/png")
                     put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/QWelcome")
                 }
-                context.contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)?.let { uri ->
-                    context.contentResolver.openOutputStream(uri)?.use { stream ->
-                        bmp.compress(Bitmap.CompressFormat.PNG, 100, stream)
+                val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+                    ?: throw java.io.IOException("Failed to create media entry")
+                try {
+                    val outputStream = resolver.openOutputStream(uri)
+                        ?: throw java.io.IOException("Failed to open media output stream")
+                    outputStream.use { stream ->
+                        val encoded = bmp.compress(Bitmap.CompressFormat.PNG, 100, stream)
+                        if (!encoded) {
+                            throw java.io.IOException("Failed to encode QR PNG")
+                        }
                     }
+                } catch (e: Exception) {
+                    resolver.delete(uri, null, null)
+                    throw e
                 }
             } else {
                 @Suppress("DEPRECATION")
                 val picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
                 val qwelcomeDir = File(picturesDir, "QWelcome")
-                qwelcomeDir.mkdirs()
+                if (!qwelcomeDir.exists() && !qwelcomeDir.mkdirs()) {
+                    throw java.io.IOException("Failed to create pictures directory")
+                }
                 val file = File(qwelcomeDir, filename)
                 FileOutputStream(file).use { stream ->
-                    bmp.compress(Bitmap.CompressFormat.PNG, 100, stream)
+                    val encoded = bmp.compress(Bitmap.CompressFormat.PNG, 100, stream)
+                    if (!encoded) {
+                        throw java.io.IOException("Failed to encode QR PNG")
+                    }
                 }
             }
             bmp

@@ -9,6 +9,12 @@ import kotlinx.serialization.json.Json
 private const val TAG = "ImportExportRepository"
 
 /**
+ * Maximum import size in bytes (10MB).
+ * Prevents memory exhaustion from unbounded clipboard/file imports.
+ */
+internal const val MAX_IMPORT_SIZE_BYTES = 10 * 1024 * 1024
+
+/**
  * Maximum supported schema version for imports.
  * Imports with higher versions will show a warning but attempt to parse known fields.
  */
@@ -154,6 +160,16 @@ class ImportExportRepository(private val settingsStore: SettingsStore) {
         val trimmedJson = jsonString.trim()
         if (trimmedJson.isBlank()) {
             return ImportValidationResult.Invalid("Empty input")
+        }
+        // Step 1b: Import size check to prevent memory pressure from oversized payloads
+        if (trimmedJson.length > MAX_IMPORT_SIZE_BYTES) {
+            return ImportValidationResult.Invalid("Import too large (max 10MB)")
+        }
+        if (trimmedJson.length > MAX_IMPORT_SIZE_BYTES / 2) {
+            val preciseSize = trimmedJson.toByteArray(Charsets.UTF_8).size
+            if (preciseSize > MAX_IMPORT_SIZE_BYTES) {
+                return ImportValidationResult.Invalid("Import too large (max 10MB)")
+            }
         }
 
         // Step 2: Parse metadata to determine kind

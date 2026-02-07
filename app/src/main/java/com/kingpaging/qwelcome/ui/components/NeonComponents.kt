@@ -36,7 +36,6 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.kingpaging.qwelcome.data.Template
 import com.kingpaging.qwelcome.ui.theme.LocalDarkTheme
-import com.kingpaging.qwelcome.util.SoundManager
 import kotlin.math.max
 
 private val PanelShape = RoundedCornerShape(16.dp)
@@ -253,7 +252,7 @@ fun NeonOutlinedField(
  * - SECONDARY: Important alt actions (outlined) - Share, Copy, Export
  * - TERTIARY: Less prominent (subtle outlined) - QR Code, Import
  *
- * Includes haptic feedback and sound.
+ * Includes haptic feedback.
  */
 @Composable
 fun NeonButton(
@@ -316,7 +315,6 @@ fun NeonButton(
     Button(
         onClick = {
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-            SoundManager.playBeep()
             onClick()
         },
         enabled = enabled,
