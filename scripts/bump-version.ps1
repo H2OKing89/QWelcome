@@ -130,21 +130,69 @@ VERSION_CODE=$NewCode
     Write-Host "Updated $VersionFile" -ForegroundColor Green
 
     # ── Update CHANGELOG.md ──────────────────────────────────────────────
+    # Uses a state machine to collect [Unreleased] content, move it under a
+    # new versioned heading, and reset [Unreleased] to the sentinel text.
     if (Test-Path $ChangelogFile) {
         $today = Get-Date -Format "yyyy-MM-dd"
-        $changelogContent = Get-Content $ChangelogFile -Raw
-        
-        # Replace the unreleased section
-        $newUnreleased = @"
-## [Unreleased]
+        $changelogLines = Get-Content $ChangelogFile
+        $newLines = [System.Collections.Generic.List[string]]::new()
+        $unreleasedLines = [System.Collections.Generic.List[string]]::new()
+        $state = "before"  # before | collecting | after
 
-No unreleased changes.
+        foreach ($line in $changelogLines) {
+            switch ($state) {
+                "before" {
+                    if ($line -match '^\s*## \[Unreleased\]') {
+                        $state = "collecting"
+                    } else {
+                        $newLines.Add($line)
+                    }
+                }
+                "collecting" {
+                    if ($line -match '^\s*## \[') {
+                        # Hit the next version heading — done collecting
+                        # Now emit the restructured sections
+                        $newLines.Add("## [Unreleased]")
+                        $newLines.Add("")
+                        $newLines.Add("No unreleased changes.")
+                        $newLines.Add("")
+                        $newLines.Add("## [$NewName] - $today")
 
-## [$NewName] - $today
-"@
-        $changelogContent = $changelogContent -replace '## \[Unreleased\]\s*\n\s*No unreleased changes\.', $newUnreleased
-        
-        Set-Content $ChangelogFile $changelogContent -NoNewline
+                        # Add collected unreleased content (skip old "No unreleased changes." sentinel)
+                        foreach ($ul in $unreleasedLines) {
+                            if ($ul.Trim() -ne "No unreleased changes.") {
+                                $newLines.Add($ul)
+                            }
+                        }
+
+                        # Add the version heading we just hit
+                        $newLines.Add($line)
+                        $state = "after"
+                    } else {
+                        $unreleasedLines.Add($line)
+                    }
+                }
+                "after" {
+                    $newLines.Add($line)
+                }
+            }
+        }
+
+        # Handle case where [Unreleased] is the last section (no next ## heading found)
+        if ($state -eq "collecting") {
+            $newLines.Add("## [Unreleased]")
+            $newLines.Add("")
+            $newLines.Add("No unreleased changes.")
+            $newLines.Add("")
+            $newLines.Add("## [$NewName] - $today")
+            foreach ($ul in $unreleasedLines) {
+                if ($ul.Trim() -ne "No unreleased changes.") {
+                    $newLines.Add($ul)
+                }
+            }
+        }
+
+        $newLines -join "`n" | Set-Content $ChangelogFile -NoNewline
         Write-Host "Updated $ChangelogFile" -ForegroundColor Green
     }
 

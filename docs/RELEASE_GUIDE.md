@@ -292,3 +292,19 @@ For critical bugs on the current release:
 | GitHub Release has no changelog | Tag pushed before changelog was written | Always write changelog → bump → merge PR → then push tag. |
 | Tag already exists | Re-running bump for same version | Delete the local tag (`git tag -d vX.Y.Z`) and let the script recreate it. |
 | CI fails on release | Missing secrets (keystore, passwords) | Ensure `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_PASSWORD` are set in repo secrets. |
+| Tag points to wrong commit after amend | Amended the release commit after tagging | Delete tag (`git tag -d vX.Y.Z`), amend, re-tag (`git tag -a vX.Y.Z -m "Release vX.Y.Z"`). |
+| Feature PR not merged before release | Started release branch from stale master | Always merge all feature PRs into master and `git pull` **before** creating the release branch. |
+
+---
+
+## Lessons Learned (v2.3.3 Retrospective)
+
+Issues discovered during the first AI-driven release and the fixes applied:
+
+1. **Bump script CHANGELOG bug (fixed):** The PowerShell bump script originally used a regex that only matched the sentinel text `No unreleased changes.`. When the `[Unreleased]` section had real entries, the regex silently did nothing — the entries were NOT moved under the new version heading. **Fix:** Replaced with a line-by-line state machine (`before` → `collecting` → `after`) that properly collects unreleased content and moves it. Both PS1 and Bash scripts now use equivalent state-machine approaches.
+
+2. **Amending a tagged commit breaks the tag:** If you amend the release commit after the bump script creates the tag, the tag still points to the pre-amend commit. You must delete and recreate the tag. The bump script now handles this correctly so amending should not be necessary.
+
+3. **Always merge feature PRs first:** The release branch should be created from an up-to-date `master` that already contains all feature work. If you create the release branch before merging feature PRs, you'll need to merge master into the release branch (messy) or restart.
+
+4. **Local merge vs GitHub merge:** Merging the release PR locally with `git merge --no-ff` and pushing closes the GitHub PR automatically (GitHub detects the merge). Both approaches work, but using the local flow requires you to push master first, then push the tag separately.
