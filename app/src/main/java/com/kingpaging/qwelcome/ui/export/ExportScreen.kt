@@ -86,6 +86,7 @@ import com.kingpaging.qwelcome.util.rememberHapticFeedback
 import com.kingpaging.qwelcome.util.SoundManager
 import com.kingpaging.qwelcome.viewmodel.export.ExportEvent
 import com.kingpaging.qwelcome.viewmodel.export.ExportType
+import java.io.IOException
 
 @Suppress("LocalContextGetResourceValueCall")
 @Composable
@@ -112,12 +113,16 @@ fun ExportScreen(
             if (json != null) {
                 try {
                     val outputStream = context.contentResolver.openOutputStream(uri)
-                        ?: throw java.io.IOException("Could not open output stream")
+                        ?: throw IOException("Could not open output stream")
                     outputStream.use { stream ->
                         stream.write(json.toByteArray(Charsets.UTF_8))
                     }
                     vm.onFileSaveComplete()
-                } catch (e: Exception) {
+                } catch (e: SecurityException) {
+                    SoundManager.playBeep()
+                    Toast.makeText(context, context.getString(R.string.toast_failed_save_file, e.message), Toast.LENGTH_LONG).show()
+                    vm.onFileSaveCancelled()
+                } catch (e: IOException) {
                     SoundManager.playBeep()
                     Toast.makeText(context, context.getString(R.string.toast_failed_save_file, e.message), Toast.LENGTH_LONG).show()
                     vm.onFileSaveCancelled()

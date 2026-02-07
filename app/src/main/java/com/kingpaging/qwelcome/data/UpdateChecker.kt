@@ -11,6 +11,12 @@ import java.net.URL
 
 private const val TAG = "UpdateChecker"
 private const val GITHUB_API_URL = "https://api.github.com/repos/H2OKing89/QWelcome/releases/latest"
+private val TRUSTED_UPDATE_HOSTS = setOf(
+    "github.com",
+    "objects.githubusercontent.com",
+    "release-assets.githubusercontent.com",
+    "github-releases.githubusercontent.com"
+)
 
 /**
  * Represents the result of an update check.
@@ -139,10 +145,26 @@ object UpdateChecker {
     private fun isTrustedHttpsUrl(url: String): Boolean {
         return try {
             val parsed = URL(url)
-            parsed.protocol.equals("https", ignoreCase = true) && parsed.host.isNotBlank()
-        } catch (_: Exception) {
+            parsed.protocol.equals("https", ignoreCase = true) &&
+                parsed.host.orEmpty().lowercase() in TRUSTED_UPDATE_HOSTS
+        } catch (_: java.net.MalformedURLException) {
+            false
+        } catch (_: IllegalArgumentException) {
             false
         }
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
     
 }

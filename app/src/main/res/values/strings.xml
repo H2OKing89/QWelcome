@@ -44,7 +44,7 @@
     <string name="toast_unexpected_error">Unexpected error: %1$s</string>
     <string name="toast_clipboard_empty">Clipboard is empty</string>
     <string name="toast_cannot_access_clipboard">Cannot access clipboard</string>
-    <string name="toast_import_too_large">Import is too large (max 10MB)</string>
+    <string name="toast_import_too_large">Import is too large (max %1$s)</string>
 
     <!-- Export screen -->
     <string name="toast_failed_save_file">Failed to save file: %1$s</string>

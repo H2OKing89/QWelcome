@@ -42,6 +42,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -80,6 +81,7 @@ fun ImportScreen(
     val vm = LocalImportViewModel.current
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
+    val maxImportSizeLabel = remember { "${MAX_IMPORT_SIZE_BYTES / (1024 * 1024)}MB" }
     val uiState by vm.uiState.collectAsStateWithLifecycle()
 
     // Reset ViewModel state when entering the screen to clear any stale events
@@ -99,12 +101,16 @@ fun ImportScreen(
             } catch (e: InputTooLargeException) {
                 Log.w("ImportScreen", "Import input exceeds size limit", e)
                 SoundManager.playBeep()
-                Toast.makeText(context, R.string.toast_import_too_large, Toast.LENGTH_LONG).show()
+                Toast.makeText(
+                    context,
+                    context.getString(R.string.toast_import_too_large, maxImportSizeLabel),
+                    Toast.LENGTH_LONG
+                ).show()
             } catch (e: SecurityException) {
                 Log.w("ImportScreen", "File permission denied", e)
                 SoundManager.playBeep()
                 Toast.makeText(context, R.string.toast_permission_denied_read, Toast.LENGTH_LONG).show()
-            } catch (e: java.io.IOException) {
+            } catch (e: IOException) {
                 Log.w("ImportScreen", "File read error", e)
                 SoundManager.playBeep()
                 val detail = e.message ?: e.javaClass.simpleName
@@ -191,7 +197,11 @@ fun ImportScreen(
                                         clipboardManager.getText()?.let {
                                             if (exceedsImportLimit(it.text, MAX_IMPORT_SIZE_BYTES)) {
                                                 SoundManager.playBeep()
-                                                Toast.makeText(context, R.string.toast_import_too_large, Toast.LENGTH_LONG).show()
+                                                Toast.makeText(
+                                                    context,
+                                                    context.getString(R.string.toast_import_too_large, maxImportSizeLabel),
+                                                    Toast.LENGTH_LONG
+                                                ).show()
                                             } else {
                                                 vm.onPasteContent(it.text)
                                             }
@@ -227,7 +237,7 @@ private class InputTooLargeException(maxBytes: Int) :
 
 private fun readUtf8TextWithLimit(inputStream: java.io.InputStream, maxBytes: Int): String {
     val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-    val output = ByteArrayOutputStream()
+    val output = ByteArrayOutputStream(minOf(maxBytes, 1024 * 1024))
     var totalRead = 0
 
     while (true) {
