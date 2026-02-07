@@ -308,3 +308,4 @@ Issues discovered during the first AI-driven release and the fixes applied:
 3. **Always merge feature PRs first:** The release branch should be created from an up-to-date `master` that already contains all feature work. If you create the release branch before merging feature PRs, you'll need to merge master into the release branch (messy) or restart.
 
 4. **Local merge vs GitHub merge:** Merging the release PR locally with `git merge --no-ff` and pushing closes the GitHub PR automatically (GitHub detects the merge). Both approaches work, but using the local flow requires you to push master first, then push the tag separately.
+

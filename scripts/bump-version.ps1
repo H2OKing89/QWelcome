@@ -139,6 +139,27 @@ VERSION_CODE=$NewCode
         $unreleasedLines = [System.Collections.Generic.List[string]]::new()
         $state = "before"  # before | collecting | after
 
+        # Helper: emit the reset [Unreleased] sentinel, the new version
+        # heading, and the collected unreleased content (minus the old sentinel).
+        function EmitUnreleasedSection {
+            param(
+                [System.Collections.Generic.List[string]]$OutLines,
+                [System.Collections.Generic.List[string]]$Collected,
+                [string]$VersionName,
+                [string]$Date
+            )
+            $OutLines.Add("## [Unreleased]")
+            $OutLines.Add("")
+            $OutLines.Add("No unreleased changes.")
+            $OutLines.Add("")
+            $OutLines.Add("## [$VersionName] - $Date")
+            foreach ($ul in $Collected) {
+                if ($ul.Trim() -ne "No unreleased changes.") {
+                    $OutLines.Add($ul)
+                }
+            }
+        }
+
         foreach ($line in $changelogLines) {
             switch ($state) {
                 "before" {
@@ -151,21 +172,7 @@ VERSION_CODE=$NewCode
                 "collecting" {
                     if ($line -match '^\s*## \[') {
                         # Hit the next version heading — done collecting
-                        # Now emit the restructured sections
-                        $newLines.Add("## [Unreleased]")
-                        $newLines.Add("")
-                        $newLines.Add("No unreleased changes.")
-                        $newLines.Add("")
-                        $newLines.Add("## [$NewName] - $today")
-
-                        # Add collected unreleased content (skip old "No unreleased changes." sentinel)
-                        foreach ($ul in $unreleasedLines) {
-                            if ($ul.Trim() -ne "No unreleased changes.") {
-                                $newLines.Add($ul)
-                            }
-                        }
-
-                        # Add the version heading we just hit
+                        EmitUnreleasedSection $newLines $unreleasedLines $NewName $today
                         $newLines.Add($line)
                         $state = "after"
                     } else {
@@ -180,16 +187,7 @@ VERSION_CODE=$NewCode
 
         # Handle case where [Unreleased] is the last section (no next ## heading found)
         if ($state -eq "collecting") {
-            $newLines.Add("## [Unreleased]")
-            $newLines.Add("")
-            $newLines.Add("No unreleased changes.")
-            $newLines.Add("")
-            $newLines.Add("## [$NewName] - $today")
-            foreach ($ul in $unreleasedLines) {
-                if ($ul.Trim() -ne "No unreleased changes.") {
-                    $newLines.Add($ul)
-                }
-            }
+            EmitUnreleasedSection $newLines $unreleasedLines $NewName $today
         }
 
         $newLines -join "`n" | Set-Content $ChangelogFile -NoNewline
