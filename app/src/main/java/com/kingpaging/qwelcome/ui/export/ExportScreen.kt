@@ -118,14 +118,14 @@ fun ExportScreen(
                         stream.write(json.toByteArray(Charsets.UTF_8))
                     }
                     vm.onFileSaveComplete()
-                } catch (e: SecurityException) {
-                    SoundManager.playBeep()
-                    Toast.makeText(context, context.getString(R.string.toast_failed_save_file, e.message), Toast.LENGTH_LONG).show()
-                    vm.onFileSaveCancelled()
-                } catch (e: IOException) {
-                    SoundManager.playBeep()
-                    Toast.makeText(context, context.getString(R.string.toast_failed_save_file, e.message), Toast.LENGTH_LONG).show()
-                    vm.onFileSaveCancelled()
+                } catch (e: Exception) {
+                    if (e is SecurityException || e is IOException) {
+                        SoundManager.playBeep()
+                        Toast.makeText(context, context.getString(R.string.toast_failed_save_file, e.message), Toast.LENGTH_LONG).show()
+                        vm.onFileSaveCancelled()
+                    } else {
+                        throw e
+                    }
                 }
             }
         } else {

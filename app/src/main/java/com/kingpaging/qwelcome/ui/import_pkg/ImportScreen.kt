@@ -81,7 +81,7 @@ fun ImportScreen(
     val vm = LocalImportViewModel.current
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
-    val maxImportSizeLabel = remember { "${MAX_IMPORT_SIZE_BYTES / (1024 * 1024)}MB" }
+    val maxImportSizeLabel = remember { formatBytesAsMb(MAX_IMPORT_SIZE_BYTES.toLong()) }
     val uiState by vm.uiState.collectAsStateWithLifecycle()
 
     // Reset ViewModel state when entering the screen to clear any stale events
@@ -232,8 +232,14 @@ fun ImportScreen(
     }
 }
 
+private const val BYTES_PER_MB = 1024L * 1024L
+
+private fun formatBytesAsMb(bytes: Long): String {
+    return "${bytes / BYTES_PER_MB}MB"
+}
+
 private class InputTooLargeException(maxBytes: Int) :
-    IOException("Input exceeds ${maxBytes / (1024 * 1024)}MB limit")
+    IOException("Input exceeds ${formatBytesAsMb(maxBytes.toLong())} limit")
 
 private fun readUtf8TextWithLimit(inputStream: java.io.InputStream, maxBytes: Int): String {
     val buffer = ByteArray(DEFAULT_BUFFER_SIZE)

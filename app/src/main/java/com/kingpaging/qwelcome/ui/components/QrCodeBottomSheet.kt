@@ -10,6 +10,7 @@ import android.graphics.Bitmap
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
+import android.util.Log
 import android.widget.Toast
 import com.kingpaging.qwelcome.R
 import androidx.compose.foundation.Image
@@ -359,8 +360,10 @@ private suspend fun saveQrCodeToGallery(
         }
         Toast.makeText(context, R.string.toast_qr_saved, Toast.LENGTH_SHORT).show()
     } catch (e: SecurityException) {
+        Log.e("QrCodeBottomSheet", "Failed to save QR image", e)
         Toast.makeText(context, R.string.toast_permission_denied, Toast.LENGTH_SHORT).show()
     } catch (e: IOException) {
+        Log.e("QrCodeBottomSheet", "Failed to save QR image", e)
         Toast.makeText(context, context.getString(R.string.toast_failed_save, e.message), Toast.LENGTH_SHORT).show()
     } finally {
         bitmap?.recycle()
@@ -395,14 +398,16 @@ private suspend fun shareQrCode(
         }
         context.startActivity(Intent.createChooser(intent, context.getString(R.string.chooser_share_wifi_qr)))
     } catch (e: SecurityException) {
+        Log.e("QrCodeBottomSheet", "Permission denied while sharing QR code", e)
         Toast.makeText(context, R.string.toast_permission_denied, Toast.LENGTH_SHORT).show()
     } catch (e: IOException) {
+        Log.e("QrCodeBottomSheet", "Failed to share QR code", e)
         Toast.makeText(context, R.string.toast_failed_create_temp, Toast.LENGTH_SHORT).show()
     } catch (e: ActivityNotFoundException) {
-        android.util.Log.e("QrCodeBottomSheet", "No activity found for share intent", e)
+        Log.e("QrCodeBottomSheet", "No activity found for share intent", e)
         Toast.makeText(context, context.getString(R.string.toast_failed_share, e.message), Toast.LENGTH_SHORT).show()
     } catch (e: IllegalArgumentException) {
-        android.util.Log.e("QrCodeBottomSheet", "Failed to share QR code", e)
+        Log.e("QrCodeBottomSheet", "Failed to share QR code", e)
         Toast.makeText(context, context.getString(R.string.toast_failed_share, e.message), Toast.LENGTH_SHORT).show()
     } finally {
         bitmap?.recycle()
