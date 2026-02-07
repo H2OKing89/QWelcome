@@ -17,6 +17,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Customer intake dropdown menu items and network toggle
   - Template variable copy buttons
   - Search field clear button
+- **Release Documentation** - Added comprehensive `docs/RELEASE_GUIDE.md` with step-by-step release workflow for AI agents
+- **Import Size Validation** - Enhanced import size limit messaging with dedicated `formatBytesAsMb()` helper
+- **Enhanced Error Logging** - Added stack trace logging for QR code save/share failures and file save errors for better diagnostics
+
+### Changed
+
+- Consolidated duplicate SecurityException/IOException handling in export file save flow
+- Updated Copilot instructions to reference release guide documentation
+
+### Fixed
+
+- **Code Quality** - Removed excessive trailing blank lines in UpdateChecker.kt
 
 ## [2.3.1] - 2026-02-02
 
