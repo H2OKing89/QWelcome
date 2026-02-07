@@ -59,6 +59,7 @@ import androidx.compose.ui.res.stringResource
 import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.data.MAX_IMPORT_SIZE_BYTES
 import com.kingpaging.qwelcome.data.ImportValidationResult
+import com.kingpaging.qwelcome.data.formatBytesAsMb
 import com.kingpaging.qwelcome.di.LocalImportViewModel
 import com.kingpaging.qwelcome.ui.components.CyberpunkBackdrop
 import com.kingpaging.qwelcome.ui.components.NeonButton
@@ -230,12 +231,6 @@ fun ImportScreen(
             }
         }
     }
-}
-
-private const val BYTES_PER_MB = 1024L * 1024L
-
-private fun formatBytesAsMb(bytes: Long): String {
-    return "${bytes / BYTES_PER_MB}MB"
 }
 
 private class InputTooLargeException(maxBytes: Int) :

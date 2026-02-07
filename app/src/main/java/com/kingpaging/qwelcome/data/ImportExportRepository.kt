@@ -8,6 +8,10 @@ import kotlinx.serialization.json.Json
 
 private const val TAG = "ImportExportRepository"
 
+private const val BYTES_PER_MB = 1024L * 1024L
+
+internal fun formatBytesAsMb(bytes: Long): String = "${bytes / BYTES_PER_MB}MB"
+
 /**
  * Maximum import size in bytes (10MB).
  * Prevents memory exhaustion from unbounded clipboard/file imports.
@@ -162,13 +166,14 @@ class ImportExportRepository(private val settingsStore: SettingsStore) {
             return ImportValidationResult.Invalid("Empty input")
         }
         // Step 1b: Import size check to prevent memory pressure from oversized payloads
+        val maxSizeLabel = formatBytesAsMb(MAX_IMPORT_SIZE_BYTES.toLong())
         if (trimmedJson.length > MAX_IMPORT_SIZE_BYTES) {
-            return ImportValidationResult.Invalid("Import too large (max 10MB)")
+            return ImportValidationResult.Invalid("Import too large (max $maxSizeLabel)")
         }
         if (trimmedJson.length > MAX_IMPORT_SIZE_BYTES / 2) {
             val preciseSize = trimmedJson.toByteArray(Charsets.UTF_8).size
             if (preciseSize > MAX_IMPORT_SIZE_BYTES) {
-                return ImportValidationResult.Invalid("Import too large (max 10MB)")
+                return ImportValidationResult.Invalid("Import too large (max $maxSizeLabel)")
             }
         }
 

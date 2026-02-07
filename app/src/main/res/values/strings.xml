@@ -25,7 +25,7 @@
     <string name="toast_form_cleared">Form cleared for new customer</string>
     <string name="toast_rate_limit">Rate limit exceeded. Please wait.</string>
     <string name="toast_no_browser">No browser available to open link</string>
-    <string name="toast_untrusted_update_link">Blocked non-HTTPS update link</string>
+    <string name="toast_untrusted_update_link">Blocked untrusted update link</string>
     <string name="toast_check_cooldown">Checked recently, try again in %1$ds</string>
     <string name="toast_rate_limited_retry">Rate limited by GitHub. Try again in %1$ds.</string>
     <string name="toast_rate_limited">Rate limited by GitHub. Try again later.</string>

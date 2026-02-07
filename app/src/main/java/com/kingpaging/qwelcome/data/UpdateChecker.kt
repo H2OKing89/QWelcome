@@ -116,9 +116,9 @@ object UpdateChecker {
             if (VersionComparator.isNewerVersion(latestVersion, currentVersionName)) {
                 // Find APK asset
                 val apkAsset = release.assets.find { it.name.endsWith(".apk") }
-                val preferredUrl = apkAsset?.browser_download_url ?: release.html_url
+                val apkUrl = apkAsset?.browser_download_url
                 val downloadUrl = when {
-                    isTrustedHttpsUrl(preferredUrl) -> preferredUrl
+                    apkUrl != null && isTrustedHttpsUrl(apkUrl) -> apkUrl
                     isTrustedHttpsUrl(release.html_url) -> release.html_url
                     else -> return@withContext UpdateCheckResult.Error("Invalid release URL")
                 }
