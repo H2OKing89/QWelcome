@@ -40,9 +40,22 @@ git pull origin master
 git checkout -b release/vX.Y.Z
 ```
 
-### Phase 2 — Write the Changelog
+### Phase 2 — Review Changes & Write the Changelog
 
-Open `CHANGELOG.md` and ensure the `## [Unreleased]` section has **all** user-facing changes for this release, organized under Keep a Changelog categories:
+Before writing anything, the AI agent **must** review all changes that will be in this release:
+
+```powershell
+# 1. List all commits since last release tag
+git log <last-tag>..HEAD --oneline
+
+# 2. List all changed files
+git diff <last-tag>..HEAD --name-only
+
+# 3. Review the actual diffs to understand what changed
+git diff <last-tag>..HEAD --stat
+```
+
+Using the review above, write comprehensive changelog entries under `## [Unreleased]` in `CHANGELOG.md`:
 
 ```markdown
 ## [Unreleased]
@@ -66,6 +79,7 @@ Open `CHANGELOG.md` and ensure the `## [Unreleased]` section has **all** user-fa
 - Group by `Added`, `Changed`, `Fixed`, `Removed` (omit empty groups)
 - Write from a user perspective, not implementation details
 - Reference issue numbers where applicable
+- Every meaningful code change must be represented — do not skip files
 
 ### Phase 3 — Run the Bump Script
 
@@ -109,25 +123,56 @@ scripts/bump-version.sh 2.4.0
 git push -u origin release/vX.Y.Z
 ```
 
-### Phase 5 — Create the Pull Request
+### Phase 5 — Create the Pull Request (AI Agent Fills Everything)
 
-Create a PR from `release/vX.Y.Z` → `master` with:
+The AI agent is responsible for creating the PR **and writing the full PR body**. Do not leave placeholders — fill in every field from the actual changes.
+
+**Step 1 — Gather context for the PR body:**
+
+```powershell
+# Review commits on this release branch
+git log master..HEAD --oneline
+
+# List all changed files
+git diff master..HEAD --name-only
+
+# Read the new changelog section from CHANGELOG.md
+# (the bump script already moved [Unreleased] to [X.Y.Z] - date)
+```
+
+**Step 2 — Create the PR** from `release/vX.Y.Z` → `master` using the GitHub API or MCP tools:
 
 | Field | Value |
 | ------- | ------- |
 | **Title** | `release: vX.Y.Z` |
-| **Body** | Copy the changelog entries for this version from `CHANGELOG.md` |
+| **Body** | AI-generated from template below — filled with real data |
 | **Labels** | `release` (if available) |
-| **Reviewers** | Repo owner / team (if applicable) |
 
-**PR description template:**
+**Step 3 — PR body template (AI fills every section):**
 
 ```markdown
 ## Release vX.Y.Z
 
-### Changes
+### Summary
+(1-2 sentence summary of what this release includes — written by the AI from the diff review)
 
-(paste the changelog section for this version here)
+### Changes
+(paste the full changelog section for this version from CHANGELOG.md)
+
+### Files Changed
+(list the files changed, grouped by category: data/, ui/, viewmodel/, docs/, etc.)
+
+### Type of Change
+- [ ] Bug fix
+- [ ] New feature
+- [ ] Breaking change
+- [ ] Documentation update
+
+### Testing
+- [ ] `./gradlew test` passes
+- [ ] `./gradlew lintDebug` passes
+- [ ] Verified dark mode
+- [ ] Verified light mode
 
 ### Checklist
 - [ ] Changelog entries are complete and accurate
@@ -135,6 +180,8 @@ Create a PR from `release/vX.Y.Z` → `master` with:
 - [ ] All CI checks pass
 - [ ] APK builds successfully
 ```
+
+> **Key rule:** The AI agent must check the appropriate boxes in "Type of Change" and "Testing" based on what was actually done (e.g., if tests were run and passed, check those boxes). Leave unchecked only items that were not verified.
 
 ### Phase 6 — Merge & Push the Tag
 
@@ -180,23 +227,28 @@ Follow [Semantic Versioning 2.0.0](https://semver.org/).
 
 ## Quick-Reference: AI Agent Command Sequence
 
-For an AI agent performing a release, here is the exact sequence of operations:
+For an AI agent performing a release, here is the exact sequence of operations.
+**The agent handles everything — no manual steps required.**
 
 ```text
 1.  git checkout master && git pull origin master
-2.  git checkout -b release/vX.Y.Z
-3.  Edit CHANGELOG.md — fill [Unreleased] section with all changes
-4.  .\scripts\bump-version.ps1 <patch|minor|major>       # Windows
+2.  Review changes: git log <last-tag>..HEAD --oneline
+3.  Review files:   git diff <last-tag>..HEAD --name-only
+4.  Determine bump type (major/minor/patch) from the changes
+5.  git checkout -b release/vX.Y.Z
+6.  Edit CHANGELOG.md — write [Unreleased] entries from the diff review
+7.  .\scripts\bump-version.ps1 <patch|minor|major>       # Windows
     scripts/bump-version.sh <patch|minor|major>           # Linux/Mac
-5.  git push -u origin release/vX.Y.Z                    # push branch, NOT tag
-6.  Create PR: release/vX.Y.Z → master
+8.  git push -u origin release/vX.Y.Z                    # push branch, NOT tag
+9.  Review: git log master..HEAD --oneline && git diff master..HEAD --name-only
+10. Create PR via API/MCP tools:
     - Title: "release: vX.Y.Z"
-    - Body: changelog entries + checklist
-7.  (Wait for PR approval & CI green)
-8.  Merge the PR on GitHub
-9.  git checkout master && git pull origin master
-10. git push origin vX.Y.Z                                # push tag → triggers release
-11. Verify GitHub Release page
+    - Body: auto-generated summary, changelog, file list, checked boxes
+11. (Wait for PR approval & CI green)
+12. Merge the PR on GitHub
+13. git checkout master && git pull origin master
+14. git push origin vX.Y.Z                                # push tag → triggers release
+15. Verify GitHub Release page
 ```
 
 ---
