@@ -6,6 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.remember
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -43,21 +44,23 @@ class MainActivity : ComponentActivity() {
 
         enableEdgeToEdge()
         setContent {
+            val appViewModelFactory = remember { AppViewModelProvider(applicationContext) }
+
             // Create ViewModels at Activity level for proper scoping
             val customerIntakeViewModel: CustomerIntakeViewModel = viewModel(
-                factory = AppViewModelProvider(applicationContext)
+                factory = appViewModelFactory
             )
             val settingsViewModel: SettingsViewModel = viewModel(
-                factory = AppViewModelProvider(applicationContext)
+                factory = appViewModelFactory
             )
             val exportViewModel: ExportViewModel = viewModel(
-                factory = AppViewModelProvider(applicationContext)
+                factory = appViewModelFactory
             )
             val importViewModel: ImportViewModel = viewModel(
-                factory = AppViewModelProvider(applicationContext)
+                factory = appViewModelFactory
             )
             val templateListViewModel: TemplateListViewModel = viewModel(
-                factory = AppViewModelProvider(applicationContext)
+                factory = appViewModelFactory
             )
 
             // Navigation controller for Jetpack Navigation Compose

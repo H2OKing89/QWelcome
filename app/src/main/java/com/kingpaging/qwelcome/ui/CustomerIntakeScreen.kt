@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
-
 package com.kingpaging.qwelcome.ui
 
 import android.widget.Toast
@@ -30,20 +28,12 @@ import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuAnchorType
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -73,8 +63,10 @@ import com.kingpaging.qwelcome.ui.components.CyberpunkBackdrop
 import com.kingpaging.qwelcome.ui.components.NeonButton
 import com.kingpaging.qwelcome.ui.components.NeonButtonStyle
 import com.kingpaging.qwelcome.ui.components.NeonCyanButton
+import com.kingpaging.qwelcome.ui.components.NeonDropdownMenuBox
 import com.kingpaging.qwelcome.ui.components.NeonOutlinedField
 import com.kingpaging.qwelcome.ui.components.NeonPanel
+import com.kingpaging.qwelcome.ui.components.NeonTopAppBar
 import com.kingpaging.qwelcome.ui.components.QrCodeBottomSheet
 import com.kingpaging.qwelcome.ui.components.QWelcomeHeader
 import com.kingpaging.qwelcome.ui.theme.LocalCyberColors
@@ -157,28 +149,26 @@ fun CustomerIntakeScreen(
 
     CyberpunkBackdrop {
         Scaffold(
+            // Intentional: keep scaffold transparent so the cyberpunk backdrop remains visible.
             containerColor = Color.Transparent,
             topBar = {
-                TopAppBar(
+                NeonTopAppBar(
                     title = { QWelcomeHeader() },
                     actions = {
                         IconButton(onClick = {
                             hapticFeedback()
                             customerIntakeViewModel.clearForm()
                         }) {
-                            Icon(Icons.Filled.PersonAdd, contentDescription = "New Customer")
+                            Icon(Icons.Filled.PersonAdd, contentDescription = stringResource(R.string.content_desc_new_customer))
                         }
                         IconButton(onClick = {
                             hapticFeedback()
                             onOpenSettings()
                         }) {
-                            Icon(Icons.Filled.Settings, contentDescription = "Settings")
+                            Icon(Icons.Filled.Settings, contentDescription = stringResource(R.string.content_desc_settings))
                         }
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = Color.Transparent,
-                        actionIconContentColor = MaterialTheme.colorScheme.onBackground
-                    )
+                    actionIconContentColor = MaterialTheme.colorScheme.onBackground
                 )
             }
         ) { innerPadding ->
@@ -201,33 +191,14 @@ fun CustomerIntakeScreen(
                         templateUiState.templates.find { it.id == templateUiState.activeTemplateId }
                     }
 
-                    // ExposedDropdownMenuBox provides proper anchoring and sizing for light UI
-                    ExposedDropdownMenuBox(
+                    // NeonDropdownMenuBox wraps ExposedDropdownMenuBox with cyberpunk styling
+                    NeonDropdownMenuBox(
                         expanded = templateDropdownExpanded,
                         onExpandedChange = { templateDropdownExpanded = !templateDropdownExpanded },
+                        selectedText = activeTemplate?.name ?: "",
+                        label = { Text(stringResource(R.string.label_template)) },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        OutlinedTextField(
-                            value = activeTemplate?.name ?: "",
-                            onValueChange = {},
-                            readOnly = true,
-                            label = { Text("Template") },
-                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = templateDropdownExpanded) },
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.secondary,
-                                unfocusedBorderColor = MaterialTheme.colorScheme.secondary.copy(alpha = if (isDark) 0.45f else 0.28f),
-                                focusedLabelColor = MaterialTheme.colorScheme.secondary,
-                                unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
-                            ),
-                            modifier = Modifier
-                                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
-                                .fillMaxWidth()
-                        )
-
-                        ExposedDropdownMenu(
-                            expanded = templateDropdownExpanded,
-                            onDismissRequest = { templateDropdownExpanded = false }
-                        ) {
                             templateUiState.templates.forEach { template ->
                                 DropdownMenuItem(
                                     text = {
@@ -239,7 +210,7 @@ fun CustomerIntakeScreen(
                                             if (template.id == templateUiState.activeTemplateId) {
                                                 Icon(
                                                     Icons.Filled.Check,
-                                                    contentDescription = "Active",
+                                                    contentDescription = stringResource(R.string.label_active),
                                                     tint = MaterialTheme.colorScheme.secondary,
                                                     modifier = Modifier.size(16.dp)
                                                 )
@@ -257,14 +228,13 @@ fun CustomerIntakeScreen(
                             HorizontalDivider()
 
                             DropdownMenuItem(
-                                text = { Text("Manage Templates…", color = MaterialTheme.colorScheme.tertiary) },
+                                text = { Text(stringResource(R.string.action_manage_templates), color = MaterialTheme.colorScheme.tertiary) },
                                 onClick = {
                                     hapticFeedback()
                                     templateDropdownExpanded = false
                                     onOpenTemplates()
                                 }
                             )
-                        }
                     }
                 }
 
@@ -274,14 +244,14 @@ fun CustomerIntakeScreen(
                     NeonOutlinedField(
                         value = uiState.customerName,
                         onValueChange = { customerIntakeViewModel.onCustomerNameChanged(it) },
-                        label = { Text("Customer Name") },
+                        label = { Text(stringResource(R.string.label_customer_name)) },
                         isError = uiState.customerNameError != null,
                         supportingText = { uiState.customerNameError?.let { Text(it) } }
                     )
                     NeonOutlinedField(
                         value = uiState.customerPhone,
                         onValueChange = { customerIntakeViewModel.onCustomerPhoneChanged(it) },
-                        label = { Text("Customer Phone") },
+                        label = { Text(stringResource(R.string.label_customer_phone)) },
                         isError = uiState.customerPhoneError != null,
                         supportingText = { uiState.customerPhoneError?.let { Text(it) } },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
@@ -289,7 +259,7 @@ fun CustomerIntakeScreen(
                     NeonOutlinedField(
                         value = uiState.ssid,
                         onValueChange = { customerIntakeViewModel.onSsidChanged(it) },
-                        label = { Text("WiFi SSID") },
+                        label = { Text(stringResource(R.string.label_wifi_ssid)) },
                         isError = uiState.ssidError != null,
                         supportingText = { uiState.ssidError?.let { Text(it) } }
                     )
@@ -328,7 +298,7 @@ fun CustomerIntakeScreen(
                     NeonOutlinedField(
                         value = if (uiState.isOpenNetwork) "" else uiState.password,
                         onValueChange = { customerIntakeViewModel.onPasswordChanged(it) },
-                        label = { Text("WiFi Password") },
+                        label = { Text(stringResource(R.string.label_wifi_password)) },
                         enabled = !uiState.isOpenNetwork,
                         isError = uiState.passwordError != null,
                         supportingText = {
@@ -342,12 +312,16 @@ fun CustomerIntakeScreen(
                         trailingIcon = {
                             if (!uiState.isOpenNetwork) {
                                 val image = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
-                                val description = if (passwordVisible) "Hide password" else "Show password"
+                                val description = if (passwordVisible) {
+                                    stringResource(R.string.content_desc_hide_password)
+                                } else {
+                                    stringResource(R.string.content_desc_show_password)
+                                }
                                 IconButton(onClick = {
                                     hapticFeedback()
                                     passwordVisible = !passwordVisible
                                 }) {
-                                    Icon(imageVector = image, description)
+                                    Icon(imageVector = image, contentDescription = description)
                                 }
                             }
                         }
@@ -355,7 +329,7 @@ fun CustomerIntakeScreen(
                     NeonOutlinedField(
                         value = uiState.accountNumber,
                         onValueChange = { customerIntakeViewModel.onAccountNumberChanged(it) },
-                        label = { Text("Account Number") },
+                        label = { Text(stringResource(R.string.label_account_number)) },
                         isError = uiState.accountNumberError != null,
                         supportingText = { uiState.accountNumberError?.let { Text(it) } },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
@@ -364,7 +338,7 @@ fun CustomerIntakeScreen(
 
                 // === SEND SECTION ===
                 Text(
-                    "Send",
+                    stringResource(R.string.header_send),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.semantics { heading() }
@@ -386,11 +360,11 @@ fun CustomerIntakeScreen(
                     ) {
                         Icon(
                             Icons.AutoMirrored.Filled.Send,
-                            contentDescription = "Send SMS",
+                            contentDescription = stringResource(R.string.content_desc_send_sms),
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(Modifier.width(6.dp))
-                        Text("SMS")
+                        Text(stringResource(R.string.action_sms))
                     }
                     // Share = Secondary (outlined, important but not main)
                     NeonCyanButton(
@@ -403,11 +377,11 @@ fun CustomerIntakeScreen(
                     ) {
                         Icon(
                             Icons.Filled.Share,
-                            contentDescription = "Share",
+                            contentDescription = stringResource(R.string.action_share),
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(Modifier.width(4.dp))
-                        Text("Share")
+                        Text(stringResource(R.string.action_share))
                     }
                     // Copy = Tertiary (lowest emphasis - utility action)
                     // Success state provides visual feedback on action completion
@@ -425,11 +399,11 @@ fun CustomerIntakeScreen(
                         Icon(
                             // Success state: Show check icon instead of copy icon
                             if (copySuccess) Icons.Filled.Check else Icons.Filled.ContentCopy,
-                            contentDescription = "Copy to clipboard",
+                            contentDescription = stringResource(R.string.content_desc_copy_clipboard),
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(Modifier.width(4.dp))
-                        Text(if (copySuccess) "Copied!" else "Copy")
+                        Text(if (copySuccess) stringResource(R.string.action_copied) else stringResource(R.string.action_copy))
                     }
                 }
 
@@ -453,7 +427,7 @@ fun CustomerIntakeScreen(
                 ) {
                     Column(modifier = Modifier.semantics(mergeDescendants = true) {}) {
                         Text(
-                            "WiFi QR Code",
+                            stringResource(R.string.header_wifi_qr),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.semantics { heading() }
@@ -475,11 +449,11 @@ fun CustomerIntakeScreen(
                     ) {
                         Icon(
                             Icons.Filled.QrCode2,
-                            contentDescription = "Show QR Code",
+                            contentDescription = stringResource(R.string.content_desc_show_qr),
                             modifier = Modifier.size(18.dp)
                         )
                         Spacer(Modifier.width(6.dp))
-                        Text("Show QR")
+                        Text(stringResource(R.string.action_show_qr))
                     }
                 }
             }

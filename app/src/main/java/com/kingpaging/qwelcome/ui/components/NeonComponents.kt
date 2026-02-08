@@ -29,11 +29,13 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.data.Template
 import com.kingpaging.qwelcome.ui.theme.LocalDarkTheme
 import kotlin.math.max
@@ -606,7 +608,11 @@ fun CollapsiblePlaceholderChips(
                 )
                 Icon(
                     if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                    contentDescription = null,
+                    contentDescription = if (isExpanded) {
+                        stringResource(R.string.content_desc_show_less_placeholders)
+                    } else {
+                        stringResource(R.string.content_desc_show_more_placeholders)
+                    },
                     modifier = Modifier.size(16.dp)
                 )
             }

@@ -193,10 +193,14 @@ fun QrCodeBottomSheet(
                             color = MaterialTheme.colorScheme.onPrimary
                         )
                     } else {
-                        Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Icon(
+                            Icons.Default.Download,
+                            contentDescription = stringResource(R.string.action_save),
+                            modifier = Modifier.size(18.dp)
+                        )
                     }
                     Spacer(Modifier.width(8.dp))
-                    Text("Save")
+                    Text(stringResource(R.string.action_save))
                 }
                 NeonMagentaButton(
                     onClick = {
@@ -216,10 +220,14 @@ fun QrCodeBottomSheet(
                             color = MaterialTheme.colorScheme.onPrimary
                         )
                     } else {
-                        Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Icon(
+                            Icons.Default.Share,
+                            contentDescription = stringResource(R.string.action_share),
+                            modifier = Modifier.size(18.dp)
+                        )
                     }
                     Spacer(Modifier.width(8.dp))
-                    Text("Share")
+                    Text(stringResource(R.string.action_share))
                 }
             }
             Spacer(Modifier.height(24.dp))

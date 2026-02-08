@@ -13,6 +13,7 @@ import com.kingpaging.qwelcome.util.PhoneUtils
 import com.kingpaging.qwelcome.util.ResourceProvider
 import com.kingpaging.qwelcome.util.SystemTimeProvider
 import com.kingpaging.qwelcome.util.TimeProvider
+import com.kingpaging.qwelcome.util.WifiQrGenerator
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -27,12 +28,12 @@ import kotlinx.coroutines.launch
 sealed class UiEvent {
     data class ShowToast(val message: String) : UiEvent()
     /** Emitted when message is successfully copied to clipboard - triggers visual feedback */
-    object CopySuccess : UiEvent()
+    data object CopySuccess : UiEvent()
     /** Emitted when user action is blocked by validation or other issue */
-    object ValidationFailed : UiEvent()
+    data object ValidationFailed : UiEvent()
     /** Emitted when an action fails after button press */
-    object ActionFailed : UiEvent()
-    object RateLimitExceeded : UiEvent()
+    data object ActionFailed : UiEvent()
+    data object RateLimitExceeded : UiEvent()
 }
 
 class CustomerIntakeViewModel(
@@ -155,11 +156,7 @@ class CustomerIntakeViewModel(
 
     fun onSsidChanged(ssid: String) {
         // Real-time validation for SSID byte length (WiFi spec: max 32 bytes UTF-8)
-        val error = when {
-            ssid.isEmpty() -> null // Don't show error for empty (show on submit)
-            ssid.toByteArray(Charsets.UTF_8).size > 32 -> resourceProvider.getString(R.string.error_ssid_too_long)
-            else -> null
-        }
+        val error = if (ssid.isEmpty()) null else getWifiErrorMessage(WifiQrGenerator.validateSsid(ssid))
         _uiState.update { it.copy(ssid = ssid, ssidError = error) }
     }
 
@@ -167,9 +164,11 @@ class CustomerIntakeViewModel(
         // Real-time validation feedback for WiFi password (WPA/WPA2: 8-63 chars)
         val error = when {
             password.isEmpty() -> null // Don't show error for empty (show on submit)
-            password.length < 8 -> resourceProvider.getString(R.string.error_password_partial, password.length)
-            password.length > 63 -> resourceProvider.getString(R.string.error_password_too_long)
-            else -> null
+            password.length < WifiQrGenerator.MIN_PASSWORD_LENGTH -> resourceProvider.getString(
+                R.string.error_password_partial,
+                password.length
+            )
+            else -> getWifiErrorMessage(WifiQrGenerator.validatePassword(password))
         }
         _uiState.update { it.copy(password = password, passwordError = error) }
     }
@@ -280,20 +279,14 @@ class CustomerIntakeViewModel(
 
         val ssidError = when {
             currentState.ssid.isBlank() -> resourceProvider.getString(R.string.error_ssid_empty)
-            currentState.ssid.toByteArray(Charsets.UTF_8).size > 32 -> resourceProvider.getString(R.string.error_ssid_too_long)
-            else -> null
+            else -> getWifiErrorMessage(WifiQrGenerator.validateSsid(currentState.ssid))
         }
 
         // Skip password validation for open networks
         val passwordError = if (currentState.isOpenNetwork) {
             null // Open networks don't require passwords
         } else {
-            when {
-                currentState.password.isBlank() -> resourceProvider.getString(R.string.error_password_empty)
-                currentState.password.length < 8 -> resourceProvider.getString(R.string.error_password_too_short)
-                currentState.password.length > 63 -> resourceProvider.getString(R.string.error_password_too_long)
-                else -> null
-            }
+            getWifiErrorMessage(WifiQrGenerator.validatePassword(currentState.password))
         }
 
         val accountNumberError = if (currentState.accountNumber.isBlank()) resourceProvider.getString(R.string.error_account_empty) else null
@@ -332,6 +325,13 @@ class CustomerIntakeViewModel(
         } else {
             // No placeholder = no signature (user opted out)
             MessageTemplate.generate(templateContent, customerData)
+        }
+    }
+
+    private fun getWifiErrorMessage(result: WifiQrGenerator.ValidationResult): String? {
+        return when (result) {
+            WifiQrGenerator.ValidationResult.Success -> null
+            is WifiQrGenerator.ValidationResult.Error -> resourceProvider.getString(result.messageResId)
         }
     }
 }

@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
-
 package com.kingpaging.qwelcome.ui.settings
 
 import android.content.ActivityNotFoundException
@@ -27,8 +25,22 @@ import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -50,6 +62,7 @@ import com.kingpaging.qwelcome.ui.components.NeonButtonStyle
 import com.kingpaging.qwelcome.ui.components.NeonMagentaButton
 import com.kingpaging.qwelcome.ui.components.NeonOutlinedField
 import com.kingpaging.qwelcome.ui.components.NeonPanel
+import com.kingpaging.qwelcome.ui.components.NeonTopAppBar
 import com.kingpaging.qwelcome.util.rememberHapticFeedback
 import com.kingpaging.qwelcome.util.SoundManager
 import com.kingpaging.qwelcome.viewmodel.settings.SettingsEvent
@@ -114,20 +127,20 @@ fun SettingsScreen(
     if (showDiscardDialog) {
         AlertDialog(
             onDismissRequest = { showDiscardDialog = false },
-            title = { Text("Discard changes?") },
-            text = { Text("You have unsaved changes that will be lost.") },
+            title = { Text(stringResource(R.string.dialog_discard_changes_title)) },
+            text = { Text(stringResource(R.string.dialog_discard_changes_message)) },
             confirmButton = {
                 TextButton(onClick = {
                     haptic()
                     showDiscardDialog = false
                     onBack()
                 }) {
-                    Text("Discard", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.action_discard), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { haptic(); showDiscardDialog = false }) {
-                    Text("Keep editing")
+                    Text(stringResource(R.string.action_keep_editing))
                 }
             }
         )
@@ -140,10 +153,11 @@ fun SettingsScreen(
 
     CyberpunkBackdrop {
         Scaffold(
+            // Intentional: keep scaffold transparent so the cyberpunk backdrop remains visible.
             containerColor = Color.Transparent,
             topBar = {
-                TopAppBar(
-                    title = { Text("Settings") },
+                NeonTopAppBar(
+                    title = { Text(stringResource(R.string.title_settings)) },
                     navigationIcon = {
                         IconButton(onClick = {
                             haptic()
@@ -151,15 +165,10 @@ fun SettingsScreen(
                         }) {
                             Icon(
                                 Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Back"
+                                contentDescription = stringResource(R.string.content_desc_back)
                             )
                         }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = Color.Transparent,
-                        titleContentColor = MaterialTheme.colorScheme.onBackground,
-                        navigationIconContentColor = MaterialTheme.colorScheme.onBackground
-                    )
+                    }
                 )
             }
         ) { padding ->
@@ -173,7 +182,7 @@ fun SettingsScreen(
             ) {
                 // === TECH PROFILE SECTION ===
                 Text(
-                    "Tech Profile",
+                    stringResource(R.string.header_tech_profile),
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -181,17 +190,17 @@ fun SettingsScreen(
                     NeonOutlinedField(
                         value = name,
                         onValueChange = { name = it },
-                        label = { Text("Tech name") }
+                        label = { Text(stringResource(R.string.label_tech_name)) }
                     )
                     NeonOutlinedField(
                         value = title,
                         onValueChange = { title = it },
-                        label = { Text("Title") }
+                        label = { Text(stringResource(R.string.label_title)) }
                     )
                     NeonOutlinedField(
                         value = dept,
                         onValueChange = { dept = it },
-                        label = { Text("Department / line") }
+                        label = { Text(stringResource(R.string.label_department_line)) }
                     )
                 }
 
@@ -199,19 +208,19 @@ fun SettingsScreen(
 
                 // === MESSAGE TEMPLATE SECTION (simplified - just link to Templates screen) ===
                 Text(
-                    "Message Templates",
+                    stringResource(R.string.header_message_templates),
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.primary
                 )
                 NeonPanel {
                     Text(
-                        "Create, edit, duplicate, and manage your message templates.",
+                        stringResource(R.string.text_manage_templates_description),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        "Currently using: ${activeTemplate.name}",
+                        stringResource(R.string.text_currently_using_template, activeTemplate.name),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.secondary,
                         maxLines = 1,
@@ -223,7 +232,7 @@ fun SettingsScreen(
                         modifier = Modifier.fillMaxWidth(),
                         style = NeonButtonStyle.SECONDARY
                     ) {
-                        Text("Manage Templates")
+                        Text(stringResource(R.string.action_manage_templates_plain))
                     }
                 }
 
@@ -239,26 +248,32 @@ fun SettingsScreen(
                     enabled = hasUnsavedChanges,
                     style = NeonButtonStyle.PRIMARY
                 ) {
-                    Text(if (hasUnsavedChanges) "Save Profile" else "No changes")
+                    Text(
+                        if (hasUnsavedChanges) {
+                            stringResource(R.string.action_save_profile)
+                        } else {
+                            stringResource(R.string.label_no_changes)
+                        }
+                    )
                 }
 
                 Spacer(Modifier.height(16.dp))
 
                 // === DATA MANAGEMENT SECTION ===
                 Text(
-                    "Data Management",
+                    stringResource(R.string.header_data_management),
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.primary
                 )
                 NeonPanel {
                     Text(
-                        "Export templates to share with your team, or import from a backup.",
+                        stringResource(R.string.text_data_management_description),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                     )
                     if (hasUnsavedChanges) {
                         Text(
-                            "Export is disabled until changes are saved.",
+                            stringResource(R.string.text_export_disabled_unsaved),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.tertiary
                         )
@@ -275,14 +290,20 @@ fun SettingsScreen(
                             enabled = !hasUnsavedChanges,
                             style = NeonButtonStyle.SECONDARY
                         ) {
-                            Text(if (hasUnsavedChanges) "Save First" else "Export")
+                            Text(
+                                if (hasUnsavedChanges) {
+                                    stringResource(R.string.action_save_first)
+                                } else {
+                                    stringResource(R.string.action_export)
+                                }
+                            )
                         }
                         NeonButton(
                             onClick = onOpenImport,
                             modifier = Modifier.weight(1f),
                             style = NeonButtonStyle.SECONDARY
                         ) {
-                            Text("Import")
+                            Text(stringResource(R.string.action_import))
                         }
                     }
                 }
@@ -291,7 +312,7 @@ fun SettingsScreen(
 
                 // === ABOUT SECTION === (at bottom - less frequently accessed)
                 Text(
-                    "About",
+                    stringResource(R.string.header_about),
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -310,13 +331,13 @@ fun SettingsScreen(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
                                 Icons.Filled.Info,
-                                contentDescription = null,
+                                contentDescription = stringResource(R.string.content_desc_version_info),
                                 modifier = Modifier.size(20.dp),
                                 tint = MaterialTheme.colorScheme.primary
                             )
                             Spacer(Modifier.width(8.dp))
                             Text(
-                                "Version ${vm.currentVersion}",
+                                stringResource(R.string.label_version_format, vm.currentVersion),
                                 style = MaterialTheme.typography.bodyMedium
                             )
                         }
@@ -333,13 +354,13 @@ fun SettingsScreen(
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Icon(
                                         Icons.Filled.CheckCircle,
-                                        contentDescription = "Up to date",
+                                        contentDescription = stringResource(R.string.status_up_to_date),
                                         modifier = Modifier.size(16.dp),
                                         tint = MaterialTheme.colorScheme.primary
                                     )
                                     Spacer(Modifier.width(4.dp))
                                     Text(
-                                        "Up to date",
+                                        stringResource(R.string.status_up_to_date),
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.primary
                                     )
@@ -370,11 +391,11 @@ fun SettingsScreen(
                                     ) {
                                         Icon(
                                             Icons.Filled.Download,
-                                            contentDescription = null,
+                                            contentDescription = stringResource(R.string.content_desc_download_update),
                                             modifier = Modifier.size(16.dp)
                                         )
                                         Spacer(Modifier.width(4.dp))
-                                        Text("v${state.version} available")
+                                        Text(stringResource(R.string.status_update_available, state.version))
                                     }
                                     IconButton(
                                         onClick = { haptic(); vm.dismissUpdate() },
@@ -382,7 +403,7 @@ fun SettingsScreen(
                                     ) {
                                         Icon(
                                             Icons.Filled.Close,
-                                            contentDescription = "Dismiss update",
+                                            contentDescription = stringResource(R.string.content_desc_dismiss_update),
                                             modifier = Modifier.size(16.dp),
                                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
@@ -391,7 +412,7 @@ fun SettingsScreen(
                             }
                             is UpdateState.Error -> {
                                 Text(
-                                    "Check failed",
+                                    stringResource(R.string.status_check_failed),
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.error
                                 )
@@ -410,14 +431,14 @@ fun SettingsScreen(
                     ) {
                         Icon(
                             Icons.Filled.Refresh,
-                            contentDescription = null,
+                            contentDescription = stringResource(R.string.content_desc_check_updates),
                             modifier = Modifier.size(18.dp)
                         )
                         Spacer(Modifier.width(8.dp))
                         Text(
                             when (updateState) {
-                                is UpdateState.Checking -> "Checking..."
-                                else -> "Check for Updates"
+                                is UpdateState.Checking -> stringResource(R.string.status_checking_updates)
+                                else -> stringResource(R.string.action_check_updates)
                             }
                         )
                     }
@@ -440,11 +461,11 @@ fun SettingsScreen(
                     ) {
                         Icon(
                             Icons.Filled.Code,
-                            contentDescription = null,
+                            contentDescription = stringResource(R.string.content_desc_view_github),
                             modifier = Modifier.size(18.dp)
                         )
                         Spacer(Modifier.width(8.dp))
-                        Text("View on GitHub")
+                        Text(stringResource(R.string.action_view_github))
                     }
                 }
 
