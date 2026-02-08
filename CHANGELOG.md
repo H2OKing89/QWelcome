@@ -9,6 +9,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No unreleased changes.
 
+## [2.4.0] - 2026-02-08
+
+### Added
+
+- **String Resources for Localization** - Migrated all hardcoded UI strings to `strings.xml` across CustomerIntakeScreen, SettingsScreen, NeonComponents, QrCodeBottomSheet, ExportScreen, ImportScreen, and TemplateListScreen with comprehensive accessibility support including content descriptions for screen readers
+- **NeonDropdownMenuBox Component** - New cyberpunk-styled dropdown wrapper component that encapsulates Material3 ExposedDropdownMenuBox with experimental API annotations, providing reusable dropdown functionality with consistent theming
+- **NeonTopAppBar Component** - New cyberpunk-styled top app bar wrapper component that encapsulates Material3 TopAppBar with experimental API annotations, ensuring consistent navigation bar styling across screens
+- **SoundManager Lifecycle Management** - App-level lifecycle observer in QWelcomeApplication for automatic SoundManager restart on app foreground and shutdown on background with comprehensive error handling and Crashlytics logging
+- **Lifecycle Process Dependency** - Added androidx.lifecycle:lifecycle-process for ProcessLifecycleOwner support in app lifecycle management
+
+### Changed
+
+- **WiFi Validation Refactoring** - Centralized SSID and password validation logic in WifiQrGenerator utility, removing duplicate validation code from CustomerIntakeViewModel and improving maintainability
+- **Experimental API Isolation** - Removed `@OptIn(ExperimentalMaterial3Api::class)` annotations from screen composables (CustomerIntakeScreen, SettingsScreen) by encapsulating experimental APIs in dedicated wrapper components
+- **AppViewModelFactory Optimization** - Use `remember {}` in MainActivity to cache ViewModelFactory instance, preventing unnecessary recreations on recomposition
+- **Lifecycle Version Consolidation** - Unified lifecycle dependency versions in libs.versions.toml using single `lifecycle = "2.10.0"` reference instead of separate version entries for runtime, viewmodel-compose, and process artifacts
+- **Build Configuration** - Enabled Gradle parallel builds in gradle.properties and added KotlinJvmCompile configuration in app/build.gradle.kts for explicit JVM target specification
+- **Error Handling** - Enhanced SoundManager lifecycle error handling to pass exceptions directly to Crashlytics with contextual logging instead of RuntimeException wrapping, preserving original exception types for better diagnostics
+- **Code Organization** - Moved companion object placement in QWelcomeApplication to end of class per Kotlin style conventions
+- **Import Structure** - Migrated wildcard imports to explicit imports in SettingsScreen for improved code clarity
+- **Sealed Class Instances** - Converted `object` to `data object` for UiEvent sealed class instances following Kotlin best practices
+- **Bump Script Changelog Handling** - Fixed PowerShell bump-version.ps1 to properly move [Unreleased] entries to version headings using state machine approach, replacing broken regex-based implementation
+
+### Fixed
+
+- **Accessibility** - Added comprehensive content descriptions for all interactive UI elements including buttons, icons, dropdowns, and navigation elements to improve screen reader support
+- **Annotation Placement** - Relocated `@OptIn` annotations from file level to function level for better code clarity and reduced annotation scope
+
+### Removed
+
+- **ExampleUnitTest.kt** - Removed unused placeholder test file from test source set
+
 ## [2.3.3] - 2026-02-07
 
 ### Added
