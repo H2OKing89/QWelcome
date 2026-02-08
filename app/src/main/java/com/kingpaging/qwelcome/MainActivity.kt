@@ -18,6 +18,7 @@ import com.kingpaging.qwelcome.di.LocalExportViewModel
 import com.kingpaging.qwelcome.di.LocalImportViewModel
 import com.kingpaging.qwelcome.di.LocalNavigator
 import com.kingpaging.qwelcome.di.LocalSettingsViewModel
+import com.kingpaging.qwelcome.di.LocalSoundPlayer
 import com.kingpaging.qwelcome.di.LocalTemplateListViewModel
 import com.kingpaging.qwelcome.navigation.AndroidNavigator
 import com.kingpaging.qwelcome.navigation.AppNavGraph
@@ -29,6 +30,7 @@ import com.kingpaging.qwelcome.viewmodel.import_pkg.ImportViewModel
 import com.kingpaging.qwelcome.viewmodel.factory.AppViewModelProvider
 import com.kingpaging.qwelcome.viewmodel.settings.SettingsViewModel
 import com.kingpaging.qwelcome.viewmodel.templates.TemplateListViewModel
+import com.kingpaging.qwelcome.util.SoundManager
 
 class MainActivity : ComponentActivity() {
 
@@ -75,6 +77,7 @@ class MainActivity : ComponentActivity() {
                     LocalExportViewModel provides exportViewModel,
                     LocalImportViewModel provides importViewModel,
                     LocalTemplateListViewModel provides templateListViewModel,
+                    LocalSoundPlayer provides SoundManager,
                     LocalNavigator provides navigator
                 ) {
                     // Connect ViewModel lifecycle methods for auto-clear security feature

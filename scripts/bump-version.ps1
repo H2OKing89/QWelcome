@@ -10,7 +10,8 @@
     Version bump type: major, minor, patch, or explicit X.Y.Z
 
 .PARAMETER Push
-    Push commit and tag to remote after creation
+    Push the release branch to remote after creation (tag is NOT pushed —
+    it must be recreated on master after the PR is merged)
 
 .PARAMETER Force
     Skip changelog content validation
@@ -207,17 +208,24 @@ VERSION_CODE=$NewCode
     Write-Host "`nCreated commit and tag v$NewName" -ForegroundColor Green
 
     # ── Optional push ─────────────────────────────────────────────────────
+    # Only push the branch — NEVER the tag. The tag must be recreated on
+    # master after the PR is merged (see docs/RELEASE_GUIDE.md Phase 6).
     if ($Push) {
-        Write-Host "`nPushing to remote..." -ForegroundColor Yellow
-        git push --follow-tags
-        Write-Host "Pushed to remote." -ForegroundColor Green
+        Write-Host "`nPushing branch to remote..." -ForegroundColor Yellow
+        git push -u origin HEAD
+        Write-Host "Branch pushed (tag NOT pushed — retag on master after merge)." -ForegroundColor Green
     }
 
     Write-Host "`n✅ Done! Release v$NewName (code $NewCode) is ready." -ForegroundColor Cyan
     
     if (-not $Push) {
-        Write-Host "`nTo push and trigger the release build:" -ForegroundColor Yellow
-        Write-Host "  git push --follow-tags" -ForegroundColor White
+        Write-Host "`nNext steps:" -ForegroundColor Yellow
+        Write-Host "  1. git push -u origin HEAD                    # push branch (NOT tag)" -ForegroundColor White
+        Write-Host "  2. Create PR, get approval, merge" -ForegroundColor White
+        Write-Host "  3. git checkout master && git pull origin master" -ForegroundColor White
+        Write-Host "  4. git tag -d v$NewName 2>`$null              # delete old tag" -ForegroundColor White
+        Write-Host "  5. git tag -a v$NewName -m 'Release v$NewName' # retag on master" -ForegroundColor White
+        Write-Host "  6. git push origin v$NewName                  # triggers release" -ForegroundColor White
     }
 
 } finally {

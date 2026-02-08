@@ -95,7 +95,7 @@ import com.kingpaging.qwelcome.ui.components.NeonButtonStyle
 import com.kingpaging.qwelcome.ui.components.NeonOutlinedField
 import com.kingpaging.qwelcome.ui.theme.LocalDarkTheme
 import com.kingpaging.qwelcome.util.rememberHapticFeedback
-import com.kingpaging.qwelcome.util.SoundManager
+import com.kingpaging.qwelcome.di.LocalSoundPlayer
 import com.kingpaging.qwelcome.viewmodel.templates.TemplateListEvent
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
@@ -114,6 +114,7 @@ fun TemplateListScreen(
     onBack: () -> Unit
 ) {
     val vm = LocalTemplateListViewModel.current
+    val soundPlayer = LocalSoundPlayer.current
     val context = LocalContext.current
     val uiState by vm.uiState.collectAsState()
     val haptic = rememberHapticFeedback()
@@ -132,7 +133,7 @@ fun TemplateListScreen(
         vm.events.collect { event ->
             when (event) {
                 is TemplateListEvent.Error -> {
-                    SoundManager.playBeep()
+                    soundPlayer.playBeep()
                     Toast.makeText(context, event.message, Toast.LENGTH_LONG).show()
                 }
                 is TemplateListEvent.TemplateCreated -> {

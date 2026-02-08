@@ -12,7 +12,8 @@
 | **No direct commits to `master`/`main`** | The pre-commit hook (`scripts/git-hooks/pre-commit`) rejects them. All work goes through feature/release branches + PR. |
 | **Single version source** | `version.properties` at repo root (`VERSION_NAME`, `VERSION_CODE`). Never edit `app/build.gradle.kts` version values. |
 | **Changelog before release** | `CHANGELOG.md` must have real entries under `## [Unreleased]` before bumping. The bump script validates this. |
-| **Annotated tags only** | Tags are `vX.Y.Z` (e.g., `v2.4.0`). Pushing a `v*` tag triggers the GitHub Actions release workflow. |
+| **Annotated tags only** | Tags are `vX.Y.Z` (e.g., `v2.4.0`). Pushing a `v*` tag triggers the GitHub Actions release workflow (`on: push: tags: ["v*"]`). |
+| **Tag after merge** | The release tag must always point at a commit reachable from `master`. After merging the release PR, **delete the local tag and recreate it on `master` HEAD** before pushing. This guarantees the tag is correct regardless of merge method (merge commit, squash, or rebase). |
 
 ---
 
@@ -45,14 +46,24 @@ git checkout -b release/vX.Y.Z
 Before writing anything, the AI agent **must** review all changes that will be in this release:
 
 ```powershell
+# 0. Find the last release tag automatically
+git fetch --tags
+$LAST_TAG = git describe --tags --abbrev=0 --match "v*"
+# (Bash equivalent: LAST_TAG=$(git describe --tags --abbrev=0 --match "v*"))
+# If no v* tags exist yet (first release), diff from the root commit:
+#   $LAST_TAG = git rev-list --max-parents=0 HEAD
+
 # 1. List all commits since last release tag
-git log <last-tag>..HEAD --oneline
+git log $LAST_TAG..HEAD --oneline
 
 # 2. List all changed files
-git diff <last-tag>..HEAD --name-only
+git diff $LAST_TAG..HEAD --name-only
 
-# 3. Review the actual diffs to understand what changed
-git diff <last-tag>..HEAD --stat
+# 3. Review a summary of what changed
+git diff $LAST_TAG..HEAD --stat
+
+# 4. Review the actual diffs to understand what changed
+git diff $LAST_TAG..HEAD
 ```
 
 Using the review above, write comprehensive changelog entries under `## [Unreleased]` in `CHANGELOG.md`:
@@ -120,8 +131,11 @@ scripts/bump-version.sh 2.4.0
 
 ```powershell
 # Push the branch only — do NOT push the tag yet
-git push -u origin release/vX.Y.Z
+# Use explicit refspec; NEVER use --follow-tags (it will push the annotated tag)
+git push -u origin HEAD
 ```
+
+> **Warning:** `git push --follow-tags` pushes annotated tags reachable from the pushed commits. Always use the explicit command above to avoid pushing the tag prematurely.
 
 ### Phase 5 — Create the Pull Request (AI Agent Fills Everything)
 
@@ -183,19 +197,37 @@ git diff master..HEAD --name-only
 
 > **Key rule:** The AI agent must check the appropriate boxes in "Type of Change" and "Testing" based on what was actually done (e.g., if tests were run and passed, check those boxes). Leave unchecked only items that were not verified.
 
-### Phase 6 — Merge & Push the Tag
+### Phase 6 — Merge & Retag on Master & Push the Tag
 
 After PR approval and CI passes:
 
-1. **Merge the PR** into `master` (use "Merge commit" or "Squash and merge" per preference)
-2. **Push the tag** to trigger the release workflow:
+1. **Merge the PR** into `master` (any merge method is safe: merge commit, squash, or rebase)
+2. **Retag on the actual `master` HEAD** so the tag points at what shipped:
 
 ```powershell
 git checkout master
 git pull origin master
+
+# Delete the old tag (created on the release branch) and recreate on master
+# (2>$null makes this idempotent — safe if the tag was already deleted)
+git tag -d vX.Y.Z 2>$null
+git tag -a vX.Y.Z -m "Release vX.Y.Z"
+
+# Push the tag to trigger the release workflow
 git push origin vX.Y.Z
 ```
 
+**Bash equivalent** (use `|| true` for idempotence):
+
+```bash
+git tag -d vX.Y.Z || true
+git tag -a vX.Y.Z -m "Release vX.Y.Z"
+git push origin vX.Y.Z
+```
+
+> **Why retag?** If the PR was squash-merged or rebased, GitHub creates new commit(s) on `master`.
+> The original tag from the release branch would point at a commit that no longer exists in `master`'s
+> history. Retagging guarantees the release is built from the code that actually shipped.
 > Pushing the `vX.Y.Z` tag triggers `.github/workflows/release.yml` which:
 >
 > - Builds a signed release APK
@@ -232,23 +264,29 @@ For an AI agent performing a release, here is the exact sequence of operations.
 
 ```text
 1.  git checkout master && git pull origin master
-2.  Review changes: git log <last-tag>..HEAD --oneline
-3.  Review files:   git diff <last-tag>..HEAD --name-only
-4.  Determine bump type (major/minor/patch) from the changes
-5.  git checkout -b release/vX.Y.Z
-6.  Edit CHANGELOG.md — write [Unreleased] entries from the diff review
-7.  .\scripts\bump-version.ps1 <patch|minor|major>       # Windows
+2.  git fetch --tags
+3.  $LAST_TAG = git describe --tags --abbrev=0 --match "v*"
+    # (first release fallback: $LAST_TAG = git rev-list --max-parents=0 HEAD)
+4.  Review changes: git log $LAST_TAG..HEAD --oneline
+5.  Review files:   git diff $LAST_TAG..HEAD --name-only
+6.  Review diffs:   git diff $LAST_TAG..HEAD
+7.  Determine bump type (major/minor/patch) from the changes
+8.  git checkout -b release/vX.Y.Z
+9.  Edit CHANGELOG.md — write [Unreleased] entries from the diff review
+10. .\scripts\bump-version.ps1 <patch|minor|major>       # Windows
     scripts/bump-version.sh <patch|minor|major>           # Linux/Mac
-8.  git push -u origin release/vX.Y.Z                    # push branch, NOT tag
-9.  Review: git log master..HEAD --oneline && git diff master..HEAD --name-only
-10. Create PR via API/MCP tools:
+11. git push -u origin HEAD                               # push branch, NOT tag
+12. Review: git log master..HEAD --oneline && git diff master..HEAD --name-only
+13. Create PR via API/MCP tools:
     - Title: "release: vX.Y.Z"
     - Body: auto-generated summary, changelog, file list, checked boxes
-11. (Wait for PR approval & CI green)
-12. Merge the PR on GitHub
-13. git checkout master && git pull origin master
-14. git push origin vX.Y.Z                                # push tag → triggers release
-15. Verify GitHub Release page
+14. (Wait for PR approval & CI green)
+15. Merge the PR on GitHub (any merge method is safe)
+16. git checkout master && git pull origin master
+17. git tag -d vX.Y.Z 2>$null                             # delete old tag (idempotent)
+18. git tag -a vX.Y.Z -m "Release vX.Y.Z"                 # retag on master HEAD
+19. git push origin vX.Y.Z                                 # push tag → triggers release
+20. Verify GitHub Release page
 ```
 
 ---
@@ -262,9 +300,13 @@ For critical bugs on the current release:
 2. git checkout -b hotfix/<description>
 3. Fix the bug, update CHANGELOG.md [Unreleased]
 4. .\scripts\bump-version.ps1 patch
-5. git push -u origin hotfix/<description>
+5. git push -u origin HEAD                               # push branch, NOT tag
 6. Create PR: hotfix/<description> → master
-7. After merge: git push origin vX.Y.Z
+7. After merge:
+   git checkout master && git pull origin master
+   git tag -d vX.Y.Z 2>$null                             # retag on master HEAD (idempotent)
+   git tag -a vX.Y.Z -m "Release vX.Y.Z"
+   git push origin vX.Y.Z                                # push tag → triggers release
 ```
 
 ---
@@ -291,8 +333,11 @@ For critical bugs on the current release:
 | `No content under [Unreleased]` | Bump script validation failed | Add changelog entries before running the bump script, or use `-Force` (not recommended). |
 | GitHub Release has no changelog | Tag pushed before changelog was written | Always write changelog → bump → merge PR → then push tag. |
 | Tag already exists | Re-running bump for same version | Delete the local tag (`git tag -d vX.Y.Z`) and let the script recreate it. |
+| Tag accidentally pushed to remote | Someone ran `git push --follow-tags` or pushed the tag early | Delete remote then local: `git push --delete origin vX.Y.Z` then `git tag -d vX.Y.Z`, then retag on the correct commit and push again. |
 | CI fails on release | Missing secrets (keystore, passwords) | Ensure `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_PASSWORD` are set in repo secrets. |
 | Tag points to wrong commit after amend | Amended the release commit after tagging | Delete tag (`git tag -d vX.Y.Z`), amend, re-tag (`git tag -a vX.Y.Z -m "Release vX.Y.Z"`). |
+| Tag points to wrong commit after squash/rebase merge | Tag was created on the release branch; squash/rebase creates new commits on `master` | Always retag on `master` after merge: `git tag -d vX.Y.Z && git tag -a vX.Y.Z -m "Release vX.Y.Z"` then push. |
+| Tag pushed prematurely with `--follow-tags` | `git push --follow-tags` pushes annotated tags reachable from pushed commits | Always use `git push -u origin HEAD` (no `--follow-tags`) when pushing the branch. Recovery: `git push --delete origin vX.Y.Z` to remove the remote tag, then retag after merge. |
 | Feature PR not merged before release | Started release branch from stale master | Always merge all feature PRs into master and `git pull` **before** creating the release branch. |
 
 ---
@@ -309,3 +354,4 @@ Issues discovered during the first AI-driven release and the fixes applied:
 
 4. **Local merge vs GitHub merge:** Merging the release PR locally with `git merge --no-ff` and pushing closes the GitHub PR automatically (GitHub detects the merge). Both approaches work, but using the local flow requires you to push master first, then push the tag separately.
 
+5. **Squash/rebase merge invalidates the branch tag (fixed in guide):** When the bump script creates the tag on the release branch and the PR is later squash-merged, the tagged commit no longer exists in `master`'s history. The workflow now always retags on `master` after merge, making it safe to use any merge method.

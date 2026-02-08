@@ -64,7 +64,7 @@ import com.kingpaging.qwelcome.ui.components.NeonOutlinedField
 import com.kingpaging.qwelcome.ui.components.NeonPanel
 import com.kingpaging.qwelcome.ui.components.NeonTopAppBar
 import com.kingpaging.qwelcome.util.rememberHapticFeedback
-import com.kingpaging.qwelcome.util.SoundManager
+import com.kingpaging.qwelcome.di.LocalSoundPlayer
 import com.kingpaging.qwelcome.viewmodel.settings.SettingsEvent
 import com.kingpaging.qwelcome.viewmodel.settings.UpdateState
 
@@ -77,7 +77,8 @@ fun SettingsScreen(
 ) {
     // Get ViewModel from CompositionLocal (provided at Activity level)
     val vm = LocalSettingsViewModel.current
-    
+    val soundPlayer = LocalSoundPlayer.current
+
     // Discard confirmation dialog state
     var showDiscardDialog by rememberSaveable { mutableStateOf(false) }
 
@@ -115,7 +116,7 @@ fun SettingsScreen(
             vm.settingsEvents.collect { event ->
                 when (event) {
                     is SettingsEvent.ShowToast -> {
-                        SoundManager.playBeep()
+                        soundPlayer.playBeep()
                         Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
                     }
                 }
@@ -376,7 +377,7 @@ fun SettingsScreen(
                                             val isTrustedHttps = uri.scheme.equals("https", ignoreCase = true) &&
                                                 !uri.host.isNullOrBlank()
                                             if (!isTrustedHttps) {
-                                                SoundManager.playBeep()
+                                                soundPlayer.playBeep()
                                                 Toast.makeText(context, R.string.toast_untrusted_update_link, Toast.LENGTH_SHORT).show()
                                                 return@TextButton
                                             }
