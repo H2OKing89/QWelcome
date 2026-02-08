@@ -22,8 +22,10 @@ class QWelcomeApplication : Application() {
                 SoundManager.restart()
             } catch (e: Exception) {
                 Log.e(TAG, "appLifecycleObserver: SoundManager.restart() failed", e)
-                FirebaseCrashlytics.getInstance()
-                    .recordException(RuntimeException("appLifecycleObserver: SoundManager.restart() failed", e))
+                FirebaseCrashlytics.getInstance().apply {
+                    log("SoundManager.restart() failed in appLifecycleObserver")
+                    recordException(e)
+                }
             }
         }
 
@@ -32,14 +34,12 @@ class QWelcomeApplication : Application() {
                 SoundManager.shutdown()
             } catch (e: Exception) {
                 Log.e(TAG, "appLifecycleObserver: SoundManager.shutdown() failed", e)
-                FirebaseCrashlytics.getInstance()
-                    .recordException(RuntimeException("appLifecycleObserver: SoundManager.shutdown() failed", e))
+                FirebaseCrashlytics.getInstance().apply {
+                    log("SoundManager.shutdown() failed in appLifecycleObserver")
+                    recordException(e)
+                }
             }
         }
-    }
-
-    companion object {
-        private const val TAG = "QWelcomeApplication"
     }
 
     override fun onCreate() {
@@ -55,5 +55,9 @@ class QWelcomeApplication : Application() {
         crashlytics.setCustomKey("build_type", BuildConfig.BUILD_TYPE)
 
         ProcessLifecycleOwner.get().lifecycle.addObserver(appLifecycleObserver)
+    }
+
+    companion object {
+        private const val TAG = "QWelcomeApplication"
     }
 }
