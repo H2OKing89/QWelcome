@@ -274,7 +274,7 @@ private fun IdleStep(
     ) {
         Icon(
             imageVector = Icons.Default.UploadFile,
-            contentDescription = null,
+            contentDescription = stringResource(R.string.content_desc_import_data),
             modifier = Modifier.size(64.dp),
             tint = MaterialTheme.colorScheme.secondary
         )

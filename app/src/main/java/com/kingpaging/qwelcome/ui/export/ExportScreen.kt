@@ -571,7 +571,7 @@ private fun ExportOptionCard(
                 } else {
                     Icon(
                         imageVector = icon,
-                        contentDescription = null,
+                        contentDescription = title,
                         tint = iconTint,
                         modifier = Modifier.size(32.dp)
                     )

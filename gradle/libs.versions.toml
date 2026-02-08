@@ -8,6 +8,7 @@ espressoCore = "3.7.0"
 # Includes collectAsStateWithLifecycle and other improvements
 lifecycleRuntimeKtx = "2.10.0"
 lifecycleViewmodelCompose = "2.10.0"
+lifecycleProcess = "2.10.0"
 activityCompose = "1.12.2"
 kotlin = "2.0.21"
 composeBom = "2026.01.00"
@@ -34,6 +35,7 @@ junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
 androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
+androidx-lifecycle-process = { group = "androidx.lifecycle", name = "lifecycle-process", version.ref = "lifecycleProcess" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
 androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
 androidx-compose-ui = { group = "androidx.compose.ui", name = "ui" }
