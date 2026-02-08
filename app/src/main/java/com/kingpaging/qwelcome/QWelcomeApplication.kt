@@ -1,6 +1,7 @@
 package com.kingpaging.qwelcome
 
 import android.app.Application
+import android.util.Log
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.kingpaging.qwelcome.util.SoundManager
 import androidx.lifecycle.DefaultLifecycleObserver
@@ -17,12 +18,28 @@ class QWelcomeApplication : Application() {
 
     private val appLifecycleObserver = object : DefaultLifecycleObserver {
         override fun onStart(owner: LifecycleOwner) {
-            SoundManager.restart()
+            try {
+                SoundManager.restart()
+            } catch (e: Exception) {
+                Log.e(TAG, "appLifecycleObserver: SoundManager.restart() failed", e)
+                FirebaseCrashlytics.getInstance()
+                    .recordException(RuntimeException("appLifecycleObserver: SoundManager.restart() failed", e))
+            }
         }
 
         override fun onStop(owner: LifecycleOwner) {
-            SoundManager.shutdown()
+            try {
+                SoundManager.shutdown()
+            } catch (e: Exception) {
+                Log.e(TAG, "appLifecycleObserver: SoundManager.shutdown() failed", e)
+                FirebaseCrashlytics.getInstance()
+                    .recordException(RuntimeException("appLifecycleObserver: SoundManager.shutdown() failed", e))
+            }
         }
+    }
+
+    companion object {
+        private const val TAG = "QWelcomeApplication"
     }
 
     override fun onCreate() {

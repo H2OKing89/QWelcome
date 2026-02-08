@@ -28,20 +28,12 @@ import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuAnchorType
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -71,8 +63,10 @@ import com.kingpaging.qwelcome.ui.components.CyberpunkBackdrop
 import com.kingpaging.qwelcome.ui.components.NeonButton
 import com.kingpaging.qwelcome.ui.components.NeonButtonStyle
 import com.kingpaging.qwelcome.ui.components.NeonCyanButton
+import com.kingpaging.qwelcome.ui.components.NeonDropdownMenuBox
 import com.kingpaging.qwelcome.ui.components.NeonOutlinedField
 import com.kingpaging.qwelcome.ui.components.NeonPanel
+import com.kingpaging.qwelcome.ui.components.NeonTopAppBar
 import com.kingpaging.qwelcome.ui.components.QrCodeBottomSheet
 import com.kingpaging.qwelcome.ui.components.QWelcomeHeader
 import com.kingpaging.qwelcome.ui.theme.LocalCyberColors
@@ -83,7 +77,6 @@ import com.kingpaging.qwelcome.viewmodel.UiEvent
 import kotlinx.coroutines.launch
 
 @Suppress("LocalContextGetResourceValueCall")
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CustomerIntakeScreen(
     onOpenSettings: () -> Unit,
@@ -159,7 +152,7 @@ fun CustomerIntakeScreen(
             // Intentional: keep scaffold transparent so the cyberpunk backdrop remains visible.
             containerColor = Color.Transparent,
             topBar = {
-                TopAppBar(
+                NeonTopAppBar(
                     title = { QWelcomeHeader() },
                     actions = {
                         IconButton(onClick = {
@@ -175,10 +168,7 @@ fun CustomerIntakeScreen(
                             Icon(Icons.Filled.Settings, contentDescription = stringResource(R.string.content_desc_settings))
                         }
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = Color.Transparent,
-                        actionIconContentColor = MaterialTheme.colorScheme.onBackground
-                    )
+                    actionIconContentColor = MaterialTheme.colorScheme.onBackground
                 )
             }
         ) { innerPadding ->
@@ -201,33 +191,14 @@ fun CustomerIntakeScreen(
                         templateUiState.templates.find { it.id == templateUiState.activeTemplateId }
                     }
 
-                    // ExposedDropdownMenuBox provides proper anchoring and sizing for light UI
-                    ExposedDropdownMenuBox(
+                    // NeonDropdownMenuBox wraps ExposedDropdownMenuBox with cyberpunk styling
+                    NeonDropdownMenuBox(
                         expanded = templateDropdownExpanded,
                         onExpandedChange = { templateDropdownExpanded = !templateDropdownExpanded },
+                        selectedText = activeTemplate?.name ?: "",
+                        label = { Text(stringResource(R.string.label_template)) },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        OutlinedTextField(
-                            value = activeTemplate?.name ?: "",
-                            onValueChange = {},
-                            readOnly = true,
-                            label = { Text(stringResource(R.string.label_template)) },
-                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = templateDropdownExpanded) },
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.secondary,
-                                unfocusedBorderColor = MaterialTheme.colorScheme.secondary.copy(alpha = if (isDark) 0.45f else 0.28f),
-                                focusedLabelColor = MaterialTheme.colorScheme.secondary,
-                                unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
-                            ),
-                            modifier = Modifier
-                                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
-                                .fillMaxWidth()
-                        )
-
-                        ExposedDropdownMenu(
-                            expanded = templateDropdownExpanded,
-                            onDismissRequest = { templateDropdownExpanded = false }
-                        ) {
                             templateUiState.templates.forEach { template ->
                                 DropdownMenuItem(
                                     text = {
@@ -264,7 +235,6 @@ fun CustomerIntakeScreen(
                                     onOpenTemplates()
                                 }
                             )
-                        }
                     }
                 }
 
