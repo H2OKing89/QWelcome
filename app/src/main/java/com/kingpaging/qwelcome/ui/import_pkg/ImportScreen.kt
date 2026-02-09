@@ -67,7 +67,7 @@ import com.kingpaging.qwelcome.ui.components.NeonButtonStyle
 import com.kingpaging.qwelcome.ui.components.NeonPanel
 import com.kingpaging.qwelcome.ui.theme.LocalCyberColors
 import com.kingpaging.qwelcome.util.rememberHapticFeedback
-import com.kingpaging.qwelcome.util.SoundManager
+import com.kingpaging.qwelcome.di.LocalSoundPlayer
 import com.kingpaging.qwelcome.viewmodel.import_pkg.ImportEvent
 import com.kingpaging.qwelcome.viewmodel.import_pkg.ImportStep
 import java.io.ByteArrayOutputStream
@@ -80,6 +80,7 @@ fun ImportScreen(
     onImportComplete: () -> Unit
 ) {
     val vm = LocalImportViewModel.current
+    val soundPlayer = LocalSoundPlayer.current
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
     val maxImportSizeLabel = remember { formatBytesAsMb(MAX_IMPORT_SIZE_BYTES.toLong()) }
@@ -101,7 +102,7 @@ fun ImportScreen(
                 } ?: Toast.makeText(context, R.string.toast_could_not_open_file, Toast.LENGTH_LONG).show()
             } catch (e: InputTooLargeException) {
                 Log.w("ImportScreen", "Import input exceeds size limit", e)
-                SoundManager.playBeep()
+                soundPlayer.playBeep()
                 Toast.makeText(
                     context,
                     context.getString(R.string.toast_import_too_large, maxImportSizeLabel),
@@ -109,16 +110,16 @@ fun ImportScreen(
                 ).show()
             } catch (e: SecurityException) {
                 Log.w("ImportScreen", "File permission denied", e)
-                SoundManager.playBeep()
+                soundPlayer.playBeep()
                 Toast.makeText(context, R.string.toast_permission_denied_read, Toast.LENGTH_LONG).show()
             } catch (e: IOException) {
                 Log.w("ImportScreen", "File read error", e)
-                SoundManager.playBeep()
+                soundPlayer.playBeep()
                 val detail = e.message ?: e.javaClass.simpleName
                 Toast.makeText(context, context.getString(R.string.toast_error_reading_file, detail), Toast.LENGTH_LONG).show()
             } catch (e: Exception) {
                 Log.e("ImportScreen", "Unexpected file error", e)
-                SoundManager.playBeep()
+                soundPlayer.playBeep()
                 val detail = e.message ?: e.javaClass.simpleName
                 Toast.makeText(context, context.getString(R.string.toast_unexpected_error, detail), Toast.LENGTH_LONG).show()
             }
@@ -142,7 +143,7 @@ fun ImportScreen(
                     Toast.makeText(context, message, Toast.LENGTH_LONG).show()
                 }
                 is ImportEvent.ImportFailed -> {
-                    SoundManager.playBeep()
+                    soundPlayer.playBeep()
                     Toast.makeText(context, event.message, Toast.LENGTH_LONG).show()
                 }
                 is ImportEvent.RequestFileOpen -> {
@@ -197,7 +198,7 @@ fun ImportScreen(
                                     try {
                                         clipboardManager.getText()?.let {
                                             if (exceedsImportLimit(it.text, MAX_IMPORT_SIZE_BYTES)) {
-                                                SoundManager.playBeep()
+                                                soundPlayer.playBeep()
                                                 Toast.makeText(
                                                     context,
                                                     context.getString(R.string.toast_import_too_large, maxImportSizeLabel),
@@ -209,7 +210,7 @@ fun ImportScreen(
                                         } ?: Toast.makeText(context, R.string.toast_clipboard_empty, Toast.LENGTH_SHORT).show()
                                     } catch (e: SecurityException) {
                                         Log.w("ImportScreen", "Clipboard access denied", e)
-                                        SoundManager.playBeep()
+                                        soundPlayer.playBeep()
                                         Toast.makeText(context, R.string.toast_cannot_access_clipboard, Toast.LENGTH_SHORT).show()
                                     }
                                 }

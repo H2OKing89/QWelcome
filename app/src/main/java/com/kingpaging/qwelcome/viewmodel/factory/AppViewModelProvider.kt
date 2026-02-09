@@ -103,7 +103,10 @@ class AppViewModelProvider(private val context: Context) : ViewModelProvider.Fac
                 ) as T
             }
             modelClass.isAssignableFrom(SettingsViewModel::class.java) -> {
-                SettingsViewModel(getSettingsStore(context)) as T
+                SettingsViewModel(
+                    store = getSettingsStore(context),
+                    resourceProvider = getResourceProvider(context)
+                ) as T
             }
             modelClass.isAssignableFrom(ExportViewModel::class.java) -> {
                 ExportViewModel(

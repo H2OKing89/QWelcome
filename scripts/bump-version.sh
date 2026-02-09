@@ -6,7 +6,8 @@
 #   scripts/bump-version.sh <major|minor|patch|X.Y.Z> [--push] [--force]
 #
 # Options:
-#   --push   Push commit and tag to remote after creation
+#   --push   Push the release branch to remote (tag is NOT pushed —
+#            it must be recreated on master after the PR is merged)
 #   --force  Skip changelog content validation
 #
 
@@ -156,10 +157,23 @@ echo ""
 echo "Created commit and tag v${NEW_NAME}"
 
 # ── Optional push ─────────────────────────────────────────────────────
+# Only push the branch — NEVER the tag. The tag must be recreated on
+# master after the PR is merged (see docs/RELEASE_GUIDE.md Phase 6).
 if [ "$PUSH" = true ]; then
-    git push --follow-tags
-    echo "Pushed to remote."
+    git push -u origin HEAD
+    echo "Branch pushed (tag NOT pushed — retag on master after merge)."
 fi
 
 echo ""
 echo "Done! Release v${NEW_NAME} (code ${NEW_CODE}) is ready."
+
+if [ "$PUSH" = false ]; then
+    echo ""
+    echo "Next steps:"
+    echo "  1. git push -u origin HEAD                      # push branch (NOT tag)"
+    echo "  2. Create PR, get approval, merge"
+    echo "  3. git checkout master && git pull origin master"
+    echo "  4. git tag -d \"v${NEW_NAME}\" || true               # delete old tag"
+    echo "  5. git tag -a \"v${NEW_NAME}\" -m 'Release v${NEW_NAME}'  # retag on master"
+    echo "  6. git push origin \"v${NEW_NAME}\"                  # triggers release"
+fi

@@ -2,6 +2,7 @@ package com.kingpaging.qwelcome.di
 
 import androidx.compose.runtime.staticCompositionLocalOf
 import com.kingpaging.qwelcome.navigation.Navigator
+import com.kingpaging.qwelcome.util.SoundPlayer
 import com.kingpaging.qwelcome.viewmodel.CustomerIntakeViewModel
 import com.kingpaging.qwelcome.viewmodel.export.ExportViewModel
 import com.kingpaging.qwelcome.viewmodel.import_pkg.ImportViewModel
@@ -72,6 +73,17 @@ val LocalImportViewModel = staticCompositionLocalOf<ImportViewModel> {
  */
 val LocalTemplateListViewModel = staticCompositionLocalOf<TemplateListViewModel> {
     error("TemplateListViewModel not provided. Wrap your composable with CompositionLocalProvider.")
+}
+
+/**
+ * Provides the [SoundPlayer] throughout the composition.
+ * Created via [staticCompositionLocalOf] — throws if accessed before being provided
+ * (fail-fast for configuration errors). Callers must supply a [SoundPlayer] implementation
+ * (e.g., [SoundManager][com.kingpaging.qwelcome.util.SoundManager]) via
+ * [CompositionLocalProvider][androidx.compose.runtime.CompositionLocalProvider].
+ */
+val LocalSoundPlayer = staticCompositionLocalOf<SoundPlayer> {
+    error("SoundPlayer not provided. Wrap your composable with CompositionLocalProvider.")
 }
 
 /**

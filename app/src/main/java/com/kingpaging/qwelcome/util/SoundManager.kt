@@ -21,8 +21,10 @@ import kotlin.math.sin
  * and release resources. This can be wired to ProcessLifecycleOwner.onStop or
  * Application.onTerminate.
  */
-object SoundManager {
+object SoundManager : SoundPlayer {
+    @Volatile
     private var isEnabled = true
+    @Volatile
     private var isShutdown = false
     
     /** Coroutine scope for audio playback - uses SupervisorJob so failures don't cancel other sounds */
@@ -67,7 +69,7 @@ object SoundManager {
     /**
      * Plays a cyberpunk-style beep (short high-frequency pulse)
      */
-    fun playBeep() {
+    override fun playBeep() {
         if (!isEnabled || isShutdown) return
         
         soundScope.launch {
@@ -82,7 +84,7 @@ object SoundManager {
     /**
      * Plays a confirmation sound (ascending two-tone)
      */
-    fun playConfirm() {
+    override fun playConfirm() {
         if (!isEnabled || isShutdown) return
         
         soundScope.launch {

@@ -72,7 +72,7 @@ import com.kingpaging.qwelcome.ui.components.QWelcomeHeader
 import com.kingpaging.qwelcome.ui.theme.LocalCyberColors
 import com.kingpaging.qwelcome.ui.theme.LocalDarkTheme
 import com.kingpaging.qwelcome.util.rememberHapticFeedback
-import com.kingpaging.qwelcome.util.SoundManager
+import com.kingpaging.qwelcome.di.LocalSoundPlayer
 import com.kingpaging.qwelcome.viewmodel.UiEvent
 import kotlinx.coroutines.launch
 
@@ -86,6 +86,7 @@ fun CustomerIntakeScreen(
     val customerIntakeViewModel = LocalCustomerIntakeViewModel.current
     val templateListViewModel = LocalTemplateListViewModel.current
     val navigator = LocalNavigator.current
+    val soundPlayer = LocalSoundPlayer.current
     val hapticFeedback = rememberHapticFeedback()
 
     val uiState by customerIntakeViewModel.uiState.collectAsStateWithLifecycle()
@@ -119,10 +120,10 @@ fun CustomerIntakeScreen(
                 }
                 is UiEvent.ValidationFailed,
                 is UiEvent.ActionFailed -> {
-                    SoundManager.playBeep()
+                    soundPlayer.playBeep()
                 }
                 is UiEvent.RateLimitExceeded -> {
-                    SoundManager.playBeep()
+                    soundPlayer.playBeep()
                     Toast.makeText(context, context.getString(R.string.toast_rate_limit), Toast.LENGTH_LONG).show()
                 }
             }

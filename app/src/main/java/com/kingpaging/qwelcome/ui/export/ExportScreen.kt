@@ -83,7 +83,7 @@ import com.kingpaging.qwelcome.ui.components.NeonMagentaButton
 import com.kingpaging.qwelcome.ui.components.NeonPanel
 import com.kingpaging.qwelcome.ui.theme.LocalDarkTheme
 import com.kingpaging.qwelcome.util.rememberHapticFeedback
-import com.kingpaging.qwelcome.util.SoundManager
+import com.kingpaging.qwelcome.di.LocalSoundPlayer
 import com.kingpaging.qwelcome.viewmodel.export.ExportEvent
 import com.kingpaging.qwelcome.viewmodel.export.ExportType
 import java.io.IOException
@@ -94,6 +94,7 @@ fun ExportScreen(
     onBack: () -> Unit
 ) {
     val vm = LocalExportViewModel.current
+    val soundPlayer = LocalSoundPlayer.current
     val context = LocalContext.current
     val uiState by vm.uiState.collectAsStateWithLifecycle()
     val haptic = rememberHapticFeedback()
@@ -119,11 +120,11 @@ fun ExportScreen(
                     }
                     vm.onFileSaveComplete()
                 } catch (e: SecurityException) {
-                    SoundManager.playBeep()
+                    soundPlayer.playBeep()
                     Toast.makeText(context, context.getString(R.string.toast_failed_save_file, e.message), Toast.LENGTH_LONG).show()
                     vm.onFileSaveCancelled()
                 } catch (e: IOException) {
-                    SoundManager.playBeep()
+                    soundPlayer.playBeep()
                     Toast.makeText(context, context.getString(R.string.toast_failed_save_file, e.message), Toast.LENGTH_LONG).show()
                     vm.onFileSaveCancelled()
                 }
@@ -144,7 +145,7 @@ fun ExportScreen(
                     // Success is shown in UI state
                 }
                 is ExportEvent.ExportError -> {
-                    SoundManager.playBeep()
+                    soundPlayer.playBeep()
                     Toast.makeText(context, event.message, Toast.LENGTH_LONG).show()
                 }
                 is ExportEvent.CopiedToClipboard -> {

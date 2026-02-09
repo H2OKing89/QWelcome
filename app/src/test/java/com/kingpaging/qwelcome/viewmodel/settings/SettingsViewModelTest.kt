@@ -6,6 +6,7 @@ import com.kingpaging.qwelcome.data.TechProfile
 import com.kingpaging.qwelcome.data.Template
 import com.kingpaging.qwelcome.data.UpdateCheckResult
 import com.kingpaging.qwelcome.data.UpdateChecker
+import com.kingpaging.qwelcome.testutil.FakeResourceProvider
 import com.kingpaging.qwelcome.testutil.MainDispatcherRule
 import com.kingpaging.qwelcome.viewmodel.factory.AppViewModelProvider
 import io.mockk.coEvery
@@ -32,6 +33,7 @@ class SettingsViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val mockStore = mockk<SettingsStore>(relaxed = true)
+    private val fakeResourceProvider = FakeResourceProvider()
     private lateinit var vm: SettingsViewModel
 
     private val testProfile = TechProfile(name = "John", title = "Sr Tech", dept = "IT")
@@ -47,7 +49,7 @@ class SettingsViewModelTest {
 
         mockkObject(UpdateChecker)
 
-        vm = SettingsViewModel(mockStore)
+        vm = SettingsViewModel(mockStore, fakeResourceProvider)
     }
 
     @After
@@ -231,8 +233,9 @@ class SettingsViewModelTest {
             advanceUntilIdle()
 
             val event = awaitItem()
-            assertTrue(event is SettingsEvent.ShowToast)
-            assertTrue((event as SettingsEvent.ShowToast).message.contains("try again in"))
+            assertTrue(event is SettingsEvent.ShowToastError)
+            // FakeResourceProvider returns "string_<resId>[args]" format
+            assertTrue((event as SettingsEvent.ShowToastError).message.contains("string_"))
         }
 
         // UpdateChecker should only have been called once
