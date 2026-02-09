@@ -2,6 +2,8 @@ package com.kingpaging.qwelcome.data
 
 import android.util.Log
 import com.kingpaging.qwelcome.BuildConfig
+import com.kingpaging.qwelcome.R
+import com.kingpaging.qwelcome.util.ResourceProvider
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -44,7 +46,10 @@ private const val MAX_EXPORT_SIZE_BYTES = 10 * 1024 * 1024
  * - Schema version checking
  * - Template conflict detection
  */
-class ImportExportRepository(private val settingsStore: SettingsStore) {
+class ImportExportRepository(
+    private val settingsStore: SettingsStore,
+    private val resourceProvider: ResourceProvider
+) {
 
     private val json = Json {
         ignoreUnknownKeys = true  // Forward compatibility
@@ -72,7 +77,9 @@ class ImportExportRepository(private val settingsStore: SettingsStore) {
             }
 
             if (templatesToExport.isEmpty()) {
-                return ExportResult.Error("No templates to export")
+                return ExportResult.Error(
+                    resourceProvider.getString(R.string.error_no_templates_to_export)
+                )
             }
 
             // Estimate export size to prevent memory exhaustion
@@ -85,7 +92,12 @@ class ImportExportRepository(private val settingsStore: SettingsStore) {
                     it.content.toByteArray(Charsets.UTF_8).size + it.name.toByteArray(Charsets.UTF_8).size + 200
                 }
                 if (preciseSize > MAX_EXPORT_SIZE_BYTES) {
-                    return ExportResult.Error("Export too large (max 10MB)")
+                    return ExportResult.Error(
+                        resourceProvider.getString(
+                            R.string.error_export_too_large,
+                            formatBytesAsMb(MAX_EXPORT_SIZE_BYTES.toLong())
+                        )
+                    )
                 }
             }
 
@@ -100,7 +112,9 @@ class ImportExportRepository(private val settingsStore: SettingsStore) {
             throw e
         } catch (e: Exception) {
             Log.e(TAG, "Failed to export template pack", e)
-            ExportResult.Error("Failed to export: ${e.message}")
+            ExportResult.Error(
+                resourceProvider.getString(R.string.error_export_failed, e.message ?: "")
+            )
         }
     }
 
@@ -129,7 +143,12 @@ class ImportExportRepository(private val settingsStore: SettingsStore) {
                     techProfile.title.toByteArray(Charsets.UTF_8).size +
                     techProfile.dept.toByteArray(Charsets.UTF_8).size + 500
                 if (preciseSize > MAX_EXPORT_SIZE_BYTES) {
-                    return ExportResult.Error("Export too large (max 10MB)")
+                    return ExportResult.Error(
+                        resourceProvider.getString(
+                            R.string.error_export_too_large,
+                            formatBytesAsMb(MAX_EXPORT_SIZE_BYTES.toLong())
+                        )
+                    )
                 }
             }
 
@@ -146,7 +165,9 @@ class ImportExportRepository(private val settingsStore: SettingsStore) {
             throw e
         } catch (e: Exception) {
             Log.e(TAG, "Failed to export full backup", e)
-            ExportResult.Error("Failed to export: ${e.message}")
+            ExportResult.Error(
+                resourceProvider.getString(R.string.error_export_failed, e.message ?: "")
+            )
         }
     }
 
@@ -163,17 +184,23 @@ class ImportExportRepository(private val settingsStore: SettingsStore) {
         // Step 1: Basic JSON parsing
         val trimmedJson = jsonString.trim()
         if (trimmedJson.isBlank()) {
-            return ImportValidationResult.Invalid("Empty input")
+            return ImportValidationResult.Invalid(
+                resourceProvider.getString(R.string.error_import_empty_input)
+            )
         }
         // Step 1b: Import size check to prevent memory pressure from oversized payloads
         val maxSizeLabel = formatBytesAsMb(MAX_IMPORT_SIZE_BYTES.toLong())
         if (trimmedJson.length > MAX_IMPORT_SIZE_BYTES) {
-            return ImportValidationResult.Invalid("Import too large (max $maxSizeLabel)")
+            return ImportValidationResult.Invalid(
+                resourceProvider.getString(R.string.error_import_too_large, maxSizeLabel)
+            )
         }
         if (trimmedJson.length > MAX_IMPORT_SIZE_BYTES / 2) {
             val preciseSize = trimmedJson.toByteArray(Charsets.UTF_8).size
             if (preciseSize > MAX_IMPORT_SIZE_BYTES) {
-                return ImportValidationResult.Invalid("Import too large (max $maxSizeLabel)")
+                return ImportValidationResult.Invalid(
+                    resourceProvider.getString(R.string.error_import_too_large, maxSizeLabel)
+                )
             }
         }
 
@@ -182,7 +209,9 @@ class ImportExportRepository(private val settingsStore: SettingsStore) {
             json.decodeFromString<ExportMetadata>(trimmedJson)
         } catch (e: SerializationException) {
             Log.e(TAG, "Failed to parse export metadata", e)
-            return ImportValidationResult.Invalid("Invalid JSON format: ${e.message}")
+            return ImportValidationResult.Invalid(
+                resourceProvider.getString(R.string.error_import_invalid_json_format, e.message ?: "")
+            )
         }
 
         // Step 3: Schema version check
@@ -200,7 +229,9 @@ class ImportExportRepository(private val settingsStore: SettingsStore) {
         return when (metadata.kind) {
             ExportKind.TEMPLATE_PACK -> parseTemplatePack(trimmedJson, warnings)
             ExportKind.FULL_BACKUP -> parseFullBackup(trimmedJson, warnings)
-            else -> ImportValidationResult.Invalid("Unknown export kind: '${metadata.kind}'")
+            else -> ImportValidationResult.Invalid(
+                resourceProvider.getString(R.string.error_import_unknown_export_kind, metadata.kind)
+            )
         }
     }
 
@@ -212,7 +243,12 @@ class ImportExportRepository(private val settingsStore: SettingsStore) {
             json.decodeFromString<TemplatePack>(jsonString)
         } catch (e: SerializationException) {
             Log.e(TAG, "Failed to parse template pack", e)
-            return ImportValidationResult.Invalid("Invalid template pack format: ${e.message}")
+            return ImportValidationResult.Invalid(
+                resourceProvider.getString(
+                    R.string.error_import_invalid_template_pack_format,
+                    e.message ?: ""
+                )
+            )
         }
 
         // Validate templates
@@ -220,7 +256,9 @@ class ImportExportRepository(private val settingsStore: SettingsStore) {
         warnings.addAll(templateWarnings)
 
         if (pack.templates.isEmpty()) {
-            return ImportValidationResult.Invalid("Template pack contains no templates")
+            return ImportValidationResult.Invalid(
+                resourceProvider.getString(R.string.error_import_template_pack_empty)
+            )
         }
 
         // Detect conflicts with existing templates
@@ -242,7 +280,9 @@ class ImportExportRepository(private val settingsStore: SettingsStore) {
             json.decodeFromString<FullBackup>(jsonString)
         } catch (e: SerializationException) {
             Log.e(TAG, "Failed to parse full backup", e)
-            return ImportValidationResult.Invalid("Invalid backup format: ${e.message}")
+            return ImportValidationResult.Invalid(
+                resourceProvider.getString(R.string.error_import_invalid_backup_format, e.message ?: "")
+            )
         }
 
         // Validate templates
@@ -358,7 +398,7 @@ class ImportExportRepository(private val settingsStore: SettingsStore) {
             throw e
         } catch (e: Exception) {
             Log.e(TAG, "Failed to apply template pack", e)
-            ImportApplyResult.Error("Failed to apply import: ${e.message}")
+            ImportApplyResult.Error(resourceProvider.getString(R.string.error_import_failed, e.message ?: ""))
         }
     }
 
@@ -412,7 +452,7 @@ class ImportExportRepository(private val settingsStore: SettingsStore) {
             throw e
         } catch (e: Exception) {
             Log.e(TAG, "Failed to apply full backup", e)
-            ImportApplyResult.Error("Failed to apply import: ${e.message}")
+            ImportApplyResult.Error(resourceProvider.getString(R.string.error_import_failed, e.message ?: ""))
         }
     }
 

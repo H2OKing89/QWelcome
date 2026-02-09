@@ -603,7 +603,11 @@ fun CollapsiblePlaceholderChips(
                     .padding(top = 4.dp)
             ) {
                 Text(
-                    if (isExpanded) "Less" else "More",
+                    if (isExpanded) {
+                        stringResource(R.string.action_less)
+                    } else {
+                        stringResource(R.string.action_more)
+                    },
                     style = MaterialTheme.typography.labelSmall
                 )
                 Icon(

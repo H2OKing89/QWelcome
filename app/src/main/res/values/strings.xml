@@ -45,6 +45,13 @@
     <string name="toast_clipboard_empty">Clipboard is empty</string>
     <string name="toast_cannot_access_clipboard">Cannot access clipboard</string>
     <string name="toast_import_too_large">Import is too large (max %1$s)</string>
+    <string name="error_import_empty_input">Empty input</string>
+    <string name="error_import_too_large">Import too large (max %1$s)</string>
+    <string name="error_import_invalid_json_format">Invalid JSON format: %1$s</string>
+    <string name="error_import_unknown_export_kind">Unknown export kind: \'%1$s\'</string>
+    <string name="error_import_invalid_template_pack_format">Invalid template pack format: %1$s</string>
+    <string name="error_import_template_pack_empty">Template pack contains no templates</string>
+    <string name="error_import_invalid_backup_format">Invalid backup format: %1$s</string>
 
     <!-- Export screen -->
     <string name="toast_failed_save_file">Failed to save file: %1$s</string>
@@ -53,6 +60,9 @@
     <string name="chooser_share_type">Share %1$s</string>
     <string name="export_type_template_pack">Template Pack</string>
     <string name="export_type_full_backup">Full Backup</string>
+    <string name="error_no_templates_to_export">No templates to export</string>
+    <string name="error_export_too_large">Export too large (max %1$s)</string>
+    <string name="error_export_failed">Failed to export: %1$s</string>
 
     <!-- QR code bottom sheet -->
     <string name="toast_qr_saved">QR code saved to Pictures/QWelcome</string>
@@ -68,6 +78,82 @@
     <string name="toast_template_deleted">Deleted: %1$s</string>
     <string name="toast_template_duplicated">Duplicated: %1$s</string>
     <string name="toast_template_active">Active: %1$s</string>
+    <string name="title_templates">Templates</string>
+    <string name="content_desc_create_template">Create template</string>
+    <string name="label_search_templates">Search templates</string>
+    <string name="content_desc_clear_search">Clear search</string>
+    <string name="text_template_actions_help">Tap to select. Actions: edit, duplicate, delete.</string>
+    <string name="text_no_templates_match">No templates match "%1$s"</string>
+    <string name="content_desc_builtin_template">Built-in (duplicate to customize)</string>
+    <string name="content_desc_duplicate_to_edit">Duplicate to edit</string>
+    <string name="content_desc_edit_template">Edit template</string>
+    <string name="content_desc_duplicate_template">Duplicate template</string>
+    <string name="content_desc_delete_template">Delete template</string>
+    <string name="error_template_missing_placeholders">Missing: %1$s</string>
+    <string name="text_template_unsaved_changes_warning">You have unsaved changes. Are you sure you want to discard them?</string>
+    <string name="title_create_template">Create Template</string>
+    <string name="title_edit_template">Edit Template</string>
+    <string name="label_name">Name</string>
+    <string name="label_insert">Insert</string>
+    <string name="hint_template_required_placeholders">Customer, SSID required</string>
+    <string name="label_message">Message</string>
+    <string name="error_name_required">Name is required</string>
+    <string name="title_delete_template">Delete Template?</string>
+    <string name="text_delete_template_confirm">Are you sure you want to delete "%1$s"? This action cannot be undone.</string>
+
+    <!-- Import screen -->
+    <string name="title_import">Import</string>
+    <string name="title_import_intro">Import Templates or a Full Backup</string>
+    <string name="text_import_intro_description">You can import from a file or paste the backup text directly.</string>
+    <string name="status_decoding">Decoding...</string>
+    <string name="content_desc_select_file_to_import">Select file to import</string>
+    <string name="action_select_file">Select File</string>
+    <string name="content_desc_paste_from_clipboard">Paste from clipboard</string>
+    <string name="action_paste_from_clipboard">Paste from Clipboard</string>
+    <string name="content_desc_error">Error</string>
+    <string name="title_ready_to_import">Ready to Import</string>
+    <string name="text_import_overwrite_warning">The backup contains the following data. This will overwrite any existing data with the same name.</string>
+    <string name="label_backup_type">Backup Type</string>
+    <string name="label_template_count">Template Count</string>
+    <string name="label_tech_profile">Tech Profile</string>
+    <string name="label_not_included">Not Included</string>
+    <string name="label_included">Included</string>
+    <string name="label_conflicts">Conflicts</string>
+    <string name="error_invalid_import_data">Invalid import data</string>
+    <string name="error_import_failed">Failed to apply import: %1$s</string>
+    <string name="error_unexpected_import">An unexpected error occurred during import: %1$s</string>
+    <string name="status_importing">Importing...</string>
+    <string name="content_desc_confirm_import">Confirm import</string>
+    <string name="content_desc_success">Success</string>
+    <string name="title_import_complete">Import Complete!</string>
+    <string name="text_import_complete_description">Your data has been successfully restored.</string>
+
+    <!-- Export screen -->
+    <string name="title_export">Export</string>
+    <string name="text_export_description">Share your templates with teammates or create a personal backup.</string>
+    <string name="header_export_options">Export Options</string>
+    <string name="text_export_template_pack_description">Share templates with your team. Does NOT include your personal signature info.</string>
+    <string name="text_export_full_backup_description">Export everything including your tech profile. Use for personal backup/restore.</string>
+    <string name="status_export_ready">%1$s Ready (%2$s)</string>
+    <string name="content_desc_save_to_file">Save to file</string>
+    <string name="action_save_to_file">Save to File</string>
+    <string name="label_preview">Preview</string>
+    <string name="title_select_templates">Select Templates</string>
+    <string name="action_select_all">Select All</string>
+    <string name="action_export_count">Export %1$s</string>
+    <string name="subject_qwelcome_export">Q Welcome %1$s</string>
+
+    <!-- QR code bottom sheet -->
+    <string name="title_wifi_qr_code">WiFi QR Code</string>
+    <string name="text_scan_to_connect_automatically">Scan to connect automatically</string>
+    <string name="content_desc_wifi_qr_code">WiFi QR Code</string>
+    <string name="label_network">Network:</string>
+    <string name="label_security">Security:</string>
+    <string name="share_text_wifi_network_qr">WiFi Network: %1$s\nScan the QR code to connect!</string>
+
+    <!-- Header branding -->
+    <string name="content_desc_q_logo">Q Logo</string>
+    <string name="label_welcome">WELCOME</string>
 
     <!-- Customer Intake Screen -->
     <string name="label_template">Template</string>
@@ -141,6 +227,15 @@
 
     <!-- Accessibility / Shared Actions -->
     <string name="action_save">Save</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_confirm">Confirm</string>
+    <string name="action_done">Done</string>
+    <string name="action_create">Create</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_edit">Edit</string>
+    <string name="action_duplicate">Duplicate</string>
+    <string name="action_more">More</string>
+    <string name="action_less">Less</string>
     <string name="content_desc_import_data">Import data</string>
     <string name="content_desc_show_less_placeholders">Show fewer placeholders</string>
     <string name="content_desc_show_more_placeholders">Show more placeholders</string>
@@ -164,6 +259,10 @@
     <plurals name="import_success">
         <item quantity="one">Successfully imported %1$d template</item>
         <item quantity="other">Successfully imported %1$d templates</item>
+    </plurals>
+    <plurals name="import_conflicts">
+        <item quantity="one">%1$d template will be replaced</item>
+        <item quantity="other">%1$d templates will be replaced</item>
     </plurals>
     <string name="import_success_with_profile"> and tech profile</string>
 

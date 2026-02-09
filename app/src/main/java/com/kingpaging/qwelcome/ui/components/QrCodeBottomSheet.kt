@@ -123,13 +123,13 @@ fun QrCodeBottomSheet(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "WiFi QR Code",
+                text = stringResource(R.string.title_wifi_qr_code),
                 style = MaterialTheme.typography.headlineSmall,
                 color = MaterialTheme.colorScheme.primary
             )
             Spacer(Modifier.height(4.dp))
             Text(
-                text = "Scan to connect automatically",
+                text = stringResource(R.string.text_scan_to_connect_automatically),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
             )
@@ -144,7 +144,7 @@ fun QrCodeBottomSheet(
             ) {
                 Image(
                     painter = qrPainter,
-                    contentDescription = "WiFi QR Code",
+                    contentDescription = stringResource(R.string.content_desc_wifi_qr_code),
                     modifier = Modifier.fillMaxSize()
                 )
             }
@@ -154,7 +154,7 @@ fun QrCodeBottomSheet(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("Network:", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
+                    Text(stringResource(R.string.label_network), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
                     Text(ssid, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)
                 }
                 Spacer(Modifier.height(4.dp))
@@ -162,7 +162,7 @@ fun QrCodeBottomSheet(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("Security:", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
+                    Text(stringResource(R.string.label_security), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
                     if (isOpenNetwork) {
                         Text(stringResource(R.string.label_open_no_password), color = MaterialTheme.colorScheme.tertiary, fontWeight = FontWeight.Medium)
                     } else {
@@ -401,7 +401,7 @@ private suspend fun shareQrCode(
         val intent = Intent(Intent.ACTION_SEND).apply {
             type = "image/png"
             putExtra(Intent.EXTRA_STREAM, uri)
-            putExtra(Intent.EXTRA_TEXT, "WiFi Network: $ssid\nScan the QR code to connect!")
+            putExtra(Intent.EXTRA_TEXT, context.getString(R.string.share_text_wifi_network_qr, ssid))
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
         context.startActivity(Intent.createChooser(intent, context.getString(R.string.chooser_share_wifi_qr)))

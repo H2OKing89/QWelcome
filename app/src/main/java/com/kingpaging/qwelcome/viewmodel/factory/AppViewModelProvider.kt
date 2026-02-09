@@ -53,7 +53,10 @@ class AppViewModelProvider(private val context: Context) : ViewModelProvider.Fac
 
         private fun getImportExportRepository(context: Context): ImportExportRepository {
             return importExportRepositoryInstance ?: synchronized(this) {
-                importExportRepositoryInstance ?: ImportExportRepository(getSettingsStore(context)).also {
+                importExportRepositoryInstance ?: ImportExportRepository(
+                    getSettingsStore(context),
+                    getResourceProvider(context)
+                ).also {
                     importExportRepositoryInstance = it
                 }
             }
@@ -115,7 +118,10 @@ class AppViewModelProvider(private val context: Context) : ViewModelProvider.Fac
                 ) as T
             }
             modelClass.isAssignableFrom(ImportViewModel::class.java) -> {
-                ImportViewModel(getImportExportRepository(context)) as T
+                ImportViewModel(
+                    getImportExportRepository(context),
+                    getResourceProvider(context)
+                ) as T
             }
             modelClass.isAssignableFrom(TemplateListViewModel::class.java) -> {
                 TemplateListViewModel(getSettingsStore(context)) as T

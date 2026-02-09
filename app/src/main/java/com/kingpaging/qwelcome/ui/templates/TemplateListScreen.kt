@@ -187,7 +187,7 @@ fun TemplateListScreen(
             containerColor = Color.Transparent,
             topBar = {
                 TopAppBar(
-                    title = { Text("Templates", color = MaterialTheme.colorScheme.primary) },
+                    title = { Text(stringResource(R.string.title_templates), color = MaterialTheme.colorScheme.primary) },
                     navigationIcon = {
                         IconButton(onClick = {
                             haptic()
@@ -199,7 +199,7 @@ fun TemplateListScreen(
                         }) {
                             Icon(
                                 Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Back",
+                                contentDescription = stringResource(R.string.content_desc_back),
                                 tint = MaterialTheme.colorScheme.primary
                             )
                         }
@@ -219,7 +219,7 @@ fun TemplateListScreen(
                     containerColor = MaterialTheme.colorScheme.secondary,
                     contentColor = MaterialTheme.colorScheme.onSecondary
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = "Create Template")
+                    Icon(Icons.Default.Add, contentDescription = stringResource(R.string.content_desc_create_template))
                 }
             }
         ) { padding ->
@@ -260,14 +260,14 @@ fun TemplateListScreen(
                         NeonOutlinedField(
                             value = uiState.searchQuery,
                             onValueChange = { vm.updateSearchQuery(it) },
-                            label = { Text("Search templates") },
+                            label = { Text(stringResource(R.string.label_search_templates)) },
                             singleLine = true,
                             trailingIcon = {
                                 if (uiState.searchQuery.isNotEmpty()) {
                                     IconButton(onClick = { haptic(); vm.updateSearchQuery("") }) {
                                         Icon(
                                             Icons.Default.Search,
-                                            contentDescription = "Clear search",
+                                            contentDescription = stringResource(R.string.content_desc_clear_search),
                                             tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                                         )
                                     }
@@ -286,7 +286,7 @@ fun TemplateListScreen(
                     // Help text
                     item(key = "header") {
                         Text(
-                            "Tap to select. Actions: edit, duplicate, delete.",
+                            stringResource(R.string.text_template_actions_help),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                             modifier = Modifier.padding(vertical = 4.dp)
@@ -312,7 +312,7 @@ fun TemplateListScreen(
                     if (filteredTemplates.isEmpty() || (filteredTemplates.size == 1 && filteredTemplates.first().id == DEFAULT_TEMPLATE_ID && uiState.searchQuery.isNotEmpty())) {
                         item(key = "no_results") {
                             Text(
-                                "No templates match \"${uiState.searchQuery}\"",
+                                stringResource(R.string.text_no_templates_match, uiState.searchQuery),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                                 modifier = Modifier.padding(vertical = 16.dp)
@@ -391,7 +391,7 @@ private fun TemplateCard(
                     if (isActive) {
                         Icon(
                             Icons.Default.Check,
-                            contentDescription = "Active",
+                            contentDescription = stringResource(R.string.label_active),
                             tint = MaterialTheme.colorScheme.secondary,
                             modifier = Modifier.size(18.dp)
                         )
@@ -399,7 +399,7 @@ private fun TemplateCard(
                     if (isDefault) {
                         Icon(
                             Icons.Default.Lock,
-                            contentDescription = "Built-in (duplicate to customize)",
+                            contentDescription = stringResource(R.string.content_desc_builtin_template),
                             tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                             modifier = Modifier.size(16.dp)
                         )
@@ -421,7 +421,11 @@ private fun TemplateCard(
                     ) {
                         Icon(
                             if (isDefault) Icons.Default.ContentCopy else Icons.Default.Edit,
-                            contentDescription = if (isDefault) "Duplicate to edit" else "Edit",
+                            contentDescription = if (isDefault) {
+                                stringResource(R.string.content_desc_duplicate_to_edit)
+                            } else {
+                                stringResource(R.string.content_desc_edit_template)
+                            },
                             tint = MaterialTheme.colorScheme.secondary,
                             modifier = Modifier.size(18.dp)
                         )
@@ -437,7 +441,7 @@ private fun TemplateCard(
                     ) {
                         Icon(
                             Icons.Default.ContentCopy,
-                            contentDescription = "Duplicate",
+                            contentDescription = stringResource(R.string.content_desc_duplicate_template),
                             tint = MaterialTheme.colorScheme.tertiary,
                             modifier = Modifier.size(18.dp)
                         )
@@ -454,7 +458,7 @@ private fun TemplateCard(
                         ) {
                             Icon(
                                 Icons.Default.Delete,
-                                contentDescription = "Delete",
+                                contentDescription = stringResource(R.string.content_desc_delete_template),
                                 tint = MaterialTheme.colorScheme.error.copy(alpha = 0.8f),
                                 modifier = Modifier.size(18.dp)
                             )
@@ -517,7 +521,7 @@ private fun TemplateEditDialog(
         val originalContent = remember { if (isNew) defaultContent else template.content }
         
         var name by remember { mutableStateOf(originalName) }
-        var nameError by remember { mutableStateOf<String?>(null) }
+        var nameError by remember { mutableStateOf<Int?>(null) }
         var contentError by remember { mutableStateOf<String?>(null) }
         var showDiscardDialog by remember { mutableStateOf(false) }
         
@@ -546,7 +550,9 @@ private fun TemplateEditDialog(
                 .collect { text ->
                     val missing = Template.findMissingPlaceholders(text)
                     contentError = if (missing.isNotEmpty()) {
-                        "Missing: ${missing.joinToString(", ") { it.removePrefix("{{ ").removeSuffix(" }}") }}"
+                        missing.joinToString(", ") {
+                            it.removePrefix("{{ ").removeSuffix(" }}")
+                        }
                     } else {
                         null
                     }
@@ -558,10 +564,10 @@ private fun TemplateEditDialog(
             AlertDialog(
                 onDismissRequest = { showDiscardDialog = false },
                 containerColor = MaterialTheme.colorScheme.surface,
-                title = { Text("Discard changes?", color = MaterialTheme.colorScheme.secondary) },
+                title = { Text(stringResource(R.string.dialog_discard_changes_title), color = MaterialTheme.colorScheme.secondary) },
                 text = {
                     Text(
-                        "You have unsaved changes. Are you sure you want to discard them?",
+                        stringResource(R.string.text_template_unsaved_changes_warning),
                         color = MaterialTheme.colorScheme.onSurface
                     )
                 },
@@ -574,7 +580,7 @@ private fun TemplateEditDialog(
                         glowColor = MaterialTheme.colorScheme.error,
                         style = NeonButtonStyle.PRIMARY
                     ) {
-                        Text("Discard")
+                        Text(stringResource(R.string.action_discard))
                     }
                 },
                 dismissButton = {
@@ -583,7 +589,7 @@ private fun TemplateEditDialog(
                         glowColor = secondaryColor,
                         style = NeonButtonStyle.TERTIARY
                     ) {
-                        Text("Keep Editing")
+                        Text(stringResource(R.string.action_keep_editing))
                     }
                 }
             )
@@ -612,7 +618,11 @@ private fun TemplateEditDialog(
                 ) {
                     // Title - compact
                     Text(
-                        text = if (isNew) "Create Template" else "Edit Template",
+                        text = if (isNew) {
+                            stringResource(R.string.title_create_template)
+                        } else {
+                            stringResource(R.string.title_edit_template)
+                        },
                         style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.secondary
                     )
@@ -629,9 +639,9 @@ private fun TemplateEditDialog(
                                 nameError = null
                             }
                         },
-                        label = { Text("Name") },
+                        label = { Text(stringResource(R.string.label_name)) },
                         isError = nameError != null,
-                        supportingText = nameError?.let { { Text(it) } },
+                        supportingText = nameError?.let { { Text(stringResource(it)) } },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                         keyboardActions = KeyboardActions(
@@ -655,7 +665,7 @@ private fun TemplateEditDialog(
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         Text(
-                            "Insert",
+                            stringResource(R.string.label_insert),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                         )
@@ -665,7 +675,7 @@ private fun TemplateEditDialog(
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
                         )
                         Text(
-                            "Customer, SSID required",
+                            stringResource(R.string.hint_template_required_placeholders),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.7f)
                         )
@@ -715,10 +725,18 @@ private fun TemplateEditDialog(
                                 singleLine = false,
                                 visualTransformation = androidx.compose.ui.text.input.VisualTransformation.None,
                                 interactionSource = contentInteractionSource,
-                                label = { Text("Message") },
+                                label = { Text(stringResource(R.string.label_message)) },
                                 isError = hasContentError,
                                 supportingText = if (hasContentError) {
-                                    { Text(contentError ?: "", color = MaterialTheme.colorScheme.error) }
+                                    {
+                                        Text(
+                                            stringResource(
+                                                R.string.error_template_missing_placeholders,
+                                                contentError ?: ""
+                                            ),
+                                            color = MaterialTheme.colorScheme.error
+                                        )
+                                    }
                                 } else null,
                                 colors = OutlinedTextFieldDefaults.colors(
                                     focusedBorderColor = if (hasContentError) MaterialTheme.colorScheme.error else secondaryColor,
@@ -756,7 +774,7 @@ private fun TemplateEditDialog(
                             glowColor = secondaryColor,
                             style = NeonButtonStyle.TERTIARY
                         ) {
-                            Text("Cancel")
+                            Text(stringResource(R.string.action_cancel))
                         }
                         
                         Spacer(modifier = Modifier.width(8.dp))
@@ -766,7 +784,7 @@ private fun TemplateEditDialog(
                         NeonButton(
                             onClick = {
                                 if (name.isBlank()) {
-                                    nameError = "Name is required"
+                                    nameError = R.string.error_name_required
                                 } else if (contentError == null) {
                                     onSave(name, contentState.text.toString())
                                 }
@@ -775,7 +793,13 @@ private fun TemplateEditDialog(
                             glowColor = secondaryColor,
                             style = NeonButtonStyle.PRIMARY
                         ) {
-                            Text(if (isNew) "Create" else "Save")
+                            Text(
+                                if (isNew) {
+                                    stringResource(R.string.action_create)
+                                } else {
+                                    stringResource(R.string.action_save)
+                                }
+                            )
                         }
                     }
                 }
@@ -794,11 +818,11 @@ private fun DeleteConfirmationDialog(
         onDismissRequest = onDismiss,
         containerColor = MaterialTheme.colorScheme.surface,
         title = {
-            Text("Delete Template?", color = MaterialTheme.colorScheme.error)
+            Text(stringResource(R.string.title_delete_template), color = MaterialTheme.colorScheme.error)
         },
         text = {
             Text(
-                "Are you sure you want to delete \"$templateName\"? This action cannot be undone.",
+                stringResource(R.string.text_delete_template_confirm, templateName),
                 color = MaterialTheme.colorScheme.onSurface
             )
         },
@@ -809,7 +833,7 @@ private fun DeleteConfirmationDialog(
                 glowColor = MaterialTheme.colorScheme.error,
                 style = NeonButtonStyle.PRIMARY
             ) {
-                Text("Delete")
+                Text(stringResource(R.string.action_delete))
             }
         },
         dismissButton = {
@@ -819,7 +843,7 @@ private fun DeleteConfirmationDialog(
                 glowColor = MaterialTheme.colorScheme.secondary,
                 style = NeonButtonStyle.TERTIARY
             ) {
-                Text("Cancel")
+                Text(stringResource(R.string.action_cancel))
             }
         }
     )

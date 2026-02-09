@@ -2,9 +2,11 @@ package com.kingpaging.qwelcome.viewmodel.import_pkg
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.data.ImportApplyResult
 import com.kingpaging.qwelcome.data.ImportExportRepository
 import com.kingpaging.qwelcome.data.ImportValidationResult
+import com.kingpaging.qwelcome.util.ResourceProvider
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -37,7 +39,8 @@ sealed class ImportEvent {
 }
 
 class ImportViewModel(
-    private val repository: ImportExportRepository
+    private val repository: ImportExportRepository,
+    private val resourceProvider: ResourceProvider
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ImportUiState())
@@ -146,7 +149,7 @@ class ImportViewModel(
             } catch (e: kotlin.coroutines.cancellation.CancellationException) {
                 throw e
             } catch (e: Exception) {
-                val errorMessage = "An unexpected error occurred during import: ${e.message}"
+                val errorMessage = resourceProvider.getString(R.string.error_unexpected_import, e.message ?: "")
                 _uiState.update {
                     it.copy(
                         isImporting = false,
