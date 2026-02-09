@@ -123,7 +123,7 @@
     <string name="header_export_options">Export Options</string>
     <string name="text_export_template_pack_description">Share templates with your team. Does NOT include your personal signature info.</string>
     <string name="text_export_full_backup_description">Export everything including your tech profile. Use for personal backup/restore.</string>
-    <string name="status_export_ready">✅ %1$s Ready (%2$s)</string>
+    <string name="status_export_ready">%1$s Ready (%2$s)</string>
     <string name="content_desc_save_to_file">Save to file</string>
     <string name="action_save_to_file">Save to File</string>
     <string name="label_preview">Preview</string>
