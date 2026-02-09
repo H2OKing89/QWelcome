@@ -18,18 +18,21 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.data.SettingsStore
+import com.kingpaging.qwelcome.data.UserPreferences
+import com.kingpaging.qwelcome.data.protoDataStore
 import com.kingpaging.qwelcome.di.LocalCustomerIntakeViewModel
 import com.kingpaging.qwelcome.di.LocalNavigator
 import com.kingpaging.qwelcome.di.LocalSoundPlayer
 import com.kingpaging.qwelcome.di.LocalTemplateListViewModel
-import com.kingpaging.qwelcome.navigation.Navigator
+import com.kingpaging.qwelcome.testutil.FakeNavigator
+import com.kingpaging.qwelcome.testutil.FakeSoundPlayer
 import com.kingpaging.qwelcome.ui.theme.CyberpunkTheme
 import com.kingpaging.qwelcome.util.AndroidResourceProvider
-import com.kingpaging.qwelcome.util.SoundPlayer
 import com.kingpaging.qwelcome.viewmodel.CustomerIntakeViewModel
 import com.kingpaging.qwelcome.viewmodel.factory.AppViewModelProvider
 import com.kingpaging.qwelcome.viewmodel.templates.TemplateListViewModel
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -47,8 +50,8 @@ class CustomerIntakeScreenTest {
     private lateinit var appContext: Context
     private lateinit var customerIntakeViewModel: CustomerIntakeViewModel
     private lateinit var templateListViewModel: TemplateListViewModel
-    private lateinit var navigator: Navigator
-    private lateinit var soundPlayer: SoundPlayer
+    private lateinit var navigator: FakeNavigator
+    private lateinit var soundPlayer: FakeSoundPlayer
 
     @Before
     fun setup() {
@@ -64,20 +67,16 @@ class CustomerIntakeScreenTest {
         )
         templateListViewModel = TemplateListViewModel(settingsStore)
 
-        navigator = object : Navigator {
-            override fun openSms(phoneNumber: String, message: String) = Unit
-            override fun shareText(message: String, chooserTitle: String) = Unit
-            override fun copyToClipboard(label: String, text: String): Boolean = true
-        }
-        soundPlayer = object : SoundPlayer {
-            override fun playBeep() = Unit
-            override fun playConfirm() = Unit
-        }
+        navigator = FakeNavigator()
+        soundPlayer = FakeSoundPlayer()
     }
 
     @After
-    fun tearDown() {
+    fun tearDown() = runBlocking {
         AppViewModelProvider.resetForTesting()
+        if (::appContext.isInitialized) {
+            appContext.protoDataStore.updateData { UserPreferences.getDefaultInstance() }
+        }
     }
 
     @Test

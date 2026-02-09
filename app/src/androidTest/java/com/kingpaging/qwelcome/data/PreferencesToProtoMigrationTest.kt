@@ -14,6 +14,7 @@ import kotlinx.serialization.json.Json
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -93,15 +94,10 @@ class PreferencesToProtoMigrationTest {
         val migration = PreferencesToProtoMigration(context)
         assertTrue(migration.shouldMigrate(UserPreferences.getDefaultInstance()))
 
-        var threw = false
-        try {
-            migration.migrate(UserPreferences.getDefaultInstance())
-        } catch (e: IllegalStateException) {
-            threw = true
-            assertTrue(e.message?.contains("Failed to parse legacy templates JSON") == true)
+        val thrown = assertThrows(IllegalStateException::class.java) {
+            runBlocking { migration.migrate(UserPreferences.getDefaultInstance()) }
         }
-
-        assertTrue("Expected migration to throw for corrupted templates JSON", threw)
+        assertTrue(thrown.message?.contains("Failed to parse legacy templates JSON") == true)
     }
 
     private suspend fun clearLegacyPrefs() {
