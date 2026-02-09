@@ -24,6 +24,8 @@ message TemplateProto {
   string created_at = 4;    // ISO-8601 timestamp
   string modified_at = 5;   // ISO-8601 timestamp
   string slug = 6;          // URL-friendly identifier
+  int32 sort_order = 16;    // Display order (lower = first)
+  repeated string tags = 17;
 
   // Reserved for future use - prevents accidental tag reuse
   reserved 7 to 15;

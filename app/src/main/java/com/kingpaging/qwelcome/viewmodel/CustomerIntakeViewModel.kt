@@ -13,6 +13,7 @@ import com.kingpaging.qwelcome.util.PhoneUtils
 import com.kingpaging.qwelcome.util.ResourceProvider
 import com.kingpaging.qwelcome.util.SystemTimeProvider
 import com.kingpaging.qwelcome.util.TimeProvider
+import com.kingpaging.qwelcome.util.WifiValidationRules
 import com.kingpaging.qwelcome.util.WifiQrGenerator
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -164,7 +165,7 @@ class CustomerIntakeViewModel(
         // Real-time validation feedback for WiFi password (WPA/WPA2: 8-63 chars)
         val error = when {
             password.isEmpty() -> null // Don't show error for empty (show on submit)
-            password.length < WifiQrGenerator.MIN_PASSWORD_LENGTH -> resourceProvider.getString(
+            WifiValidationRules.isPasswordTooShort(password) -> resourceProvider.getString(
                 R.string.error_password_partial,
                 password.length
             )

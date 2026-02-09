@@ -3,7 +3,10 @@ package com.kingpaging.qwelcome.data
 import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.testutil.FakeResourceProvider
 import com.kingpaging.qwelcome.viewmodel.factory.AppViewModelProvider
+import io.mockk.coEvery
 import io.mockk.mockk
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertTrue
@@ -13,8 +16,11 @@ import org.junit.Test
 
 class ImportExportRepositoryTest {
 
+    private val settingsStore = mockk<SettingsStore>(relaxed = true)
+    private val encodeDefaultsJson = Json { encodeDefaults = true }
+
     private val repository = ImportExportRepository(
-        settingsStore = mockk(relaxed = true),
+        settingsStore = settingsStore,
         resourceProvider = FakeResourceProvider()
     )
 
@@ -60,6 +66,43 @@ class ImportExportRepositoryTest {
         assertEquals(
             "string_${R.string.error_no_templates_to_export}",
             (result as ExportResult.Error).message
+        )
+    }
+
+    @Test
+    fun `exportTemplatePack returns specific message when built in default is explicitly requested`() = runTest {
+        coEvery { settingsStore.getAllTemplates() } returns listOf(
+            Template(
+                id = DEFAULT_TEMPLATE_ID,
+                name = "Default",
+                content = "Hello {{ customer_name }} {{ ssid }}"
+            )
+        )
+
+        val result = repository.exportTemplatePack(listOf(DEFAULT_TEMPLATE_ID))
+
+        assertTrue(result is ExportResult.Error)
+        assertEquals(
+            "string_${R.string.error_export_default_template_not_supported}",
+            (result as ExportResult.Error).message
+        )
+    }
+
+    @Test
+    fun `validateImport returns invalid when full backup has empty templates`() = runTest {
+        val backup = FullBackup.create(
+            techProfile = TechProfile(name = "Tech", title = "Field Tech", dept = "Dept"),
+            templates = emptyList(),
+            appVersion = "1.0.0"
+        )
+        val json = encodeDefaultsJson.encodeToString(backup)
+
+        val result = repository.validateImport(json)
+
+        assertTrue(result is ImportValidationResult.Invalid)
+        assertEquals(
+            "string_${R.string.error_import_template_pack_empty}",
+            (result as ImportValidationResult.Invalid).message
         )
     }
 }
