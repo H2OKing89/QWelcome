@@ -45,6 +45,13 @@
     <string name="toast_clipboard_empty">Clipboard is empty</string>
     <string name="toast_cannot_access_clipboard">Cannot access clipboard</string>
     <string name="toast_import_too_large">Import is too large (max %1$s)</string>
+    <string name="error_import_empty_input">Empty input</string>
+    <string name="error_import_too_large">Import too large (max %1$s)</string>
+    <string name="error_import_invalid_json_format">Invalid JSON format: %1$s</string>
+    <string name="error_import_unknown_export_kind">Unknown export kind: \'%1$s\'</string>
+    <string name="error_import_invalid_template_pack_format">Invalid template pack format: %1$s</string>
+    <string name="error_import_template_pack_empty">Template pack contains no templates</string>
+    <string name="error_import_invalid_backup_format">Invalid backup format: %1$s</string>
 
     <!-- Export screen -->
     <string name="toast_failed_save_file">Failed to save file: %1$s</string>
@@ -53,6 +60,9 @@
     <string name="chooser_share_type">Share %1$s</string>
     <string name="export_type_template_pack">Template Pack</string>
     <string name="export_type_full_backup">Full Backup</string>
+    <string name="error_no_templates_to_export">No templates to export</string>
+    <string name="error_export_too_large">Export too large (max %1$s)</string>
+    <string name="error_export_failed">Failed to export: %1$s</string>
 
     <!-- QR code bottom sheet -->
     <string name="toast_qr_saved">QR code saved to Pictures/QWelcome</string>

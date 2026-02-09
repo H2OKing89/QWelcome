@@ -8,11 +8,13 @@ import com.kingpaging.qwelcome.data.Template
 import com.kingpaging.qwelcome.data.TemplatePack
 import com.kingpaging.qwelcome.testutil.FakeResourceProvider
 import com.kingpaging.qwelcome.testutil.MainDispatcherRule
+import com.kingpaging.qwelcome.viewmodel.factory.AppViewModelProvider
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -47,7 +49,13 @@ class ImportViewModelTest {
 
     @Before
     fun setup() {
+        AppViewModelProvider.resetForTesting()
         vm = ImportViewModel(mockRepo, FakeResourceProvider())
+    }
+
+    @After
+    fun tearDown() {
+        AppViewModelProvider.resetForTesting()
     }
 
     @Test

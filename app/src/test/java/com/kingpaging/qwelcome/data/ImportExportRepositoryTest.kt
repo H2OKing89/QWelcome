@@ -1,11 +1,13 @@
 package com.kingpaging.qwelcome.data
 
+import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.testutil.FakeResourceProvider
 import com.kingpaging.qwelcome.viewmodel.factory.AppViewModelProvider
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 
@@ -33,7 +35,9 @@ class ImportExportRepositoryTest {
         val result = repository.validateImport(oversized)
 
         assertTrue(result is ImportValidationResult.Invalid)
-        assertTrue((result as ImportValidationResult.Invalid).message.contains("max"))
+        val message = (result as ImportValidationResult.Invalid).message
+        assertTrue(message.startsWith("string_${R.string.error_import_too_large}["))
+        assertTrue(message.contains(formatBytesAsMb(MAX_IMPORT_SIZE_BYTES.toLong())))
     }
 
     @Test
@@ -43,7 +47,20 @@ class ImportExportRepositoryTest {
         val result = repository.validateImport(oversizedUtf8)
 
         assertTrue(result is ImportValidationResult.Invalid)
-        assertTrue((result as ImportValidationResult.Invalid).message.contains("max"))
+        val message = (result as ImportValidationResult.Invalid).message
+        assertTrue(message.startsWith("string_${R.string.error_import_too_large}["))
+        assertTrue(message.contains(formatBytesAsMb(MAX_IMPORT_SIZE_BYTES.toLong())))
+    }
+
+    @Test
+    fun `exportTemplatePack returns localized no templates message when nothing to export`() = runTest {
+        val result = repository.exportTemplatePack()
+
+        assertTrue(result is ExportResult.Error)
+        assertEquals(
+            "string_${R.string.error_no_templates_to_export}",
+            (result as ExportResult.Error).message
+        )
     }
 }
 
