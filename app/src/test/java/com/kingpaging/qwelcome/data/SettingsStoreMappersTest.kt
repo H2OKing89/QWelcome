@@ -1,10 +1,17 @@
 package com.kingpaging.qwelcome.data
 
+import com.kingpaging.qwelcome.viewmodel.factory.AppViewModelProvider
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 
 class SettingsStoreMappersTest {
+
+    @Before
+    fun setup() {
+        AppViewModelProvider.resetForTesting()
+    }
 
     @Test
     fun `template toProto and fromProto preserves sortOrder and tags`() {
@@ -45,4 +52,3 @@ class SettingsStoreMappersTest {
         assertTrue(mapped.tags.isEmpty())
     }
 }
-
