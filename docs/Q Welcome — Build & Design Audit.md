@@ -14,7 +14,7 @@ Use this section to track progress. Each phase should land in its own PR unless 
 - [x] Fix missing content descriptions (finding #12)
 - [x] Replace hardcoded UI strings with string resources (finding #13)
 
-### Phase 3 — Code health
+### Phase 3 — Code health 🔄 [PR #23](https://github.com/H2OKing89/QWelcome/pull/23) in review
 
 - [x] Split large composables (finding #17)
 - [x] Split ImportExportRepository (finding #18)
@@ -22,7 +22,7 @@ Use this section to track progress. Each phase should land in its own PR unless 
 - [x] Centralize validation rules (finding #20)
 - [x] Use data object for UiEvent objects (finding #21)
 
-### Phase 4 — Testing
+### Phase 4 — Testing 🔄 [PR #24](https://github.com/H2OKing89/QWelcome/pull/24) in review
 
 - [x] Add Compose UI tests (finding #22)
 - [x] Add missing ViewModel tests (finding #23)
