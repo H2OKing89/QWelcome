@@ -150,7 +150,7 @@ internal class ImportValidationService(
                 )
             }
 
-            val missingPlaceholders = findMissingPlaceholders(template.content)
+            val missingPlaceholders = Template.findMissingPlaceholders(template.content)
             if (missingPlaceholders.isNotEmpty()) {
                 warnings.add(
                     ImportWarning.MissingPlaceholders(
@@ -162,15 +162,6 @@ internal class ImportValidationService(
         }
 
         return warnings
-    }
-
-    private fun findMissingPlaceholders(content: String): List<String> {
-        val expectedPlaceholders = listOf(
-            MessageTemplate.KEY_CUSTOMER_NAME,
-            MessageTemplate.KEY_SSID,
-            MessageTemplate.KEY_PASSWORD
-        )
-        return expectedPlaceholders.filter { !content.contains(it) }
     }
 
     private fun detectConflicts(

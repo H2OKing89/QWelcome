@@ -7,6 +7,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.dataStore
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.first
@@ -37,9 +38,11 @@ val Context.protoDataStore: DataStore<UserPreferences> by dataStore(
 private class PreferencesToProtoMigration(
     private val context: Context
 ) : DataMigration<UserPreferences> {
+    private var cachedLegacyPrefs: Preferences? = null
 
     override suspend fun shouldMigrate(currentData: UserPreferences): Boolean {
         val prefs = context.tempPreferencesDataStore.data.first()
+        cachedLegacyPrefs = prefs
 
         val migrationCompleted = prefs[booleanPreferencesKey(MIGRATION_COMPLETED_KEY)] == true
         if (migrationCompleted) return false
@@ -50,7 +53,7 @@ private class PreferencesToProtoMigration(
     }
 
     override suspend fun migrate(currentData: UserPreferences): UserPreferences {
-        val prefs = context.tempPreferencesDataStore.data.first()
+        val prefs = cachedLegacyPrefs ?: context.tempPreferencesDataStore.data.first()
         val json = Json { ignoreUnknownKeys = true }
 
         val techProfile = TechProfileProto.newBuilder()
@@ -80,6 +83,7 @@ private class PreferencesToProtoMigration(
             prefs.remove(stringPreferencesKey(TEMPLATES_JSON_KEY))
             prefs.remove(stringPreferencesKey(ACTIVE_TEMPLATE_ID_KEY))
         }
+        cachedLegacyPrefs = null
     }
 
     private fun parseTemplateProtos(

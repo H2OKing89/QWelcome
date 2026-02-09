@@ -27,11 +27,17 @@ fun TechProfile.toProto(): TechProfileProto {
         .build()
 }
 
-fun TechProfile.Companion.fromProto(proto: TechProfileProto): TechProfile = TechProfile(
-    name = proto.name,
-    title = proto.title,
-    dept = proto.dept
-)
+fun TechProfile.Companion.fromProto(proto: TechProfileProto): TechProfile {
+    val truncatedName = proto.name.take(MAX_PROFILE_FIELD_LENGTH)
+    val truncatedTitle = proto.title.take(MAX_PROFILE_FIELD_LENGTH)
+    val truncatedDept = proto.dept.take(MAX_PROFILE_FIELD_LENGTH)
+
+    return TechProfile(
+        name = truncatedName,
+        title = truncatedTitle,
+        dept = truncatedDept
+    )
+}
 
 val TechProfile.Companion.empty: TechProfile
     get() = TechProfile()
