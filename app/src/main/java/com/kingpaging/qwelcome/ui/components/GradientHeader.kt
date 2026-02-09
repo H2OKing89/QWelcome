@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -59,13 +60,13 @@ fun QWelcomeHeader(
         // Vector Q logo
         Image(
             painter = painterResource(id = R.drawable.q_logo),
-            contentDescription = "Q Logo",
+            contentDescription = stringResource(R.string.content_desc_q_logo),
             modifier = Modifier.size(40.dp)
         )
         
         // "WELCOME" text with gradient
         Text(
-            text = "WELCOME",
+            text = stringResource(R.string.label_welcome),
             style = TextStyle(
                 fontFamily = DisplayFont,
                 fontSize = 22.sp,
@@ -97,13 +98,13 @@ fun QWelcomeHeaderLarge(
         // Large Q logo
         Image(
             painter = painterResource(id = R.drawable.q_logo),
-            contentDescription = "Q Logo",
+            contentDescription = stringResource(R.string.content_desc_q_logo),
             modifier = Modifier.size(80.dp)
         )
         
         // "WELCOME" text
         Text(
-            text = "WELCOME",
+            text = stringResource(R.string.label_welcome),
             style = TextStyle(
                 fontFamily = DisplayFont,
                 fontSize = 28.sp,

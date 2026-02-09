@@ -181,12 +181,12 @@ fun ExportScreen(
             containerColor = Color.Transparent,
             topBar = {
                 TopAppBar(
-                    title = { Text("Export", color = MaterialTheme.colorScheme.primary) },
+                    title = { Text(stringResource(R.string.title_export), color = MaterialTheme.colorScheme.primary) },
                     navigationIcon = {
                         IconButton(onClick = { haptic(); onBack() }) {
                             Icon(
                                 Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Back",
+                                contentDescription = stringResource(R.string.content_desc_back),
                                 tint = MaterialTheme.colorScheme.primary
                             )
                         }
@@ -207,7 +207,7 @@ fun ExportScreen(
             ) {
                 // Header explanation
                 Text(
-                    "Share your templates with teammates or create a personal backup.",
+                    stringResource(R.string.text_export_description),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
                 )
@@ -216,15 +216,15 @@ fun ExportScreen(
 
                 // Export Options
                 Text(
-                    "Export Options",
+                    stringResource(R.string.header_export_options),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.primary
                 )
 
                 // Template Pack Card
                 ExportOptionCard(
-                    title = "Template Pack",
-                    description = "Share templates with your team. Does NOT include your personal signature info.",
+                    title = stringResource(R.string.export_type_template_pack),
+                    description = stringResource(R.string.text_export_template_pack_description),
                     icon = Icons.Default.Description,
                     iconTint = MaterialTheme.colorScheme.secondary,
                     isLoading = uiState.isExporting && uiState.currentlyExportingType == ExportType.TEMPLATE_PACK,
@@ -233,8 +233,8 @@ fun ExportScreen(
 
                 // Full Backup Card
                 ExportOptionCard(
-                    title = "Full Backup",
-                    description = "Export everything including your tech profile. Use for personal backup/restore.",
+                    title = stringResource(R.string.export_type_full_backup),
+                    description = stringResource(R.string.text_export_full_backup_description),
                     icon = Icons.Default.Backup,
                     iconTint = MaterialTheme.colorScheme.tertiary,
                     isLoading = uiState.isExporting && uiState.currentlyExportingType == ExportType.FULL_BACKUP,
@@ -267,7 +267,7 @@ fun ExportScreen(
                             uiState.templateCount
                         )
                         Text(
-                            "\u2705 $typeName Ready ($templateCountText)",
+                            stringResource(R.string.status_export_ready, typeName, templateCountText),
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.secondary
                         )
@@ -288,11 +288,11 @@ fun ExportScreen(
                             ) {
                                 Icon(
                                     Icons.Default.ContentCopy,
-                                    contentDescription = "Copy to clipboard",
+                                    contentDescription = stringResource(R.string.content_desc_copy_clipboard),
                                     modifier = Modifier.size(18.dp)
                                 )
                                 Spacer(Modifier.width(8.dp))
-                                Text("Copy")
+                                Text(stringResource(R.string.action_copy))
                             }
 
                             NeonButton(
@@ -303,11 +303,11 @@ fun ExportScreen(
                             ) {
                                 Icon(
                                     Icons.Default.Share,
-                                    contentDescription = "Share",
+                                    contentDescription = stringResource(R.string.action_share),
                                     modifier = Modifier.size(18.dp)
                                 )
                                 Spacer(Modifier.width(8.dp))
-                                Text("Share")
+                                Text(stringResource(R.string.action_share))
                             }
                         }
 
@@ -320,16 +320,16 @@ fun ExportScreen(
                         ) {
                             Icon(
                                 Icons.Default.SaveAlt,
-                                contentDescription = "Save to file",
+                                contentDescription = stringResource(R.string.content_desc_save_to_file),
                                 modifier = Modifier.size(18.dp)
                             )
                             Spacer(Modifier.width(8.dp))
-                            Text("Save to File")
+                            Text(stringResource(R.string.action_save_to_file))
                         }
 
                         // JSON Preview
                         Text(
-                            "Preview",
+                            stringResource(R.string.label_preview),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                         )
@@ -401,7 +401,7 @@ private fun TemplateSelectionDialog(
             ) {
                 // Header
                 Text(
-                    text = "Select Templates",
+                    text = stringResource(R.string.title_select_templates),
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onSurface
                 )
@@ -426,7 +426,7 @@ private fun TemplateSelectionDialog(
                     )
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        text = "Select All",
+                        text = stringResource(R.string.action_select_all),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurface
                     )
@@ -460,7 +460,7 @@ private fun TemplateSelectionDialog(
                     horizontalArrangement = Arrangement.End
                 ) {
                     TextButton(onClick = { haptic(); onDismiss() }) {
-                        Text("Cancel")
+                        Text(stringResource(R.string.action_cancel))
                     }
                     Spacer(Modifier.width(8.dp))
                     NeonButton(
@@ -474,7 +474,7 @@ private fun TemplateSelectionDialog(
                             selectedCount,
                             selectedCount
                         )
-                        Text("Export $templateCountText")
+                        Text(stringResource(R.string.action_export_count, templateCountText))
                     }
                 }
             }
@@ -608,7 +608,7 @@ private fun ExportOptionCard(
  */
 private fun copyToClipboard(context: Context, json: String) {
     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-    val clip = ClipData.newPlainText("Q Welcome Export", json)
+    val clip = ClipData.newPlainText(context.getString(R.string.title_export), json)
     clipboard.setPrimaryClip(clip)
 }
 
@@ -634,7 +634,7 @@ private fun shareJson(context: Context, json: String, type: ExportType) {
 
     val intent = Intent(Intent.ACTION_SEND).apply {
         this.type = "text/plain"
-        putExtra(Intent.EXTRA_SUBJECT, "Q Welcome $typeName")
+        putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.subject_qwelcome_export, typeName))
         putExtra(Intent.EXTRA_TEXT, json)
     }
 

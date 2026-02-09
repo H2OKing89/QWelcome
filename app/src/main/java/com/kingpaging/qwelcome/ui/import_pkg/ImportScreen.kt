@@ -162,12 +162,12 @@ fun ImportScreen(
             containerColor = Color.Transparent,
             topBar = {
                 TopAppBar(
-                    title = { Text("Import", color = MaterialTheme.colorScheme.primary) },
+                    title = { Text(stringResource(R.string.title_import), color = MaterialTheme.colorScheme.primary) },
                     navigationIcon = {
                         IconButton(onClick = { haptic(); onBack() }) {
                             Icon(
                                 Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Back",
+                                contentDescription = stringResource(R.string.content_desc_back),
                                 tint = MaterialTheme.colorScheme.primary
                             )
                         }
@@ -280,13 +280,13 @@ private fun IdleStep(
             tint = MaterialTheme.colorScheme.secondary
         )
         Text(
-            "Import Templates or a Full Backup",
+            stringResource(R.string.title_import_intro),
             style = MaterialTheme.typography.titleLarge,
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurface
         )
         Text(
-            "You can import from a file or paste the backup text directly.",
+            stringResource(R.string.text_import_intro_description),
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
@@ -297,7 +297,7 @@ private fun IdleStep(
         if (isLoading) {
             CircularProgressIndicator(color = MaterialTheme.colorScheme.secondary)
             Text(
-                "Decoding...",
+                stringResource(R.string.status_decoding),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                 modifier = Modifier.padding(top = 8.dp)
@@ -310,11 +310,11 @@ private fun IdleStep(
             ) {
                 Icon(
                     Icons.Default.UploadFile,
-                    contentDescription = "Select file to import",
+                    contentDescription = stringResource(R.string.content_desc_select_file_to_import),
                     modifier = Modifier.size(20.dp)
                 )
                 Spacer(Modifier.width(8.dp))
-                Text("Select File")
+                Text(stringResource(R.string.action_select_file))
             }
 
             NeonButton(
@@ -325,11 +325,11 @@ private fun IdleStep(
             ) {
                 Icon(
                     Icons.Default.FileCopy,
-                    contentDescription = "Paste from clipboard",
+                    contentDescription = stringResource(R.string.content_desc_paste_from_clipboard),
                     modifier = Modifier.size(20.dp)
                 )
                 Spacer(Modifier.width(8.dp))
-                Text("Paste from Clipboard")
+                Text(stringResource(R.string.action_paste_from_clipboard))
             }
         }
 
@@ -341,7 +341,7 @@ private fun IdleStep(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             Icons.Default.Info,
-                            contentDescription = "Error",
+                            contentDescription = stringResource(R.string.content_desc_error),
                             tint = MaterialTheme.colorScheme.error,
                             modifier = Modifier.padding(end = 8.dp)
                         )
@@ -369,11 +369,11 @@ private fun ConfirmStep(
         verticalArrangement = Arrangement.spacedBy(16.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
-        Text("Ready to Import", style = MaterialTheme.typography.titleLarge)
+        Text(stringResource(R.string.title_ready_to_import), style = MaterialTheme.typography.titleLarge)
 
         NeonPanel {
             Text(
-                "The backup contains the following data. This will overwrite any existing data with the same name.",
+                stringResource(R.string.text_import_overwrite_warning),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
             )
@@ -381,25 +381,25 @@ private fun ConfirmStep(
 
             when (validationResult) {
                 is ImportValidationResult.ValidTemplatePack -> {
-                    InfoRow("Backup Type", stringResource(R.string.export_type_template_pack))
-                    InfoRow("Template Count", validationResult.pack.templates.size.toString())
-                    InfoRow("Tech Profile", "Not Included")
+                    InfoRow(stringResource(R.string.label_backup_type), stringResource(R.string.export_type_template_pack))
+                    InfoRow(stringResource(R.string.label_template_count), validationResult.pack.templates.size.toString())
+                    InfoRow(stringResource(R.string.label_tech_profile), stringResource(R.string.label_not_included))
                     if (validationResult.hasConflicts) {
-                        InfoRow("Conflicts", "${validationResult.conflicts.size} template(s) will be replaced")
+                        InfoRow(stringResource(R.string.label_conflicts), stringResource(R.string.text_import_conflicts, validationResult.conflicts.size))
                     }
                 }
                 is ImportValidationResult.ValidFullBackup -> {
-                    InfoRow("Backup Type", stringResource(R.string.export_type_full_backup))
-                    InfoRow("Template Count", validationResult.backup.templates.size.toString())
-                    InfoRow("Tech Profile", "Included")
+                    InfoRow(stringResource(R.string.label_backup_type), stringResource(R.string.export_type_full_backup))
+                    InfoRow(stringResource(R.string.label_template_count), validationResult.backup.templates.size.toString())
+                    InfoRow(stringResource(R.string.label_tech_profile), stringResource(R.string.label_included))
                     if (validationResult.hasConflicts) {
-                        InfoRow("Conflicts", "${validationResult.conflicts.size} template(s) will be replaced")
+                        InfoRow(stringResource(R.string.label_conflicts), stringResource(R.string.text_import_conflicts, validationResult.conflicts.size))
                     }
                 }
                 is ImportValidationResult.Invalid -> {
                     // This shouldn't happen in this screen, but handle it gracefully
                     Text(
-                        "Invalid import data",
+                        stringResource(R.string.error_invalid_import_data),
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodyMedium
                     )
@@ -412,7 +412,7 @@ private fun ConfirmStep(
         if (isLoading) {
             CircularProgressIndicator(color = MaterialTheme.colorScheme.secondary)
             Text(
-                "Importing...",
+                stringResource(R.string.status_importing),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                 modifier = Modifier.padding(top = 8.dp)
@@ -428,7 +428,7 @@ private fun ConfirmStep(
                     style = NeonButtonStyle.TERTIARY,
                     glowColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 ) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.action_cancel))
                 }
                 NeonButton(
                     onClick = onConfirm,
@@ -437,11 +437,11 @@ private fun ConfirmStep(
                 ) {
                     Icon(
                         Icons.Default.Check,
-                        contentDescription = "Confirm import",
+                        contentDescription = stringResource(R.string.content_desc_confirm_import),
                         modifier = Modifier.size(20.dp)
                     )
                     Spacer(Modifier.width(8.dp))
-                    Text("Confirm")
+                    Text(stringResource(R.string.action_confirm))
                 }
             }
         }
@@ -480,15 +480,15 @@ private fun CompleteStep(
         ) {
             Icon(
                 imageVector = Icons.Default.CheckCircle,
-                contentDescription = "Success",
+                contentDescription = stringResource(R.string.content_desc_success),
                 tint = LocalCyberColors.current.success,
                 modifier = Modifier.fillMaxSize()
             )
         }
         Spacer(Modifier.height(24.dp))
-        Text("Import Complete!", style = MaterialTheme.typography.headlineSmall)
+        Text(stringResource(R.string.title_import_complete), style = MaterialTheme.typography.headlineSmall)
         Text(
-            "Your data has been successfully restored.",
+            stringResource(R.string.text_import_complete_description),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
             modifier = Modifier.padding(top = 8.dp)
@@ -499,7 +499,7 @@ private fun CompleteStep(
             modifier = Modifier.fillMaxWidth(0.7f),
             glowColor = MaterialTheme.colorScheme.secondary
         ) {
-            Text("Done")
+            Text(stringResource(R.string.action_done))
         }
     }
 }
