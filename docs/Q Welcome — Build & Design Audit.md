@@ -24,10 +24,10 @@ Use this section to track progress. Each phase should land in its own PR unless 
 
 ### Phase 4 — Testing
 
-- [ ] Add Compose UI tests (finding #22)
-- [ ] Add missing ViewModel tests (finding #23)
-- [ ] Add DataStore migration test (finding #24)
-- [ ] Remove ExampleUnitTest (finding #25)
+- [x] Add Compose UI tests (finding #22)
+- [x] Add missing ViewModel tests (finding #23)
+- [x] Add DataStore migration test (finding #24)
+- [x] Remove ExampleUnitTest (finding #25)
 
 ### Optional — Build/Gradle polish
 
