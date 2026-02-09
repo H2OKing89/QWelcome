@@ -77,7 +77,10 @@ val LocalTemplateListViewModel = staticCompositionLocalOf<TemplateListViewModel>
 
 /**
  * Provides the [SoundPlayer] throughout the composition.
- * Throws if accessed before being provided (fail-fast for configuration errors).
+ * Created via [staticCompositionLocalOf] — throws if accessed before being provided
+ * (fail-fast for configuration errors). Callers must supply a [SoundPlayer] implementation
+ * (e.g., [SoundManager][com.kingpaging.qwelcome.util.SoundManager]) via
+ * [CompositionLocalProvider][androidx.compose.runtime.CompositionLocalProvider].
  */
 val LocalSoundPlayer = staticCompositionLocalOf<SoundPlayer> {
     error("SoundPlayer not provided. Wrap your composable with CompositionLocalProvider.")

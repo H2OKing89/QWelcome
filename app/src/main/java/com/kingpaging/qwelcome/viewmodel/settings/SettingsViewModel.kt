@@ -5,11 +5,13 @@ import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kingpaging.qwelcome.BuildConfig
+import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.data.SettingsStore
 import com.kingpaging.qwelcome.data.TechProfile
 import com.kingpaging.qwelcome.data.Template
 import com.kingpaging.qwelcome.data.UpdateCheckResult
 import com.kingpaging.qwelcome.data.UpdateChecker
+import com.kingpaging.qwelcome.util.ResourceProvider
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,7 +26,8 @@ import kotlinx.coroutines.launch
 private const val TAG = "SettingsViewModel"
 
 class SettingsViewModel(
-    private val store: SettingsStore
+    private val store: SettingsStore,
+    private val resourceProvider: ResourceProvider
 ) : ViewModel() {
 
     val techProfile: StateFlow<TechProfile> =
@@ -147,7 +150,11 @@ class SettingsViewModel(
         if (lastCheckTimeMillis != 0L && elapsed < cooldownMs) {
             val remainingSeconds = ((cooldownMs - elapsed) / 1000).coerceAtLeast(1)
             viewModelScope.launch {
-                _settingsEvents.emit(SettingsEvent.ShowToastError("Checked recently, try again in ${remainingSeconds}s"))
+                _settingsEvents.emit(
+                    SettingsEvent.ShowToastError(
+                        resourceProvider.getString(R.string.toast_check_cooldown, remainingSeconds)
+                    )
+                )
             }
             return
         }
