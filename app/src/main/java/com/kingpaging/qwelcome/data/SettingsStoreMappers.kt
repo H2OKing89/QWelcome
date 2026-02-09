@@ -49,6 +49,8 @@ fun Template.toProto(): TemplateProto = TemplateProto.newBuilder()
     .setCreatedAt(createdAt)
     .setModifiedAt(modifiedAt)
     .setSlug(slug ?: "")
+    .setSortOrder(sortOrder)
+    .addAllTags(tags)
     .build()
 
 fun Template.Companion.fromProto(proto: TemplateProto): Template = Template(
@@ -58,5 +60,7 @@ fun Template.Companion.fromProto(proto: TemplateProto): Template = Template(
     // Use epoch as deterministic default for missing timestamps (not Instant.now()).
     createdAt = proto.createdAt.ifEmpty { "1970-01-01T00:00:00Z" },
     modifiedAt = proto.modifiedAt.ifEmpty { "1970-01-01T00:00:00Z" },
-    slug = proto.slug.ifEmpty { null }
+    slug = proto.slug.ifEmpty { null },
+    sortOrder = proto.sortOrder,
+    tags = proto.tagsList
 )
