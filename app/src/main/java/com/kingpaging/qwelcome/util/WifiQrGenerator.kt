@@ -12,17 +12,17 @@ import com.kingpaging.qwelcome.R
 object WifiQrGenerator {
     
     /** Minimum password length for WPA/WPA2 (8 characters) */
-    const val MIN_PASSWORD_LENGTH = 8
+    const val MIN_PASSWORD_LENGTH = WIFI_MIN_PASSWORD_LENGTH
     
     /** Maximum password length for WPA/WPA2 (63 characters for passphrase) */
-    const val MAX_PASSWORD_LENGTH = 63
+    const val MAX_PASSWORD_LENGTH = WIFI_MAX_PASSWORD_LENGTH
     
     /** 
      * Maximum SSID length in bytes (per IEEE 802.11 specification).
      * Note: UTF-8 encoded SSIDs with multi-byte characters may have fewer
      * visible characters than this limit.
      */
-    const val MAX_SSID_LENGTH_BYTES = 32
+    const val MAX_SSID_LENGTH_BYTES = WIFI_MAX_SSID_LENGTH_BYTES
     
     /**
      * Validates a WiFi password according to WPA/WPA2 requirements.
@@ -39,8 +39,8 @@ object WifiQrGenerator {
     fun validatePassword(password: String): ValidationResult {
         return when {
             password.isBlank() -> ValidationResult.Error(R.string.error_password_empty)
-            password.length < MIN_PASSWORD_LENGTH -> ValidationResult.Error(R.string.error_password_too_short)
-            password.length > MAX_PASSWORD_LENGTH -> ValidationResult.Error(R.string.error_password_too_long)
+            WifiValidationRules.isPasswordTooShort(password) -> ValidationResult.Error(R.string.error_password_too_short)
+            WifiValidationRules.isPasswordTooLong(password) -> ValidationResult.Error(R.string.error_password_too_long)
             else -> ValidationResult.Success
         }
     }
@@ -58,7 +58,7 @@ object WifiQrGenerator {
     fun validateSsid(ssid: String): ValidationResult {
         return when {
             ssid.isBlank() -> ValidationResult.Error(R.string.error_ssid_empty)
-            ssid.toByteArray(Charsets.UTF_8).size > MAX_SSID_LENGTH_BYTES -> 
+            WifiValidationRules.isSsidTooLong(ssid) ->
                 ValidationResult.Error(R.string.error_ssid_too_long)
             else -> ValidationResult.Success
         }

@@ -70,10 +70,11 @@ import com.kingpaging.qwelcome.ui.components.NeonTopAppBar
 import com.kingpaging.qwelcome.ui.components.QrCodeBottomSheet
 import com.kingpaging.qwelcome.ui.components.QWelcomeHeader
 import com.kingpaging.qwelcome.ui.theme.LocalCyberColors
-import com.kingpaging.qwelcome.ui.theme.LocalDarkTheme
 import com.kingpaging.qwelcome.util.rememberHapticFeedback
 import com.kingpaging.qwelcome.di.LocalSoundPlayer
+import com.kingpaging.qwelcome.util.WifiQrGenerator
 import com.kingpaging.qwelcome.viewmodel.UiEvent
+import com.kingpaging.qwelcome.viewmodel.templates.TemplateListUiState
 import kotlinx.coroutines.launch
 
 @Suppress("LocalContextGetResourceValueCall")
@@ -136,7 +137,7 @@ fun CustomerIntakeScreen(
     val qrEnabled = if (uiState.isOpenNetwork) {
         uiState.ssid.isNotBlank()
     } else {
-        uiState.ssid.isNotBlank() && uiState.password.length >= 8
+        uiState.ssid.isNotBlank() && uiState.password.length >= WifiQrGenerator.MIN_PASSWORD_LENGTH
     }
 
     if (showQrSheet && qrEnabled) {
@@ -182,282 +183,365 @@ fun CustomerIntakeScreen(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp) // Top-aligned with spacing feels more like a tool
             ) {
-                // Template selector using ExposedDropdownMenuBox for proper light UI
-                val isDark = LocalDarkTheme.current
-                if (templateUiState.templates.isNotEmpty()) {
-                    val activeTemplate = remember(
-                        templateUiState.templates,
-                        templateUiState.activeTemplateId
-                    ) {
-                        templateUiState.templates.find { it.id == templateUiState.activeTemplateId }
+                TemplateSelector(
+                    templateUiState = templateUiState,
+                    expanded = templateDropdownExpanded,
+                    onExpandedChange = { templateDropdownExpanded = it },
+                    onTemplateSelected = {
+                        hapticFeedback()
+                        templateListViewModel.setActiveTemplate(it)
+                        templateDropdownExpanded = false
+                    },
+                    onManageTemplates = {
+                        hapticFeedback()
+                        templateDropdownExpanded = false
+                        onOpenTemplates()
                     }
-
-                    // NeonDropdownMenuBox wraps ExposedDropdownMenuBox with cyberpunk styling
-                    NeonDropdownMenuBox(
-                        expanded = templateDropdownExpanded,
-                        onExpandedChange = { templateDropdownExpanded = !templateDropdownExpanded },
-                        selectedText = activeTemplate?.name ?: "",
-                        label = { Text(stringResource(R.string.label_template)) },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                            templateUiState.templates.forEach { template ->
-                                DropdownMenuItem(
-                                    text = {
-                                        Row(
-                                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Text(template.name, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                            if (template.id == templateUiState.activeTemplateId) {
-                                                Icon(
-                                                    Icons.Filled.Check,
-                                                    contentDescription = stringResource(R.string.label_active),
-                                                    tint = MaterialTheme.colorScheme.secondary,
-                                                    modifier = Modifier.size(16.dp)
-                                                )
-                                            }
-                                        }
-                                    },
-                                    onClick = {
-                                        hapticFeedback()
-                                        templateListViewModel.setActiveTemplate(template.id)
-                                        templateDropdownExpanded = false
-                                    }
-                                )
-                            }
-
-                            HorizontalDivider()
-
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.action_manage_templates), color = MaterialTheme.colorScheme.tertiary) },
-                                onClick = {
-                                    hapticFeedback()
-                                    templateDropdownExpanded = false
-                                    onOpenTemplates()
-                                }
-                            )
-                    }
-                }
-
-                NeonPanel(
-                    modifier = Modifier.semantics(mergeDescendants = true) {}
-                ) {
-                    NeonOutlinedField(
-                        value = uiState.customerName,
-                        onValueChange = { customerIntakeViewModel.onCustomerNameChanged(it) },
-                        label = { Text(stringResource(R.string.label_customer_name)) },
-                        isError = uiState.customerNameError != null,
-                        supportingText = { uiState.customerNameError?.let { Text(it) } }
-                    )
-                    NeonOutlinedField(
-                        value = uiState.customerPhone,
-                        onValueChange = { customerIntakeViewModel.onCustomerPhoneChanged(it) },
-                        label = { Text(stringResource(R.string.label_customer_phone)) },
-                        isError = uiState.customerPhoneError != null,
-                        supportingText = { uiState.customerPhoneError?.let { Text(it) } },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
-                    )
-                    NeonOutlinedField(
-                        value = uiState.ssid,
-                        onValueChange = { customerIntakeViewModel.onSsidChanged(it) },
-                        label = { Text(stringResource(R.string.label_wifi_ssid)) },
-                        isError = uiState.ssidError != null,
-                        supportingText = { uiState.ssidError?.let { Text(it) } }
-                    )
-
-                    // Open Network toggle - allows skipping password for guest networks
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .toggleable(
-                                value = uiState.isOpenNetwork,
-                                onValueChange = {
-                                    hapticFeedback()
-                                    customerIntakeViewModel.onOpenNetworkChanged(it)
-                                },
-                                role = Role.Checkbox
-                            )
-                            .padding(vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Checkbox(
-                            checked = uiState.isOpenNetwork,
-                            onCheckedChange = null, // Handled by Row's toggleable
-                            colors = CheckboxDefaults.colors(
-                                checkedColor = MaterialTheme.colorScheme.secondary,
-                                uncheckedColor = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        )
-                        Text(
-                            text = stringResource(R.string.label_open_network),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.padding(start = 8.dp)
-                        )
-                    }
-
-                    NeonOutlinedField(
-                        value = if (uiState.isOpenNetwork) "" else uiState.password,
-                        onValueChange = { customerIntakeViewModel.onPasswordChanged(it) },
-                        label = { Text(stringResource(R.string.label_wifi_password)) },
-                        enabled = !uiState.isOpenNetwork,
-                        isError = uiState.passwordError != null,
-                        supportingText = {
-                            if (uiState.isOpenNetwork) {
-                                Text(stringResource(R.string.hint_password_disabled))
-                            } else {
-                                uiState.passwordError?.let { Text(it) }
-                            }
-                        },
-                        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                        trailingIcon = {
-                            if (!uiState.isOpenNetwork) {
-                                val image = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
-                                val description = if (passwordVisible) {
-                                    stringResource(R.string.content_desc_hide_password)
-                                } else {
-                                    stringResource(R.string.content_desc_show_password)
-                                }
-                                IconButton(onClick = {
-                                    hapticFeedback()
-                                    passwordVisible = !passwordVisible
-                                }) {
-                                    Icon(imageVector = image, contentDescription = description)
-                                }
-                            }
-                        }
-                    )
-                    NeonOutlinedField(
-                        value = uiState.accountNumber,
-                        onValueChange = { customerIntakeViewModel.onAccountNumberChanged(it) },
-                        label = { Text(stringResource(R.string.label_account_number)) },
-                        isError = uiState.accountNumberError != null,
-                        supportingText = { uiState.accountNumberError?.let { Text(it) } },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                    )
-                }
-
-                // === SEND SECTION ===
-                Text(
-                    stringResource(R.string.header_send),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.semantics { heading() }
                 )
 
-                // Button hierarchy: SMS = primary (hero), Share = secondary, Copy = tertiary
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    // SMS = Primary action (filled, most prominent - the hero button)
-                    NeonCyanButton(
-                        onClick = {
-                            hapticFeedback()
-                            customerIntakeViewModel.onSmsClicked(navigator)
-                        },
-                        modifier = Modifier.weight(1f),
-                        style = NeonButtonStyle.PRIMARY
-                    ) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.Send,
-                            contentDescription = stringResource(R.string.content_desc_send_sms),
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(Modifier.width(6.dp))
-                        Text(stringResource(R.string.action_sms))
+                CustomerFormFields(
+                    uiState = uiState,
+                    passwordVisible = passwordVisible,
+                    onCustomerNameChanged = customerIntakeViewModel::onCustomerNameChanged,
+                    onCustomerPhoneChanged = customerIntakeViewModel::onCustomerPhoneChanged,
+                    onSsidChanged = customerIntakeViewModel::onSsidChanged,
+                    onOpenNetworkChanged = {
+                        hapticFeedback()
+                        customerIntakeViewModel.onOpenNetworkChanged(it)
+                    },
+                    onPasswordChanged = customerIntakeViewModel::onPasswordChanged,
+                    onPasswordVisibilityToggle = {
+                        hapticFeedback()
+                        passwordVisible = !passwordVisible
+                    },
+                    onAccountNumberChanged = customerIntakeViewModel::onAccountNumberChanged
+                )
+
+                ActionButtonRow(
+                    copySuccess = copySuccess,
+                    onSmsClick = {
+                        hapticFeedback()
+                        customerIntakeViewModel.onSmsClicked(navigator)
+                    },
+                    onShareClick = {
+                        hapticFeedback()
+                        customerIntakeViewModel.onShareClicked(navigator)
+                    },
+                    onCopyClick = {
+                        hapticFeedback()
+                        customerIntakeViewModel.onCopyClicked(navigator)
                     }
-                    // Share = Secondary (outlined, important but not main)
-                    NeonCyanButton(
-                        onClick = {
-                            hapticFeedback()
-                            customerIntakeViewModel.onShareClicked(navigator)
-                        },
-                        modifier = Modifier.weight(1f),
-                        style = NeonButtonStyle.SECONDARY
-                    ) {
-                        Icon(
-                            Icons.Filled.Share,
-                            contentDescription = stringResource(R.string.action_share),
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(Modifier.width(4.dp))
-                        Text(stringResource(R.string.action_share))
+                )
+
+                QrCodeSection(
+                    uiState = uiState,
+                    enabled = qrEnabled,
+                    onShowQrClick = {
+                        hapticFeedback()
+                        showQrSheet = true
                     }
-                    // Copy = Tertiary (lowest emphasis - utility action)
-                    // Success state provides visual feedback on action completion
-                    val cyberColors = LocalCyberColors.current
-                    NeonButton(
-                        onClick = {
-                            hapticFeedback()
-                            customerIntakeViewModel.onCopyClicked(navigator)
-                        },
-                        modifier = Modifier.weight(1f),
-                        style = NeonButtonStyle.TERTIARY,
-                        // Success state: Switch to success green color
-                        glowColor = if (copySuccess) cyberColors.success else MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun TemplateSelector(
+    templateUiState: TemplateListUiState,
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
+    onTemplateSelected: (String) -> Unit,
+    onManageTemplates: () -> Unit
+) {
+    if (templateUiState.templates.isEmpty()) return
+
+    val activeTemplate = remember(
+        templateUiState.templates,
+        templateUiState.activeTemplateId
+    ) {
+        templateUiState.templates.find { it.id == templateUiState.activeTemplateId }
+    }
+
+    NeonDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { onExpandedChange(!expanded) },
+        selectedText = activeTemplate?.name ?: "",
+        label = { Text(stringResource(R.string.label_template)) },
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        templateUiState.templates.forEach { template ->
+            DropdownMenuItem(
+                text = {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            // Success state: Show check icon instead of copy icon
-                            if (copySuccess) Icons.Filled.Check else Icons.Filled.ContentCopy,
-                            contentDescription = stringResource(R.string.content_desc_copy_clipboard),
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(Modifier.width(4.dp))
-                        Text(if (copySuccess) stringResource(R.string.action_copied) else stringResource(R.string.action_copy))
+                        Text(template.name, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        if (template.id == templateUiState.activeTemplateId) {
+                            Icon(
+                                Icons.Filled.Check,
+                                contentDescription = stringResource(R.string.label_active),
+                                tint = MaterialTheme.colorScheme.secondary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
                     }
+                },
+                onClick = { onTemplateSelected(template.id) }
+            )
+        }
+
+        HorizontalDivider()
+
+        DropdownMenuItem(
+            text = {
+                Text(
+                    stringResource(R.string.action_manage_templates),
+                    color = MaterialTheme.colorScheme.tertiary
+                )
+            },
+            onClick = onManageTemplates
+        )
+    }
+}
+
+@Composable
+private fun CustomerFormFields(
+    uiState: CustomerIntakeUiState,
+    passwordVisible: Boolean,
+    onCustomerNameChanged: (String) -> Unit,
+    onCustomerPhoneChanged: (String) -> Unit,
+    onSsidChanged: (String) -> Unit,
+    onOpenNetworkChanged: (Boolean) -> Unit,
+    onPasswordChanged: (String) -> Unit,
+    onPasswordVisibilityToggle: () -> Unit,
+    onAccountNumberChanged: (String) -> Unit
+) {
+    NeonPanel(
+        modifier = Modifier.semantics(mergeDescendants = true) {}
+    ) {
+        NeonOutlinedField(
+            value = uiState.customerName,
+            onValueChange = onCustomerNameChanged,
+            label = { Text(stringResource(R.string.label_customer_name)) },
+            isError = uiState.customerNameError != null,
+            supportingText = { uiState.customerNameError?.let { Text(it) } }
+        )
+        NeonOutlinedField(
+            value = uiState.customerPhone,
+            onValueChange = onCustomerPhoneChanged,
+            label = { Text(stringResource(R.string.label_customer_phone)) },
+            isError = uiState.customerPhoneError != null,
+            supportingText = { uiState.customerPhoneError?.let { Text(it) } },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
+        )
+        NeonOutlinedField(
+            value = uiState.ssid,
+            onValueChange = onSsidChanged,
+            label = { Text(stringResource(R.string.label_wifi_ssid)) },
+            isError = uiState.ssidError != null,
+            supportingText = { uiState.ssidError?.let { Text(it) } }
+        )
+
+        // Open Network toggle - allows skipping password for guest networks
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .toggleable(
+                    value = uiState.isOpenNetwork,
+                    onValueChange = onOpenNetworkChanged,
+                    role = Role.Checkbox
+                )
+                .padding(vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Checkbox(
+                checked = uiState.isOpenNetwork,
+                onCheckedChange = null, // Handled by Row's toggleable
+                colors = CheckboxDefaults.colors(
+                    checkedColor = MaterialTheme.colorScheme.secondary,
+                    uncheckedColor = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            )
+            Text(
+                text = stringResource(R.string.label_open_network),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(start = 8.dp)
+            )
+        }
+
+        NeonOutlinedField(
+            value = if (uiState.isOpenNetwork) "" else uiState.password,
+            onValueChange = onPasswordChanged,
+            label = { Text(stringResource(R.string.label_wifi_password)) },
+            enabled = !uiState.isOpenNetwork,
+            isError = uiState.passwordError != null,
+            supportingText = {
+                if (uiState.isOpenNetwork) {
+                    Text(stringResource(R.string.hint_password_disabled))
+                } else {
+                    uiState.passwordError?.let { Text(it) }
                 }
-
-                // === WIFI QR CODE SECTION ===
-                // QR code validation (reuse qrEnabled from above)
-                val qrSectionEnabled = qrEnabled
-
-                val qrHint = when {
-                    uiState.isOpenNetwork && uiState.ssid.isBlank() -> stringResource(R.string.hint_qr_enter_ssid_open)
-                    uiState.isOpenNetwork && uiState.ssid.isNotBlank() -> stringResource(R.string.hint_qr_open_network, uiState.ssid)
-                    uiState.ssid.isBlank() && uiState.password.isBlank() -> stringResource(R.string.hint_qr_enter_both)
-                    uiState.ssid.isBlank() -> stringResource(R.string.hint_qr_enter_ssid)
-                    uiState.password.length < 8 -> stringResource(R.string.hint_qr_password_length, uiState.password.length)
-                    else -> uiState.ssid
-                }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.semantics(mergeDescendants = true) {}) {
-                        Text(
-                            stringResource(R.string.header_wifi_qr),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.semantics { heading() }
-                        )
-                        Text(
-                            qrHint,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = if (qrSectionEnabled) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                        )
+            },
+            visualTransformation = if (passwordVisible) {
+                VisualTransformation.None
+            } else {
+                PasswordVisualTransformation()
+            },
+            trailingIcon = {
+                if (!uiState.isOpenNetwork) {
+                    val image = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
+                    val description = if (passwordVisible) {
+                        stringResource(R.string.content_desc_hide_password)
+                    } else {
+                        stringResource(R.string.content_desc_show_password)
                     }
-                    NeonButton(
-                        onClick = {
-                            hapticFeedback()
-                            showQrSheet = true
-                        },
-                        glowColor = MaterialTheme.colorScheme.tertiary,
-                        style = NeonButtonStyle.TERTIARY,
-                        enabled = qrSectionEnabled
-                    ) {
-                        Icon(
-                            Icons.Filled.QrCode2,
-                            contentDescription = stringResource(R.string.content_desc_show_qr),
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(Modifier.width(6.dp))
-                        Text(stringResource(R.string.action_show_qr))
+                    IconButton(onClick = onPasswordVisibilityToggle) {
+                        Icon(imageVector = image, contentDescription = description)
                     }
                 }
             }
+        )
+        NeonOutlinedField(
+            value = uiState.accountNumber,
+            onValueChange = onAccountNumberChanged,
+            label = { Text(stringResource(R.string.label_account_number)) },
+            isError = uiState.accountNumberError != null,
+            supportingText = { uiState.accountNumberError?.let { Text(it) } },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+        )
+    }
+}
+
+@Composable
+private fun ActionButtonRow(
+    copySuccess: Boolean,
+    onSmsClick: () -> Unit,
+    onShareClick: () -> Unit,
+    onCopyClick: () -> Unit
+) {
+    // === SEND SECTION ===
+    Text(
+        stringResource(R.string.header_send),
+        style = MaterialTheme.typography.labelMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.semantics { heading() }
+    )
+
+    // Button hierarchy: SMS = primary (hero), Share = secondary, Copy = tertiary
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // SMS = Primary action (filled, most prominent - the hero button)
+        NeonCyanButton(
+            onClick = onSmsClick,
+            modifier = Modifier.weight(1f),
+            style = NeonButtonStyle.PRIMARY
+        ) {
+            Icon(
+                Icons.AutoMirrored.Filled.Send,
+                contentDescription = stringResource(R.string.content_desc_send_sms),
+                modifier = Modifier.size(16.dp)
+            )
+            Spacer(Modifier.width(6.dp))
+            Text(stringResource(R.string.action_sms))
+        }
+        // Share = Secondary (outlined, important but not main)
+        NeonCyanButton(
+            onClick = onShareClick,
+            modifier = Modifier.weight(1f),
+            style = NeonButtonStyle.SECONDARY
+        ) {
+            Icon(
+                Icons.Filled.Share,
+                contentDescription = stringResource(R.string.action_share),
+                modifier = Modifier.size(16.dp)
+            )
+            Spacer(Modifier.width(4.dp))
+            Text(stringResource(R.string.action_share))
+        }
+        // Copy = Tertiary (lowest emphasis - utility action)
+        // Success state provides visual feedback on action completion
+        val cyberColors = LocalCyberColors.current
+        NeonButton(
+            onClick = onCopyClick,
+            modifier = Modifier.weight(1f),
+            style = NeonButtonStyle.TERTIARY,
+            // Success state: Switch to success green color
+            glowColor = if (copySuccess) cyberColors.success else MaterialTheme.colorScheme.primary
+        ) {
+            Icon(
+                // Success state: Show check icon instead of copy icon
+                if (copySuccess) Icons.Filled.Check else Icons.Filled.ContentCopy,
+                contentDescription = stringResource(R.string.content_desc_copy_clipboard),
+                modifier = Modifier.size(16.dp)
+            )
+            Spacer(Modifier.width(4.dp))
+            Text(
+                if (copySuccess) {
+                    stringResource(R.string.action_copied)
+                } else {
+                    stringResource(R.string.action_copy)
+                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun QrCodeSection(
+    uiState: CustomerIntakeUiState,
+    enabled: Boolean,
+    onShowQrClick: () -> Unit
+) {
+    val qrHint = when {
+        uiState.isOpenNetwork && uiState.ssid.isBlank() -> stringResource(R.string.hint_qr_enter_ssid_open)
+        uiState.isOpenNetwork && uiState.ssid.isNotBlank() -> stringResource(R.string.hint_qr_open_network, uiState.ssid)
+        uiState.ssid.isBlank() && uiState.password.isBlank() -> stringResource(R.string.hint_qr_enter_both)
+        uiState.ssid.isBlank() -> stringResource(R.string.hint_qr_enter_ssid)
+        uiState.password.length < WifiQrGenerator.MIN_PASSWORD_LENGTH ->
+            stringResource(R.string.hint_qr_password_length, uiState.password.length)
+        else -> uiState.ssid
+    }
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.semantics(mergeDescendants = true) {}) {
+            Text(
+                stringResource(R.string.header_wifi_qr),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.semantics { heading() }
+            )
+            Text(
+                qrHint,
+                style = MaterialTheme.typography.bodySmall,
+                color = if (enabled) {
+                    MaterialTheme.colorScheme.tertiary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                }
+            )
+        }
+        NeonButton(
+            onClick = onShowQrClick,
+            glowColor = MaterialTheme.colorScheme.tertiary,
+            style = NeonButtonStyle.TERTIARY,
+            enabled = enabled
+        ) {
+            Icon(
+                Icons.Filled.QrCode2,
+                contentDescription = stringResource(R.string.content_desc_show_qr),
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(Modifier.width(6.dp))
+            Text(stringResource(R.string.action_show_qr))
         }
     }
 }

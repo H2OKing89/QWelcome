@@ -16,11 +16,11 @@ Use this section to track progress. Each phase should land in its own PR unless 
 
 ### Phase 3 — Code health
 
-- [ ] Split large composables (finding #17)
-- [ ] Split ImportExportRepository (finding #18)
-- [ ] Split SettingsStore mappers/migration (finding #19)
-- [ ] Centralize validation rules (finding #20)
-- [ ] Use data object for UiEvent objects (finding #21)
+- [x] Split large composables (finding #17)
+- [x] Split ImportExportRepository (finding #18)
+- [x] Split SettingsStore mappers/migration (finding #19)
+- [x] Centralize validation rules (finding #20)
+- [x] Use data object for UiEvent objects (finding #21)
 
 ### Phase 4 — Testing
 
