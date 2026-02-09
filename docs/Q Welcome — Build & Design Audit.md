@@ -4,12 +4,12 @@
 
 Use this section to track progress. Each phase should land in its own PR unless noted.
 
-### Phase 1 — Architecture refactor (PR #21)
+### Phase 1 — Architecture refactor ✅ [PR #21](https://github.com/H2OKing89/QWelcome/pull/21) merged
 
 - [x] SoundManager lifecycle wiring (finding #7) — already fixed in app
 - [x] Decouple UI from SoundManager (finding #8)
 
-### Phase 2 — Accessibility + string resources
+### Phase 2 — Accessibility + string resources 🔄 [PR #22](https://github.com/H2OKing89/QWelcome/pull/22) in review
 
 - [x] Fix missing content descriptions (finding #12)
 - [x] Replace hardcoded UI strings with string resources (finding #13)
