@@ -76,8 +76,8 @@ val LocalTemplateListViewModel = staticCompositionLocalOf<TemplateListViewModel>
 }
 
 /**
- * Provides the SoundPlayer interface throughout the composition.
- * Defaults to the SoundManager singleton, but can be swapped in tests.
+ * Provides the [SoundPlayer] throughout the composition.
+ * Throws if accessed before being provided (fail-fast for configuration errors).
  */
 val LocalSoundPlayer = staticCompositionLocalOf<SoundPlayer> {
     error("SoundPlayer not provided. Wrap your composable with CompositionLocalProvider.")

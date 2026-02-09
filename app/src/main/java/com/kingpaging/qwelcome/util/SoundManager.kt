@@ -22,7 +22,9 @@ import kotlin.math.sin
  * Application.onTerminate.
  */
 object SoundManager : SoundPlayer {
+    @Volatile
     private var isEnabled = true
+    @Volatile
     private var isShutdown = false
     
     /** Coroutine scope for audio playback - uses SupervisorJob so failures don't cancel other sounds */

@@ -231,8 +231,8 @@ class SettingsViewModelTest {
             advanceUntilIdle()
 
             val event = awaitItem()
-            assertTrue(event is SettingsEvent.ShowToast)
-            assertTrue((event as SettingsEvent.ShowToast).message.contains("try again in"))
+            assertTrue(event is SettingsEvent.ShowToastError)
+            assertTrue((event as SettingsEvent.ShowToastError).message.contains("try again in"))
         }
 
         // UpdateChecker should only have been called once

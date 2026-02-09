@@ -173,7 +173,7 @@ if [ "$PUSH" = false ]; then
     echo "  1. git push -u origin HEAD                      # push branch (NOT tag)"
     echo "  2. Create PR, get approval, merge"
     echo "  3. git checkout master && git pull origin master"
-    echo "  4. git tag -d v${NEW_NAME} || true               # delete old tag"
-    echo "  5. git tag -a v${NEW_NAME} -m 'Release v${NEW_NAME}'  # retag on master"
-    echo "  6. git push origin v${NEW_NAME}                  # triggers release"
+    echo "  4. git tag -d v\"${NEW_NAME}\" || true               # delete old tag"
+    echo "  5. git tag -a v\"${NEW_NAME}\" -m 'Release v${NEW_NAME}'  # retag on master"
+    echo "  6. git push origin v\"${NEW_NAME}\"                  # triggers release"
 fi

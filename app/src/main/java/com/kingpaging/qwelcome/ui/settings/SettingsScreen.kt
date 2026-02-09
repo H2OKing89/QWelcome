@@ -116,6 +116,9 @@ fun SettingsScreen(
             vm.settingsEvents.collect { event ->
                 when (event) {
                     is SettingsEvent.ShowToast -> {
+                        Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
+                    }
+                    is SettingsEvent.ShowToastError -> {
                         soundPlayer.playBeep()
                         Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
                     }

@@ -147,7 +147,7 @@ class SettingsViewModel(
         if (lastCheckTimeMillis != 0L && elapsed < cooldownMs) {
             val remainingSeconds = ((cooldownMs - elapsed) / 1000).coerceAtLeast(1)
             viewModelScope.launch {
-                _settingsEvents.emit(SettingsEvent.ShowToast("Checked recently, try again in ${remainingSeconds}s"))
+                _settingsEvents.emit(SettingsEvent.ShowToastError("Checked recently, try again in ${remainingSeconds}s"))
             }
             return
         }
@@ -208,5 +208,8 @@ sealed class UpdateState {
 
 /** One-shot events emitted by [SettingsViewModel]. */
 sealed class SettingsEvent {
+    /** Informational toast — no sound effect. */
     data class ShowToast(val message: String) : SettingsEvent()
+    /** Error toast — plays an error beep before showing the message. */
+    data class ShowToastError(val message: String) : SettingsEvent()
 }
