@@ -16,7 +16,8 @@ internal class ImportApplyService(
         resolutions: Map<String, ConflictResolution> = emptyMap()
     ): ImportApplyResult {
         return try {
-            val templatesToSave = resolveTemplates(pack.templates, resolutions)
+            val resolved = resolveTemplates(pack.templates, resolutions)
+            val templatesToSave = resolved.templates
             settingsStore.saveTemplates(templatesToSave)
             ImportApplyResult.Success(templatesToSave.size)
         } catch (e: kotlin.coroutines.cancellation.CancellationException) {
@@ -34,7 +35,9 @@ internal class ImportApplyService(
         resolutions: Map<String, ConflictResolution> = emptyMap()
     ): ImportApplyResult {
         return try {
-            val templatesToSave = resolveTemplates(backup.templates, resolutions)
+            val existingIds = settingsStore.getAllTemplates().map { it.id }.toSet()
+            val resolved = resolveTemplates(backup.templates, resolutions)
+            val templatesToSave = resolved.templates
             settingsStore.saveTemplates(templatesToSave)
 
             if (importTechProfile) {
@@ -48,10 +51,11 @@ internal class ImportApplyService(
             }
 
             if (importDefaultTemplate) {
-                val importedIds = templatesToSave.map { it.id }.toSet()
-                val targetDefaultId = backup.getEffectiveDefaultTemplateId() ?: DEFAULT_TEMPLATE_ID
-                if (targetDefaultId == DEFAULT_TEMPLATE_ID || targetDefaultId in importedIds) {
-                    settingsStore.setActiveTemplate(targetDefaultId)
+                val requestedDefaultId = backup.getEffectiveDefaultTemplateId() ?: DEFAULT_TEMPLATE_ID
+                val resolvedDefaultId = resolved.idMap[requestedDefaultId] ?: DEFAULT_TEMPLATE_ID
+                val availableIds = existingIds + templatesToSave.map { it.id }
+                if (resolvedDefaultId == DEFAULT_TEMPLATE_ID || resolvedDefaultId in availableIds) {
+                    settingsStore.setActiveTemplate(resolvedDefaultId)
                 }
             }
 
@@ -67,16 +71,36 @@ internal class ImportApplyService(
         }
     }
 
+    private data class ResolvedTemplates(
+        val templates: List<Template>,
+        val idMap: Map<String, String>
+    )
+
     private fun resolveTemplates(
         templates: List<Template>,
         resolutions: Map<String, ConflictResolution>
-    ): List<Template> {
-        return templates.mapNotNull { template ->
+    ): ResolvedTemplates {
+        val idMap = mutableMapOf<String, String>()
+        val resolvedTemplates = templates.mapNotNull { template ->
             when (resolutions[template.id]) {
-                ConflictResolution.KEEP_EXISTING -> null
-                ConflictResolution.SAVE_AS_COPY -> template.duplicate()
-                ConflictResolution.REPLACE, null -> template
+                ConflictResolution.KEEP_EXISTING -> {
+                    idMap[template.id] = template.id
+                    null
+                }
+                ConflictResolution.SAVE_AS_COPY -> {
+                    val copy = template.duplicate()
+                    idMap[template.id] = copy.id
+                    copy
+                }
+                ConflictResolution.REPLACE, null -> {
+                    idMap[template.id] = template.id
+                    template
+                }
             }
         }
+        return ResolvedTemplates(
+            templates = resolvedTemplates,
+            idMap = idMap
+        )
     }
 }

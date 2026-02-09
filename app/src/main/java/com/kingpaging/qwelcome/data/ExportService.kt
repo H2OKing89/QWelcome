@@ -110,6 +110,15 @@ internal class ExportService(
             )
 
             val jsonString = json.encodeToString(backup)
+            val serializedSizeBytes = jsonString.toByteArray(Charsets.UTF_8).size
+            if (serializedSizeBytes > MAX_EXPORT_SIZE_BYTES) {
+                return ExportResult.Error(
+                    resourceProvider.getString(
+                        R.string.error_export_too_large,
+                        formatBytesAsMb(MAX_EXPORT_SIZE_BYTES.toLong())
+                    )
+                )
+            }
             ExportResult.Success(jsonString, userTemplates.size)
         } catch (e: kotlin.coroutines.cancellation.CancellationException) {
             throw e

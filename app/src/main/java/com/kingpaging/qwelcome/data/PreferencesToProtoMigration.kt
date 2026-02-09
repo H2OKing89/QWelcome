@@ -48,6 +48,8 @@ private class PreferencesToProtoMigration(
         if (migrationCompleted) return false
 
         return prefs[stringPreferencesKey(TECH_NAME_KEY)] != null ||
+            prefs[stringPreferencesKey(TECH_TITLE_KEY)] != null ||
+            prefs[stringPreferencesKey(TECH_DEPT_KEY)] != null ||
             prefs[stringPreferencesKey(TEMPLATES_JSON_KEY)] != null ||
             prefs[stringPreferencesKey(ACTIVE_TEMPLATE_ID_KEY)] != null
     }

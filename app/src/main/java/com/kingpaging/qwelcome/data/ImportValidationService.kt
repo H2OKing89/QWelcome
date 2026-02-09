@@ -31,13 +31,11 @@ internal class ImportValidationService(
                 resourceProvider.getString(R.string.error_import_too_large, maxSizeLabel)
             )
         }
-        if (trimmedJson.length > MAX_IMPORT_SIZE_BYTES / 2) {
-            val preciseSize = trimmedJson.toByteArray(Charsets.UTF_8).size
-            if (preciseSize > MAX_IMPORT_SIZE_BYTES) {
-                return ImportValidationResult.Invalid(
-                    resourceProvider.getString(R.string.error_import_too_large, maxSizeLabel)
-                )
-            }
+        val preciseSize = trimmedJson.toByteArray(Charsets.UTF_8).size
+        if (preciseSize > MAX_IMPORT_SIZE_BYTES) {
+            return ImportValidationResult.Invalid(
+                resourceProvider.getString(R.string.error_import_too_large, maxSizeLabel)
+            )
         }
 
         val metadata = try {

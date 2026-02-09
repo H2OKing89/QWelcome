@@ -37,6 +37,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -135,9 +136,13 @@ fun CustomerIntakeScreen(
     // For open networks, only SSID is required
     // For secured networks, both SSID and valid password are required
     val qrEnabled = if (uiState.isOpenNetwork) {
-        uiState.ssid.isNotBlank()
+        uiState.ssid.isNotBlank() && uiState.ssidError == null
     } else {
-        uiState.ssid.isNotBlank() && uiState.password.length >= WifiQrGenerator.MIN_PASSWORD_LENGTH
+        uiState.ssid.isNotBlank() &&
+            uiState.ssidError == null &&
+            uiState.password.isNotBlank() &&
+            uiState.password.length >= WifiQrGenerator.MIN_PASSWORD_LENGTH &&
+            uiState.passwordError == null
     }
 
     if (showQrSheet && qrEnabled) {
@@ -271,25 +276,27 @@ private fun TemplateSelector(
         modifier = Modifier.fillMaxWidth()
     ) {
         templateUiState.templates.forEach { template ->
-            DropdownMenuItem(
-                text = {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(template.name, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        if (template.id == templateUiState.activeTemplateId) {
-                            Icon(
-                                Icons.Filled.Check,
-                                contentDescription = stringResource(R.string.label_active),
-                                tint = MaterialTheme.colorScheme.secondary,
-                                modifier = Modifier.size(16.dp)
-                            )
+            key(template.id) {
+                DropdownMenuItem(
+                    text = {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(template.name, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            if (template.id == templateUiState.activeTemplateId) {
+                                Icon(
+                                    Icons.Filled.Check,
+                                    contentDescription = stringResource(R.string.label_active),
+                                    tint = MaterialTheme.colorScheme.secondary,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
                         }
-                    }
-                },
-                onClick = { onTemplateSelected(template.id) }
-            )
+                    },
+                    onClick = { onTemplateSelected(template.id) }
+                )
+            }
         }
 
         HorizontalDivider()
