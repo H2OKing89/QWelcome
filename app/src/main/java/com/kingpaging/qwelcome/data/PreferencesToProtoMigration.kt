@@ -25,6 +25,11 @@ private const val TECH_DEPT_KEY = "tech_dept"
 private const val TEMPLATES_JSON_KEY = "templates_json"
 private const val ACTIVE_TEMPLATE_ID_KEY = "active_template_id"
 
+private class TemplatesMigrationException(
+    val rawTemplatesJson: String,
+    cause: Throwable
+) : IllegalStateException("Failed to parse legacy templates JSON during migration", cause)
+
 private val Context.tempPreferencesDataStore by preferencesDataStore(name = "settings")
 
 val Context.protoDataStore: DataStore<UserPreferences> by dataStore(
@@ -65,7 +70,16 @@ private class PreferencesToProtoMigration(
             .build()
 
         val templatesJson = prefs[stringPreferencesKey(TEMPLATES_JSON_KEY)]
-        val templates = parseTemplateProtos(templatesJson, json)
+        val templates = try {
+            parseTemplateProtos(templatesJson, json)
+        } catch (e: TemplatesMigrationException) {
+            Log.e(
+                TAG,
+                "Template migration failed; preserving legacy preferences for manual recovery. JSON length: ${e.rawTemplatesJson.length}",
+                e
+            )
+            throw e
+        }
 
         return UserPreferences.newBuilder()
             .setActiveTemplateId(
@@ -102,6 +116,7 @@ private class PreferencesToProtoMigration(
                 e
             )
             logCorruptedTemplatesDiagnostics(templatesJson)
+            throw TemplatesMigrationException(templatesJson, e)
         }
     }
 

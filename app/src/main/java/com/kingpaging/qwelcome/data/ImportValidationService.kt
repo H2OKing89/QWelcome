@@ -114,6 +114,11 @@ internal class ImportValidationService(
         }
 
         warnings.addAll(validateTemplates(backup.templates))
+        if (backup.templates.isEmpty()) {
+            return ImportValidationResult.Invalid(
+                resourceProvider.getString(R.string.error_import_template_pack_empty)
+            )
+        }
 
         val existingTemplates = settingsStore.getUserTemplates()
         val conflicts = detectConflicts(backup.templates, existingTemplates)

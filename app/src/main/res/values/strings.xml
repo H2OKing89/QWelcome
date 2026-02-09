@@ -61,6 +61,7 @@
     <string name="export_type_template_pack">Template Pack</string>
     <string name="export_type_full_backup">Full Backup</string>
     <string name="error_no_templates_to_export">No templates to export</string>
+    <string name="error_export_default_template_not_supported">Built-in default template cannot be exported. Select at least one custom template.</string>
     <string name="error_export_too_large">Export too large (max %1$s)</string>
     <string name="error_export_failed">Failed to export: %1$s</string>
 

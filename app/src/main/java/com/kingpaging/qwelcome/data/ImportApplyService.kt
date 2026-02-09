@@ -3,9 +3,12 @@ package com.kingpaging.qwelcome.data
 import android.util.Log
 import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.util.ResourceProvider
+import java.io.IOException
+import kotlinx.serialization.SerializationException
 
 private const val TAG = "ImportApplyService"
 
+@Suppress("TooGenericExceptionCaught")
 internal class ImportApplyService(
     private val settingsStore: SettingsStore,
     private val resourceProvider: ResourceProvider
@@ -22,7 +25,17 @@ internal class ImportApplyService(
             ImportApplyResult.Success(templatesToSave.size)
         } catch (e: kotlin.coroutines.cancellation.CancellationException) {
             throw e
+        } catch (e: IOException) {
+            Log.e(TAG, "I/O failure while applying template pack", e)
+            ImportApplyResult.Error(resourceProvider.getString(R.string.error_import_failed, e.message ?: ""))
+        } catch (e: SerializationException) {
+            Log.e(TAG, "Serialization failure while applying template pack", e)
+            ImportApplyResult.Error(resourceProvider.getString(R.string.error_import_failed, e.message ?: ""))
+        } catch (e: IllegalArgumentException) {
+            Log.e(TAG, "Invalid import data while applying template pack", e)
+            ImportApplyResult.Error(resourceProvider.getString(R.string.error_import_failed, e.message ?: ""))
         } catch (e: Exception) {
+            // Fallback for unexpected runtime failures from persistence/runtime layers.
             Log.e(TAG, "Failed to apply template pack", e)
             ImportApplyResult.Error(resourceProvider.getString(R.string.error_import_failed, e.message ?: ""))
         }
@@ -65,7 +78,17 @@ internal class ImportApplyService(
             )
         } catch (e: kotlin.coroutines.cancellation.CancellationException) {
             throw e
+        } catch (e: IOException) {
+            Log.e(TAG, "I/O failure while applying full backup", e)
+            ImportApplyResult.Error(resourceProvider.getString(R.string.error_import_failed, e.message ?: ""))
+        } catch (e: SerializationException) {
+            Log.e(TAG, "Serialization failure while applying full backup", e)
+            ImportApplyResult.Error(resourceProvider.getString(R.string.error_import_failed, e.message ?: ""))
+        } catch (e: IllegalArgumentException) {
+            Log.e(TAG, "Invalid import data while applying full backup", e)
+            ImportApplyResult.Error(resourceProvider.getString(R.string.error_import_failed, e.message ?: ""))
         } catch (e: Exception) {
+            // Fallback for unexpected runtime failures from persistence/runtime layers.
             Log.e(TAG, "Failed to apply full backup", e)
             ImportApplyResult.Error(resourceProvider.getString(R.string.error_import_failed, e.message ?: ""))
         }

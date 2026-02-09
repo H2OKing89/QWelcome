@@ -19,6 +19,10 @@ internal class ExportService(
     suspend fun exportTemplatePack(templateIds: List<String> = emptyList()): ExportResult {
         return try {
             val allTemplates = settingsStore.getAllTemplates()
+            val requestedDefaultTemplate = templateIds.contains(DEFAULT_TEMPLATE_ID)
+            if (requestedDefaultTemplate) {
+                Log.i(TAG, "Requested built-in default template for export; excluding it from export payload")
+            }
             val templatesToExport = if (templateIds.isEmpty()) {
                 // Export all user templates (exclude built-in default)
                 allTemplates.filter { it.id != DEFAULT_TEMPLATE_ID }
@@ -27,6 +31,11 @@ internal class ExportService(
             }
 
             if (templatesToExport.isEmpty()) {
+                if (templateIds.isNotEmpty() && requestedDefaultTemplate) {
+                    return ExportResult.Error(
+                        resourceProvider.getString(R.string.error_export_default_template_not_supported)
+                    )
+                }
                 return ExportResult.Error(
                     resourceProvider.getString(R.string.error_no_templates_to_export)
                 )

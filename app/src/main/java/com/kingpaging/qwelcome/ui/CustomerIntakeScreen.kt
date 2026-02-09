@@ -270,7 +270,7 @@ private fun TemplateSelector(
 
     NeonDropdownMenuBox(
         expanded = expanded,
-        onExpandedChange = { onExpandedChange(!expanded) },
+        onExpandedChange = { onExpandedChange(it) },
         selectedText = activeTemplate?.name ?: "",
         label = { Text(stringResource(R.string.label_template)) },
         modifier = Modifier.fillMaxWidth()
@@ -505,6 +505,8 @@ private fun QrCodeSection(
     onShowQrClick: () -> Unit
 ) {
     val qrHint = when {
+        uiState.ssidError != null -> uiState.ssidError
+        !uiState.isOpenNetwork && uiState.passwordError != null -> uiState.passwordError
         uiState.isOpenNetwork && uiState.ssid.isBlank() -> stringResource(R.string.hint_qr_enter_ssid_open)
         uiState.isOpenNetwork && uiState.ssid.isNotBlank() -> stringResource(R.string.hint_qr_open_network, uiState.ssid)
         uiState.ssid.isBlank() && uiState.password.isBlank() -> stringResource(R.string.hint_qr_enter_both)
