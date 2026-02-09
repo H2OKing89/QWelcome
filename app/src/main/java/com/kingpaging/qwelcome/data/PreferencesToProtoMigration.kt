@@ -124,9 +124,9 @@ private class PreferencesToProtoMigration(
      * Logs diagnostics only. We intentionally avoid partial recovery because it can
      * silently corrupt template objects.
      */
-    private fun logCorruptedTemplatesDiagnostics(templatesJson: String): List<TemplateProto> {
+    private fun logCorruptedTemplatesDiagnostics(templatesJson: String) {
         Log.w(TAG, "Logging corrupted template data for diagnostics...")
-        return try {
+        try {
             val templateRegex = """\{[^{}]*"id"\s*:\s*"[^"]+""".toRegex()
             val matchCount = templateRegex.findAll(templatesJson).toList().size
             if (matchCount == 0) {
@@ -137,13 +137,10 @@ private class PreferencesToProtoMigration(
                     "Found $matchCount template fragment(s) in corrupted data - manual recovery may be needed"
                 )
             }
-            emptyList()
         } catch (e: java.util.regex.PatternSyntaxException) {
             Log.e(TAG, "Regex pattern error while analyzing corrupted data", e)
-            emptyList()
         } catch (e: IllegalArgumentException) {
             Log.e(TAG, "Invalid argument while analyzing corrupted data", e)
-            emptyList()
         }
     }
 }

@@ -65,7 +65,7 @@ internal class ImportApplyService(
 
             if (importDefaultTemplate) {
                 val requestedDefaultId = backup.getEffectiveDefaultTemplateId() ?: DEFAULT_TEMPLATE_ID
-                val resolvedDefaultId = resolved.idMap[requestedDefaultId] ?: DEFAULT_TEMPLATE_ID
+                val resolvedDefaultId = resolved.idMap[requestedDefaultId] ?: requestedDefaultId
                 val availableIds = existingIds + templatesToSave.map { it.id }
                 if (resolvedDefaultId == DEFAULT_TEMPLATE_ID || resolvedDefaultId in availableIds) {
                     settingsStore.setActiveTemplate(resolvedDefaultId)
