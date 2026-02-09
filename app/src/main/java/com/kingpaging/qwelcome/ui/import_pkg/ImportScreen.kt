@@ -55,6 +55,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.data.MAX_IMPORT_SIZE_BYTES
@@ -385,7 +386,8 @@ private fun ConfirmStep(
                     InfoRow(stringResource(R.string.label_template_count), validationResult.pack.templates.size.toString())
                     InfoRow(stringResource(R.string.label_tech_profile), stringResource(R.string.label_not_included))
                     if (validationResult.hasConflicts) {
-                        InfoRow(stringResource(R.string.label_conflicts), stringResource(R.string.text_import_conflicts, validationResult.conflicts.size))
+                        val count = validationResult.conflicts.size
+                        InfoRow(stringResource(R.string.label_conflicts), pluralStringResource(R.plurals.import_conflicts, count, count))
                     }
                 }
                 is ImportValidationResult.ValidFullBackup -> {
@@ -393,7 +395,8 @@ private fun ConfirmStep(
                     InfoRow(stringResource(R.string.label_template_count), validationResult.backup.templates.size.toString())
                     InfoRow(stringResource(R.string.label_tech_profile), stringResource(R.string.label_included))
                     if (validationResult.hasConflicts) {
-                        InfoRow(stringResource(R.string.label_conflicts), stringResource(R.string.text_import_conflicts, validationResult.conflicts.size))
+                        val count = validationResult.conflicts.size
+                        InfoRow(stringResource(R.string.label_conflicts), pluralStringResource(R.plurals.import_conflicts, count, count))
                     }
                 }
                 is ImportValidationResult.Invalid -> {

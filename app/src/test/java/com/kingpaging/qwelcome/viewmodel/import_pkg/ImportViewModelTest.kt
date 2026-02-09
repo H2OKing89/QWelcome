@@ -6,6 +6,7 @@ import com.kingpaging.qwelcome.data.ImportExportRepository
 import com.kingpaging.qwelcome.data.ImportValidationResult
 import com.kingpaging.qwelcome.data.Template
 import com.kingpaging.qwelcome.data.TemplatePack
+import com.kingpaging.qwelcome.testutil.FakeResourceProvider
 import com.kingpaging.qwelcome.testutil.MainDispatcherRule
 import io.mockk.coEvery
 import io.mockk.mockk
@@ -46,7 +47,7 @@ class ImportViewModelTest {
 
     @Before
     fun setup() {
-        vm = ImportViewModel(mockRepo)
+        vm = ImportViewModel(mockRepo, FakeResourceProvider())
     }
 
     @Test

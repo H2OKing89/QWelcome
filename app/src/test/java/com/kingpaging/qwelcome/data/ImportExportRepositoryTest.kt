@@ -1,5 +1,6 @@
 package com.kingpaging.qwelcome.data
 
+import com.kingpaging.qwelcome.testutil.FakeResourceProvider
 import com.kingpaging.qwelcome.viewmodel.factory.AppViewModelProvider
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
@@ -11,7 +12,8 @@ import org.junit.Test
 class ImportExportRepositoryTest {
 
     private val repository = ImportExportRepository(
-        settingsStore = mockk(relaxed = true)
+        settingsStore = mockk(relaxed = true),
+        resourceProvider = FakeResourceProvider()
     )
 
     @Before

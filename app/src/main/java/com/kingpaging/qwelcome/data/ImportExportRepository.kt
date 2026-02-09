@@ -2,6 +2,8 @@ package com.kingpaging.qwelcome.data
 
 import android.util.Log
 import com.kingpaging.qwelcome.BuildConfig
+import com.kingpaging.qwelcome.R
+import com.kingpaging.qwelcome.util.ResourceProvider
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -44,7 +46,10 @@ private const val MAX_EXPORT_SIZE_BYTES = 10 * 1024 * 1024
  * - Schema version checking
  * - Template conflict detection
  */
-class ImportExportRepository(private val settingsStore: SettingsStore) {
+class ImportExportRepository(
+    private val settingsStore: SettingsStore,
+    private val resourceProvider: ResourceProvider
+) {
 
     private val json = Json {
         ignoreUnknownKeys = true  // Forward compatibility
@@ -358,7 +363,7 @@ class ImportExportRepository(private val settingsStore: SettingsStore) {
             throw e
         } catch (e: Exception) {
             Log.e(TAG, "Failed to apply template pack", e)
-            ImportApplyResult.Error("Failed to apply import: ${e.message}")
+            ImportApplyResult.Error(resourceProvider.getString(R.string.error_import_failed, e.message ?: ""))
         }
     }
 
@@ -412,7 +417,7 @@ class ImportExportRepository(private val settingsStore: SettingsStore) {
             throw e
         } catch (e: Exception) {
             Log.e(TAG, "Failed to apply full backup", e)
-            ImportApplyResult.Error("Failed to apply import: ${e.message}")
+            ImportApplyResult.Error(resourceProvider.getString(R.string.error_import_failed, e.message ?: ""))
         }
     }
 
