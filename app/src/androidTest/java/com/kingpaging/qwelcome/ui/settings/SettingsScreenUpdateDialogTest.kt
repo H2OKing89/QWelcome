@@ -1,7 +1,6 @@
 package com.kingpaging.qwelcome.ui.settings
 
 import android.content.Context
-import android.content.Intent
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
@@ -11,14 +10,11 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.kingpaging.qwelcome.R
-import com.kingpaging.qwelcome.data.AppUpdater
-import com.kingpaging.qwelcome.data.DownloadEnqueueResult
-import com.kingpaging.qwelcome.data.DownloadStatus
 import com.kingpaging.qwelcome.data.SettingsStore
 import com.kingpaging.qwelcome.data.UpdateCheckResult
-import com.kingpaging.qwelcome.data.VerificationResult
 import com.kingpaging.qwelcome.di.LocalSettingsViewModel
 import com.kingpaging.qwelcome.di.LocalSoundPlayer
+import com.kingpaging.qwelcome.testutil.FakeAppUpdater
 import com.kingpaging.qwelcome.testutil.FakeSoundPlayer
 import com.kingpaging.qwelcome.ui.theme.CyberpunkTheme
 import com.kingpaging.qwelcome.util.AndroidResourceProvider
@@ -38,16 +34,27 @@ class SettingsScreenUpdateDialogTest {
 
     private lateinit var appContext: Context
     private lateinit var vm: SettingsViewModel
+    private lateinit var fakeAppUpdater: FakeAppUpdater
 
     @Before
     fun setup() {
         AppViewModelProvider.resetForTesting()
         appContext = ApplicationProvider.getApplicationContext()
         val settingsStore = SettingsStore(appContext)
+        fakeAppUpdater = FakeAppUpdater().apply {
+            checkForUpdateResult = UpdateCheckResult.UpdateAvailable(
+                latestVersion = "9.9.9",
+                downloadUrl = "https://github.com/H2OKing89/QWelcome/releases/download/v9.9.9/QWelcome-v9.9.9.apk",
+                releaseNotes = "test",
+                assetName = "QWelcome-v9.9.9.apk",
+                assetSizeBytes = 1234L,
+                sha256Hex = "f".repeat(64)
+            )
+        }
         vm = SettingsViewModel(
             store = settingsStore,
             resourceProvider = AndroidResourceProvider(appContext),
-            appUpdater = FakeDialogAppUpdater()
+            appUpdater = fakeAppUpdater
         )
     }
 
@@ -88,38 +95,4 @@ class SettingsScreenUpdateDialogTest {
         }
         composeRule.waitForIdle()
     }
-}
-
-private class FakeDialogAppUpdater : AppUpdater {
-    override suspend fun checkForUpdate(currentVersionName: String): UpdateCheckResult {
-        return UpdateCheckResult.UpdateAvailable(
-            latestVersion = "9.9.9",
-            downloadUrl = "https://github.com/H2OKing89/QWelcome/releases/download/v9.9.9/QWelcome-v9.9.9.apk",
-            releaseNotes = "test",
-            assetName = "QWelcome-v9.9.9.apk",
-            assetSizeBytes = 1234L,
-            sha256Hex = "f".repeat(64)
-        )
-    }
-
-    override suspend fun enqueueDownload(update: UpdateCheckResult.UpdateAvailable): DownloadEnqueueResult {
-        return DownloadEnqueueResult.Failed("unused")
-    }
-
-    override suspend fun getDownloadStatus(downloadId: Long): DownloadStatus {
-        return DownloadStatus.Failed("unused")
-    }
-
-    override suspend fun verifyDownloadedApk(
-        apkPath: String,
-        update: UpdateCheckResult.UpdateAvailable
-    ): VerificationResult {
-        return VerificationResult.Failed("unused")
-    }
-
-    override fun canRequestPackageInstalls(): Boolean = true
-
-    override fun createUnknownSourcesSettingsIntent(): Intent = Intent("unused")
-
-    override fun createInstallIntent(apkPath: String): Intent? = null
 }

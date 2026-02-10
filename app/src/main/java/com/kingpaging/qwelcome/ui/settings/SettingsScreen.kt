@@ -427,10 +427,13 @@ fun SettingsScreen(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                TextButton(onClick = {
-                                    haptic()
-                                    vm.requestDownloadConfirmation()
-                                }) {
+                                NeonButton(
+                                    onClick = {
+                                        haptic()
+                                        vm.requestDownloadConfirmation()
+                                    },
+                                    style = NeonButtonStyle.SECONDARY
+                                ) {
                                     Icon(
                                         Icons.Filled.Download,
                                         contentDescription = stringResource(R.string.content_desc_download_update),
