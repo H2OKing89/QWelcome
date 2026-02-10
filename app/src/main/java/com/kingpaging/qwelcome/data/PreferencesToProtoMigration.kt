@@ -30,7 +30,7 @@ private class TemplatesMigrationException(
     cause: Throwable
 ) : IllegalStateException("Failed to parse legacy templates JSON during migration", cause)
 
-private val Context.tempPreferencesDataStore by preferencesDataStore(name = "settings")
+internal val Context.tempPreferencesDataStore by preferencesDataStore(name = "settings")
 
 val Context.protoDataStore: DataStore<UserPreferences> by dataStore(
     fileName = DATA_STORE_FILE_NAME,
@@ -40,7 +40,7 @@ val Context.protoDataStore: DataStore<UserPreferences> by dataStore(
     }
 )
 
-private class PreferencesToProtoMigration(
+internal class PreferencesToProtoMigration(
     private val context: Context
 ) : DataMigration<UserPreferences> {
     private var cachedLegacyPrefs: Preferences? = null

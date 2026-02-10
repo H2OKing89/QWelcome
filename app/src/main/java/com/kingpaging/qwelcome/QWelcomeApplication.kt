@@ -1,7 +1,10 @@
 package com.kingpaging.qwelcome
 
 import android.app.Application
+import android.os.Build
 import android.util.Log
+import androidx.compose.ui.ComposeUiFlags
+import androidx.compose.ui.ExperimentalComposeUiApi
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.kingpaging.qwelcome.util.SoundManager
 import androidx.lifecycle.DefaultLifecycleObserver
@@ -42,8 +45,15 @@ class QWelcomeApplication : Application() {
         }
     }
 
+    @OptIn(ExperimentalComposeUiApi::class)
     override fun onCreate() {
         super.onCreate()
+
+        // Work around Android 15+ debug log spam from Compose ARR setRequestedFrameRate calls.
+        // Keep ARR enabled in release builds.
+        if (BuildConfig.DEBUG && Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+            ComposeUiFlags.isAdaptiveRefreshRateEnabled = false
+        }
 
         // Configure Crashlytics
         // Disable crash collection in debug builds for cleaner development
