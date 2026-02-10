@@ -29,7 +29,7 @@ Use this section to track progress. Each phase should land in its own PR unless 
 - [x] Add DataStore migration test (finding #24)
 - [x] Remove ExampleUnitTest (finding #25)
 
-### Optional — Build/Gradle polish
+### Optional — Build/Gradle polish [PR #25](https://github.com/H2OKing89/QWelcome/pull/25)
 
 - [x] Set Kotlin JVM target explicitly (finding #3)
 - [x] Remember a single AppViewModelProvider instance (finding #4)
