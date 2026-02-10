@@ -4,8 +4,8 @@ import android.app.DownloadManager
 import android.content.Context
 import android.content.pm.PackageManager
 import android.database.Cursor
-import android.database.MatrixCursor
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.test.runTest
@@ -93,11 +93,17 @@ class GitHubAppUpdaterTest {
     @Test
     fun `getDownloadStatus returns InProgress for running download`() = runTest {
         val downloadManager = mockk<DownloadManager>(relaxed = true)
-        val cursor = createStatusCursor(
-            status = DownloadManager.STATUS_RUNNING,
-            downloadedBytes = 500L,
-            totalBytes = 1000L
-        )
+        val cursor = mockk<Cursor>(relaxed = true)
+        every { cursor.moveToFirst() } returns true
+        every { cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS) } returns 0
+        every { cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR) } returns 1
+        every { cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES) } returns 2
+        every { cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_REASON) } returns 3
+        every { cursor.getInt(0) } returns DownloadManager.STATUS_RUNNING
+        every { cursor.getLong(1) } returns 500L
+        every { cursor.getLong(2) } returns 1000L
+        every { cursor.getInt(3) } returns 0
+        every { cursor.close() } just io.mockk.Runs
         every { downloadManager.query(any()) } returns cursor
 
         val updater = createUpdater(downloadManager = downloadManager)
@@ -110,35 +116,22 @@ class GitHubAppUpdaterTest {
     @Test
     fun `getDownloadStatus returns Failed for failed download`() = runTest {
         val downloadManager = mockk<DownloadManager>(relaxed = true)
-        val cursor = createStatusCursor(
-            status = DownloadManager.STATUS_FAILED,
-            downloadedBytes = 0L,
-            totalBytes = -1L,
-            reason = DownloadManager.ERROR_INSUFFICIENT_SPACE
-        )
+        val cursor = mockk<Cursor>(relaxed = true)
+        every { cursor.moveToFirst() } returns true
+        every { cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS) } returns 0
+        every { cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR) } returns 1
+        every { cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES) } returns 2
+        every { cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_REASON) } returns 3
+        every { cursor.getInt(0) } returns DownloadManager.STATUS_FAILED
+        every { cursor.getLong(1) } returns 0L
+        every { cursor.getLong(2) } returns -1L
+        every { cursor.getInt(3) } returns DownloadManager.ERROR_INSUFFICIENT_SPACE
+        every { cursor.close() } just io.mockk.Runs
         every { downloadManager.query(any()) } returns cursor
 
         val updater = createUpdater(downloadManager = downloadManager)
         val status = updater.getDownloadStatus(1L)
         assertTrue(status is DownloadStatus.Failed)
-    }
-
-    private fun createStatusCursor(
-        status: Int,
-        downloadedBytes: Long,
-        totalBytes: Long,
-        reason: Int = 0
-    ): Cursor {
-        val columns = arrayOf(
-            DownloadManager.COLUMN_STATUS,
-            DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR,
-            DownloadManager.COLUMN_TOTAL_SIZE_BYTES,
-            DownloadManager.COLUMN_REASON
-        )
-        val cursor = MatrixCursor(columns)
-        cursor.addRow(arrayOf(status, downloadedBytes, totalBytes, reason))
-        cursor.moveToFirst()
-        return cursor
     }
 
     private fun createUpdater(downloadManager: DownloadManager? = null): GitHubAppUpdater {

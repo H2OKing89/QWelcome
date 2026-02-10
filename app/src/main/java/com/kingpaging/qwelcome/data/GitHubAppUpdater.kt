@@ -263,7 +263,13 @@ class GitHubAppUpdater(
     @Suppress("DEPRECATION")
     private fun getSignerFingerprints(packageInfo: PackageInfo): Set<String> {
         val signatures = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            packageInfo.signingInfo?.apkContentsSigners?.toList().orEmpty()
+            val signingInfo = packageInfo.signingInfo
+            if (signingInfo != null && !signingInfo.hasMultipleSigners()) {
+                // Include certificate history for key-rotated apps
+                signingInfo.signingCertificateHistory?.toList().orEmpty()
+            } else {
+                signingInfo?.apkContentsSigners?.toList().orEmpty()
+            }
         } else {
             packageInfo.signatures?.toList().orEmpty()
         }

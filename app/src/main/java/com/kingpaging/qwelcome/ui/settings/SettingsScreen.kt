@@ -115,6 +115,8 @@ fun SettingsScreen(
     var showDownloadConfirmDialog by rememberSaveable { mutableStateOf(false) }
     val availableUpdate = updateState as? UpdateState.Available
 
+    val launchIntentFailedMessage = stringResource(R.string.toast_no_browser)
+
     // Collect one-shot settings events with lifecycle awareness
     LaunchedEffect(lifecycleOwner, vm.settingsEvents) {
         lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -133,7 +135,7 @@ fun SettingsScreen(
                         } catch (_: ActivityNotFoundException) {
                             Toast.makeText(
                                 context,
-                                context.getString(R.string.toast_no_browser),
+                                launchIntentFailedMessage,
                                 Toast.LENGTH_SHORT
                             ).show()
                         }
