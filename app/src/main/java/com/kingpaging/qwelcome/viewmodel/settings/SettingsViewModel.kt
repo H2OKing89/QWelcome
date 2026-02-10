@@ -141,6 +141,10 @@ class SettingsViewModel(
     private val _updateState = MutableStateFlow<UpdateState>(UpdateState.Idle)
     val updateState: StateFlow<UpdateState> = _updateState.asStateFlow()
 
+    /** Download confirmation dialog visibility for SettingsScreen. */
+    private val _showDownloadConfirmDialog = MutableStateFlow(false)
+    val showDownloadConfirmDialog: StateFlow<Boolean> = _showDownloadConfirmDialog.asStateFlow()
+
     /** Timestamp of last successful update check start (milliseconds). */
     @VisibleForTesting
     internal var lastCheckTimeMillis: Long = 0L
@@ -168,6 +172,7 @@ class SettingsViewModel(
 
         viewModelScope.launch {
             _updateState.value = UpdateState.Checking
+            _showDownloadConfirmDialog.value = false
 
             when (val result = appUpdater.checkForUpdate(currentVersion)) {
                 is UpdateCheckResult.UpdateAvailable -> {
@@ -182,9 +187,11 @@ class SettingsViewModel(
                 }
                 is UpdateCheckResult.UpToDate -> {
                     _updateState.value = UpdateState.UpToDate
+                    _showDownloadConfirmDialog.value = false
                 }
                 is UpdateCheckResult.Error -> {
                     _updateState.value = UpdateState.Error(result.message)
+                    _showDownloadConfirmDialog.value = false
                 }
                 is UpdateCheckResult.RateLimited -> {
                     val message = if (result.retryAfterSeconds != null) {
@@ -196,6 +203,7 @@ class SettingsViewModel(
                         resourceProvider.getString(R.string.toast_rate_limited)
                     }
                     _updateState.value = UpdateState.Error(message)
+                    _showDownloadConfirmDialog.value = false
                 }
             }
         }
@@ -205,13 +213,19 @@ class SettingsViewModel(
         val available = _updateState.value as? UpdateState.Available ?: return
 
         viewModelScope.launch {
-            when (val enqueueResult = appUpdater.enqueueDownload(available.toUpdateAvailable())) {
-                is DownloadEnqueueResult.Failed -> {
-                    _updateState.value = UpdateState.Error(enqueueResult.message)
+            try {
+                when (val enqueueResult = appUpdater.enqueueDownload(available.toUpdateAvailable())) {
+                    is DownloadEnqueueResult.Failed -> {
+                        _updateState.value = UpdateState.Error(enqueueResult.message)
+                    }
+                    is DownloadEnqueueResult.Started -> {
+                        monitorDownload(available, enqueueResult.downloadId)
+                    }
                 }
-                is DownloadEnqueueResult.Started -> {
-                    monitorDownload(available, enqueueResult.downloadId)
-                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _updateState.value = UpdateState.Error(updaterErrorMessage(e))
             }
         }
     }
@@ -236,6 +250,22 @@ class SettingsViewModel(
     /** Dismiss update notification */
     fun dismissUpdate() {
         _updateState.value = UpdateState.Dismissed
+        _showDownloadConfirmDialog.value = false
+    }
+
+    fun requestDownloadConfirmation() {
+        if (_updateState.value is UpdateState.Available) {
+            _showDownloadConfirmDialog.value = true
+        }
+    }
+
+    fun dismissDownloadConfirmation() {
+        _showDownloadConfirmDialog.value = false
+    }
+
+    fun confirmDownloadFromDialog() {
+        _showDownloadConfirmDialog.value = false
+        startUpdateDownload()
     }
 
     private suspend fun monitorDownload(
@@ -248,7 +278,16 @@ class SettingsViewModel(
         )
 
         while (true) {
-            when (val status = appUpdater.getDownloadStatus(downloadId)) {
+            val status = try {
+                appUpdater.getDownloadStatus(downloadId)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _updateState.value = UpdateState.Error(updaterErrorMessage(e))
+                return
+            }
+
+            when (status) {
                 is DownloadStatus.InProgress -> {
                     _updateState.value = if (status.bytesDownloaded <= 0L) {
                         UpdateState.DownloadQueued(
@@ -266,10 +305,19 @@ class SettingsViewModel(
                 }
                 is DownloadStatus.Succeeded -> {
                     _updateState.value = UpdateState.Verifying(available.version)
-                    when (val verifyResult = appUpdater.verifyDownloadedApk(
-                        apkPath = status.apkPath,
-                        update = available.toUpdateAvailable()
-                    )) {
+                    val verifyResult = try {
+                        appUpdater.verifyDownloadedApk(
+                            apkPath = status.apkPath,
+                            update = available.toUpdateAvailable()
+                        )
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        _updateState.value = UpdateState.Error(updaterErrorMessage(e))
+                        return
+                    }
+
+                    when (verifyResult) {
                         is VerificationResult.Failed -> {
                             _updateState.value = UpdateState.Error(verifyResult.message)
                         }
@@ -291,21 +339,27 @@ class SettingsViewModel(
     }
 
     private suspend fun beginInstall(version: String, apkPath: String) {
-        if (!appUpdater.canRequestPackageInstalls()) {
-            _updateState.value = UpdateState.PermissionRequired(version, apkPath)
-            return
-        }
+        try {
+            if (!appUpdater.canRequestPackageInstalls()) {
+                _updateState.value = UpdateState.PermissionRequired(version, apkPath)
+                return
+            }
 
-        val installIntent = appUpdater.createInstallIntent(apkPath)
-        if (installIntent == null) {
-            _updateState.value = UpdateState.Error(
-                resourceProvider.getString(R.string.error_update_install_unavailable)
-            )
-            return
-        }
+            val installIntent = appUpdater.createInstallIntent(apkPath)
+            if (installIntent == null) {
+                _updateState.value = UpdateState.Error(
+                    resourceProvider.getString(R.string.error_update_install_unavailable)
+                )
+                return
+            }
 
-        _updateState.value = UpdateState.Installing(version)
-        _settingsEvents.emit(SettingsEvent.LaunchIntent(installIntent))
+            _updateState.value = UpdateState.Installing(version)
+            _settingsEvents.emit(SettingsEvent.LaunchIntent(installIntent))
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            _updateState.value = UpdateState.Error(updaterErrorMessage(e))
+        }
     }
 
     private fun UpdateState.Available.toUpdateAvailable(): UpdateCheckResult.UpdateAvailable {
@@ -322,6 +376,11 @@ class SettingsViewModel(
     companion object {
         internal const val COOLDOWN_SECONDS = 60
         private const val DOWNLOAD_POLL_INTERVAL_MS = 600L
+    }
+
+    private fun updaterErrorMessage(exception: Exception): String {
+        val detail = exception.message?.takeIf { it.isNotBlank() } ?: "Unexpected updater error"
+        return "Update failed: $detail"
     }
 }
 

@@ -50,7 +50,12 @@ class GitHubAppUpdater(
                 val safeAssetName = sanitizeAssetName(update.assetName)
                 val destinationFile = File(updatesDir, safeAssetName)
                 if (destinationFile.exists()) {
-                    destinationFile.delete()
+                    val deleted = destinationFile.delete()
+                    if (!deleted) {
+                        return@withContext DownloadEnqueueResult.Failed(
+                            "Unable to replace existing update file"
+                        )
+                    }
                 }
 
                 val request = DownloadManager.Request(Uri.parse(update.downloadUrl)).apply {
@@ -84,10 +89,14 @@ class GitHubAppUpdater(
         withContext(Dispatchers.IO) {
             val query = DownloadManager.Query().setFilterById(downloadId)
             val cursor = downloadManager.query(query)
-                ?: return@withContext DownloadStatus.Failed("Download query failed")
+                ?: run {
+                    downloadPaths.remove(downloadId)
+                    return@withContext DownloadStatus.Failed("Download query failed")
+                }
 
             cursor.use {
                 if (!it.moveToFirst()) {
+                    downloadPaths.remove(downloadId)
                     return@withContext DownloadStatus.Failed("Download no longer available")
                 }
 
@@ -104,7 +113,7 @@ class GitHubAppUpdater(
                     }
 
                     DownloadManager.STATUS_SUCCESSFUL -> {
-                        val localPath = downloadPaths[downloadId] ?: run {
+                        val localPath = downloadPaths.remove(downloadId) ?: run {
                             val localUri = it.getStringOrNull(DownloadManager.COLUMN_LOCAL_URI)
                             localUri?.let { uri -> Uri.parse(uri).path }
                         }
@@ -116,13 +125,17 @@ class GitHubAppUpdater(
                     }
 
                     DownloadManager.STATUS_FAILED -> {
+                        downloadPaths.remove(downloadId)
                         val reasonCode = it.getInt(DownloadManager.COLUMN_REASON)
                         val reasonMessage = mapDownloadFailure(reasonCode)
                         logError("Update download failed ($reasonCode): $reasonMessage", null)
                         DownloadStatus.Failed(reasonMessage)
                     }
 
-                    else -> DownloadStatus.Failed("Unknown download status")
+                    else -> {
+                        downloadPaths.remove(downloadId)
+                        DownloadStatus.Failed("Unknown download status")
+                    }
                 }
             }
         }
@@ -323,6 +336,8 @@ class GitHubAppUpdater(
     internal fun signerSetsMatch(installedSigners: Set<String>, archiveSigners: Set<String>): Boolean {
         return installedSigners.containsAll(archiveSigners)
     }
+
+    internal fun trackedDownloadCount(): Int = downloadPaths.size
 }
 
 private fun ByteArray.toHexLowercase(): String = joinToString("") { "%02x".format(it) }

@@ -1,6 +1,7 @@
 package com.kingpaging.qwelcome.viewmodel.settings
 
 import app.cash.turbine.test
+import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.data.DownloadEnqueueResult
 import com.kingpaging.qwelcome.data.DownloadStatus
 import com.kingpaging.qwelcome.data.SettingsStore
@@ -206,6 +207,28 @@ class SettingsViewModelTest {
     }
 
     @Test
+    fun `download confirmation flag toggles via viewmodel methods`() = runTest {
+        fakeAppUpdater.checkForUpdateResult = UpdateCheckResult.UpdateAvailable(
+            latestVersion = "3.0.0",
+            downloadUrl = "https://example.com/app.apk",
+            releaseNotes = "Notes",
+            assetName = "app-v3.apk",
+            assetSizeBytes = 200L,
+            sha256Hex = "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        )
+        vm.checkForUpdate()
+        advanceUntilIdle()
+
+        assertTrue(!vm.showDownloadConfirmDialog.value)
+
+        vm.requestDownloadConfirmation()
+        assertTrue(vm.showDownloadConfirmDialog.value)
+
+        vm.dismissDownloadConfirmation()
+        assertTrue(!vm.showDownloadConfirmDialog.value)
+    }
+
+    @Test
     fun `checkForUpdate sets Checking then resolves and calls updater once`() = runTest {
         fakeAppUpdater.checkForUpdateResult = UpdateCheckResult.UpToDate
 
@@ -310,7 +333,9 @@ class SettingsViewModelTest {
 
             val event = awaitItem()
             assertTrue(event is SettingsEvent.ShowToastError)
-            assertTrue((event as SettingsEvent.ShowToastError).message.contains("string_"))
+            val message = (event as SettingsEvent.ShowToastError).message
+            val expectedPrefix = "${fakeResourceProvider.getString(R.string.toast_check_cooldown)}["
+            assertTrue(message.startsWith(expectedPrefix))
         }
 
         assertEquals(1, fakeAppUpdater.checkCallCount)
@@ -354,6 +379,6 @@ class SettingsViewModelTest {
         val state = vm.updateState.value
         assertTrue(state is UpdateState.Error)
         val message = (state as UpdateState.Error).message
-        assertTrue(message.contains("string_"))
+        assertEquals(fakeResourceProvider.getString(R.string.toast_rate_limited), message)
     }
 }

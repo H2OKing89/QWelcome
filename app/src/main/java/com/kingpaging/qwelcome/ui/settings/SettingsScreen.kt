@@ -30,7 +30,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -40,8 +39,8 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -112,7 +111,7 @@ fun SettingsScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     val haptic = rememberHapticFeedback()
 
-    var showDownloadConfirmDialog by rememberSaveable { mutableStateOf(false) }
+    val showDownloadConfirmDialog by vm.showDownloadConfirmDialog.collectAsStateWithLifecycle()
     val availableUpdate = updateState as? UpdateState.Available
 
     val launchIntentFailedMessage = stringResource(R.string.toast_no_browser)
@@ -170,7 +169,7 @@ fun SettingsScreen(
 
     if (showDownloadConfirmDialog && availableUpdate != null) {
         AlertDialog(
-            onDismissRequest = { showDownloadConfirmDialog = false },
+            onDismissRequest = { vm.dismissDownloadConfirmation() },
             title = { Text(stringResource(R.string.title_update_available)) },
             text = {
                 Text(
@@ -184,8 +183,7 @@ fun SettingsScreen(
             confirmButton = {
                 TextButton(onClick = {
                     haptic()
-                    showDownloadConfirmDialog = false
-                    vm.startUpdateDownload()
+                    vm.confirmDownloadFromDialog()
                 }) {
                     Text(stringResource(R.string.action_download_update))
                 }
@@ -193,7 +191,7 @@ fun SettingsScreen(
             dismissButton = {
                 TextButton(onClick = {
                     haptic()
-                    showDownloadConfirmDialog = false
+                    vm.dismissDownloadConfirmation()
                 }) {
                     Text(stringResource(R.string.action_cancel))
                 }
@@ -431,7 +429,7 @@ fun SettingsScreen(
                             ) {
                                 TextButton(onClick = {
                                     haptic()
-                                    showDownloadConfirmDialog = true
+                                    vm.requestDownloadConfirmation()
                                 }) {
                                     Icon(
                                         Icons.Filled.Download,
@@ -479,9 +477,10 @@ fun SettingsScreen(
                                 color = MaterialTheme.colorScheme.primary
                             )
                             Spacer(Modifier.height(8.dp))
-                            OutlinedButton(
+                            NeonButton(
                                 onClick = { haptic(); vm.retryInstallAfterPermission() },
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier.fillMaxWidth(),
+                                style = NeonButtonStyle.SECONDARY
                             ) {
                                 Text(stringResource(R.string.action_install_update))
                             }
@@ -497,22 +496,24 @@ fun SettingsScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                OutlinedButton(
+                                NeonButton(
                                     onClick = {
                                         haptic()
                                         try {
                                             context.startActivity(vm.openUnknownSourcesSettingsIntent())
                                         } catch (_: ActivityNotFoundException) {
-                                            Toast.makeText(context, context.getString(R.string.toast_settings_unavailable), Toast.LENGTH_SHORT).show()
+                                            Toast.makeText(context, noBrowserMessage, Toast.LENGTH_SHORT).show()
                                         }
                                     },
-                                    modifier = Modifier.weight(1f)
+                                    modifier = Modifier.weight(1f),
+                                    style = NeonButtonStyle.SECONDARY
                                 ) {
                                     Text(stringResource(R.string.action_open_install_settings))
                                 }
-                                OutlinedButton(
+                                NeonButton(
                                     onClick = { haptic(); vm.retryInstallAfterPermission() },
-                                    modifier = Modifier.weight(1f)
+                                    modifier = Modifier.weight(1f),
+                                    style = NeonButtonStyle.SECONDARY
                                 ) {
                                     Text(stringResource(R.string.action_retry_install))
                                 }
@@ -536,10 +537,11 @@ fun SettingsScreen(
 
                     Spacer(Modifier.height(12.dp))
 
-                    OutlinedButton(
+                    NeonButton(
                         onClick = { haptic(); vm.checkForUpdate() },
                         modifier = Modifier.fillMaxWidth(),
-                        enabled = !isUpdateFlowBusy(updateState)
+                        enabled = !isUpdateFlowBusy(updateState),
+                        style = NeonButtonStyle.SECONDARY
                     ) {
                         Icon(
                             Icons.Filled.Refresh,

@@ -4,7 +4,7 @@
 
     <!-- Internet permission for update checker -->
     <uses-permission android:name="android.permission.INTERNET" />
-    <!-- Required for in-app APK installation/updates from GitHub releases -->
+    <!-- Required for in-app updater to request APK installs -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <!-- Storage permissions for QR code saving (only needed for Android 9 and below) -->
