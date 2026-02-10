@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.QWelcome" parent="Theme.MaterialComponents.DayNight.NoActionBar" />
+    <style name="Theme.QWelcome" parent="Theme.AppCompat.DayNight.NoActionBar" />
 
     <!-- Splash screen theme - adapts based on system setting -->
     <style name="Theme.QWelcome.Splash" parent="Theme.SplashScreen">

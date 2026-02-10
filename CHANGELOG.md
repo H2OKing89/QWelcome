@@ -7,7 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-No unreleased changes.
+### Changed
+
+- Replaced `Theme.MaterialComponents.DayNight.NoActionBar` with `Theme.AppCompat.DayNight.NoActionBar` in `themes.xml` to remove the direct View Material dependency while keeping splash theme handoff unchanged.
+- Removed direct `com.google.android.material:material` usage and added explicit `androidx.appcompat` dependency wiring via version catalog and app module build script.
+- Closed Optional Build/Gradle polish checklist items #3-#6 in the build/design audit doc.
 
 ## [2.4.0] - 2026-02-08
 
