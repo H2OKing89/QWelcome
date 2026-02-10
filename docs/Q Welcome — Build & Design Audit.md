@@ -9,12 +9,12 @@ Use this section to track progress. Each phase should land in its own PR unless 
 - [x] SoundManager lifecycle wiring (finding #7) — already fixed in app
 - [x] Decouple UI from SoundManager (finding #8)
 
-### Phase 2 — Accessibility + string resources 🔄 [PR #22](https://github.com/H2OKing89/QWelcome/pull/22) in review
+### Phase 2 — Accessibility + string resources 🔄 [PR #22](https://github.com/H2OKing89/QWelcome/pull/22) merged
 
 - [x] Fix missing content descriptions (finding #12)
 - [x] Replace hardcoded UI strings with string resources (finding #13)
 
-### Phase 3 — Code health 🔄 [PR #23](https://github.com/H2OKing89/QWelcome/pull/23) in review
+### Phase 3 — Code health 🔄 [PR #23](https://github.com/H2OKing89/QWelcome/pull/23) merged
 
 - [x] Split large composables (finding #17)
 - [x] Split ImportExportRepository (finding #18)

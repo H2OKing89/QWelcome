@@ -2,8 +2,15 @@ package com.kingpaging.qwelcome.testutil
 
 import com.kingpaging.qwelcome.navigation.Navigator
 
+/**
+ * Keep this in sync with:
+ * `app/src/test/java/com/kingpaging/qwelcome/testutil/FakeNavigator.kt`
+ *
+ * Android instrumentation tests cannot use the unit-test source set directly,
+ * so this duplicate exists intentionally until a shared test-fixtures source
+ * set is introduced.
+ */
 class FakeNavigator : Navigator {
-
     data class SmsCall(val phoneNumber: String, val message: String)
     data class ShareCall(val message: String, val chooserTitle: String)
     data class CopyCall(val label: String, val text: String)
