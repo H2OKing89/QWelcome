@@ -218,6 +218,19 @@
     <string name="status_up_to_date">Up to date</string>
     <string name="content_desc_download_update">Download update</string>
     <string name="status_update_available">v%1$s available</string>
+    <string name="title_update_available">Update Available</string>
+    <string name="text_update_download_confirm">Download v%1$s (%2$s)? This may use mobile data.</string>
+    <string name="action_download_update">Download Update</string>
+    <string name="status_download_queued">Download queued...</string>
+    <string name="status_downloading_unknown">Downloading update...</string>
+    <string name="status_downloading_progress">Downloading %1$s of %2$s (%3$d%%)</string>
+    <string name="status_verifying_update">Verifying update...</string>
+    <string name="status_ready_to_install">Update ready to install</string>
+    <string name="status_permission_required">Allow app installs for Q Welcome in system settings, then retry.</string>
+    <string name="status_installing">Launching Android installer...</string>
+    <string name="action_install_update">Install Update</string>
+    <string name="action_open_install_settings">Allow Install</string>
+    <string name="action_retry_install">Retry Install</string>
     <string name="content_desc_dismiss_update">Dismiss update</string>
     <string name="status_check_failed">Check failed</string>
     <string name="content_desc_check_updates">Check for updates</string>
@@ -225,6 +238,7 @@
     <string name="action_check_updates">Check for Updates</string>
     <string name="content_desc_view_github">View on GitHub</string>
     <string name="action_view_github">View on GitHub</string>
+    <string name="error_update_install_unavailable">Android installer is unavailable on this device</string>
 
     <!-- Accessibility / Shared Actions -->
     <string name="action_save">Save</string>

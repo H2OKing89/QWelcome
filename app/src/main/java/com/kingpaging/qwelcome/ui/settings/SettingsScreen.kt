@@ -40,22 +40,23 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.data.TechProfile
 import com.kingpaging.qwelcome.di.LocalSettingsViewModel
+import com.kingpaging.qwelcome.di.LocalSoundPlayer
 import com.kingpaging.qwelcome.ui.components.CyberpunkBackdrop
 import com.kingpaging.qwelcome.ui.components.NeonButton
 import com.kingpaging.qwelcome.ui.components.NeonButtonStyle
@@ -64,9 +65,9 @@ import com.kingpaging.qwelcome.ui.components.NeonOutlinedField
 import com.kingpaging.qwelcome.ui.components.NeonPanel
 import com.kingpaging.qwelcome.ui.components.NeonTopAppBar
 import com.kingpaging.qwelcome.util.rememberHapticFeedback
-import com.kingpaging.qwelcome.di.LocalSoundPlayer
 import com.kingpaging.qwelcome.viewmodel.settings.SettingsEvent
 import com.kingpaging.qwelcome.viewmodel.settings.UpdateState
+import kotlin.math.roundToInt
 
 @Composable
 fun SettingsScreen(
@@ -84,8 +85,9 @@ fun SettingsScreen(
 
     val currentProfile by vm.techProfile.collectAsStateWithLifecycle()
     val activeTemplate by vm.activeTemplate.collectAsStateWithLifecycle()
+    val updateState by vm.updateState.collectAsStateWithLifecycle()
 
-    // Tech profile state - use rememberSaveable so rotation doesn't lose edits
+    // Tech profile state - use rememberSaveable so rotation does not lose edits
     var name by rememberSaveable(currentProfile) { mutableStateOf(currentProfile.name) }
     var title by rememberSaveable(currentProfile) { mutableStateOf(currentProfile.title) }
     var dept by rememberSaveable(currentProfile) { mutableStateOf(currentProfile.dept) }
@@ -110,7 +112,10 @@ fun SettingsScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     val haptic = rememberHapticFeedback()
 
-    // Collect one-shot settings events (Toasts) with lifecycle awareness
+    var showDownloadConfirmDialog by rememberSaveable { mutableStateOf(false) }
+    val availableUpdate = updateState as? UpdateState.Available
+
+    // Collect one-shot settings events with lifecycle awareness
     LaunchedEffect(lifecycleOwner, vm.settingsEvents) {
         lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
             vm.settingsEvents.collect { event ->
@@ -121,6 +126,17 @@ fun SettingsScreen(
                     is SettingsEvent.ShowToastError -> {
                         soundPlayer.playBeep()
                         Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
+                    }
+                    is SettingsEvent.LaunchIntent -> {
+                        try {
+                            context.startActivity(event.intent)
+                        } catch (_: ActivityNotFoundException) {
+                            Toast.makeText(
+                                context,
+                                context.getString(R.string.toast_no_browser),
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
                     }
                 }
             }
@@ -145,6 +161,39 @@ fun SettingsScreen(
             dismissButton = {
                 TextButton(onClick = { haptic(); showDiscardDialog = false }) {
                     Text(stringResource(R.string.action_keep_editing))
+                }
+            }
+        )
+    }
+
+    if (showDownloadConfirmDialog && availableUpdate != null) {
+        AlertDialog(
+            onDismissRequest = { showDownloadConfirmDialog = false },
+            title = { Text(stringResource(R.string.title_update_available)) },
+            text = {
+                Text(
+                    stringResource(
+                        R.string.text_update_download_confirm,
+                        availableUpdate.version,
+                        formatBytes(availableUpdate.assetSizeBytes)
+                    )
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    haptic()
+                    showDownloadConfirmDialog = false
+                    vm.startUpdateDownload()
+                }) {
+                    Text(stringResource(R.string.action_download_update))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    haptic()
+                    showDownloadConfirmDialog = false
+                }) {
+                    Text(stringResource(R.string.action_cancel))
                 }
             }
         )
@@ -210,7 +259,7 @@ fun SettingsScreen(
 
                 Spacer(Modifier.height(8.dp))
 
-                // === MESSAGE TEMPLATE SECTION (simplified - just link to Templates screen) ===
+                // === MESSAGE TEMPLATE SECTION ===
                 Text(
                     stringResource(R.string.header_message_templates),
                     style = MaterialTheme.typography.titleLarge,
@@ -241,7 +290,7 @@ fun SettingsScreen(
                 }
 
                 Spacer(Modifier.height(8.dp))
-                
+
                 // === SAVE PROFILE BUTTON ===
                 NeonMagentaButton(
                     onClick = {
@@ -283,7 +332,6 @@ fun SettingsScreen(
                         )
                     }
                     Spacer(Modifier.height(12.dp))
-                    // Export/Import are SECONDARY actions - not the main thing on this screen
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -314,19 +362,16 @@ fun SettingsScreen(
 
                 Spacer(Modifier.height(32.dp))
 
-                // === ABOUT SECTION === (at bottom - less frequently accessed)
+                // === ABOUT SECTION ===
                 Text(
                     stringResource(R.string.header_about),
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.primary
                 )
-                
-                val updateState by vm.updateState.collectAsStateWithLifecycle()
-                // Capture string resource outside onClick for lint compliance
+
                 val noBrowserMessage = stringResource(R.string.toast_no_browser)
 
                 NeonPanel {
-                    // Version info
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -345,9 +390,8 @@ fun SettingsScreen(
                                 style = MaterialTheme.typography.bodyMedium
                             )
                         }
-                        
-                        // Update status indicator
-                        when (val state = updateState) {
+
+                        when (updateState) {
                             is UpdateState.Checking -> {
                                 CircularProgressIndicator(
                                     modifier = Modifier.size(20.dp),
@@ -370,68 +414,130 @@ fun SettingsScreen(
                                     )
                                 }
                             }
-                            is UpdateState.Available -> {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    TextButton(
-                                        onClick = {
-                                            haptic()
-                                            val uri = state.downloadUrl.toUri()
-                                            // Only allow https URLs for security
-                                            val isTrustedHttps = uri.scheme.equals("https", ignoreCase = true) &&
-                                                !uri.host.isNullOrBlank()
-                                            if (!isTrustedHttps) {
-                                                soundPlayer.playBeep()
-                                                Toast.makeText(context, R.string.toast_untrusted_update_link, Toast.LENGTH_SHORT).show()
-                                                return@TextButton
-                                            }
-                                            val intent = Intent(Intent.ACTION_VIEW, uri)
-                                                .addCategory(Intent.CATEGORY_BROWSABLE)
-                                            try {
-                                                context.startActivity(intent)
-                                            } catch (_: ActivityNotFoundException) {
-                                                Toast.makeText(context, noBrowserMessage, Toast.LENGTH_SHORT).show()
-                                            }
-                                        }
-                                    ) {
-                                        Icon(
-                                            Icons.Filled.Download,
-                                            contentDescription = stringResource(R.string.content_desc_download_update),
-                                            modifier = Modifier.size(16.dp)
-                                        )
-                                        Spacer(Modifier.width(4.dp))
-                                        Text(stringResource(R.string.status_update_available, state.version))
-                                    }
-                                    IconButton(
-                                        onClick = { haptic(); vm.dismissUpdate() },
-                                        modifier = Modifier.size(24.dp)
-                                    ) {
-                                        Icon(
-                                            Icons.Filled.Close,
-                                            contentDescription = stringResource(R.string.content_desc_dismiss_update),
-                                            modifier = Modifier.size(16.dp),
-                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                }
-                            }
-                            is UpdateState.Error -> {
-                                Text(
-                                    stringResource(R.string.status_check_failed),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.error
-                                )
-                            }
-                            else -> { /* Idle or Dismissed - show nothing */ }
+                            else -> Unit
                         }
                     }
-                    
+
                     Spacer(Modifier.height(12.dp))
-                    
-                    // Check for updates button
+
+                    when (val state = updateState) {
+                        is UpdateState.Available -> {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                TextButton(onClick = {
+                                    haptic()
+                                    showDownloadConfirmDialog = true
+                                }) {
+                                    Icon(
+                                        Icons.Filled.Download,
+                                        contentDescription = stringResource(R.string.content_desc_download_update),
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(Modifier.width(4.dp))
+                                    Text(stringResource(R.string.status_update_available, state.version))
+                                }
+                                IconButton(
+                                    onClick = { haptic(); vm.dismissUpdate() },
+                                    modifier = Modifier.size(24.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Filled.Close,
+                                        contentDescription = stringResource(R.string.content_desc_dismiss_update),
+                                        modifier = Modifier.size(16.dp),
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+                        is UpdateState.DownloadQueued -> {
+                            Text(
+                                stringResource(R.string.status_download_queued),
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                        is UpdateState.Downloading -> {
+                            Text(
+                                downloadingStatusText(state),
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                        is UpdateState.Verifying -> {
+                            Text(
+                                stringResource(R.string.status_verifying_update),
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                        is UpdateState.ReadyToInstall -> {
+                            Text(
+                                stringResource(R.string.status_ready_to_install),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            OutlinedButton(
+                                onClick = { haptic(); vm.retryInstallAfterPermission() },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(stringResource(R.string.action_install_update))
+                            }
+                        }
+                        is UpdateState.PermissionRequired -> {
+                            Text(
+                                stringResource(R.string.status_permission_required),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.tertiary
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                OutlinedButton(
+                                    onClick = {
+                                        haptic()
+                                        try {
+                                            context.startActivity(vm.openUnknownSourcesSettingsIntent())
+                                        } catch (_: ActivityNotFoundException) {
+                                            Toast.makeText(context, noBrowserMessage, Toast.LENGTH_SHORT).show()
+                                        }
+                                    },
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text(stringResource(R.string.action_open_install_settings))
+                                }
+                                OutlinedButton(
+                                    onClick = { haptic(); vm.retryInstallAfterPermission() },
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text(stringResource(R.string.action_retry_install))
+                                }
+                            }
+                        }
+                        is UpdateState.Installing -> {
+                            Text(
+                                stringResource(R.string.status_installing),
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                        is UpdateState.Error -> {
+                            Text(
+                                state.message,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+                        else -> Unit
+                    }
+
+                    Spacer(Modifier.height(12.dp))
+
                     OutlinedButton(
                         onClick = { haptic(); vm.checkForUpdate() },
                         modifier = Modifier.fillMaxWidth(),
-                        enabled = updateState !is UpdateState.Checking
+                        enabled = !isUpdateFlowBusy(updateState)
                     ) {
                         Icon(
                             Icons.Filled.Refresh,
@@ -446,10 +552,9 @@ fun SettingsScreen(
                             }
                         )
                     }
-                    
+
                     Spacer(Modifier.height(8.dp))
-                    
-                    // View on GitHub link
+
                     TextButton(
                         onClick = {
                             val uri = "https://github.com/H2OKing89/QWelcome".toUri()
@@ -473,9 +578,46 @@ fun SettingsScreen(
                     }
                 }
 
-
                 Spacer(Modifier.height(32.dp))
             }
         }
     }
+}
+
+private fun isUpdateFlowBusy(state: UpdateState): Boolean {
+    return state is UpdateState.Checking ||
+        state is UpdateState.DownloadQueued ||
+        state is UpdateState.Downloading ||
+        state is UpdateState.Verifying
+}
+
+@Composable
+private fun downloadingStatusText(state: UpdateState.Downloading): String {
+    val downloaded = formatBytes(state.bytesDownloaded)
+    val total = state.totalBytes?.let(::formatBytes)
+    val percent = if (state.totalBytes != null && state.totalBytes > 0L) {
+        ((state.bytesDownloaded.toDouble() / state.totalBytes.toDouble()) * 100.0)
+            .coerceIn(0.0, 100.0)
+            .roundToInt()
+    } else {
+        null
+    }
+
+    return if (total != null && percent != null) {
+        stringResource(R.string.status_downloading_progress, downloaded, total, percent)
+    } else {
+        stringResource(R.string.status_downloading_unknown)
+    }
+}
+
+private fun formatBytes(bytes: Long): String {
+    if (bytes <= 0L) return "0 B"
+    val units = arrayOf("B", "KB", "MB", "GB")
+    var value = bytes.toDouble()
+    var unitIndex = 0
+    while (value >= 1024.0 && unitIndex < units.lastIndex) {
+        value /= 1024.0
+        unitIndex++
+    }
+    return String.format("%.1f %s", value, units[unitIndex])
 }

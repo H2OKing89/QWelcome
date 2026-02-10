@@ -1,11 +1,14 @@
 package com.kingpaging.qwelcome.viewmodel.settings
 
 import app.cash.turbine.test
+import com.kingpaging.qwelcome.data.DownloadEnqueueResult
+import com.kingpaging.qwelcome.data.DownloadStatus
 import com.kingpaging.qwelcome.data.SettingsStore
 import com.kingpaging.qwelcome.data.TechProfile
 import com.kingpaging.qwelcome.data.Template
 import com.kingpaging.qwelcome.data.UpdateCheckResult
-import com.kingpaging.qwelcome.data.UpdateChecker
+import com.kingpaging.qwelcome.data.VerificationResult
+import com.kingpaging.qwelcome.testutil.FakeAppUpdater
 import com.kingpaging.qwelcome.testutil.FakeResourceProvider
 import com.kingpaging.qwelcome.testutil.MainDispatcherRule
 import com.kingpaging.qwelcome.viewmodel.factory.AppViewModelProvider
@@ -13,14 +16,13 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.mockkObject
-import io.mockk.unmockkObject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -34,6 +36,7 @@ class SettingsViewModelTest {
 
     private val mockStore = mockk<SettingsStore>(relaxed = true)
     private val fakeResourceProvider = FakeResourceProvider()
+    private lateinit var fakeAppUpdater: FakeAppUpdater
     private lateinit var vm: SettingsViewModel
 
     private val testProfile = TechProfile(name = "John", title = "Sr Tech", dept = "IT")
@@ -47,14 +50,12 @@ class SettingsViewModelTest {
         every { mockStore.activeTemplateFlow } returns flowOf(testTemplate)
         every { mockStore.defaultTemplateContent } returns "Default content"
 
-        mockkObject(UpdateChecker)
-
-        vm = SettingsViewModel(mockStore, fakeResourceProvider)
+        fakeAppUpdater = FakeAppUpdater()
+        vm = SettingsViewModel(mockStore, fakeResourceProvider, fakeAppUpdater)
     }
 
     @After
     fun teardown() {
-        unmockkObject(UpdateChecker)
         AppViewModelProvider.resetForTesting()
     }
 
@@ -62,7 +63,6 @@ class SettingsViewModelTest {
     fun `techProfile flow reflects store data`() = runTest {
         vm.techProfile.test {
             val item = awaitItem()
-            // May receive initialValue first, then the real value
             if (item == TechProfile()) {
                 assertEquals(testProfile, awaitItem())
             } else {
@@ -113,7 +113,6 @@ class SettingsViewModelTest {
 
         vm.errorEvents.test {
             vm.save(testProfile)
-
             val error = awaitItem()
             assertTrue(error.contains("Failed to save profile"))
         }
@@ -157,27 +156,30 @@ class SettingsViewModelTest {
     }
 
     @Test
-    fun `checkForUpdate with available update sets Available state`() = runTest {
-        coEvery { UpdateChecker.checkForUpdate(any()) } returns
-                UpdateCheckResult.UpdateAvailable(
-                    latestVersion = "3.0.0",
-                    downloadUrl = "https://example.com/app.apk",
-                    releaseNotes = "New features"
-                )
+    fun `checkForUpdate with available update sets Available state with metadata`() = runTest {
+        fakeAppUpdater.checkForUpdateResult = UpdateCheckResult.UpdateAvailable(
+            latestVersion = "3.0.0",
+            downloadUrl = "https://example.com/app.apk",
+            releaseNotes = "New features",
+            assetName = "app-v3.apk",
+            assetSizeBytes = 100L,
+            sha256Hex = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        )
 
         vm.checkForUpdate()
         advanceUntilIdle()
 
         val state = vm.updateState.value
         assertTrue(state is UpdateState.Available)
-        assertEquals("3.0.0", (state as UpdateState.Available).version)
-        assertEquals("https://example.com/app.apk", state.downloadUrl)
+        state as UpdateState.Available
+        assertEquals("3.0.0", state.version)
+        assertEquals("app-v3.apk", state.assetName)
+        assertEquals(100L, state.assetSizeBytes)
     }
 
     @Test
     fun `checkForUpdate when up to date sets UpToDate state`() = runTest {
-        coEvery { UpdateChecker.checkForUpdate(any()) } returns
-                UpdateCheckResult.UpToDate
+        fakeAppUpdater.checkForUpdateResult = UpdateCheckResult.UpToDate
 
         vm.checkForUpdate()
         advanceUntilIdle()
@@ -187,8 +189,7 @@ class SettingsViewModelTest {
 
     @Test
     fun `checkForUpdate error sets Error state`() = runTest {
-        coEvery { UpdateChecker.checkForUpdate(any()) } returns
-                UpdateCheckResult.Error("Network error")
+        fakeAppUpdater.checkForUpdateResult = UpdateCheckResult.Error("Network error")
 
         vm.checkForUpdate()
         advanceUntilIdle()
@@ -205,67 +206,134 @@ class SettingsViewModelTest {
     }
 
     @Test
-    fun `checkForUpdate sets Checking then resolves`() = runTest {
-        coEvery { UpdateChecker.checkForUpdate(any()) } returns UpdateCheckResult.UpToDate
+    fun `checkForUpdate sets Checking then resolves and calls updater once`() = runTest {
+        fakeAppUpdater.checkForUpdateResult = UpdateCheckResult.UpToDate
 
         vm.checkForUpdate()
         advanceUntilIdle()
 
-        // Verify the final state is UpToDate (went through Checking → UpToDate)
         assertTrue(vm.updateState.value is UpdateState.UpToDate)
-        coVerify(exactly = 1) { UpdateChecker.checkForUpdate(any()) }
+        assertEquals(1, fakeAppUpdater.checkCallCount)
     }
 
-    // === COOLDOWN TESTS ===
+    @Test
+    fun `download flow emits queued downloading verifying and ready states`() = runTest {
+        fakeAppUpdater.checkForUpdateResult = UpdateCheckResult.UpdateAvailable(
+            latestVersion = "3.0.0",
+            downloadUrl = "https://example.com/app.apk",
+            releaseNotes = "Notes",
+            assetName = "app-v3.apk",
+            assetSizeBytes = 200L,
+            sha256Hex = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        )
+        fakeAppUpdater.enqueueResult = DownloadEnqueueResult.Started(42L, "/tmp/app.apk")
+        fakeAppUpdater.downloadStatusQueue.add(DownloadStatus.InProgress(20L, 100L))
+        fakeAppUpdater.downloadStatusQueue.add(DownloadStatus.Succeeded("/tmp/app.apk"))
+        fakeAppUpdater.verificationResult = VerificationResult.Success("/tmp/app.apk")
+
+        vm.checkForUpdate()
+        advanceUntilIdle()
+
+        vm.startUpdateDownload()
+        advanceUntilIdle()
+
+        assertTrue(vm.updateState.value is UpdateState.ReadyToInstall)
+        assertEquals("/tmp/app.apk", fakeAppUpdater.lastVerifiedApkPath)
+    }
 
     @Test
-    fun `checkForUpdate within cooldown emits toast event and does not call UpdateChecker`() = runTest {
-        coEvery { UpdateChecker.checkForUpdate(any()) } returns UpdateCheckResult.UpToDate
+    fun `retryInstallAfterPermission emits launch intent when install is allowed`() = runTest {
+        fakeAppUpdater.checkForUpdateResult = UpdateCheckResult.UpdateAvailable(
+            latestVersion = "3.0.0",
+            downloadUrl = "https://example.com/app.apk",
+            releaseNotes = "Notes",
+            assetName = "app-v3.apk",
+            assetSizeBytes = 200L,
+            sha256Hex = "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+        )
+        fakeAppUpdater.enqueueResult = DownloadEnqueueResult.Started(42L, "/tmp/app.apk")
+        fakeAppUpdater.downloadStatusQueue.add(DownloadStatus.Succeeded("/tmp/app.apk"))
+        fakeAppUpdater.verificationResult = VerificationResult.Success("/tmp/app.apk")
 
-        // First check succeeds
+        vm.checkForUpdate()
+        advanceUntilIdle()
+        vm.startUpdateDownload()
+        advanceUntilIdle()
+
+        vm.settingsEvents.test {
+            vm.retryInstallAfterPermission()
+            val event = awaitItem()
+            assertTrue(event is SettingsEvent.LaunchIntent)
+            assertTrue(vm.updateState.value is UpdateState.Installing)
+        }
+    }
+
+    @Test
+    fun `retryInstallAfterPermission moves to PermissionRequired when install permission disabled`() = runTest {
+        fakeAppUpdater.checkForUpdateResult = UpdateCheckResult.UpdateAvailable(
+            latestVersion = "3.0.0",
+            downloadUrl = "https://example.com/app.apk",
+            releaseNotes = "Notes",
+            assetName = "app-v3.apk",
+            assetSizeBytes = 200L,
+            sha256Hex = "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+        )
+        fakeAppUpdater.enqueueResult = DownloadEnqueueResult.Started(42L, "/tmp/app.apk")
+        fakeAppUpdater.downloadStatusQueue.add(DownloadStatus.Succeeded("/tmp/app.apk"))
+        fakeAppUpdater.verificationResult = VerificationResult.Success("/tmp/app.apk")
+        fakeAppUpdater.canRequestPackageInstallsValue = false
+
+        vm.checkForUpdate()
+        advanceUntilIdle()
+        vm.startUpdateDownload()
+        advanceUntilIdle()
+
+        vm.retryInstallAfterPermission()
+        advanceUntilIdle()
+
+        assertTrue(vm.updateState.value is UpdateState.PermissionRequired)
+        val intent = vm.openUnknownSourcesSettingsIntent()
+        assertNotNull(intent)
+    }
+
+    @Test
+    fun `checkForUpdate within cooldown emits toast event and does not call updater`() = runTest {
+        fakeAppUpdater.checkForUpdateResult = UpdateCheckResult.UpToDate
+
         vm.checkForUpdate()
         advanceUntilIdle()
         assertTrue(vm.updateState.value is UpdateState.UpToDate)
 
-        // Second check within cooldown should emit toast, not call UpdateChecker again
         vm.settingsEvents.test {
             vm.checkForUpdate()
             advanceUntilIdle()
 
             val event = awaitItem()
             assertTrue(event is SettingsEvent.ShowToastError)
-            // FakeResourceProvider returns "string_<resId>[args]" format
             assertTrue((event as SettingsEvent.ShowToastError).message.contains("string_"))
         }
 
-        // UpdateChecker should only have been called once
-        coVerify(exactly = 1) { UpdateChecker.checkForUpdate(any()) }
+        assertEquals(1, fakeAppUpdater.checkCallCount)
     }
 
     @Test
     fun `checkForUpdate after cooldown expired proceeds normally`() = runTest {
-        coEvery { UpdateChecker.checkForUpdate(any()) } returns UpdateCheckResult.UpToDate
+        fakeAppUpdater.checkForUpdateResult = UpdateCheckResult.UpToDate
 
-        // First check
         vm.checkForUpdate()
         advanceUntilIdle()
 
-        // Reset cooldown by setting lastCheckTimeMillis to 0
         vm.lastCheckTimeMillis = 0L
 
-        // Second check should proceed
         vm.checkForUpdate()
         advanceUntilIdle()
 
-        coVerify(exactly = 2) { UpdateChecker.checkForUpdate(any()) }
+        assertEquals(2, fakeAppUpdater.checkCallCount)
     }
-
-    // === RATE LIMIT TESTS ===
 
     @Test
     fun `rate limited with retry seconds sets Error state with retry info`() = runTest {
-        coEvery { UpdateChecker.checkForUpdate(any()) } returns
-                UpdateCheckResult.RateLimited(retryAfterSeconds = 42)
+        fakeAppUpdater.checkForUpdateResult = UpdateCheckResult.RateLimited(retryAfterSeconds = 42)
 
         vm.checkForUpdate()
         advanceUntilIdle()
@@ -274,13 +342,11 @@ class SettingsViewModelTest {
         assertTrue(state is UpdateState.Error)
         val message = (state as UpdateState.Error).message
         assertTrue(message.contains("42"))
-        assertTrue(message.contains("Rate limited"))
     }
 
     @Test
     fun `rate limited without retry seconds sets Error state with generic message`() = runTest {
-        coEvery { UpdateChecker.checkForUpdate(any()) } returns
-                UpdateCheckResult.RateLimited(retryAfterSeconds = null)
+        fakeAppUpdater.checkForUpdateResult = UpdateCheckResult.RateLimited(retryAfterSeconds = null)
 
         vm.checkForUpdate()
         advanceUntilIdle()
@@ -288,6 +354,6 @@ class SettingsViewModelTest {
         val state = vm.updateState.value
         assertTrue(state is UpdateState.Error)
         val message = (state as UpdateState.Error).message
-        assertTrue(message.contains("Try again later"))
+        assertTrue(message.contains("string_"))
     }
 }
