@@ -7,6 +7,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewmodel.CreationExtras
+import com.kingpaging.qwelcome.data.AppUpdater
+import com.kingpaging.qwelcome.data.GitHubAppUpdater
 import com.kingpaging.qwelcome.data.ImportExportRepository
 import com.kingpaging.qwelcome.data.SettingsStore
 import com.kingpaging.qwelcome.util.AndroidResourceProvider
@@ -43,6 +45,9 @@ class AppViewModelProvider(private val context: Context) : ViewModelProvider.Fac
         @Volatile
         private var resourceProviderInstance: ResourceProvider? = null
 
+        @Volatile
+        private var appUpdaterInstance: AppUpdater? = null
+
         private fun getSettingsStore(context: Context): SettingsStore {
             return settingsStoreInstance ?: synchronized(this) {
                 settingsStoreInstance ?: SettingsStore(context.applicationContext).also {
@@ -70,6 +75,14 @@ class AppViewModelProvider(private val context: Context) : ViewModelProvider.Fac
             }
         }
 
+        private fun getAppUpdater(context: Context): AppUpdater {
+            return appUpdaterInstance ?: synchronized(this) {
+                appUpdaterInstance ?: GitHubAppUpdater(context.applicationContext).also {
+                    appUpdaterInstance = it
+                }
+            }
+        }
+
         /**
          * Resets the singleton SettingsStore instance.
          *
@@ -90,6 +103,7 @@ class AppViewModelProvider(private val context: Context) : ViewModelProvider.Fac
                 settingsStoreInstance = null
                 importExportRepositoryInstance = null
                 resourceProviderInstance = null
+                appUpdaterInstance = null
             }
         }
     }
@@ -108,7 +122,8 @@ class AppViewModelProvider(private val context: Context) : ViewModelProvider.Fac
             modelClass.isAssignableFrom(SettingsViewModel::class.java) -> {
                 SettingsViewModel(
                     store = getSettingsStore(context),
-                    resourceProvider = getResourceProvider(context)
+                    resourceProvider = getResourceProvider(context),
+                    appUpdater = getAppUpdater(context)
                 ) as T
             }
             modelClass.isAssignableFrom(ExportViewModel::class.java) -> {

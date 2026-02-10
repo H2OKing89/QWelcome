@@ -11,7 +11,8 @@ import java.net.URL
 
 private const val TAG = "UpdateChecker"
 private const val GITHUB_API_URL = "https://api.github.com/repos/H2OKing89/QWelcome/releases/latest"
-private val TRUSTED_UPDATE_HOSTS = setOf(
+private val SHA_256_HEX_REGEX = Regex("^[a-fA-F0-9]{64}$")
+internal val TRUSTED_UPDATE_HOSTS = setOf(
     "github.com",
     "objects.githubusercontent.com",
     "release-assets.githubusercontent.com",
@@ -25,7 +26,10 @@ sealed class UpdateCheckResult {
     data class UpdateAvailable(
         val latestVersion: String,
         val downloadUrl: String,
-        val releaseNotes: String
+        val releaseNotes: String,
+        val assetName: String,
+        val assetSizeBytes: Long,
+        val sha256Hex: String
     ) : UpdateCheckResult()
     
     object UpToDate : UpdateCheckResult()
@@ -37,7 +41,7 @@ sealed class UpdateCheckResult {
  * GitHub Release API response (minimal fields we need).
  */
 @Serializable
-private data class GitHubRelease(
+internal data class GitHubRelease(
     val tag_name: String,
     val html_url: String,
     val body: String? = null,
@@ -45,9 +49,11 @@ private data class GitHubRelease(
 )
 
 @Serializable
-private data class GitHubAsset(
+internal data class GitHubAsset(
     val name: String,
-    val browser_download_url: String
+    val browser_download_url: String,
+    val size: Long = 0L,
+    val digest: String? = null
 )
 
 /**
@@ -106,31 +112,7 @@ object UpdateChecker {
             }
             
             val responseBody = connection.inputStream.bufferedReader().use { it.readText() }
-            
-            val release = json.decodeFromString<GitHubRelease>(responseBody)
-            val latestVersion = release.tag_name.removePrefix("v")
-            
-            Log.d(TAG, "Current: $currentVersionName, Latest: $latestVersion")
-            
-            // Compare versions
-            if (VersionComparator.isNewerVersion(latestVersion, currentVersionName)) {
-                // Find APK asset
-                val apkAsset = release.assets.find { it.name.endsWith(".apk") }
-                val apkUrl = apkAsset?.browser_download_url
-                val downloadUrl = when {
-                    apkUrl != null && isTrustedHttpsUrl(apkUrl) -> apkUrl
-                    isTrustedHttpsUrl(release.html_url) -> release.html_url
-                    else -> return@withContext UpdateCheckResult.Error("Invalid release URL")
-                }
-                
-                UpdateCheckResult.UpdateAvailable(
-                    latestVersion = latestVersion,
-                    downloadUrl = downloadUrl,
-                    releaseNotes = release.body ?: "No release notes available."
-                )
-            } else {
-                UpdateCheckResult.UpToDate
-            }
+            parseUpdateResponse(responseBody, currentVersionName)
         } catch (e: CancellationException) {
             // Rethrow cancellation to preserve structured concurrency
             throw e
@@ -141,8 +123,54 @@ object UpdateChecker {
             connection?.disconnect()
         }
     }
-    
-    private fun isTrustedHttpsUrl(url: String): Boolean {
+
+    internal fun parseUpdateResponse(
+        responseBody: String,
+        currentVersionName: String
+    ): UpdateCheckResult {
+        val release = json.decodeFromString<GitHubRelease>(responseBody)
+        val latestVersion = release.tag_name.removePrefix("v")
+
+        Log.d(TAG, "Current: $currentVersionName, Latest: $latestVersion")
+
+        if (!VersionComparator.isNewerVersion(latestVersion, currentVersionName)) {
+            return UpdateCheckResult.UpToDate
+        }
+
+        // Pick the first APK asset by lexical order for deterministic behavior.
+        val apkAsset = release.assets
+            .filter { it.name.endsWith(".apk", ignoreCase = true) }
+            .sortedBy { it.name.lowercase() }
+            .firstOrNull()
+            ?: return UpdateCheckResult.Error("Release has no APK asset")
+
+        val sha256Hex = extractSha256Hex(apkAsset.digest)
+            ?: return UpdateCheckResult.Error("Release APK is missing valid SHA-256 digest")
+
+        if (!isTrustedHttpsUrl(apkAsset.browser_download_url)) {
+            return UpdateCheckResult.Error("Invalid release URL")
+        }
+
+        return UpdateCheckResult.UpdateAvailable(
+            latestVersion = latestVersion,
+            downloadUrl = apkAsset.browser_download_url,
+            releaseNotes = release.body ?: "No release notes available.",
+            assetName = apkAsset.name,
+            assetSizeBytes = apkAsset.size,
+            sha256Hex = sha256Hex
+        )
+    }
+
+    internal fun extractSha256Hex(digest: String?): String? {
+        val normalized = digest
+            ?.trim()
+            ?.removePrefix("sha256:")
+            ?.lowercase()
+            ?: return null
+        return if (SHA_256_HEX_REGEX.matches(normalized)) normalized else null
+    }
+
+    internal fun isTrustedHttpsUrl(url: String): Boolean {
         return try {
             val parsed = URL(url)
             parsed.protocol.equals("https", ignoreCase = true) &&
