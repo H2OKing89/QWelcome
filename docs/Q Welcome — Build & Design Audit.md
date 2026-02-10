@@ -22,7 +22,7 @@ Use this section to track progress. Each phase should land in its own PR unless 
 - [x] Centralize validation rules (finding #20)
 - [x] Use data object for UiEvent objects (finding #21)
 
-### Phase 4 — Testing 🔄 [PR #24](https://github.com/H2OKing89/QWelcome/pull/24) in review
+### Phase 4 — Testing 🔄 [PR #24](https://github.com/H2OKing89/QWelcome/pull/24) merged
 
 - [x] Add Compose UI tests (finding #22)
 - [x] Add missing ViewModel tests (finding #23)
@@ -31,10 +31,10 @@ Use this section to track progress. Each phase should land in its own PR unless 
 
 ### Optional — Build/Gradle polish
 
-- [ ] Set Kotlin JVM target explicitly (finding #3)
-- [ ] Remember a single AppViewModelProvider instance (finding #4)
-- [ ] Enable Gradle parallel builds (finding #5)
-- [ ] Remove unused View Material dep if safe (finding #6)
+- [x] Set Kotlin JVM target explicitly (finding #3)
+- [x] Remember a single AppViewModelProvider instance (finding #4)
+- [x] Enable Gradle parallel builds (finding #5)
+- [x] Remove unused View Material dep if safe (finding #6)
 
 ### Release guidance
 
