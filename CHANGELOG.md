@@ -9,6 +9,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No unreleased changes.
 
+## [2.6.0] - 2026-02-09
+
+### Added
+
+- **In-App Updater** - Implemented GitHub-based automatic update checking and installation for users outside the Play Store with DownloadManager integration, signer fingerprint validation, and background download support
+- **AppUpdater Interface** - New abstraction layer for update operations enabling testable update flows and dependency injection in ViewModels
+- **GitHubAppUpdater Implementation** - Production updater service handling GitHub release API queries, APK download management, and secure package installation with full signer verification
+- **UpdateChecker Enhancements** - Expanded release parsing to extract APK download URLs, file sizes, and publication timestamps for comprehensive update metadata
+- **Update UI in Settings** - Added update checking, download progress, and install prompts in SettingsScreen with visual indicators for available updates and download status
+- **FakeAppUpdater Test Double** - Created test implementation of AppUpdater for isolated ViewModel and UI testing without network or system dependencies
+- **Compose UI Tests for Update Dialog** - Added SettingsScreenUpdateDialogTest covering update available/checking/error states, download progress, and install prompts
+- **Comprehensive Updater Unit Tests** - Created GitHubAppUpdaterTest (301 lines) with tests for download status parsing, signer validation, and update metadata extraction
+- **UpdateChecker Test Coverage** - Expanded UpdateCheckerTest with edge cases for empty assets, non-APK files, and malformed release responses
+
+### Changed
+
+- **SettingsViewModel Update State Management** - Enhanced with `UpdateState` sealed class (Idle/Checking/Available/Error), download progress tracking, and lifecycle-aware download status polling
+- **Settings Screen Layout** - Reorganized to accommodate update checking UI with polished error handling, download progress bars, and install action buttons
+- **AndroidManifest Permissions** - Added `REQUEST_INSTALL_PACKAGES` permission and package visibility queries for Android 11+ install intent compatibility
+- **FileProvider Configuration** - Created `file_paths.xml` with external downloads path mapping for secure APK file sharing during installation
+
+### Fixed
+
+- **Test Cursor Mocking** - Replaced framework MatrixCursor with fully mocked Cursor in GitHubAppUpdaterTest to ensure reliable unit test execution without Robolectric
+- **Compose Lint Error** - Pre-captured `stringResource()` values before `LaunchedEffect` blocks in SettingsScreen to satisfy LocalContextGetResourceValueCall lint rule
+- **APK Signer Key Rotation** - Enhanced `getSignerFingerprints` to include `signingCertificateHistory` for apps using Android key rotation, preventing false rejections of valid upgrades
+- **DownloadManager Roaming** - Set `setAllowedOverRoaming(false)` to prevent unexpected data charges for users on roaming networks
+- **Exception Handling Specificity** - Replaced broad `Exception` catches with targeted `IOException` and `IllegalArgumentException` handlers in updater code for precise error diagnosis
+
 ## [2.5.0] - 2026-02-09
 
 ### Added
