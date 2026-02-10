@@ -7,11 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+No unreleased changes.
+
+## [2.5.0] - 2026-02-09
+
+### Added
+
+- **Comprehensive Test Coverage** - Added Compose UI tests for CustomerIntakeScreen with 144 test cases, DataStore migration tests, and ViewModel tests for Import and Settings screens ensuring robust functionality across the app
+- **FakeNavigator and FakeSoundPlayer Test Utilities** - Created test doubles for improved test isolation and behavior verification in unit and integration tests
+- **SoundPlayer Interface** - New abstraction layer for audio feedback decoupling UI components from concrete SoundManager implementation for improved testability
+- **WiFi Validation Rules** - Centralized validation constants and logic in dedicated `WifiValidationRules` utility for consistent WiFi SSID and password validation across the app
+- **Modular Import/Export Services** - Split monolithic `ImportExportRepository` into focused services: `ExportService`, `ImportValidationService`, and `ImportApplyService` for better maintainability
+- **Settings Store Mappers** - Extracted proto mapping logic into dedicated `SettingsStoreMappers` module separating data transformation from storage operations
+- **DataStore Migration Module** - Moved Preferences-to-Proto migration logic into standalone `PreferencesToProtoMigration` class with comprehensive error handling
+- **Template Metadata Fields** - Added `sortOrder` and `tags` fields to Template proto for future customization and categorization features
+
 ### Changed
 
-- Replaced `Theme.MaterialComponents.DayNight.NoActionBar` with `Theme.AppCompat.DayNight.NoActionBar` in `themes.xml` to remove the direct View Material dependency while keeping splash theme handoff unchanged.
-- Removed direct `com.google.android.material:material` usage and added explicit `androidx.appcompat` dependency wiring via version catalog and app module build script.
-- Closed Optional Build/Gradle polish checklist items #3-#6 in the build/design audit doc.
+- **SoundManager Lifecycle Management** - Wired SoundManager to ProcessLifecycleOwner in QWelcomeApplication for automatic cleanup when app backgrounds, preventing audio resource leaks
+- **UI Sound Decoupling** - Replaced direct SoundManager calls in UI components with SoundPlayer interface via CompositionLocal, enabling dependency injection and testable sound feedback
+- **Refactored Large Composables** - Split 489-line CustomerIntakeScreen into focused sub-composables (`GradientHeader`, form components) improving readability and maintainability
+- **Template List Screen Reorganization** - Restructured TemplateListScreen with improved layout, better error messaging, and enhanced user feedback
+- **Import/Export Error Handling** - Comprehensive error message localization and improved validation feedback across import and export workflows
+- **AppViewModelFactory Optimization** - Cached ViewModelFactory instance using `remember {}` in MainActivity preventing unnecessary recreations on recomposition
+- **Replaced Material Components Theme** - Switched from `Theme.MaterialComponents.DayNight.NoActionBar` to `Theme.AppCompat.DayNight.NoActionBar` in themes.xml removing unused Material View dependency
+- **Updated AppCompat Dependency** - Removed direct `com.google.android.material:material` usage, added explicit `androidx.appcompat:appcompat:1.7.1` via version catalog
+- **UiEvent Sealed Classes** - Converted sealed class instances from `object` to `data object` following Kotlin 1.9+ best practices for better debugging output
+
+### Fixed
+
+- **Import ViewModel String Resource** - Corrected string resource reference in ImportViewModel error handling
+- **Settings ViewModel Externalization** - Moved hardcoded strings to string resources for proper localization support
+- **Export Status Emoji** - Removed unnecessary emoji from export status string for cleaner UI presentation
+
+### Removed
+
+- **ExampleInstrumentedTest.kt** - Removed default Android Studio placeholder test file
+- **Unused View Material Dependency** - Eliminated dependency on `com.google.android.material:material` reducing APK size and build complexity
 
 ## [2.4.0] - 2026-02-08
 
