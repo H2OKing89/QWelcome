@@ -58,7 +58,7 @@ class GitHubAppUpdater(
                     setDescription("Downloading ${update.assetName}")
                     setMimeType("application/vnd.android.package-archive")
                     setAllowedOverMetered(true)
-                    setAllowedOverRoaming(true)
+                    setAllowedOverRoaming(false)
                     setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
                     setDestinationInExternalFilesDir(
                         appContext,
@@ -71,7 +71,10 @@ class GitHubAppUpdater(
                 val apkPath = destinationFile.absolutePath
                 downloadPaths[downloadId] = apkPath
                 DownloadEnqueueResult.Started(downloadId = downloadId, apkPath = apkPath)
-            } catch (e: Exception) {
+            } catch (e: java.io.IOException) {
+                logError("Failed to enqueue update download", e)
+                DownloadEnqueueResult.Failed("Failed to start download: ${e.message}")
+            } catch (e: IllegalArgumentException) {
                 logError("Failed to enqueue update download", e)
                 DownloadEnqueueResult.Failed("Failed to start download: ${e.message}")
             }
@@ -193,12 +196,11 @@ class GitHubAppUpdater(
             "${appContext.packageName}.provider",
             file
         )
-        val intent = Intent(Intent.ACTION_INSTALL_PACKAGE).apply {
+        return Intent(Intent.ACTION_INSTALL_PACKAGE).apply {
             data = uri
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
-        return if (intent.resolveActivity(appContext.packageManager) != null) intent else null
     }
 
     internal fun computeSha256(file: File): String {
@@ -313,7 +315,7 @@ class GitHubAppUpdater(
     }
 
     internal fun signerSetsMatch(installedSigners: Set<String>, archiveSigners: Set<String>): Boolean {
-        return installedSigners.intersect(archiveSigners).isNotEmpty()
+        return installedSigners.containsAll(archiveSigners)
     }
 }
 

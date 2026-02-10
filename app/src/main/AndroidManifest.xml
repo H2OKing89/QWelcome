@@ -4,6 +4,7 @@
 
     <!-- Internet permission for update checker -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Required for in-app APK installation/updates from GitHub releases -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <!-- Storage permissions for QR code saving (only needed for Android 9 and below) -->
@@ -11,6 +12,14 @@
         android:maxSdkVersion="28" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
+
+    <!-- Needed for resolveActivity() on Android 11+ (package visibility) -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.INSTALL_PACKAGE" />
+            <data android:scheme="content" />
+        </intent>
+    </queries>
 
     <application
         android:name=".QWelcomeApplication"

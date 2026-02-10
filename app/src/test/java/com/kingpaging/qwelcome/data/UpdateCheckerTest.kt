@@ -109,4 +109,47 @@ class UpdateCheckerTest {
         assertEquals("dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd", valid)
         assertNull(invalid)
     }
+
+    @Test
+    fun `parseUpdateResponse with empty assets returns Error`() {
+        val response = """
+            {
+              "tag_name": "v3.0.0",
+              "html_url": "https://github.com/H2OKing89/QWelcome/releases/tag/v3.0.0",
+              "body": "Release notes",
+              "assets": []
+            }
+        """.trimIndent()
+
+        val result = UpdateChecker.parseUpdateResponse(response, currentVersionName = "2.5.0")
+        assertTrue(result is UpdateCheckResult.Error)
+        assertTrue((result as UpdateCheckResult.Error).message.contains("no APK", ignoreCase = true))
+    }
+
+    @Test
+    fun `parseUpdateResponse with only non-apk assets returns Error`() {
+        val response = """
+            {
+              "tag_name": "v3.0.0",
+              "html_url": "https://github.com/H2OKing89/QWelcome/releases/tag/v3.0.0",
+              "body": "Release notes",
+              "assets": [
+                {
+                  "name": "checksums.txt",
+                  "browser_download_url": "https://github.com/H2OKing89/QWelcome/releases/download/v3.0.0/checksums.txt",
+                  "size": 256
+                },
+                {
+                  "name": "release-notes.md",
+                  "browser_download_url": "https://github.com/H2OKing89/QWelcome/releases/download/v3.0.0/release-notes.md",
+                  "size": 1024
+                }
+              ]
+            }
+        """.trimIndent()
+
+        val result = UpdateChecker.parseUpdateResponse(response, currentVersionName = "2.5.0")
+        assertTrue(result is UpdateCheckResult.Error)
+        assertTrue((result as UpdateCheckResult.Error).message.contains("no APK", ignoreCase = true))
+    }
 }

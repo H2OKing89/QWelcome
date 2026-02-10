@@ -501,7 +501,7 @@ fun SettingsScreen(
                                         try {
                                             context.startActivity(vm.openUnknownSourcesSettingsIntent())
                                         } catch (_: ActivityNotFoundException) {
-                                            Toast.makeText(context, noBrowserMessage, Toast.LENGTH_SHORT).show()
+                                            Toast.makeText(context, context.getString(R.string.toast_settings_unavailable), Toast.LENGTH_SHORT).show()
                                         }
                                     },
                                     modifier = Modifier.weight(1f)
@@ -619,5 +619,5 @@ private fun formatBytes(bytes: Long): String {
         value /= 1024.0
         unitIndex++
     }
-    return String.format("%.1f %s", value, units[unitIndex])
+    return String.format(java.util.Locale.US, "%.1f %s", value, units[unitIndex])
 }

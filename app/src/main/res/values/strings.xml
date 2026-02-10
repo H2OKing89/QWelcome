@@ -239,6 +239,7 @@
     <string name="content_desc_view_github">View on GitHub</string>
     <string name="action_view_github">View on GitHub</string>
     <string name="error_update_install_unavailable">Android installer is unavailable on this device</string>
+    <string name="toast_settings_unavailable">Unable to open system settings</string>
 
     <!-- Accessibility / Shared Actions -->
     <string name="action_save">Save</string>
