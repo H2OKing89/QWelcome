@@ -10,7 +10,7 @@ captures/
 *.apk
 *.aab
 *.ap_
-gradle/gradle-daemon-jvm.properties
+/gradle/gradle-daemon-jvm.properties
 
 # Local
 /local.properties
