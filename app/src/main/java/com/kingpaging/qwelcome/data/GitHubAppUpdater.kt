@@ -20,6 +20,7 @@ import java.security.MessageDigest
 import java.util.concurrent.ConcurrentHashMap
 
 private const val TAG = "GitHubAppUpdater"
+private const val APK_MIME_TYPE = "application/vnd.android.package-archive"
 
 class GitHubAppUpdater(
     private val context: Context
@@ -61,7 +62,7 @@ class GitHubAppUpdater(
                 val request = DownloadManager.Request(Uri.parse(update.downloadUrl)).apply {
                     setTitle("Q Welcome Update")
                     setDescription("Downloading ${update.assetName}")
-                    setMimeType("application/vnd.android.package-archive")
+                    setMimeType(APK_MIME_TYPE)
                     setAllowedOverMetered(true)
                     setAllowedOverRoaming(false)
                     setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
@@ -210,9 +211,11 @@ class GitHubAppUpdater(
             file
         )
         return Intent(Intent.ACTION_INSTALL_PACKAGE).apply {
-            data = uri
+            setDataAndType(uri, APK_MIME_TYPE)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }.takeIf { installIntent ->
+            installIntent.resolveActivity(appContext.packageManager) != null
         }
     }
 
@@ -334,6 +337,7 @@ class GitHubAppUpdater(
     }
 
     internal fun signerSetsMatch(installedSigners: Set<String>, archiveSigners: Set<String>): Boolean {
+        if (installedSigners.isEmpty() || archiveSigners.isEmpty()) return false
         return installedSigners.containsAll(archiveSigners)
     }
 

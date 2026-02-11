@@ -72,6 +72,9 @@ class GitHubAppUpdaterTest {
         assertFalse(updater.signerSetsMatch(setOf("a"), setOf("a", "b")))
         assertFalse(updater.signerSetsMatch(setOf("a"), setOf("x")))
         assertFalse(updater.signerSetsMatch(setOf("a", "b"), setOf("b", "c")))
+        assertFalse(updater.signerSetsMatch(setOf("a"), emptySet()))
+        assertFalse(updater.signerSetsMatch(emptySet(), setOf("a")))
+        assertFalse(updater.signerSetsMatch(emptySet(), emptySet()))
     }
 
     @Test

@@ -114,7 +114,7 @@ fun SettingsScreen(
     val showDownloadConfirmDialog by vm.showDownloadConfirmDialog.collectAsStateWithLifecycle()
     val availableUpdate = updateState as? UpdateState.Available
 
-    val launchIntentFailedMessage = stringResource(R.string.toast_no_browser)
+    val launchIntentFailedMessage = stringResource(R.string.error_update_install_unavailable)
 
     // Collect one-shot settings events with lifecycle awareness
     LaunchedEffect(lifecycleOwner, vm.settingsEvents) {

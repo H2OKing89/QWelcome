@@ -104,9 +104,13 @@ class UpdateCheckerTest {
         val valid = UpdateChecker.extractSha256Hex(
             "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
         )
+        val validUpperPrefix = UpdateChecker.extractSha256Hex(
+            "SHA256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        )
         val invalid = UpdateChecker.extractSha256Hex("sha256:not-a-hash")
 
         assertEquals("dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd", valid)
+        assertEquals("eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee", validUpperPrefix)
         assertNull(invalid)
     }
 
