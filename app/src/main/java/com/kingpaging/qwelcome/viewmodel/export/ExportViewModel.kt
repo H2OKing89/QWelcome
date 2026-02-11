@@ -1,7 +1,12 @@
 package com.kingpaging.qwelcome.viewmodel.export
 
+import android.content.Intent
+import android.content.pm.PackageManager
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.core.graphics.drawable.toBitmap
 import com.kingpaging.qwelcome.data.ExportResult
 import com.kingpaging.qwelcome.data.ImportExportRepository
 import com.kingpaging.qwelcome.data.SettingsStore
@@ -13,15 +18,23 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.getAndUpdate
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 enum class ExportType {
     TEMPLATE_PACK, FULL_BACKUP
 }
+
+data class RecentShareTargetUi(
+    val packageName: String,
+    val appName: String,
+    val icon: ImageBitmap?
+)
 
 data class ExportUiState(
     val isExporting: Boolean = false,
@@ -32,7 +45,8 @@ data class ExportUiState(
     // Template selection state
     val availableTemplates: List<Template> = emptyList(),
     val selectedTemplateIds: Set<String> = emptySet(),
-    val showTemplateSelectionDialog: Boolean = false
+    val showTemplateSelectionDialog: Boolean = false,
+    val recentShareTargets: List<RecentShareTargetUi> = emptyList()
 )
 
 sealed class ExportEvent {
@@ -40,13 +54,15 @@ sealed class ExportEvent {
     data class ExportError(val message: String) : ExportEvent()
     data class CopiedToClipboard(val type: ExportType) : ExportEvent()
     data class ShareReady(val json: String, val type: ExportType) : ExportEvent()
+    data class ShareToAppReady(val packageName: String, val json: String, val type: ExportType) : ExportEvent()
     data class RequestFileSave(val suggestedName: String) : ExportEvent()
     data class FileSaved(val type: ExportType) : ExportEvent()
 }
 
 class ExportViewModel(
     private val repository: ImportExportRepository,
-    private val settingsStore: SettingsStore
+    private val settingsStore: SettingsStore,
+    private val packageManager: PackageManager? = null
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ExportUiState())
@@ -59,9 +75,14 @@ class ExportViewModel(
     // Uses StateFlow to avoid race conditions when exporting twice rapidly.
     private val _pendingFileExportContent = MutableStateFlow<String?>(null)
     private val _pendingFileExportType = MutableStateFlow<ExportType?>(null)
+    private val recentShareTargetCache = mutableMapOf<String, RecentShareTargetUi>()
 
     companion object {
         private const val TAG = "ExportViewModel"
+    }
+
+    init {
+        observeRecentShareTargets()
     }
 
     // ========== Template Selection ==========
@@ -198,6 +219,20 @@ class ExportViewModel(
             _events.emit(ExportEvent.ShareReady(currentState.lastExportedJson, currentState.lastExportType))
         }
     }
+
+    fun onShareToPackageRequested(packageName: String) = viewModelScope.launch {
+        val currentState = _uiState.value
+        if (currentState.lastExportedJson != null && currentState.lastExportType != null) {
+            settingsStore.recordRecentSharePackage(packageName)
+            _events.emit(
+                ExportEvent.ShareToAppReady(
+                    packageName = packageName,
+                    json = currentState.lastExportedJson,
+                    type = currentState.lastExportType
+                )
+            )
+        }
+    }
     
     fun onSaveToFileRequested() = viewModelScope.launch {
         val currentState = _uiState.value
@@ -253,9 +288,53 @@ class ExportViewModel(
      */
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     fun reset() {
-        _uiState.value = ExportUiState()
+        val recentTargets = _uiState.value.recentShareTargets
+        _uiState.value = ExportUiState(recentShareTargets = recentTargets)
         _pendingFileExportContent.value = null
         _pendingFileExportType.value = null
         _events.resetReplayCache()
+    }
+
+    private fun observeRecentShareTargets() {
+        viewModelScope.launch(Dispatchers.IO) {
+            settingsStore.recentSharePackagesFlow.collect { packages ->
+                val resolvedTargets = packages.mapNotNull { resolveRecentShareTarget(it) }
+                _uiState.update { it.copy(recentShareTargets = resolvedTargets) }
+            }
+        }
+    }
+
+    private fun resolveRecentShareTarget(packageName: String): RecentShareTargetUi? {
+        recentShareTargetCache[packageName]?.let { return it }
+
+        if (packageManager == null) {
+            return RecentShareTargetUi(
+                packageName = packageName,
+                appName = packageName,
+                icon = null
+            ).also { recentShareTargetCache[packageName] = it }
+        }
+
+        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            setPackage(packageName)
+        }
+        val canShare = packageManager.resolveActivity(shareIntent, 0) != null
+        if (!canShare) return null
+
+        return try {
+            val appInfo = packageManager.getApplicationInfo(packageName, 0)
+            val label = packageManager.getApplicationLabel(appInfo).toString()
+            val icon = packageManager.getApplicationIcon(appInfo).toBitmap().asImageBitmap()
+            RecentShareTargetUi(
+                packageName = packageName,
+                appName = label,
+                icon = icon
+            ).also {
+                recentShareTargetCache[packageName] = it
+            }
+        } catch (e: PackageManager.NameNotFoundException) {
+            null
+        }
     }
 }

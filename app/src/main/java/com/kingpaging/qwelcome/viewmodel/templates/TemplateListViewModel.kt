@@ -18,6 +18,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 private const val TAG = "TemplateListViewModel"
+private const val TEMPLATE_SOFT_LIMIT = 20
+private const val MAX_TAG_LENGTH = 32
 
 /**
  * UI state for the template list screen.
@@ -29,6 +31,10 @@ data class TemplateListUiState(
     val editingTemplate: Template? = null,
     val showDeleteConfirmation: Template? = null,
     val searchQuery: String = "",
+    val selectedTags: Set<String> = emptySet(),
+    val allTags: Set<String> = emptySet(),
+    val showTemplateLimitWarning: Boolean = false,
+    val warningDismissed: Boolean = false,
     val validationError: String? = null // For required placeholder errors
 )
 
@@ -68,13 +74,23 @@ class TemplateListViewModel(
                 TemplateListUiState(
                     templates = templates,
                     activeTemplateId = activeId,
+                    allTags = templates
+                        .flatMap { it.tags }
+                        .map { it.trim() }
+                        .filter { it.isNotBlank() }
+                        .toSet(),
+                    showTemplateLimitWarning = templates.size > TEMPLATE_SOFT_LIMIT,
                     isLoading = false
                 )
             }.collect { newState ->
                 _uiState.update { current ->
+                    val selectedTags = current.selectedTags.intersect(newState.allTags)
                     current.copy(
                         templates = newState.templates,
                         activeTemplateId = newState.activeTemplateId,
+                        selectedTags = selectedTags,
+                        allTags = newState.allTags,
+                        showTemplateLimitWarning = newState.showTemplateLimitWarning,
                         isLoading = newState.isLoading
                     )
                 }
@@ -125,7 +141,7 @@ class TemplateListViewModel(
      * Create a new template.
      * Validates that required placeholders are present before saving.
      */
-    fun createTemplate(name: String, content: String) {
+    fun createTemplate(name: String, content: String, tags: List<String>) {
         // Validate required placeholders (belt + suspenders with UI layer)
         val missingPlaceholders = Template.findMissingPlaceholders(content)
         if (missingPlaceholders.isNotEmpty()) {
@@ -139,7 +155,7 @@ class TemplateListViewModel(
         
         viewModelScope.launch {
             try {
-                val template = Template.create(name.trim(), content)
+                val template = Template.create(name.trim(), content).copy(tags = sanitizeTags(tags))
                 settingsStore.saveTemplate(template)
                 _uiState.update { it.copy(editingTemplate = null, validationError = null) }
                 _events.emit(TemplateListEvent.TemplateCreated(template))
@@ -156,7 +172,7 @@ class TemplateListViewModel(
      * Update an existing template.
      * Validates that required placeholders are present before saving.
      */
-    fun updateTemplate(templateId: String, name: String, content: String) {
+    fun updateTemplate(templateId: String, name: String, content: String, tags: List<String>) {
         // Validate required placeholders (belt + suspenders with UI layer)
         val missingPlaceholders = Template.findMissingPlaceholders(content)
         if (missingPlaceholders.isNotEmpty()) {
@@ -175,6 +191,7 @@ class TemplateListViewModel(
                     val updated = existing.copy(
                         name = name.trim(),
                         content = Template.normalizeContent(content),
+                        tags = sanitizeTags(tags),
                         modifiedAt = java.time.Instant.now().toString()
                     )
                     settingsStore.saveTemplate(updated)
@@ -276,11 +293,38 @@ class TemplateListViewModel(
     fun updateSearchQuery(query: String) {
         _uiState.update { it.copy(searchQuery = query) }
     }
+
+    fun updateTagFilter(tag: String) {
+        _uiState.update { current ->
+            val newSelectedTags = if (tag in current.selectedTags) {
+                current.selectedTags - tag
+            } else {
+                current.selectedTags + tag
+            }
+            current.copy(selectedTags = newSelectedTags)
+        }
+    }
+
+    fun clearTagFilter() {
+        _uiState.update { it.copy(selectedTags = emptySet()) }
+    }
+
+    fun dismissTemplateLimitWarning() {
+        _uiState.update { it.copy(warningDismissed = true) }
+    }
     
     /**
      * Clear any validation errors (e.g., when user starts typing in editor).
      */
     fun clearValidationError() {
         _uiState.update { it.copy(validationError = null) }
+    }
+
+    private fun sanitizeTags(tags: List<String>): List<String> {
+        val seen = mutableSetOf<String>()
+        return tags.map { it.trim() }
+            .filter { it.isNotBlank() }
+            .map { it.take(MAX_TAG_LENGTH) }
+            .filter { seen.add(it.lowercase()) }
     }
 }

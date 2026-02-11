@@ -5,6 +5,7 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.app.PendingIntent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.util.Log
@@ -33,8 +34,24 @@ interface Navigator {
      * Opens the system share sheet with the given text content.
      * @param message The text content to share
      * @param chooserTitle The title shown on the share chooser dialog
+     * @param subject Optional share subject for apps that support it
      */
-    fun shareText(message: String, chooserTitle: String = "Share via...")
+    fun shareText(
+        message: String,
+        chooserTitle: String = "Share via...",
+        subject: String? = null
+    )
+
+    /**
+     * Shares text directly to a specific package if available.
+     * Falls back to generic chooser when the package is unavailable.
+     */
+    fun shareToApp(
+        packageName: String,
+        message: String,
+        subject: String? = null,
+        chooserTitle: String = "Share via..."
+    )
     
     /**
      * Copies text to the system clipboard.
@@ -93,16 +110,29 @@ class AndroidNavigator(private val context: Context) : Navigator {
         }
     }
 
-    override fun shareText(message: String, chooserTitle: String) {
+    override fun shareText(message: String, chooserTitle: String, subject: String?) {
+        val chooserCallback = PendingIntent.getBroadcast(
+            context,
+            1001,
+            Intent(context, ShareTargetChosenReceiver::class.java),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
+        )
+
         val intent = Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"
             putExtra(Intent.EXTRA_TEXT, message)
+            if (!subject.isNullOrBlank()) {
+                putExtra(Intent.EXTRA_SUBJECT, subject)
+            }
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
+
+        val chooserIntent = Intent.createChooser(intent, chooserTitle, chooserCallback.intentSender).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+
         try {
-            context.startActivity(Intent.createChooser(intent, chooserTitle).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            })
+            context.startActivity(chooserIntent)
         } catch (e: ActivityNotFoundException) {
             Log.e(TAG, "No share target available", e)
             Toast.makeText(context, R.string.toast_no_share_app, Toast.LENGTH_SHORT).show()
@@ -115,6 +145,43 @@ class AndroidNavigator(private val context: Context) : Navigator {
         } catch (e: Exception) {
             Log.e(TAG, "Failed to open share sheet: ${e::class.java.simpleName}", e)
             Toast.makeText(context, R.string.toast_unable_share, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    override fun shareToApp(
+        packageName: String,
+        message: String,
+        subject: String?,
+        chooserTitle: String
+    ) {
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, message)
+            if (!subject.isNullOrBlank()) {
+                putExtra(Intent.EXTRA_SUBJECT, subject)
+            }
+            setPackage(packageName)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        try {
+            val canHandle = context.packageManager.resolveActivity(intent, 0) != null
+            if (canHandle) {
+                context.startActivity(intent)
+            } else {
+                shareText(message, chooserTitle, subject)
+            }
+        } catch (e: ActivityNotFoundException) {
+            Log.e(TAG, "No share target available for package=$packageName", e)
+            shareText(message, chooserTitle, subject)
+        } catch (e: SecurityException) {
+            Log.e(TAG, "SecurityException sharing to package=$packageName", e)
+            shareText(message, chooserTitle, subject)
+        } catch (e: IllegalArgumentException) {
+            Log.e(TAG, "IllegalArgumentException sharing to package=$packageName", e)
+            shareText(message, chooserTitle, subject)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to share to package=$packageName: ${e::class.java.simpleName}", e)
+            shareText(message, chooserTitle, subject)
         }
     }
 

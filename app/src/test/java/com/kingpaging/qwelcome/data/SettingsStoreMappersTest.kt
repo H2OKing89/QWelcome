@@ -51,4 +51,5 @@ class SettingsStoreMappersTest {
         assertEquals(0, mapped.sortOrder)
         assertTrue(mapped.tags.isEmpty())
     }
+
 }

@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.catch
 import java.io.IOException
 
 private const val TAG = "SettingsStore"
+private const val MAX_RECENT_SHARE_TARGETS = 3
 
 /**
  * ID for the built-in default template.
@@ -93,6 +94,10 @@ class SettingsStore(private val context: Context) {
             }
         }
 
+    val recentSharePackagesFlow: Flow<List<String>> = dataStore.data
+        .catchIoException("Error reading recent share packages.")
+        .map { prefs -> prefs.recentSharePackagesList }
+
     suspend fun getUserTemplates(): List<Template> = userTemplatesFlow.first()
 
     suspend fun getAllTemplates(): List<Template> = allTemplatesFlow.first()
@@ -107,7 +112,11 @@ class SettingsStore(private val context: Context) {
     suspend fun getActiveTemplate(): Template = activeTemplateFlow.first()
 
     suspend fun setActiveTemplate(templateId: String) {
-        dataStore.updateData { it.toBuilder().setActiveTemplateId(templateId).build() }
+        dataStore.updateData {
+            it.toBuilder()
+                .setActiveTemplateId(templateId)
+                .build()
+        }
     }
 
     suspend fun saveTemplate(template: Template) {
@@ -147,6 +156,18 @@ class SettingsStore(private val context: Context) {
                 builder.activeTemplateId = DEFAULT_TEMPLATE_ID
             }
             builder.build()
+        }
+    }
+
+    suspend fun recordRecentSharePackage(packageName: String) {
+        if (packageName.isBlank()) return
+        dataStore.updateData { prefs ->
+            val deduped = (listOf(packageName) + prefs.recentSharePackagesList.filterNot { it == packageName })
+                .take(MAX_RECENT_SHARE_TARGETS)
+            prefs.toBuilder()
+                .clearRecentSharePackages()
+                .addAllRecentSharePackages(deduped)
+                .build()
         }
     }
 

@@ -53,6 +53,8 @@ internal class ImportApplyService(
             val templatesToSave = resolved.templates
             settingsStore.saveTemplates(templatesToSave)
 
+            val availableTemplateIds = existingIds + templatesToSave.map { it.id }
+
             if (importTechProfile) {
                 settingsStore.saveTechProfile(
                     TechProfile(
@@ -66,8 +68,7 @@ internal class ImportApplyService(
             if (importDefaultTemplate) {
                 val requestedDefaultId = backup.getEffectiveDefaultTemplateId() ?: DEFAULT_TEMPLATE_ID
                 val resolvedDefaultId = resolved.idMap[requestedDefaultId] ?: requestedDefaultId
-                val availableIds = existingIds + templatesToSave.map { it.id }
-                if (resolvedDefaultId == DEFAULT_TEMPLATE_ID || resolvedDefaultId in availableIds) {
+                if (resolvedDefaultId == DEFAULT_TEMPLATE_ID || resolvedDefaultId in availableTemplateIds) {
                     settingsStore.setActiveTemplate(resolvedDefaultId)
                 }
             }
