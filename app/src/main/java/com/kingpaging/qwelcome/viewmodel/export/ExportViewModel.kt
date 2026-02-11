@@ -334,6 +334,11 @@ class ExportViewModel(
                 recentShareTargetCache[packageName] = it
             }
         } catch (e: PackageManager.NameNotFoundException) {
+            Log.d(
+                TAG,
+                "Package not found while resolving recent share target packageName=$packageName",
+                e
+            )
             null
         }
     }
