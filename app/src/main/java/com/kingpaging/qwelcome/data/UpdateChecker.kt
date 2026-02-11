@@ -164,7 +164,13 @@ object UpdateChecker {
     internal fun extractSha256Hex(digest: String?): String? {
         val normalized = digest
             ?.trim()
-            ?.removePrefix("sha256:")
+            ?.let { value ->
+                if (value.startsWith("sha256:", ignoreCase = true)) {
+                    value.substring("sha256:".length)
+                } else {
+                    value
+                }
+            }
             ?.lowercase()
             ?: return null
         return if (SHA_256_HEX_REGEX.matches(normalized)) normalized else null

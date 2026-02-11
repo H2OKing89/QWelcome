@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No unreleased changes.
 
+## [2.6.1] - 2026-02-10
+
+### Fixed
+
+- **App Installer Robustness** - Enhanced install intent creation to verify install activity exists before launching, preventing crashes on devices without package managers
+- **SHA256 Digest Parsing** - Fixed `extractSha256Hex()` to handle case-insensitive "sha256:"/"SHA256:" prefix normalization for better digest compatibility
+- **Signer Set Validation** - Fixed `signerSetsMatch()` to correctly handle empty installer or archive signer sets, returning false instead of throwing exceptions
+- **Update Installation Message** - Corrected error message resource reference to display appropriate "update installation unavailable" message instead of browser error text
+
+### Changed
+
+- **Installer Intent Creation** - Refactored to use `setDataAndType()` with MIME type constant for more robust APK installation handling
+
 ## [2.6.0] - 2026-02-09
 
 ### Added

@@ -292,6 +292,37 @@ class SettingsViewModelTest {
     }
 
     @Test
+    fun `retryInstallAfterPermission sets Error when install intent unavailable`() = runTest {
+        fakeAppUpdater.checkForUpdateResult = UpdateCheckResult.UpdateAvailable(
+            latestVersion = "3.0.0",
+            downloadUrl = "https://example.com/app.apk",
+            releaseNotes = "Notes",
+            assetName = "app-v3.apk",
+            assetSizeBytes = 200L,
+            sha256Hex = "abababababababababababababababababababababababababababababababab"
+        )
+        fakeAppUpdater.enqueueResult = DownloadEnqueueResult.Started(42L, "/tmp/app.apk")
+        fakeAppUpdater.downloadStatusQueue.add(DownloadStatus.Succeeded("/tmp/app.apk"))
+        fakeAppUpdater.verificationResult = VerificationResult.Success("/tmp/app.apk")
+        fakeAppUpdater.installIntent = null
+
+        vm.checkForUpdate()
+        advanceUntilIdle()
+        vm.startUpdateDownload()
+        advanceUntilIdle()
+
+        vm.retryInstallAfterPermission()
+        advanceUntilIdle()
+
+        val state = vm.updateState.value
+        assertTrue(state is UpdateState.Error)
+        assertEquals(
+            fakeResourceProvider.getString(R.string.error_update_install_unavailable),
+            (state as UpdateState.Error).message
+        )
+    }
+
+    @Test
     fun `retryInstallAfterPermission moves to PermissionRequired when install permission disabled`() = runTest {
         fakeAppUpdater.checkForUpdateResult = UpdateCheckResult.UpdateAvailable(
             latestVersion = "3.0.0",
