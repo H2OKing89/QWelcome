@@ -4,9 +4,9 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kingpaging.qwelcome.data.DEFAULT_TEMPLATE_ID
+import com.kingpaging.qwelcome.data.NEW_TEMPLATE_ID
 import com.kingpaging.qwelcome.data.SettingsStore
 import com.kingpaging.qwelcome.data.Template
-import com.kingpaging.qwelcome.ui.templates.NEW_TEMPLATE_ID
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow

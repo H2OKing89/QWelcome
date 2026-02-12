@@ -63,6 +63,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.data.DEFAULT_TEMPLATE_ID
+import com.kingpaging.qwelcome.data.NEW_TEMPLATE_ID
 import com.kingpaging.qwelcome.data.Template
 import com.kingpaging.qwelcome.di.LocalSoundPlayer
 import com.kingpaging.qwelcome.di.LocalTemplateListViewModel

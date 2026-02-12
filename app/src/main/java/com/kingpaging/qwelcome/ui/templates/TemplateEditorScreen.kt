@@ -21,8 +21,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.foundation.text.input.delete
+import androidx.compose.foundation.text.input.insert
+import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
@@ -48,6 +54,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -57,7 +64,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -67,6 +73,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.flowWithLifecycle
 import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.data.MessageTemplate
+import com.kingpaging.qwelcome.data.NEW_TEMPLATE_ID
 import com.kingpaging.qwelcome.data.Template
 import com.kingpaging.qwelcome.di.LocalSoundPlayer
 import com.kingpaging.qwelcome.di.LocalTemplateListViewModel
@@ -78,6 +85,7 @@ import com.kingpaging.qwelcome.ui.components.NeonOutlinedField
 import com.kingpaging.qwelcome.util.rememberHapticFeedback
 import com.kingpaging.qwelcome.viewmodel.templates.TemplateEditorUiState
 import com.kingpaging.qwelcome.viewmodel.templates.TemplateListEvent
+import kotlinx.coroutines.flow.distinctUntilChanged
 
 @Suppress("LocalContextGetResourceValueCall")
 @Composable
@@ -164,16 +172,8 @@ fun TemplateEditorScreen(
 }
 
 private class TemplateEditorState(
-    initialContentText: String
+    val contentFieldState: TextFieldState
 ) {
-    var contentFieldValue by mutableStateOf(
-        TextFieldValue(
-            text = initialContentText,
-            selection = TextRange(initialContentText.length)
-        )
-    )
-        private set
-
     var pendingPlaceholder by mutableStateOf<String?>(null)
         private set
 
@@ -230,24 +230,15 @@ private class TemplateEditorState(
     }
 
     fun syncContentFieldValue(contentText: String) {
-        if (contentText == contentFieldValue.text) return
+        if (contentText == contentFieldState.text.toString()) return
 
-        val clampedStart = contentFieldValue.selection.start
-            .coerceIn(0, contentText.length)
-        val clampedEnd = contentFieldValue.selection.end
-            .coerceIn(0, contentText.length)
-        contentFieldValue = TextFieldValue(
-            text = contentText,
+        val clampedStart = contentFieldState.selection.start.coerceIn(0, contentText.length)
+        val clampedEnd = contentFieldState.selection.end.coerceIn(0, contentText.length)
+        contentFieldState.edit {
+            delete(0, length)
+            insert(0, contentText)
             selection = TextRange(clampedStart, clampedEnd)
-        )
-    }
-
-    fun updateContentFieldValue(
-        updatedValue: TextFieldValue,
-        onContentChange: (String) -> Unit
-    ) {
-        contentFieldValue = updatedValue
-        onContentChange(updatedValue.text)
+        }
     }
 
     fun insertPlaceholder(
@@ -255,9 +246,8 @@ private class TemplateEditorState(
         onContentChange: (String) -> Unit,
         contentFocusRequester: FocusRequester
     ) {
-        val updatedValue = insertAtCursor(contentFieldValue, placeholder)
-        contentFieldValue = updatedValue
-        onContentChange(updatedValue.text)
+        insertAtCursor(contentFieldState, placeholder)
+        onContentChange(contentFieldState.text.toString())
         contentFocusRequester.requestFocus()
     }
 
@@ -288,10 +278,10 @@ private class TemplateEditorState(
 
 @Composable
 private fun rememberTemplateEditorState(
-    templateId: String,
     initialContentText: String
 ): TemplateEditorState {
-    return remember(templateId) { TemplateEditorState(initialContentText) }
+    val contentFieldState = rememberTextFieldState(initialText = initialContentText)
+    return remember { TemplateEditorState(contentFieldState) }
 }
 
 @Composable
@@ -306,6 +296,11 @@ private fun BindTemplateEditorState(
     }
     LaunchedEffect(state.showContentEditorDialog, state.pendingPlaceholder) {
         state.consumePendingPlaceholder(onContentChange, contentFocusRequester)
+    }
+    LaunchedEffect(state.contentFieldState) {
+        snapshotFlow { state.contentFieldState.text.toString() }
+            .distinctUntilChanged()
+            .collect { onContentChange(it) }
     }
 }
 
@@ -330,7 +325,7 @@ private fun TemplateEditorContent(
     val originalContent = if (isNew) defaultContent else template.content
     val originalTags = template.tags
 
-    val editorState = rememberTemplateEditorState(template.id, editorUiState.contentText)
+    val editorState = rememberTemplateEditorState(editorUiState.contentText)
     val contentFocusRequester = remember { FocusRequester() }
     val contentInteractionSource = remember { MutableInteractionSource() }
     val haptic = rememberHapticFeedback()
@@ -483,10 +478,7 @@ private fun TemplateEditorContent(
 
         if (editorState.showContentEditorDialog) {
             ContentEditorDialog(
-                contentValue = editorState.contentFieldValue,
-                onContentValueChange = { updatedValue ->
-                    editorState.updateContentFieldValue(updatedValue, onContentChange)
-                },
+                contentState = editorState.contentFieldState,
                 contentFocusRequester = contentFocusRequester,
                 contentInteractionSource = contentInteractionSource,
                 contentError = editorUiState.contentError,
@@ -632,27 +624,29 @@ private fun TagsSection(
             modifier = Modifier.padding(top = 8.dp)
         ) {
             tags.forEach { tag ->
-                InputChip(
-                    selected = true,
-                    onClick = { onRemoveTag(tag) },
-                    label = {
-                        Text(
-                            text = tag,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    },
-                    trailingIcon = {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = stringResource(
-                                R.string.content_desc_remove_tag,
-                                tag
-                            ),
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
-                )
+                key(tag) {
+                    InputChip(
+                        selected = true,
+                        onClick = { onRemoveTag(tag) },
+                        label = {
+                            Text(
+                                text = tag,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        },
+                        trailingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = stringResource(
+                                    R.string.content_desc_remove_tag,
+                                    tag
+                                ),
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    )
+                }
             }
         }
     }
@@ -786,8 +780,7 @@ private fun MessageContentLauncher(
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ContentEditorDialog(
-    contentValue: TextFieldValue,
-    onContentValueChange: (TextFieldValue) -> Unit,
+    contentState: TextFieldState,
     contentFocusRequester: FocusRequester,
     contentInteractionSource: MutableInteractionSource,
     contentError: String?,
@@ -837,8 +830,7 @@ private fun ContentEditorDialog(
                 )
 
                 ContentEditorField(
-                    contentValue = contentValue,
-                    onContentValueChange = onContentValueChange,
+                    contentState = contentState,
                     contentFocusRequester = contentFocusRequester,
                     contentInteractionSource = contentInteractionSource,
                     contentError = contentError,
@@ -866,36 +858,19 @@ private fun ContentEditorDialog(
 
 @Composable
 private fun ContentEditorField(
-    contentValue: TextFieldValue,
-    onContentValueChange: (TextFieldValue) -> Unit,
+    contentState: TextFieldState,
     contentFocusRequester: FocusRequester,
     contentInteractionSource: MutableInteractionSource,
     contentError: String?,
     modifier: Modifier = Modifier
 ) {
     val hasContentError = contentError != null
-    OutlinedTextField(
-        value = contentValue,
-        onValueChange = onContentValueChange,
-        isError = hasContentError,
-        label = { Text(stringResource(R.string.label_message)) },
-        supportingText = if (hasContentError) {
-            {
-                Text(
-                    text = stringResource(
-                        R.string.error_template_missing_placeholders,
-                        contentError ?: ""
-                    ),
-                    color = MaterialTheme.colorScheme.error
-                )
-            }
-        } else {
-            null
-        },
-        singleLine = false,
-        minLines = 8,
-        maxLines = Int.MAX_VALUE,
-        interactionSource = contentInteractionSource,
+    BasicTextField(
+        state = contentState,
+        lineLimits = TextFieldLineLimits.MultiLine(
+            minHeightInLines = 8,
+            maxHeightInLines = Int.MAX_VALUE
+        ),
         modifier = modifier
             .fillMaxWidth()
             .heightIn(min = 240.dp)
@@ -903,25 +878,71 @@ private fun ContentEditorField(
         textStyle = MaterialTheme.typography.bodyMedium.copy(
             color = MaterialTheme.colorScheme.onSurface
         ),
-        colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = if (hasContentError) {
-                MaterialTheme.colorScheme.error
-            } else {
-                MaterialTheme.colorScheme.secondary
-            },
-            unfocusedBorderColor = if (hasContentError) {
-                MaterialTheme.colorScheme.error.copy(alpha = 0.6f)
-            } else {
-                MaterialTheme.colorScheme.outline
-            },
-            cursorColor = MaterialTheme.colorScheme.secondary,
-            focusedLabelColor = if (hasContentError) {
-                MaterialTheme.colorScheme.error
-            } else {
-                MaterialTheme.colorScheme.secondary
-            },
-            unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.secondary),
+        interactionSource = contentInteractionSource,
+        decorator = { innerTextField ->
+            OutlinedTextFieldDefaults.DecorationBox(
+                value = contentState.text.toString(),
+                innerTextField = innerTextField,
+                enabled = true,
+                singleLine = false,
+                visualTransformation = androidx.compose.ui.text.input.VisualTransformation.None,
+                interactionSource = contentInteractionSource,
+                label = { Text(stringResource(R.string.label_message)) },
+                isError = hasContentError,
+                supportingText = if (hasContentError) {
+                    {
+                        Text(
+                            text = stringResource(
+                                R.string.error_template_missing_placeholders,
+                                contentError ?: ""
+                            ),
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                } else {
+                    null
+                },
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = if (hasContentError) {
+                        MaterialTheme.colorScheme.error
+                    } else {
+                        MaterialTheme.colorScheme.secondary
+                    },
+                    unfocusedBorderColor = if (hasContentError) {
+                        MaterialTheme.colorScheme.error.copy(alpha = 0.6f)
+                    } else {
+                        MaterialTheme.colorScheme.outline
+                    },
+                    cursorColor = MaterialTheme.colorScheme.secondary,
+                    focusedLabelColor = if (hasContentError) {
+                        MaterialTheme.colorScheme.error
+                    } else {
+                        MaterialTheme.colorScheme.secondary
+                    },
+                    unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                ),
+                container = {
+                    OutlinedTextFieldDefaults.Container(
+                        enabled = true,
+                        isError = hasContentError,
+                        interactionSource = contentInteractionSource,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = if (hasContentError) {
+                                MaterialTheme.colorScheme.error
+                            } else {
+                                MaterialTheme.colorScheme.secondary
+                            },
+                            unfocusedBorderColor = if (hasContentError) {
+                                MaterialTheme.colorScheme.error.copy(alpha = 0.6f)
+                            } else {
+                                MaterialTheme.colorScheme.outline
+                            }
+                        )
+                    )
+                }
+            )
+        }
     )
 }
 
@@ -967,20 +988,15 @@ private fun DiscardChangesDialog(
     )
 }
 
-private fun insertAtCursor(value: TextFieldValue, textToInsert: String): TextFieldValue {
-    if (textToInsert.isEmpty()) return value
-
-    val start = minOf(value.selection.start, value.selection.end).coerceIn(0, value.text.length)
-    val end = maxOf(value.selection.start, value.selection.end).coerceIn(0, value.text.length)
-    val updatedText = buildString(value.text.length + textToInsert.length) {
-        append(value.text.substring(0, start))
-        append(textToInsert)
-        append(value.text.substring(end))
+private fun insertAtCursor(state: TextFieldState, textToInsert: String) {
+    if (textToInsert.isEmpty()) return
+    state.edit {
+        val start = minOf(selection.start, selection.end).coerceIn(0, length)
+        val end = maxOf(selection.start, selection.end).coerceIn(0, length)
+        if (start != end) {
+            delete(start, end)
+        }
+        insert(start, textToInsert)
+        selection = TextRange(start + textToInsert.length)
     }
-    val newCursor = start + textToInsert.length
-
-    return value.copy(
-        text = updatedText,
-        selection = TextRange(newCursor)
-    )
 }

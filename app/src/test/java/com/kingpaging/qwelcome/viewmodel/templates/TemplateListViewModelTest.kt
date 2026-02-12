@@ -11,7 +11,9 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -195,15 +197,23 @@ class TemplateListViewModelTest {
 
     @Test
     fun `duplicateAndEdit emits navigateToEditor for rapid requests`() = runTest {
-        vm.navigateToEditor.test {
-            repeat(3) {
-                vm.duplicateAndEdit(userTemplate)
-            }
-            advanceUntilIdle()
+        val eventsCollector = backgroundScope.launch {
+            vm.events.collect { /* drain duplicate events so emit never blocks */ }
+        }
 
-            repeat(3) {
-                awaitItem()
+        try {
+            vm.navigateToEditor.test {
+                repeat(3) {
+                    vm.duplicateAndEdit(userTemplate)
+                }
+                advanceUntilIdle()
+
+                repeat(3) {
+                    awaitItem()
+                }
             }
+        } finally {
+            eventsCollector.cancel()
         }
     }
 
