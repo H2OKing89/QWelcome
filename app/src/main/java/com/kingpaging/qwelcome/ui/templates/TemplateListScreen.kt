@@ -243,8 +243,14 @@ fun TemplateListScreen(
                 // Filter templates by search query + selected tags (OR semantics for tags)
                 val filteredTemplates = remember(uiState.templates, uiState.searchQuery, uiState.selectedTags) {
                     val query = uiState.searchQuery.trim().lowercase()
+                    val normalizedSelectedTags = uiState.selectedTags
+                        .map { it.trim().lowercase() }
+                        .filter { it.isNotBlank() }
+                        .toSet()
                     val matchesTag: (Template) -> Boolean = { template ->
-                        uiState.selectedTags.isEmpty() || template.tags.any { it in uiState.selectedTags }
+                        normalizedSelectedTags.isEmpty() || template.tags.any { tag ->
+                            tag.trim().lowercase() in normalizedSelectedTags
+                        }
                     }
                     val defaultTemplate = uiState.templates
                         .find { it.id == DEFAULT_TEMPLATE_ID }

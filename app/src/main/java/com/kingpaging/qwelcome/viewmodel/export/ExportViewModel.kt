@@ -223,7 +223,15 @@ class ExportViewModel(
     fun onShareToPackageRequested(packageName: String) = viewModelScope.launch {
         val currentState = _uiState.value
         if (currentState.lastExportedJson != null && currentState.lastExportType != null) {
-            settingsStore.recordRecentSharePackage(packageName)
+            try {
+                settingsStore.recordRecentSharePackage(packageName)
+            } catch (e: Exception) {
+                Log.w(
+                    TAG,
+                    "Failed to persist recent share target packageName=$packageName; continuing with share",
+                    e
+                )
+            }
             _events.emit(
                 ExportEvent.ShareToAppReady(
                     packageName = packageName,
