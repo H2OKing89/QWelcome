@@ -348,7 +348,7 @@ class TemplateListViewModel(
                 // Immediately open the duplicate for editing, clear any stale validation error
                 _uiState.update { it.copy(editingTemplate = duplicate, validationError = null) }
                 initializeTemplateEditorState(duplicate)
-                _navigateToEditor.emit(Unit)
+                _navigateToEditor.tryEmit(Unit)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {

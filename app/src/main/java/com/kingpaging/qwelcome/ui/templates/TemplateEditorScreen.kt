@@ -163,6 +163,152 @@ fun TemplateEditorScreen(
     }
 }
 
+private class TemplateEditorState(
+    initialContentText: String
+) {
+    var contentFieldValue by mutableStateOf(
+        TextFieldValue(
+            text = initialContentText,
+            selection = TextRange(initialContentText.length)
+        )
+    )
+        private set
+
+    var pendingPlaceholder by mutableStateOf<String?>(null)
+        private set
+
+    var showContentEditorDialog by mutableStateOf(false)
+        private set
+
+    fun openContentEditor() {
+        showContentEditorDialog = true
+    }
+
+    fun closeContentEditor() {
+        showContentEditorDialog = false
+    }
+
+    fun dismiss(
+        isDirty: Boolean,
+        onToggleDiscardDialog: (Boolean) -> Unit,
+        onCancelEditing: () -> Unit
+    ) {
+        if (isDirty) {
+            onToggleDiscardDialog(true)
+        } else {
+            onCancelEditing()
+        }
+    }
+
+    fun save(
+        isNew: Boolean,
+        templateId: String,
+        editorUiState: TemplateEditorUiState,
+        onCreate: (name: String, content: String, tags: List<String>) -> Unit,
+        onUpdate: (templateId: String, name: String, content: String, tags: List<String>) -> Unit,
+        onNameErrorChange: (Int?) -> Unit
+    ) {
+        if (editorUiState.name.isBlank()) {
+            onNameErrorChange(R.string.error_name_required)
+            return
+        }
+
+        if (editorUiState.contentError != null) {
+            return
+        }
+
+        if (isNew) {
+            onCreate(editorUiState.name, editorUiState.contentText, editorUiState.tags)
+        } else {
+            onUpdate(
+                templateId,
+                editorUiState.name,
+                editorUiState.contentText,
+                editorUiState.tags
+            )
+        }
+    }
+
+    fun syncContentFieldValue(contentText: String) {
+        if (contentText == contentFieldValue.text) return
+
+        val clampedStart = contentFieldValue.selection.start
+            .coerceIn(0, contentText.length)
+        val clampedEnd = contentFieldValue.selection.end
+            .coerceIn(0, contentText.length)
+        contentFieldValue = TextFieldValue(
+            text = contentText,
+            selection = TextRange(clampedStart, clampedEnd)
+        )
+    }
+
+    fun updateContentFieldValue(
+        updatedValue: TextFieldValue,
+        onContentChange: (String) -> Unit
+    ) {
+        contentFieldValue = updatedValue
+        onContentChange(updatedValue.text)
+    }
+
+    fun insertPlaceholder(
+        placeholder: String,
+        onContentChange: (String) -> Unit,
+        contentFocusRequester: FocusRequester
+    ) {
+        val updatedValue = insertAtCursor(contentFieldValue, placeholder)
+        contentFieldValue = updatedValue
+        onContentChange(updatedValue.text)
+        contentFocusRequester.requestFocus()
+    }
+
+    fun requestPlaceholderInsert(
+        placeholder: String,
+        onContentChange: (String) -> Unit,
+        contentFocusRequester: FocusRequester
+    ) {
+        if (showContentEditorDialog) {
+            insertPlaceholder(placeholder, onContentChange, contentFocusRequester)
+        } else {
+            pendingPlaceholder = placeholder
+            showContentEditorDialog = true
+        }
+    }
+
+    fun consumePendingPlaceholder(
+        onContentChange: (String) -> Unit,
+        contentFocusRequester: FocusRequester
+    ) {
+        val placeholder = pendingPlaceholder
+        if (showContentEditorDialog && placeholder != null) {
+            insertPlaceholder(placeholder, onContentChange, contentFocusRequester)
+            pendingPlaceholder = null
+        }
+    }
+}
+
+@Composable
+private fun rememberTemplateEditorState(
+    templateId: String,
+    initialContentText: String
+): TemplateEditorState {
+    return remember(templateId) { TemplateEditorState(initialContentText) }
+}
+
+@Composable
+private fun BindTemplateEditorState(
+    state: TemplateEditorState,
+    contentText: String,
+    onContentChange: (String) -> Unit,
+    contentFocusRequester: FocusRequester
+) {
+    LaunchedEffect(contentText) {
+        state.syncContentFieldValue(contentText)
+    }
+    LaunchedEffect(state.showContentEditorDialog, state.pendingPlaceholder) {
+        state.consumePendingPlaceholder(onContentChange, contentFocusRequester)
+    }
+}
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun TemplateEditorContent(
@@ -184,48 +330,17 @@ private fun TemplateEditorContent(
     val originalContent = if (isNew) defaultContent else template.content
     val originalTags = template.tags
 
-    var showContentEditorDialog by remember(template.id) { mutableStateOf(false) }
-    var pendingPlaceholder by remember(template.id) { mutableStateOf<String?>(null) }
-    var contentFieldValue by remember(template.id) {
-        mutableStateOf(
-            TextFieldValue(
-                text = editorUiState.contentText,
-                selection = TextRange(editorUiState.contentText.length)
-            )
-        )
-    }
-
+    val editorState = rememberTemplateEditorState(template.id, editorUiState.contentText)
     val contentFocusRequester = remember { FocusRequester() }
     val contentInteractionSource = remember { MutableInteractionSource() }
     val haptic = rememberHapticFeedback()
 
-    LaunchedEffect(editorUiState.contentText) {
-        if (editorUiState.contentText != contentFieldValue.text) {
-            val clampedStart = contentFieldValue.selection.start
-                .coerceIn(0, editorUiState.contentText.length)
-            val clampedEnd = contentFieldValue.selection.end
-                .coerceIn(0, editorUiState.contentText.length)
-            contentFieldValue = TextFieldValue(
-                text = editorUiState.contentText,
-                selection = TextRange(clampedStart, clampedEnd)
-            )
-        }
-    }
-
-    val insertPlaceholder: (String) -> Unit = { placeholder ->
-        val updatedValue = insertAtCursor(contentFieldValue, placeholder)
-        contentFieldValue = updatedValue
-        onContentChange(updatedValue.text)
-        contentFocusRequester.requestFocus()
-    }
-
-    LaunchedEffect(showContentEditorDialog, pendingPlaceholder) {
-        val placeholder = pendingPlaceholder
-        if (showContentEditorDialog && placeholder != null) {
-            insertPlaceholder(placeholder)
-            pendingPlaceholder = null
-        }
-    }
+    BindTemplateEditorState(
+        state = editorState,
+        contentText = editorUiState.contentText,
+        onContentChange = onContentChange,
+        contentFocusRequester = contentFocusRequester
+    )
 
     val isDirty = editorUiState.name != originalName ||
         editorUiState.contentText != originalContent ||
@@ -252,33 +367,10 @@ private fun TemplateEditorContent(
         onNewTagInputChange("")
     }
 
-    val handleDismiss: () -> Unit = {
-        if (isDirty) {
-            onToggleDiscardDialog(true)
-        } else {
-            onCancelEditing()
-        }
+    BackHandler(enabled = editorState.showContentEditorDialog) { editorState.closeContentEditor() }
+    BackHandler(enabled = !editorState.showContentEditorDialog) {
+        editorState.dismiss(isDirty, onToggleDiscardDialog, onCancelEditing)
     }
-
-    val handleSave: () -> Unit = {
-        if (editorUiState.name.isBlank()) {
-            onNameErrorChange(R.string.error_name_required)
-        } else if (editorUiState.contentError == null) {
-            if (isNew) {
-                onCreate(editorUiState.name, editorUiState.contentText, editorUiState.tags)
-            } else {
-                onUpdate(
-                    template.id,
-                    editorUiState.name,
-                    editorUiState.contentText,
-                    editorUiState.tags
-                )
-            }
-        }
-    }
-
-    BackHandler(enabled = showContentEditorDialog) { showContentEditorDialog = false }
-    BackHandler(enabled = !showContentEditorDialog) { handleDismiss() }
 
     if (editorUiState.showDiscardDialog) {
         DiscardChangesDialog(
@@ -298,7 +390,7 @@ private fun TemplateEditorContent(
                     isNew = isNew,
                     onBack = {
                         haptic()
-                        handleDismiss()
+                        editorState.dismiss(isDirty, onToggleDiscardDialog, onCancelEditing)
                     }
                 )
             },
@@ -308,11 +400,18 @@ private fun TemplateEditorContent(
                     canSave = canSave,
                     onCancel = {
                         haptic()
-                        handleDismiss()
+                        editorState.dismiss(isDirty, onToggleDiscardDialog, onCancelEditing)
                     },
                     onSave = {
                         haptic()
-                        handleSave()
+                        editorState.save(
+                            isNew = isNew,
+                            templateId = template.id,
+                            editorUiState = editorUiState,
+                            onCreate = onCreate,
+                            onUpdate = onUpdate,
+                            onNameErrorChange = onNameErrorChange
+                        )
                     }
                 )
             }
@@ -335,7 +434,7 @@ private fun TemplateEditorContent(
                                 onNameErrorChange(null)
                             }
                         },
-                        onNext = { showContentEditorDialog = true }
+                        onNext = { editorState.openContentEditor() }
                     )
                 }
 
@@ -360,12 +459,11 @@ private fun TemplateEditorContent(
                 item(key = "placeholder_chips") {
                     PlaceholderChipsSection(
                         onInsertPlaceholder = { placeholder ->
-                            if (showContentEditorDialog) {
-                                insertPlaceholder(placeholder)
-                            } else {
-                                pendingPlaceholder = placeholder
-                                showContentEditorDialog = true
-                            }
+                            editorState.requestPlaceholderInsert(
+                                placeholder = placeholder,
+                                onContentChange = onContentChange,
+                                contentFocusRequester = contentFocusRequester
+                            )
                         }
                     )
                 }
@@ -376,25 +474,30 @@ private fun TemplateEditorContent(
                         contentError = editorUiState.contentError,
                         onOpenEditor = {
                             haptic()
-                            showContentEditorDialog = true
+                            editorState.openContentEditor()
                         }
                     )
                 }
             }
         }
 
-        if (showContentEditorDialog) {
+        if (editorState.showContentEditorDialog) {
             ContentEditorDialog(
-                contentValue = contentFieldValue,
+                contentValue = editorState.contentFieldValue,
                 onContentValueChange = { updatedValue ->
-                    contentFieldValue = updatedValue
-                    onContentChange(updatedValue.text)
+                    editorState.updateContentFieldValue(updatedValue, onContentChange)
                 },
                 contentFocusRequester = contentFocusRequester,
                 contentInteractionSource = contentInteractionSource,
                 contentError = editorUiState.contentError,
-                onDismissRequest = { showContentEditorDialog = false },
-                onInsertPlaceholder = insertPlaceholder
+                onDismissRequest = editorState::closeContentEditor,
+                onInsertPlaceholder = { placeholder ->
+                    editorState.insertPlaceholder(
+                        placeholder = placeholder,
+                        onContentChange = onContentChange,
+                        contentFocusRequester = contentFocusRequester
+                    )
+                }
             )
         }
     }

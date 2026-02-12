@@ -194,6 +194,20 @@ class TemplateListViewModelTest {
     }
 
     @Test
+    fun `duplicateAndEdit emits navigateToEditor for rapid requests`() = runTest {
+        vm.navigateToEditor.test {
+            repeat(3) {
+                vm.duplicateAndEdit(userTemplate)
+            }
+            advanceUntilIdle()
+
+            repeat(3) {
+                awaitItem()
+            }
+        }
+    }
+
+    @Test
     fun `startEditing sets editingTemplate in state`() {
         vm.startEditing(userTemplate)
         assertEquals(userTemplate, vm.uiState.value.editingTemplate)
