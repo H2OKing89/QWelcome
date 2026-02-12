@@ -4,9 +4,9 @@ package com.kingpaging.qwelcome.ui.templates
 
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
@@ -21,17 +21,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.text.input.TextFieldLineLimits
-import androidx.compose.foundation.text.input.TextFieldState
-import androidx.compose.foundation.text.input.delete
-import androidx.compose.foundation.text.input.insert
-import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -53,7 +48,6 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -61,10 +55,16 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.flowWithLifecycle
 import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.data.MessageTemplate
 import com.kingpaging.qwelcome.data.Template
@@ -76,10 +76,8 @@ import com.kingpaging.qwelcome.ui.components.NeonButton
 import com.kingpaging.qwelcome.ui.components.NeonButtonStyle
 import com.kingpaging.qwelcome.ui.components.NeonOutlinedField
 import com.kingpaging.qwelcome.util.rememberHapticFeedback
+import com.kingpaging.qwelcome.viewmodel.templates.TemplateEditorUiState
 import com.kingpaging.qwelcome.viewmodel.templates.TemplateListEvent
-import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.drop
 
 @Suppress("LocalContextGetResourceValueCall")
 @Composable
@@ -89,89 +87,150 @@ fun TemplateEditorScreen(
     val vm = LocalTemplateListViewModel.current
     val soundPlayer = LocalSoundPlayer.current
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     val uiState by vm.uiState.collectAsStateWithLifecycle()
+    val editorUiState by vm.templateEditorUiState.collectAsStateWithLifecycle()
     val template = uiState.editingTemplate
 
+    val hasNavigatedBack = remember { mutableStateOf(false) }
+    val safeNavigate: () -> Unit = remember(onBack) {
+        {
+            if (!hasNavigatedBack.value) {
+                hasNavigatedBack.value = true
+                onBack()
+            }
+        }
+    }
+
     if (template == null) {
-        LaunchedEffect(Unit) { onBack() }
+        LaunchedEffect(Unit) { safeNavigate() }
         return
     }
 
-    LaunchedEffect(Unit) {
-        vm.events.collect { event ->
-            when (event) {
-                is TemplateListEvent.TemplateCreated -> {
-                    Toast.makeText(
-                        context,
-                        context.getString(R.string.toast_template_created, event.template.name),
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    onBack()
-                }
+    LaunchedEffect(lifecycleOwner, vm.events) {
+        vm.events
+            .flowWithLifecycle(lifecycleOwner.lifecycle, Lifecycle.State.STARTED)
+            .collect { event ->
+                when (event) {
+                    is TemplateListEvent.TemplateCreated -> {
+                        Toast.makeText(
+                            context,
+                            context.getString(R.string.toast_template_created, event.template.name),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        safeNavigate()
+                    }
 
-                is TemplateListEvent.TemplateUpdated -> {
-                    Toast.makeText(
-                        context,
-                        context.getString(R.string.toast_template_updated, event.template.name),
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    onBack()
-                }
+                    is TemplateListEvent.TemplateUpdated -> {
+                        Toast.makeText(
+                            context,
+                            context.getString(R.string.toast_template_updated, event.template.name),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        safeNavigate()
+                    }
 
-                is TemplateListEvent.Error -> {
-                    soundPlayer.playBeep()
-                    Toast.makeText(context, event.message, Toast.LENGTH_LONG).show()
-                }
+                    is TemplateListEvent.Error -> {
+                        soundPlayer.playBeep()
+                        Toast.makeText(context, event.message, Toast.LENGTH_LONG).show()
+                    }
 
-                is TemplateListEvent.TemplateDeleted,
-                is TemplateListEvent.TemplateDuplicated,
-                is TemplateListEvent.ActiveTemplateChanged -> Unit
+                    is TemplateListEvent.TemplateDeleted,
+                    is TemplateListEvent.TemplateDuplicated,
+                    is TemplateListEvent.ActiveTemplateChanged -> Unit
+                }
             }
-        }
     }
 
     key(template.id) {
         TemplateEditorContent(
             template = template,
             defaultContent = vm.getDefaultTemplateContent(),
+            editorUiState = editorUiState,
             onCreate = vm::createTemplate,
             onUpdate = vm::updateTemplate,
-            onCancelEditing = vm::cancelEditing,
-            onBack = onBack
+            onCancelEditing = {
+                vm.cancelEditing()
+                safeNavigate()
+            },
+            onNameChange = vm::updateName,
+            onTagsChange = vm::updateTags,
+            onNewTagInputChange = vm::updateNewTagInput,
+            onContentChange = vm::updateContent,
+            onNameErrorChange = vm::setNameError,
+            onToggleDiscardDialog = vm::toggleDiscardDialog
         )
     }
 }
 
-@OptIn(FlowPreview::class, ExperimentalLayoutApi::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun TemplateEditorContent(
     template: Template,
     defaultContent: String,
+    editorUiState: TemplateEditorUiState,
     onCreate: (name: String, content: String, tags: List<String>) -> Unit,
     onUpdate: (templateId: String, name: String, content: String, tags: List<String>) -> Unit,
     onCancelEditing: () -> Unit,
-    onBack: () -> Unit
+    onNameChange: (String) -> Unit,
+    onTagsChange: (List<String>) -> Unit,
+    onNewTagInputChange: (String) -> Unit,
+    onContentChange: (String) -> Unit,
+    onNameErrorChange: (Int?) -> Unit,
+    onToggleDiscardDialog: (Boolean) -> Unit
 ) {
     val isNew = template.id == NEW_TEMPLATE_ID
-    val originalName = remember { if (isNew) "" else template.name }
-    val originalContent = remember { if (isNew) defaultContent else template.content }
-    val originalTags = remember { template.tags }
+    val originalName = if (isNew) "" else template.name
+    val originalContent = if (isNew) defaultContent else template.content
+    val originalTags = template.tags
 
-    var name by remember { mutableStateOf(originalName) }
-    var tags by remember { mutableStateOf(originalTags) }
-    var newTagInput by remember { mutableStateOf("") }
-    var nameError by remember { mutableStateOf<Int?>(null) }
-    var contentError by remember { mutableStateOf<String?>(null) }
-    var showDiscardDialog by remember { mutableStateOf(false) }
+    var showContentEditorDialog by remember(template.id) { mutableStateOf(false) }
+    var pendingPlaceholder by remember(template.id) { mutableStateOf<String?>(null) }
+    var contentFieldValue by remember(template.id) {
+        mutableStateOf(
+            TextFieldValue(
+                text = editorUiState.contentText,
+                selection = TextRange(editorUiState.contentText.length)
+            )
+        )
+    }
 
-    val contentState = rememberTextFieldState(initialText = originalContent)
     val contentFocusRequester = remember { FocusRequester() }
     val contentInteractionSource = remember { MutableInteractionSource() }
     val haptic = rememberHapticFeedback()
 
-    val currentContent = contentState.text.toString()
-    val isDirty = name != originalName || currentContent != originalContent || tags != originalTags
-    val canSave = name.isNotBlank() && contentError == null
+    LaunchedEffect(editorUiState.contentText) {
+        if (editorUiState.contentText != contentFieldValue.text) {
+            val clampedStart = contentFieldValue.selection.start
+                .coerceIn(0, editorUiState.contentText.length)
+            val clampedEnd = contentFieldValue.selection.end
+                .coerceIn(0, editorUiState.contentText.length)
+            contentFieldValue = TextFieldValue(
+                text = editorUiState.contentText,
+                selection = TextRange(clampedStart, clampedEnd)
+            )
+        }
+    }
+
+    val insertPlaceholder: (String) -> Unit = { placeholder ->
+        val updatedValue = insertAtCursor(contentFieldValue, placeholder)
+        contentFieldValue = updatedValue
+        onContentChange(updatedValue.text)
+        contentFocusRequester.requestFocus()
+    }
+
+    LaunchedEffect(showContentEditorDialog, pendingPlaceholder) {
+        val placeholder = pendingPlaceholder
+        if (showContentEditorDialog && placeholder != null) {
+            insertPlaceholder(placeholder)
+            pendingPlaceholder = null
+        }
+    }
+
+    val isDirty = editorUiState.name != originalName ||
+        editorUiState.contentText != originalContent ||
+        editorUiState.tags != originalTags
+    val canSave = editorUiState.name.isNotBlank() && editorUiState.contentError == null
     val suggestedTags = listOf(
         stringResource(R.string.tag_residential),
         stringResource(R.string.tag_business),
@@ -180,64 +239,54 @@ private fun TemplateEditorContent(
         stringResource(R.string.tag_troubleshooting)
     )
     val availableSuggestions = suggestedTags.filter { suggestion ->
-        tags.none { it.equals(suggestion, ignoreCase = true) }
+        editorUiState.tags.none { it.equals(suggestion, ignoreCase = true) }
     }
 
     val addTag: (String) -> Unit = { rawTag ->
         val normalized = rawTag.trim().take(32)
-        if (normalized.isNotBlank() && tags.none { it.equals(normalized, ignoreCase = true) }) {
-            tags = tags + normalized
+        if (normalized.isNotBlank() &&
+            editorUiState.tags.none { it.equals(normalized, ignoreCase = true) }
+        ) {
+            onTagsChange(editorUiState.tags + normalized)
         }
-        newTagInput = ""
+        onNewTagInputChange("")
     }
 
     val handleDismiss: () -> Unit = {
         if (isDirty) {
-            showDiscardDialog = true
+            onToggleDiscardDialog(true)
         } else {
             onCancelEditing()
-            onBack()
         }
     }
 
     val handleSave: () -> Unit = {
-        if (name.isBlank()) {
-            nameError = R.string.error_name_required
-        } else if (contentError == null) {
+        if (editorUiState.name.isBlank()) {
+            onNameErrorChange(R.string.error_name_required)
+        } else if (editorUiState.contentError == null) {
             if (isNew) {
-                onCreate(name, contentState.text.toString(), tags)
+                onCreate(editorUiState.name, editorUiState.contentText, editorUiState.tags)
             } else {
-                onUpdate(template.id, name, contentState.text.toString(), tags)
+                onUpdate(
+                    template.id,
+                    editorUiState.name,
+                    editorUiState.contentText,
+                    editorUiState.tags
+                )
             }
         }
     }
 
-    BackHandler { handleDismiss() }
+    BackHandler(enabled = showContentEditorDialog) { showContentEditorDialog = false }
+    BackHandler(enabled = !showContentEditorDialog) { handleDismiss() }
 
-    LaunchedEffect(Unit) {
-        snapshotFlow { contentState.text.toString() }
-            .drop(1)
-            .debounce(150)
-            .collect { text ->
-                val missing = Template.findMissingPlaceholders(text)
-                contentError = if (missing.isNotEmpty()) {
-                    missing.joinToString(", ") {
-                        it.removePrefix("{{ ").removeSuffix(" }}")
-                    }
-                } else {
-                    null
-                }
-            }
-    }
-
-    if (showDiscardDialog) {
+    if (editorUiState.showDiscardDialog) {
         DiscardChangesDialog(
             onDiscard = {
-                showDiscardDialog = false
+                onToggleDiscardDialog(false)
                 onCancelEditing()
-                onBack()
             },
-            onKeepEditing = { showDiscardDialog = false }
+            onKeepEditing = { onToggleDiscardDialog(false) }
         )
     }
 
@@ -278,27 +327,31 @@ private fun TemplateEditorContent(
             ) {
                 item(key = "template_name") {
                     TemplateNameField(
-                        name = name,
-                        nameError = nameError,
+                        name = editorUiState.name,
+                        nameError = editorUiState.nameError,
                         onNameChange = {
                             if (it.length <= 50) {
-                                name = it
-                                nameError = null
+                                onNameChange(it)
+                                onNameErrorChange(null)
                             }
                         },
-                        onNext = { contentFocusRequester.requestFocus() }
+                        onNext = { showContentEditorDialog = true }
                     )
                 }
 
                 item(key = "tags_section") {
                     TagsSection(
-                        tags = tags,
-                        newTagInput = newTagInput,
+                        tags = editorUiState.tags,
+                        newTagInput = editorUiState.newTagInput,
                         availableSuggestions = availableSuggestions,
-                        onNewTagInputChange = { newTagInput = it },
+                        onNewTagInputChange = onNewTagInputChange,
                         onAddTag = addTag,
                         onRemoveTag = { tag ->
-                            tags = tags.filterNot { it.equals(tag, ignoreCase = true) }
+                            onTagsChange(
+                                editorUiState.tags.filterNot {
+                                    it.equals(tag, ignoreCase = true)
+                                }
+                            )
                         },
                         onSuggestionSelected = addTag
                     )
@@ -307,21 +360,42 @@ private fun TemplateEditorContent(
                 item(key = "placeholder_chips") {
                     PlaceholderChipsSection(
                         onInsertPlaceholder = { placeholder ->
-                            insertAtCursor(contentState, placeholder)
-                            contentFocusRequester.requestFocus()
+                            if (showContentEditorDialog) {
+                                insertPlaceholder(placeholder)
+                            } else {
+                                pendingPlaceholder = placeholder
+                                showContentEditorDialog = true
+                            }
                         }
                     )
                 }
 
-                item(key = "template_content") {
-                    ContentEditorField(
-                        contentState = contentState,
-                        contentFocusRequester = contentFocusRequester,
-                        contentInteractionSource = contentInteractionSource,
-                        contentError = contentError
+                item(key = "message_launcher") {
+                    MessageContentLauncher(
+                        contentText = editorUiState.contentText,
+                        contentError = editorUiState.contentError,
+                        onOpenEditor = {
+                            haptic()
+                            showContentEditorDialog = true
+                        }
                     )
                 }
             }
+        }
+
+        if (showContentEditorDialog) {
+            ContentEditorDialog(
+                contentValue = contentFieldValue,
+                onContentValueChange = { updatedValue ->
+                    contentFieldValue = updatedValue
+                    onContentChange(updatedValue.text)
+                },
+                contentFocusRequester = contentFocusRequester,
+                contentInteractionSource = contentInteractionSource,
+                contentError = editorUiState.contentError,
+                onDismissRequest = { showContentEditorDialog = false },
+                onInsertPlaceholder = insertPlaceholder
+            )
         }
     }
 }
@@ -548,91 +622,203 @@ private fun PlaceholderChipsSection(
 }
 
 @Composable
-private fun ContentEditorField(
-    contentState: TextFieldState,
+private fun MessageContentLauncher(
+    contentText: String,
+    contentError: String?,
+    onOpenEditor: () -> Unit
+) {
+    Surface(
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+        tonalElevation = 2.dp,
+        shape = MaterialTheme.shapes.medium,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(R.string.label_message),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                IconButton(onClick = onOpenEditor) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = stringResource(R.string.action_edit),
+                        tint = MaterialTheme.colorScheme.secondary
+                    )
+                }
+            }
+
+            Text(
+                text = contentText.ifBlank { " " },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
+                maxLines = 4,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            if (contentError != null) {
+                Text(
+                    text = stringResource(
+                        R.string.error_template_missing_placeholders,
+                        contentError
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun ContentEditorDialog(
+    contentValue: TextFieldValue,
+    onContentValueChange: (TextFieldValue) -> Unit,
     contentFocusRequester: FocusRequester,
     contentInteractionSource: MutableInteractionSource,
-    contentError: String?
+    contentError: String?,
+    onDismissRequest: () -> Unit,
+    onInsertPlaceholder: (String) -> Unit
+) {
+    LaunchedEffect(Unit) {
+        contentFocusRequester.requestFocus()
+    }
+
+    Dialog(onDismissRequest = onDismissRequest) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .imePadding(),
+            shape = MaterialTheme.shapes.large,
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = 8.dp,
+            shadowElevation = 8.dp
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = stringResource(R.string.label_message),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+                    IconButton(onClick = onDismissRequest) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = stringResource(R.string.action_done)
+                        )
+                    }
+                }
+
+                PlaceholderChipsSection(
+                    onInsertPlaceholder = onInsertPlaceholder
+                )
+
+                ContentEditorField(
+                    contentValue = contentValue,
+                    onContentValueChange = onContentValueChange,
+                    contentFocusRequester = contentFocusRequester,
+                    contentInteractionSource = contentInteractionSource,
+                    contentError = contentError,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 260.dp, max = 460.dp)
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    NeonButton(
+                        onClick = onDismissRequest,
+                        glowColor = MaterialTheme.colorScheme.secondary,
+                        style = NeonButtonStyle.TERTIARY
+                    ) {
+                        Text(stringResource(R.string.action_done))
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ContentEditorField(
+    contentValue: TextFieldValue,
+    onContentValueChange: (TextFieldValue) -> Unit,
+    contentFocusRequester: FocusRequester,
+    contentInteractionSource: MutableInteractionSource,
+    contentError: String?,
+    modifier: Modifier = Modifier
 ) {
     val hasContentError = contentError != null
-    BasicTextField(
-        state = contentState,
-        lineLimits = TextFieldLineLimits.MultiLine(
-            minHeightInLines = 8,
-            maxHeightInLines = Int.MAX_VALUE
-        ),
-        modifier = Modifier
+    OutlinedTextField(
+        value = contentValue,
+        onValueChange = onContentValueChange,
+        isError = hasContentError,
+        label = { Text(stringResource(R.string.label_message)) },
+        supportingText = if (hasContentError) {
+            {
+                Text(
+                    text = stringResource(
+                        R.string.error_template_missing_placeholders,
+                        contentError ?: ""
+                    ),
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+        } else {
+            null
+        },
+        singleLine = false,
+        minLines = 8,
+        maxLines = Int.MAX_VALUE,
+        interactionSource = contentInteractionSource,
+        modifier = modifier
             .fillMaxWidth()
             .heightIn(min = 240.dp)
             .focusRequester(contentFocusRequester),
         textStyle = MaterialTheme.typography.bodyMedium.copy(
             color = MaterialTheme.colorScheme.onSurface
         ),
-        cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.secondary),
-        interactionSource = contentInteractionSource,
-        decorator = { innerTextField ->
-            OutlinedTextFieldDefaults.DecorationBox(
-                value = contentState.text.toString(),
-                innerTextField = innerTextField,
-                enabled = true,
-                singleLine = false,
-                visualTransformation = androidx.compose.ui.text.input.VisualTransformation.None,
-                interactionSource = contentInteractionSource,
-                label = { Text(stringResource(R.string.label_message)) },
-                isError = hasContentError,
-                supportingText = if (hasContentError) {
-                    {
-                        Text(
-                            text = stringResource(
-                                R.string.error_template_missing_placeholders,
-                                contentError ?: ""
-                            ),
-                            color = MaterialTheme.colorScheme.error
-                        )
-                    }
-                } else {
-                    null
-                },
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = if (hasContentError) {
-                        MaterialTheme.colorScheme.error
-                    } else {
-                        MaterialTheme.colorScheme.secondary
-                    },
-                    unfocusedBorderColor = if (hasContentError) {
-                        MaterialTheme.colorScheme.error.copy(alpha = 0.6f)
-                    } else {
-                        MaterialTheme.colorScheme.outline
-                    },
-                    cursorColor = MaterialTheme.colorScheme.secondary,
-                    focusedLabelColor = if (hasContentError) {
-                        MaterialTheme.colorScheme.error
-                    } else {
-                        MaterialTheme.colorScheme.secondary
-                    },
-                    unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
-                ),
-                container = {
-                    OutlinedTextFieldDefaults.Container(
-                        enabled = true,
-                        isError = hasContentError,
-                        interactionSource = contentInteractionSource,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = if (hasContentError) {
-                                MaterialTheme.colorScheme.error
-                            } else {
-                                MaterialTheme.colorScheme.secondary
-                            },
-                            unfocusedBorderColor = if (hasContentError) {
-                                MaterialTheme.colorScheme.error.copy(alpha = 0.6f)
-                            } else {
-                                MaterialTheme.colorScheme.outline
-                            }
-                        )
-                    )
-                }
-            )
-        }
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = if (hasContentError) {
+                MaterialTheme.colorScheme.error
+            } else {
+                MaterialTheme.colorScheme.secondary
+            },
+            unfocusedBorderColor = if (hasContentError) {
+                MaterialTheme.colorScheme.error.copy(alpha = 0.6f)
+            } else {
+                MaterialTheme.colorScheme.outline
+            },
+            cursorColor = MaterialTheme.colorScheme.secondary,
+            focusedLabelColor = if (hasContentError) {
+                MaterialTheme.colorScheme.error
+            } else {
+                MaterialTheme.colorScheme.secondary
+            },
+            unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     )
 }
 
@@ -642,6 +828,7 @@ private fun DiscardChangesDialog(
     onKeepEditing: () -> Unit
 ) {
     AlertDialog(
+        modifier = Modifier.imePadding(),
         onDismissRequest = onKeepEditing,
         containerColor = MaterialTheme.colorScheme.surface,
         title = {
@@ -677,14 +864,20 @@ private fun DiscardChangesDialog(
     )
 }
 
-private fun insertAtCursor(state: TextFieldState, textToInsert: String) {
-    if (textToInsert.isEmpty()) return
-    state.edit {
-        val selection = this.selection
-        if (selection.start != selection.end) {
-            delete(selection.start, selection.end)
-        }
-        insert(selection.start, textToInsert)
-        placeCursorAfterCharAt(selection.start + textToInsert.length - 1)
+private fun insertAtCursor(value: TextFieldValue, textToInsert: String): TextFieldValue {
+    if (textToInsert.isEmpty()) return value
+
+    val start = minOf(value.selection.start, value.selection.end).coerceIn(0, value.text.length)
+    val end = maxOf(value.selection.start, value.selection.end).coerceIn(0, value.text.length)
+    val updatedText = buildString(value.text.length + textToInsert.length) {
+        append(value.text.substring(0, start))
+        append(textToInsert)
+        append(value.text.substring(end))
     }
+    val newCursor = start + textToInsert.length
+
+    return value.copy(
+        text = updatedText,
+        selection = TextRange(newCursor)
+    )
 }

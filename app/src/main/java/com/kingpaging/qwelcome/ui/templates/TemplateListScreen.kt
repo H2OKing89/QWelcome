@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
-
 package com.kingpaging.qwelcome.ui.templates
 
 import android.widget.Toast
@@ -78,6 +76,7 @@ import com.kingpaging.qwelcome.util.rememberHapticFeedback
 import com.kingpaging.qwelcome.viewmodel.templates.TemplateListEvent
 
 @Suppress("LocalContextGetResourceValueCall")
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun TemplateListScreen(
     onBack: () -> Unit,
@@ -373,6 +372,7 @@ fun TemplateListScreen(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun TemplateCard(
     template: Template,
