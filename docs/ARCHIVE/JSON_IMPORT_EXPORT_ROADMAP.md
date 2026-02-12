@@ -2,6 +2,7 @@
 
 > **Status:** Active Roadmap  
 > **Created:** 2026-01-25  
+> **Updated:** 2026-02-11  
 > **Prerequisite:** [JSON_IMPORT_EXPORT_v1_COMPLETE_2026-01-25.md](./JSON_IMPORT_EXPORT_v1_COMPLETE_2026-01-25.md)
 
 ---
@@ -10,7 +11,7 @@
 
 This document tracks future enhancements for the JSON Import/Export feature. The v1 implementation (Phases 1–6) is complete and documented in the archived design doc.
 
-**What's Done (v1):**
+**What's Done (v1 + post-v1):**
 
 - ✅ Template Pack export (team sharing)
 - ✅ Full Backup export (personal restore)
@@ -18,26 +19,20 @@ This document tracks future enhancements for the JSON Import/Export feature. The
 - ✅ Conflict resolution (Replace/Keep/Copy)
 - ✅ Multi-template management UI
 - ✅ `{{ tech_signature }}` placeholder
+- ✅ Tags/Categories (`Template.tags`) with filter chips + editor suggestions
+- ✅ Template soft-limit warning banner (shows at >20 templates, dismissible per session)
+- ✅ Recent share targets (remembered + quick share buttons)
+- ✅ Legacy full-backup compatibility: old unknown keys (including former `loadouts`) are safely ignored on import
 
 ---
 
 ## Future Ideas 🚀
 
-### 1) "Loadout" Concept
+### 1) Loadout Concept (Removed)
 
-A loadout is a quick-switch preset:
+This idea is intentionally removed. It duplicated the existing template selection flow and added UI noise.
 
-- Selected default template
-- Signature enabled/disabled
-- Optional "include support line" toggle
-
-Techs can switch "Residential" ↔ "Business" like changing weapons in a game.
-
-**Implementation thoughts:**
-
-- New `Loadout` data class with `name`, `templateId`, `signatureEnabled`
-- Bottom sheet or FAB for quick switching
-- Could tie into time-of-day auto-switching (morning = business, afternoon = residential)
+**Decision:** Keep one switcher path: `TemplateSelector` dropdown + "Manage Templates".
 
 ---
 
@@ -53,7 +48,7 @@ Cool but JSON gets big fast. Consider:
 
 ---
 
-### 3) Tags/Categories
+### 3) Tags/Categories (Shipped)
 
 ```json
 {
@@ -64,13 +59,13 @@ Cool but JSON gets big fast. Consider:
 }
 ```
 
-Then filter by tag in template selector.
+Tags are implemented and available in template management.
 
-**Implementation:**
+**Current behavior:**
 
-- Add `tags: List<String>` to `Template` data class
+- `tags: List<String>` on `Template`
 - Filter chips on Template List screen
-- Tag suggestions based on existing tags
+- Tag suggestions in Template Edit dialog (Residential, Business, Install, Repair, Troubleshooting)
 
 ---
 
@@ -131,12 +126,14 @@ Ideas for future schema versions (backward compatible with v1):
 
 ### Soft Limit Warning UI
 
-Currently documented: "~50 templates recommended."
+Implemented:
 
-**To implement:**
-
-- Show warning banner when template count > 40
+- Show warning banner when template count > 20
 - "You have X templates. Consider archiving unused ones."
+- Dismissible for current session (not persisted)
+
+Future:
+
 - Optional: Archive feature (hide from selector, keep in storage)
 
 ### Large Pack Handling
@@ -164,9 +161,14 @@ Detect where JSON came from and customize UX:
 
 ### Export Sharing Shortcuts
 
-- "Share to Slack" button (direct intent)
-- "Share to Teams" button
+Implemented:
+
 - Recent share targets remembered
+- Quick actions to share directly to recent packages
+
+Future:
+
+- Optional pinned share targets (e.g., Slack/Teams)
 
 ### Template Preview Enhancements
 
@@ -178,7 +180,7 @@ Detect where JSON came from and customize UX:
 
 ## Technical Debt / Cleanup
 
-- [ ] Add unit tests for `ImportExportRepository`
+- [x] Add unit tests for `ImportExportRepository`
 - [ ] Add UI tests for import/export flows
 - [ ] Consider extracting JSON config to shared constant
 - [ ] Profile DataStore performance with 50+ templates
@@ -187,8 +189,8 @@ Detect where JSON came from and customize UX:
 
 ## Related Files
 
-- [JSON_IMPORT_EXPORT_v1_COMPLETE_2026-01-25.md](./ARCHIVE/JSON_IMPORT_EXPORT_v1_COMPLETE_2026-01-25.md) — Archived v1 design
-- [ANDROID_APP_PLAN.md](./ANDROID_APP_PLAN.md) — Overall app architecture
+- [JSON_IMPORT_EXPORT_v1_COMPLETE_2026-01-25.md](./JSON_IMPORT_EXPORT_v1_COMPLETE_2026-01-25.md) — Archived v1 design
+- [ANDROID_APP_PLAN.md](./ANDROID_APP_PLAN.md) — Overall app architecture (archived snapshot)
 - [Template.kt](../app/src/main/java/com/kingpaging/qwelcome/data/Template.kt)
 - [ExportModels.kt](../app/src/main/java/com/kingpaging/qwelcome/data/ExportModels.kt)
 - [ImportExportRepository.kt](../app/src/main/java/com/kingpaging/qwelcome/data/ImportExportRepository.kt)
