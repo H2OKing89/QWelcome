@@ -64,6 +64,9 @@ class TemplateListViewModel(
     private val _events = MutableSharedFlow<TemplateListEvent>(replay = 0, extraBufferCapacity = 1)
     val events: SharedFlow<TemplateListEvent> = _events.asSharedFlow()
 
+    private val _navigateToEditor = MutableSharedFlow<Unit>(replay = 0, extraBufferCapacity = 1)
+    val navigateToEditor: SharedFlow<Unit> = _navigateToEditor.asSharedFlow()
+
     init {
         // Combine templates and active template ID into UI state
         viewModelScope.launch {
@@ -128,6 +131,9 @@ class TemplateListViewModel(
      */
     fun startEditing(template: Template?) {
         _uiState.update { it.copy(editingTemplate = template) }
+        if (template != null) {
+            _navigateToEditor.tryEmit(Unit)
+        }
     }
 
     /**
@@ -278,6 +284,7 @@ class TemplateListViewModel(
                 _events.emit(TemplateListEvent.TemplateDuplicated(duplicate))
                 // Immediately open the duplicate for editing, clear any stale validation error
                 _uiState.update { it.copy(editingTemplate = duplicate, validationError = null) }
+                _navigateToEditor.emit(Unit)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {

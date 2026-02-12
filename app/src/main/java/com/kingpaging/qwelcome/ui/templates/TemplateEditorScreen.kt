@@ -56,9 +56,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -82,7 +82,6 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.drop
 
 @Suppress("LocalContextGetResourceValueCall")
-@OptIn(FlowPreview::class, ExperimentalLayoutApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun TemplateEditorScreen(
     onBack: () -> Unit
@@ -132,431 +131,550 @@ fun TemplateEditorScreen(
     }
 
     key(template.id) {
-        val isNew = template.id == NEW_TEMPLATE_ID
-        val defaultContent = remember { vm.getDefaultTemplateContent() }
-        val originalName = remember { if (isNew) "" else template.name }
-        val originalContent = remember { if (isNew) defaultContent else template.content }
-        val originalTags = remember { template.tags }
-
-        var name by remember { mutableStateOf(originalName) }
-        var tags by remember { mutableStateOf(originalTags) }
-        var newTagInput by remember { mutableStateOf("") }
-        var nameError by remember { mutableStateOf<Int?>(null) }
-        var contentError by remember { mutableStateOf<String?>(null) }
-        var showDiscardDialog by remember { mutableStateOf(false) }
-
-        val contentState = rememberTextFieldState(initialText = originalContent)
-        val contentFocusRequester = remember { FocusRequester() }
-        val haptic = rememberHapticFeedback()
-
-        val currentContent = contentState.text.toString()
-        val isDirty = name != originalName || currentContent != originalContent || tags != originalTags
-        val suggestedTags = listOf(
-            stringResource(R.string.tag_residential),
-            stringResource(R.string.tag_business),
-            stringResource(R.string.tag_install),
-            stringResource(R.string.tag_repair),
-            stringResource(R.string.tag_troubleshooting)
+        TemplateEditorContent(
+            template = template,
+            defaultContent = vm.getDefaultTemplateContent(),
+            onCreate = vm::createTemplate,
+            onUpdate = vm::updateTemplate,
+            onCancelEditing = vm::cancelEditing,
+            onBack = onBack
         )
+    }
+}
 
-        val addTag: (String) -> Unit = { rawTag ->
-            val normalized = rawTag.trim().take(32)
-            if (normalized.isNotBlank() && tags.none { it.equals(normalized, ignoreCase = true) }) {
-                tags = tags + normalized
-            }
-            newTagInput = ""
+@OptIn(FlowPreview::class, ExperimentalLayoutApi::class, ExperimentalFoundationApi::class)
+@Composable
+private fun TemplateEditorContent(
+    template: Template,
+    defaultContent: String,
+    onCreate: (name: String, content: String, tags: List<String>) -> Unit,
+    onUpdate: (templateId: String, name: String, content: String, tags: List<String>) -> Unit,
+    onCancelEditing: () -> Unit,
+    onBack: () -> Unit
+) {
+    val isNew = template.id == NEW_TEMPLATE_ID
+    val originalName = remember { if (isNew) "" else template.name }
+    val originalContent = remember { if (isNew) defaultContent else template.content }
+    val originalTags = remember { template.tags }
+
+    var name by remember { mutableStateOf(originalName) }
+    var tags by remember { mutableStateOf(originalTags) }
+    var newTagInput by remember { mutableStateOf("") }
+    var nameError by remember { mutableStateOf<Int?>(null) }
+    var contentError by remember { mutableStateOf<String?>(null) }
+    var showDiscardDialog by remember { mutableStateOf(false) }
+
+    val contentState = rememberTextFieldState(initialText = originalContent)
+    val contentFocusRequester = remember { FocusRequester() }
+    val contentInteractionSource = remember { MutableInteractionSource() }
+    val haptic = rememberHapticFeedback()
+
+    val currentContent = contentState.text.toString()
+    val isDirty = name != originalName || currentContent != originalContent || tags != originalTags
+    val canSave = name.isNotBlank() && contentError == null
+    val suggestedTags = listOf(
+        stringResource(R.string.tag_residential),
+        stringResource(R.string.tag_business),
+        stringResource(R.string.tag_install),
+        stringResource(R.string.tag_repair),
+        stringResource(R.string.tag_troubleshooting)
+    )
+    val availableSuggestions = suggestedTags.filter { suggestion ->
+        tags.none { it.equals(suggestion, ignoreCase = true) }
+    }
+
+    val addTag: (String) -> Unit = { rawTag ->
+        val normalized = rawTag.trim().take(32)
+        if (normalized.isNotBlank() && tags.none { it.equals(normalized, ignoreCase = true) }) {
+            tags = tags + normalized
         }
+        newTagInput = ""
+    }
 
-        val handleDismiss: () -> Unit = {
-            if (isDirty) {
-                showDiscardDialog = true
+    val handleDismiss: () -> Unit = {
+        if (isDirty) {
+            showDiscardDialog = true
+        } else {
+            onCancelEditing()
+            onBack()
+        }
+    }
+
+    val handleSave: () -> Unit = {
+        if (name.isBlank()) {
+            nameError = R.string.error_name_required
+        } else if (contentError == null) {
+            if (isNew) {
+                onCreate(name, contentState.text.toString(), tags)
             } else {
-                vm.cancelEditing()
-                onBack()
+                onUpdate(template.id, name, contentState.text.toString(), tags)
             }
         }
+    }
 
-        BackHandler { handleDismiss() }
+    BackHandler { handleDismiss() }
 
-        LaunchedEffect(Unit) {
-            snapshotFlow { contentState.text.toString() }
-                .drop(1)
-                .debounce(150)
-                .collect { text ->
-                    val missing = Template.findMissingPlaceholders(text)
-                    contentError = if (missing.isNotEmpty()) {
-                        missing.joinToString(", ") {
-                            it.removePrefix("{{ ").removeSuffix(" }}")
-                        }
-                    } else {
-                        null
+    LaunchedEffect(Unit) {
+        snapshotFlow { contentState.text.toString() }
+            .drop(1)
+            .debounce(150)
+            .collect { text ->
+                val missing = Template.findMissingPlaceholders(text)
+                contentError = if (missing.isNotEmpty()) {
+                    missing.joinToString(", ") {
+                        it.removePrefix("{{ ").removeSuffix(" }}")
                     }
+                } else {
+                    null
                 }
-        }
+            }
+    }
 
-        if (showDiscardDialog) {
-            AlertDialog(
-                onDismissRequest = { showDiscardDialog = false },
-                containerColor = MaterialTheme.colorScheme.surface,
-                title = {
-                    Text(
-                        text = stringResource(R.string.dialog_discard_changes_title),
-                        color = MaterialTheme.colorScheme.secondary
-                    )
-                },
-                text = {
-                    Text(
-                        text = stringResource(R.string.text_template_unsaved_changes_warning),
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                },
-                confirmButton = {
-                    NeonButton(
-                        onClick = {
-                            showDiscardDialog = false
-                            vm.cancelEditing()
-                            onBack()
-                        },
-                        glowColor = MaterialTheme.colorScheme.error,
-                        style = NeonButtonStyle.PRIMARY
-                    ) {
-                        Text(stringResource(R.string.action_discard))
+    if (showDiscardDialog) {
+        DiscardChangesDialog(
+            onDiscard = {
+                showDiscardDialog = false
+                onCancelEditing()
+                onBack()
+            },
+            onKeepEditing = { showDiscardDialog = false }
+        )
+    }
+
+    CyberpunkBackdrop {
+        Scaffold(
+            containerColor = Color.Transparent,
+            topBar = {
+                TemplateEditorTopBar(
+                    isNew = isNew,
+                    onBack = {
+                        haptic()
+                        handleDismiss()
                     }
-                },
-                dismissButton = {
-                    NeonButton(
-                        onClick = { showDiscardDialog = false },
-                        glowColor = MaterialTheme.colorScheme.secondary,
-                        style = NeonButtonStyle.TERTIARY
-                    ) {
-                        Text(stringResource(R.string.action_keep_editing))
+                )
+            },
+            bottomBar = {
+                TemplateEditorBottomBar(
+                    isNew = isNew,
+                    canSave = canSave,
+                    onCancel = {
+                        haptic()
+                        handleDismiss()
+                    },
+                    onSave = {
+                        haptic()
+                        handleSave()
                     }
-                }
-            )
-        }
-
-        val canSave = name.isNotBlank() && contentError == null
-        val contentInteractionSource = remember { MutableInteractionSource() }
-
-        CyberpunkBackdrop {
-            Scaffold(
-                containerColor = Color.Transparent,
-                topBar = {
-                    TopAppBar(
-                        title = {
-                            Text(
-                                text = if (isNew) {
-                                    stringResource(R.string.title_create_template)
-                                } else {
-                                    stringResource(R.string.title_edit_template)
-                                },
-                                color = MaterialTheme.colorScheme.secondary
-                            )
-                        },
-                        navigationIcon = {
-                            IconButton(onClick = {
-                                haptic()
-                                handleDismiss()
-                            }) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = stringResource(R.string.content_desc_back),
-                                    tint = MaterialTheme.colorScheme.secondary
-                                )
+                )
+            }
+        ) { innerPadding ->
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                contentPadding = PaddingValues(top = 12.dp, bottom = 12.dp)
+            ) {
+                item(key = "template_name") {
+                    TemplateNameField(
+                        name = name,
+                        nameError = nameError,
+                        onNameChange = {
+                            if (it.length <= 50) {
+                                name = it
+                                nameError = null
                             }
                         },
-                        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
+                        onNext = { contentFocusRequester.requestFocus() }
                     )
-                },
-                bottomBar = {
-                    Surface(
-                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
-                        tonalElevation = 6.dp,
-                        shadowElevation = 6.dp
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .navigationBarsPadding()
-                                .imePadding()
-                                .padding(horizontal = 16.dp, vertical = 12.dp),
-                            horizontalArrangement = Arrangement.End,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            NeonButton(
-                                onClick = {
-                                    haptic()
-                                    handleDismiss()
-                                },
-                                glowColor = MaterialTheme.colorScheme.secondary,
-                                style = NeonButtonStyle.TERTIARY
-                            ) {
-                                Text(stringResource(R.string.action_cancel))
-                            }
-
-                            Spacer(modifier = Modifier.width(8.dp))
-
-                            NeonButton(
-                                onClick = {
-                                    haptic()
-                                    if (name.isBlank()) {
-                                        nameError = R.string.error_name_required
-                                    } else if (contentError == null) {
-                                        if (isNew) {
-                                            vm.createTemplate(name, contentState.text.toString(), tags)
-                                        } else {
-                                            vm.updateTemplate(template.id, name, contentState.text.toString(), tags)
-                                        }
-                                    }
-                                },
-                                enabled = canSave,
-                                glowColor = MaterialTheme.colorScheme.secondary,
-                                style = NeonButtonStyle.PRIMARY
-                            ) {
-                                Text(
-                                    text = if (isNew) {
-                                        stringResource(R.string.action_create)
-                                    } else {
-                                        stringResource(R.string.action_save)
-                                    }
-                                )
-                            }
-                        }
-                    }
                 }
-            ) { innerPadding ->
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding)
-                        .padding(horizontal = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                    contentPadding = PaddingValues(top = 12.dp, bottom = 12.dp)
-                ) {
-                    item(key = "template_name") {
-                        OutlinedTextField(
-                            value = name,
-                            onValueChange = { newValue ->
-                                if (newValue.length <= 50) {
-                                    name = newValue
-                                    nameError = null
-                                }
-                            },
-                            label = { Text(stringResource(R.string.label_name)) },
-                            isError = nameError != null,
-                            supportingText = nameError?.let { { Text(stringResource(it)) } },
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                            keyboardActions = KeyboardActions(onNext = { contentFocusRequester.requestFocus() }),
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.secondary,
-                                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                                cursorColor = MaterialTheme.colorScheme.secondary,
-                                focusedLabelColor = MaterialTheme.colorScheme.secondary,
-                                unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        )
-                    }
 
-                    item(key = "tags_label") {
-                        Text(
-                            text = stringResource(R.string.label_tags),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                item(key = "tags_section") {
+                    TagsSection(
+                        tags = tags,
+                        newTagInput = newTagInput,
+                        availableSuggestions = availableSuggestions,
+                        onNewTagInputChange = { newTagInput = it },
+                        onAddTag = addTag,
+                        onRemoveTag = { tag ->
+                            tags = tags.filterNot { it.equals(tag, ignoreCase = true) }
+                        },
+                        onSuggestionSelected = addTag
+                    )
+                }
 
-                    if (tags.isNotEmpty()) {
-                        item(key = "selected_tags") {
-                            FlowRow(
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                tags.forEach { tag ->
-                                    InputChip(
-                                        selected = true,
-                                        onClick = { tags = tags.filterNot { it.equals(tag, ignoreCase = true) } },
-                                        label = {
-                                            Text(
-                                                text = tag,
-                                                maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis
-                                            )
-                                        },
-                                        trailingIcon = {
-                                            Icon(
-                                                imageVector = Icons.Default.Close,
-                                                contentDescription = stringResource(
-                                                    R.string.content_desc_remove_tag,
-                                                    tag
-                                                ),
-                                                modifier = Modifier.size(16.dp)
-                                            )
-                                        }
-                                    )
-                                }
-                            }
+                item(key = "placeholder_chips") {
+                    PlaceholderChipsSection(
+                        onInsertPlaceholder = { placeholder ->
+                            insertAtCursor(contentState, placeholder)
+                            contentFocusRequester.requestFocus()
                         }
-                    }
+                    )
+                }
 
-                    item(key = "add_tag") {
-                        NeonOutlinedField(
-                            value = newTagInput,
-                            onValueChange = { newTagInput = it },
-                            label = { Text(stringResource(R.string.hint_add_tag)) },
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                            keyboardActions = KeyboardActions(onDone = { addTag(newTagInput) })
-                        )
-                    }
-
-                    val availableSuggestions = suggestedTags.filter { suggestion ->
-                        tags.none { it.equals(suggestion, ignoreCase = true) }
-                    }
-                    if (availableSuggestions.isNotEmpty()) {
-                        item(key = "suggested_tags") {
-                            FlowRow(
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                availableSuggestions.forEach { suggestion ->
-                                    SuggestionChip(
-                                        onClick = { addTag(suggestion) },
-                                        label = { Text(suggestion) }
-                                    )
-                                }
-                            }
-                        }
-                    }
-
-                    item(key = "placeholder_legend") {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Text(
-                                text = stringResource(R.string.label_insert),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                            )
-                            Text(
-                                text = "·",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
-                            )
-                            Text(
-                                text = stringResource(R.string.hint_template_required_placeholders),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.7f)
-                            )
-                        }
-                    }
-
-                    item(key = "placeholder_chips") {
-                        FlowRow(
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                            verticalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            MessageTemplate.PLACEHOLDERS.forEach { (placeholder, _) ->
-                                InteractivePlaceholderChip(
-                                    placeholder = placeholder,
-                                    onClick = {
-                                        insertAtCursor(contentState, placeholder)
-                                        contentFocusRequester.requestFocus()
-                                    },
-                                    isRequired = placeholder in Template.REQUIRED_PLACEHOLDERS
-                                )
-                            }
-                        }
-                    }
-
-                    item(key = "template_content") {
-                        val hasContentError = contentError != null
-                        BasicTextField(
-                            state = contentState,
-                            lineLimits = TextFieldLineLimits.MultiLine(
-                                minHeightInLines = 8,
-                                maxHeightInLines = Int.MAX_VALUE
-                            ),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .heightIn(min = 240.dp)
-                                .focusRequester(contentFocusRequester),
-                            textStyle = MaterialTheme.typography.bodyMedium.copy(
-                                color = MaterialTheme.colorScheme.onSurface
-                            ),
-                            cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.secondary),
-                            interactionSource = contentInteractionSource,
-                            decorator = { innerTextField ->
-                                OutlinedTextFieldDefaults.DecorationBox(
-                                    value = contentState.text.toString(),
-                                    innerTextField = innerTextField,
-                                    enabled = true,
-                                    singleLine = false,
-                                    visualTransformation = androidx.compose.ui.text.input.VisualTransformation.None,
-                                    interactionSource = contentInteractionSource,
-                                    label = { Text(stringResource(R.string.label_message)) },
-                                    isError = hasContentError,
-                                    supportingText = if (hasContentError) {
-                                        {
-                                            Text(
-                                                text = stringResource(
-                                                    R.string.error_template_missing_placeholders,
-                                                    contentError ?: ""
-                                                ),
-                                                color = MaterialTheme.colorScheme.error
-                                            )
-                                        }
-                                    } else {
-                                        null
-                                    },
-                                    colors = OutlinedTextFieldDefaults.colors(
-                                        focusedBorderColor = if (hasContentError) {
-                                            MaterialTheme.colorScheme.error
-                                        } else {
-                                            MaterialTheme.colorScheme.secondary
-                                        },
-                                        unfocusedBorderColor = if (hasContentError) {
-                                            MaterialTheme.colorScheme.error.copy(alpha = 0.6f)
-                                        } else {
-                                            MaterialTheme.colorScheme.outline
-                                        },
-                                        cursorColor = MaterialTheme.colorScheme.secondary,
-                                        focusedLabelColor = if (hasContentError) {
-                                            MaterialTheme.colorScheme.error
-                                        } else {
-                                            MaterialTheme.colorScheme.secondary
-                                        },
-                                        unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
-                                    ),
-                                    container = {
-                                        OutlinedTextFieldDefaults.Container(
-                                            enabled = true,
-                                            isError = hasContentError,
-                                            interactionSource = contentInteractionSource,
-                                            colors = OutlinedTextFieldDefaults.colors(
-                                                focusedBorderColor = if (hasContentError) {
-                                                    MaterialTheme.colorScheme.error
-                                                } else {
-                                                    MaterialTheme.colorScheme.secondary
-                                                },
-                                                unfocusedBorderColor = if (hasContentError) {
-                                                    MaterialTheme.colorScheme.error.copy(alpha = 0.6f)
-                                                } else {
-                                                    MaterialTheme.colorScheme.outline
-                                                }
-                                            )
-                                        )
-                                    }
-                                )
-                            }
-                        )
-                    }
+                item(key = "template_content") {
+                    ContentEditorField(
+                        contentState = contentState,
+                        contentFocusRequester = contentFocusRequester,
+                        contentInteractionSource = contentInteractionSource,
+                        contentError = contentError
+                    )
                 }
             }
         }
     }
+}
+
+@Composable
+private fun TemplateEditorTopBar(
+    isNew: Boolean,
+    onBack: () -> Unit
+) {
+    TopAppBar(
+        title = {
+            Text(
+                text = if (isNew) {
+                    stringResource(R.string.title_create_template)
+                } else {
+                    stringResource(R.string.title_edit_template)
+                },
+                color = MaterialTheme.colorScheme.secondary
+            )
+        },
+        navigationIcon = {
+            IconButton(onClick = onBack) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = stringResource(R.string.content_desc_back),
+                    tint = MaterialTheme.colorScheme.secondary
+                )
+            }
+        },
+        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
+    )
+}
+
+@Composable
+private fun TemplateEditorBottomBar(
+    isNew: Boolean,
+    canSave: Boolean,
+    onCancel: () -> Unit,
+    onSave: () -> Unit
+) {
+    Surface(
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+        tonalElevation = 6.dp,
+        shadowElevation = 6.dp
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .imePadding()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            NeonButton(
+                onClick = onCancel,
+                glowColor = MaterialTheme.colorScheme.secondary,
+                style = NeonButtonStyle.TERTIARY
+            ) {
+                Text(stringResource(R.string.action_cancel))
+            }
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            NeonButton(
+                onClick = onSave,
+                enabled = canSave,
+                glowColor = MaterialTheme.colorScheme.secondary,
+                style = NeonButtonStyle.PRIMARY
+            ) {
+                Text(
+                    text = if (isNew) {
+                        stringResource(R.string.action_create)
+                    } else {
+                        stringResource(R.string.action_save)
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun TemplateNameField(
+    name: String,
+    nameError: Int?,
+    onNameChange: (String) -> Unit,
+    onNext: () -> Unit
+) {
+    OutlinedTextField(
+        value = name,
+        onValueChange = onNameChange,
+        label = { Text(stringResource(R.string.label_name)) },
+        isError = nameError != null,
+        supportingText = nameError?.let { { Text(stringResource(it)) } },
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+        keyboardActions = KeyboardActions(onNext = { onNext() }),
+        modifier = Modifier.fillMaxWidth(),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = MaterialTheme.colorScheme.secondary,
+            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+            cursorColor = MaterialTheme.colorScheme.secondary,
+            focusedLabelColor = MaterialTheme.colorScheme.secondary,
+            unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    )
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun TagsSection(
+    tags: List<String>,
+    newTagInput: String,
+    availableSuggestions: List<String>,
+    onNewTagInputChange: (String) -> Unit,
+    onAddTag: (String) -> Unit,
+    onRemoveTag: (String) -> Unit,
+    onSuggestionSelected: (String) -> Unit
+) {
+    Text(
+        text = stringResource(R.string.label_tags),
+        style = MaterialTheme.typography.labelMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
+
+    if (tags.isNotEmpty()) {
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(top = 8.dp)
+        ) {
+            tags.forEach { tag ->
+                InputChip(
+                    selected = true,
+                    onClick = { onRemoveTag(tag) },
+                    label = {
+                        Text(
+                            text = tag,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    },
+                    trailingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = stringResource(
+                                R.string.content_desc_remove_tag,
+                                tag
+                            ),
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                )
+            }
+        }
+    }
+
+    NeonOutlinedField(
+        value = newTagInput,
+        onValueChange = onNewTagInputChange,
+        label = { Text(stringResource(R.string.hint_add_tag)) },
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+        keyboardActions = KeyboardActions(onDone = { onAddTag(newTagInput) }),
+        modifier = Modifier.padding(top = 8.dp)
+    )
+
+    if (availableSuggestions.isNotEmpty()) {
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(top = 8.dp)
+        ) {
+            availableSuggestions.forEach { suggestion ->
+                SuggestionChip(
+                    onClick = { onSuggestionSelected(suggestion) },
+                    label = { Text(suggestion) }
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun PlaceholderChipsSection(
+    onInsertPlaceholder: (String) -> Unit
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Text(
+            text = stringResource(R.string.label_insert),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+        )
+        Text(
+            text = "·",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+        )
+        Text(
+            text = stringResource(R.string.hint_template_required_placeholders),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.7f)
+        )
+    }
+
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = Modifier.padding(top = 8.dp)
+    ) {
+        MessageTemplate.PLACEHOLDERS.forEach { (placeholder, _) ->
+            InteractivePlaceholderChip(
+                placeholder = placeholder,
+                onClick = { onInsertPlaceholder(placeholder) },
+                isRequired = placeholder in Template.REQUIRED_PLACEHOLDERS
+            )
+        }
+    }
+}
+
+@Composable
+private fun ContentEditorField(
+    contentState: TextFieldState,
+    contentFocusRequester: FocusRequester,
+    contentInteractionSource: MutableInteractionSource,
+    contentError: String?
+) {
+    val hasContentError = contentError != null
+    BasicTextField(
+        state = contentState,
+        lineLimits = TextFieldLineLimits.MultiLine(
+            minHeightInLines = 8,
+            maxHeightInLines = Int.MAX_VALUE
+        ),
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 240.dp)
+            .focusRequester(contentFocusRequester),
+        textStyle = MaterialTheme.typography.bodyMedium.copy(
+            color = MaterialTheme.colorScheme.onSurface
+        ),
+        cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.secondary),
+        interactionSource = contentInteractionSource,
+        decorator = { innerTextField ->
+            OutlinedTextFieldDefaults.DecorationBox(
+                value = contentState.text.toString(),
+                innerTextField = innerTextField,
+                enabled = true,
+                singleLine = false,
+                visualTransformation = androidx.compose.ui.text.input.VisualTransformation.None,
+                interactionSource = contentInteractionSource,
+                label = { Text(stringResource(R.string.label_message)) },
+                isError = hasContentError,
+                supportingText = if (hasContentError) {
+                    {
+                        Text(
+                            text = stringResource(
+                                R.string.error_template_missing_placeholders,
+                                contentError ?: ""
+                            ),
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                } else {
+                    null
+                },
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = if (hasContentError) {
+                        MaterialTheme.colorScheme.error
+                    } else {
+                        MaterialTheme.colorScheme.secondary
+                    },
+                    unfocusedBorderColor = if (hasContentError) {
+                        MaterialTheme.colorScheme.error.copy(alpha = 0.6f)
+                    } else {
+                        MaterialTheme.colorScheme.outline
+                    },
+                    cursorColor = MaterialTheme.colorScheme.secondary,
+                    focusedLabelColor = if (hasContentError) {
+                        MaterialTheme.colorScheme.error
+                    } else {
+                        MaterialTheme.colorScheme.secondary
+                    },
+                    unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                ),
+                container = {
+                    OutlinedTextFieldDefaults.Container(
+                        enabled = true,
+                        isError = hasContentError,
+                        interactionSource = contentInteractionSource,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = if (hasContentError) {
+                                MaterialTheme.colorScheme.error
+                            } else {
+                                MaterialTheme.colorScheme.secondary
+                            },
+                            unfocusedBorderColor = if (hasContentError) {
+                                MaterialTheme.colorScheme.error.copy(alpha = 0.6f)
+                            } else {
+                                MaterialTheme.colorScheme.outline
+                            }
+                        )
+                    )
+                }
+            )
+        }
+    )
+}
+
+@Composable
+private fun DiscardChangesDialog(
+    onDiscard: () -> Unit,
+    onKeepEditing: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onKeepEditing,
+        containerColor = MaterialTheme.colorScheme.surface,
+        title = {
+            Text(
+                text = stringResource(R.string.dialog_discard_changes_title),
+                color = MaterialTheme.colorScheme.secondary
+            )
+        },
+        text = {
+            Text(
+                text = stringResource(R.string.text_template_unsaved_changes_warning),
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        },
+        confirmButton = {
+            NeonButton(
+                onClick = onDiscard,
+                glowColor = MaterialTheme.colorScheme.error,
+                style = NeonButtonStyle.PRIMARY
+            ) {
+                Text(stringResource(R.string.action_discard))
+            }
+        },
+        dismissButton = {
+            NeonButton(
+                onClick = onKeepEditing,
+                glowColor = MaterialTheme.colorScheme.secondary,
+                style = NeonButtonStyle.TERTIARY
+            ) {
+                Text(stringResource(R.string.action_keep_editing))
+            }
+        }
+    )
 }
 
 private fun insertAtCursor(state: TextFieldState, textToInsert: String) {

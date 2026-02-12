@@ -200,6 +200,22 @@ class TemplateListViewModelTest {
     }
 
     @Test
+    fun `startEditing emits navigateToEditor when template is non-null`() = runTest {
+        vm.navigateToEditor.test {
+            vm.startEditing(userTemplate)
+            awaitItem()
+        }
+    }
+
+    @Test
+    fun `startEditing does not emit navigateToEditor when template is null`() = runTest {
+        vm.navigateToEditor.test {
+            vm.startEditing(null)
+            expectNoEvents()
+        }
+    }
+
+    @Test
     fun `cancelEditing clears editingTemplate`() {
         vm.startEditing(userTemplate)
         assertNotNull(vm.uiState.value.editingTemplate)

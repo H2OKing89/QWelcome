@@ -91,8 +91,8 @@ fun TemplateListScreen(
 
     BackHandler { onBack() }
 
-    LaunchedEffect(uiState.editingTemplate?.id) {
-        if (uiState.editingTemplate != null) {
+    LaunchedEffect(Unit) {
+        vm.navigateToEditor.collect {
             onOpenEditor()
         }
     }
@@ -341,14 +341,15 @@ fun TemplateListScreen(
                     }
 
                     val hasActiveFilters = uiState.searchQuery.isNotEmpty() || uiState.selectedTags.isNotEmpty()
-                    if (
+                    val shouldShowNoResults = (
                         filteredTemplates.isEmpty() ||
                         (
                             filteredTemplates.size == 1 &&
                                 filteredTemplates.first().id == DEFAULT_TEMPLATE_ID &&
                                 hasActiveFilters
                             )
-                    ) {
+                    )
+                    if (shouldShowNoResults) {
                         item(key = "no_results") {
                             Text(
                                 text = if (uiState.searchQuery.isNotEmpty()) {
