@@ -11,8 +11,10 @@ import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import java.io.IOException
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -41,6 +43,7 @@ class ExportViewModelTest {
     @Before
     fun setup() {
         coEvery { mockStore.getUserTemplates() } returns testTemplates
+        every { mockStore.recentSharePackagesFlow } returns flowOf(emptyList())
         vm = ExportViewModel(mockRepo, mockStore)
     }
 
@@ -212,6 +215,47 @@ class ExportViewModelTest {
             val event = awaitItem()
             assertTrue(event is ExportEvent.ShareReady)
             assertEquals("{\"data\":true}", (event as ExportEvent.ShareReady).json)
+        }
+    }
+
+    @Test
+    fun `onShareToPackageRequested emits ShareToAppReady event`() = runTest {
+        coEvery { mockRepo.exportFullBackup() } returns
+            ExportResult.Success(json = "{\"data\":true}", templateCount = 1)
+
+        vm.events.test {
+            vm.exportFullBackup()
+            advanceUntilIdle()
+            val successEvent = awaitItem()
+            assertTrue(successEvent is ExportEvent.ExportSuccess)
+
+            vm.onShareToPackageRequested("com.example.app")
+            advanceUntilIdle()
+
+            val event = awaitItem()
+            assertTrue(event is ExportEvent.ShareToAppReady)
+            assertEquals("com.example.app", (event as ExportEvent.ShareToAppReady).packageName)
+        }
+    }
+
+    @Test
+    fun `onShareToPackageRequested still emits when persisting recents fails`() = runTest {
+        coEvery { mockRepo.exportFullBackup() } returns
+            ExportResult.Success(json = "{\"data\":true}", templateCount = 1)
+        coEvery { mockStore.recordRecentSharePackage("com.example.app") } throws IOException("disk error")
+
+        vm.events.test {
+            vm.exportFullBackup()
+            advanceUntilIdle()
+            val successEvent = awaitItem()
+            assertTrue(successEvent is ExportEvent.ExportSuccess)
+
+            vm.onShareToPackageRequested("com.example.app")
+            advanceUntilIdle()
+
+            val event = awaitItem()
+            assertTrue(event is ExportEvent.ShareToAppReady)
+            assertEquals("com.example.app", (event as ExportEvent.ShareToAppReady).packageName)
         }
     }
 

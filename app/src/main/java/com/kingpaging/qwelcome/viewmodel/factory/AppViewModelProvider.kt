@@ -129,7 +129,8 @@ class AppViewModelProvider(private val context: Context) : ViewModelProvider.Fac
             modelClass.isAssignableFrom(ExportViewModel::class.java) -> {
                 ExportViewModel(
                     repository = getImportExportRepository(context),
-                    settingsStore = getSettingsStore(context)
+                    settingsStore = getSettingsStore(context),
+                    packageManager = context.applicationContext.packageManager
                 ) as T
             }
             modelClass.isAssignableFrom(ImportViewModel::class.java) -> {

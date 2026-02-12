@@ -9,6 +9,8 @@ message UserPreferences {
   string active_template_id = 1;
   TechProfileProto tech_profile = 2;
   repeated TemplateProto templates = 3;
+  reserved 4, 5;
+  repeated string recent_share_packages = 6;
 }
 
 message TechProfileProto {

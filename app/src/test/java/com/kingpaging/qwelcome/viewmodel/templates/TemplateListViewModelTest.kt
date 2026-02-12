@@ -85,7 +85,7 @@ class TemplateListViewModelTest {
     @Test
     fun `createTemplate saves and emits TemplateCreated event`() = runTest {
         vm.events.test {
-            vm.createTemplate("New Template", "Hello {{ customer_name }}, SSID: {{ ssid }}")
+            vm.createTemplate("New Template", "Hello {{ customer_name }}, SSID: {{ ssid }}", emptyList())
             advanceUntilIdle()
 
             coVerify { mockStore.saveTemplate(match { it.name == "New Template" }) }
@@ -99,7 +99,7 @@ class TemplateListViewModelTest {
     @Test
     fun `createTemplate trims whitespace from name`() = runTest {
         vm.events.test {
-            vm.createTemplate("  Spaced Name  ", "Hello {{ customer_name }}, your SSID is {{ ssid }}")
+            vm.createTemplate("  Spaced Name  ", "Hello {{ customer_name }}, your SSID is {{ ssid }}", emptyList())
             advanceUntilIdle()
 
             coVerify { mockStore.saveTemplate(match { it.name == "Spaced Name" }) }
@@ -113,7 +113,12 @@ class TemplateListViewModelTest {
         coEvery { mockStore.getTemplate("650e8400-e29b-41d4-a716-446655440001") } returns userTemplate
 
         vm.events.test {
-            vm.updateTemplate("650e8400-e29b-41d4-a716-446655440001", "Updated Name", "Hi {{ customer_name }}, SSID: {{ ssid }}")
+            vm.updateTemplate(
+                "650e8400-e29b-41d4-a716-446655440001",
+                "Updated Name",
+                "Hi {{ customer_name }}, SSID: {{ ssid }}",
+                emptyList()
+            )
             advanceUntilIdle()
 
             coVerify { mockStore.saveTemplate(match { it.name == "Updated Name" && it.content == "Hi {{ customer_name }}, SSID: {{ ssid }}" }) }
@@ -208,7 +213,7 @@ class TemplateListViewModelTest {
     @Test
     fun `createTemplate rejects content without required placeholders`() = runTest {
         vm.events.test {
-            vm.createTemplate("Invalid Template", "Content without placeholders")
+            vm.createTemplate("Invalid Template", "Content without placeholders", emptyList())
             advanceUntilIdle()
 
             // Should emit an error event instead of creating
@@ -223,13 +228,39 @@ class TemplateListViewModelTest {
             coVerify(exactly = 0) { mockStore.saveTemplate(any()) }
         }
     }
+
+    @Test
+    fun `createTemplate normalizes and deduplicates tags`() = runTest {
+        vm.events.test {
+            vm.createTemplate(
+                "Tagged Template",
+                "Hello {{ customer_name }}, SSID: {{ ssid }}",
+                listOf(" Install ", "install", "Repair")
+            )
+            advanceUntilIdle()
+
+            coVerify {
+                mockStore.saveTemplate(
+                    match { saved ->
+                        saved.tags == listOf("Install", "Repair")
+                    }
+                )
+            }
+            awaitItem()
+        }
+    }
     
     @Test
     fun `updateTemplate rejects content without required placeholders`() = runTest {
         coEvery { mockStore.getTemplate("650e8400-e29b-41d4-a716-446655440001") } returns userTemplate
 
         vm.events.test {
-            vm.updateTemplate("650e8400-e29b-41d4-a716-446655440001", "Updated Name", "Missing placeholders")
+            vm.updateTemplate(
+                "650e8400-e29b-41d4-a716-446655440001",
+                "Updated Name",
+                "Missing placeholders",
+                emptyList()
+            )
             advanceUntilIdle()
 
             // Should emit an error event instead of updating
@@ -240,5 +271,14 @@ class TemplateListViewModelTest {
             // Store should NOT have been called to save
             coVerify(exactly = 0) { mockStore.saveTemplate(any()) }
         }
+    }
+
+    @Test
+    fun `updateTagFilter toggles selected tag`() {
+        vm.updateTagFilter("Install")
+        assertEquals(setOf("Install"), vm.uiState.value.selectedTags)
+
+        vm.updateTagFilter("Install")
+        assertTrue(vm.uiState.value.selectedTags.isEmpty())
     }
 }

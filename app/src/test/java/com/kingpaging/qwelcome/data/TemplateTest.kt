@@ -176,4 +176,19 @@ class TemplateTest {
         val normalized = Template.normalizeContent(content)
         assertEquals("Hello {{ customer_name }}! Your network {{ ssid }} is ready.", normalized)
     }
+
+    @Test
+    fun `duplicate preserves tags`() {
+        val template = Template(
+            id = "template-1",
+            name = "Install Template",
+            content = "Hi {{ customer_name }} {{ ssid }}",
+            tags = listOf("Install", "Residential")
+        )
+
+        val duplicate = template.duplicate()
+
+        assertEquals(listOf("Install", "Residential"), duplicate.tags)
+        assertTrue(duplicate.id != template.id)
+    }
 }

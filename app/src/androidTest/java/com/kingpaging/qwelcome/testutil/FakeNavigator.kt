@@ -12,7 +12,7 @@ import com.kingpaging.qwelcome.navigation.Navigator
  */
 class FakeNavigator : Navigator {
     data class SmsCall(val phoneNumber: String, val message: String)
-    data class ShareCall(val message: String, val chooserTitle: String)
+    data class ShareCall(val packageName: String?, val message: String, val chooserTitle: String, val subject: String?)
     data class CopyCall(val label: String, val text: String)
 
     val smsCalls = mutableListOf<SmsCall>()
@@ -25,8 +25,19 @@ class FakeNavigator : Navigator {
         smsCalls.add(SmsCall(phoneNumber, message))
     }
 
-    override fun shareText(message: String, chooserTitle: String) {
-        shareCalls.add(ShareCall(message, chooserTitle))
+    override fun shareText(message: String, chooserTitle: String, subject: String?) {
+        shareCalls.add(ShareCall(packageName = null, message = message, chooserTitle = chooserTitle, subject = subject))
+    }
+
+    override fun shareToApp(packageName: String, message: String, subject: String?, chooserTitle: String) {
+        shareCalls.add(
+            ShareCall(
+                packageName = packageName,
+                message = message,
+                chooserTitle = chooserTitle,
+                subject = subject
+            )
+        )
     }
 
     override fun copyToClipboard(label: String, text: String): Boolean {

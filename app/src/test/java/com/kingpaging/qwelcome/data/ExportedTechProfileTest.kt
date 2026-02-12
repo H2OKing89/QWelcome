@@ -44,6 +44,40 @@ class ExportedTechProfileTest {
     }
 
     @Test
+    fun `deserialize full backup ignores legacy loadout keys`() {
+        val jsonString = """
+            {
+                "schemaVersion": 1,
+                "kind": "full-backup",
+                "exportedAt": "2026-02-10T08:00:00Z",
+                "appVersion": "2.4.0",
+                "techProfile": {
+                    "name": "Quentin King",
+                    "title": "Installation Technician 1",
+                    "dept": "ALLO Fiber | Residential"
+                },
+                "templates": [],
+                "loadouts": [
+                    {
+                        "id": "loadout-1",
+                        "name": "Residential Install",
+                        "templateId": "template-1"
+                    }
+                ],
+                "activeLoadoutId": "loadout-1",
+                "defaults": {
+                    "defaultTemplateId": "template-1"
+                }
+            }
+        """.trimIndent()
+
+        val backup = json.decodeFromString<FullBackup>(jsonString)
+
+        assertEquals("Quentin King", backup.techProfile.name)
+        assertEquals("template-1", backup.getEffectiveDefaultTemplateId())
+    }
+
+    @Test
     fun `deserialize with dept field`() {
         val jsonString = """
             {

@@ -5,7 +5,6 @@ package com.kingpaging.qwelcome.ui.export
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
-import android.content.Intent
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -17,6 +16,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -76,6 +76,7 @@ import androidx.compose.ui.window.Dialog
 import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.data.Template
 import com.kingpaging.qwelcome.di.LocalExportViewModel
+import com.kingpaging.qwelcome.di.LocalNavigator
 import com.kingpaging.qwelcome.ui.components.CyberpunkBackdrop
 import com.kingpaging.qwelcome.ui.components.NeonButton
 import com.kingpaging.qwelcome.ui.components.NeonButtonStyle
@@ -96,6 +97,7 @@ fun ExportScreen(
     val vm = LocalExportViewModel.current
     val soundPlayer = LocalSoundPlayer.current
     val context = LocalContext.current
+    val navigator = LocalNavigator.current
     val uiState by vm.uiState.collectAsStateWithLifecycle()
     val haptic = rememberHapticFeedback()
 
@@ -158,7 +160,31 @@ fun ExportScreen(
                     Toast.makeText(context, context.getString(R.string.toast_type_copied, typeName), Toast.LENGTH_SHORT).show()
                 }
                 is ExportEvent.ShareReady -> {
-                    shareJson(context, event.json, event.type)
+                    val typeName = context.getString(
+                        when (event.type) {
+                            ExportType.TEMPLATE_PACK -> R.string.export_type_template_pack
+                            ExportType.FULL_BACKUP -> R.string.export_type_full_backup
+                        }
+                    )
+                    navigator.shareText(
+                        message = event.json,
+                        chooserTitle = context.getString(R.string.chooser_share_type, typeName),
+                        subject = context.getString(R.string.subject_qwelcome_export, typeName)
+                    )
+                }
+                is ExportEvent.ShareToAppReady -> {
+                    val typeName = context.getString(
+                        when (event.type) {
+                            ExportType.TEMPLATE_PACK -> R.string.export_type_template_pack
+                            ExportType.FULL_BACKUP -> R.string.export_type_full_backup
+                        }
+                    )
+                    navigator.shareToApp(
+                        packageName = event.packageName,
+                        message = event.json,
+                        subject = context.getString(R.string.subject_qwelcome_export, typeName),
+                        chooserTitle = context.getString(R.string.chooser_share_type, typeName)
+                    )
                 }
                 is ExportEvent.RequestFileSave -> {
                     saveFileLauncher.launch(event.suggestedName)
@@ -271,6 +297,57 @@ fun ExportScreen(
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.secondary
                         )
+
+                        if (uiState.recentShareTargets.isNotEmpty()) {
+                            Text(
+                                stringResource(R.string.label_recent_shares),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                            )
+
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .horizontalScroll(rememberScrollState()),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                uiState.recentShareTargets.forEach { target ->
+                                    NeonButton(
+                                        onClick = { vm.onShareToPackageRequested(target.packageName) },
+                                        glowColor = MaterialTheme.colorScheme.tertiary,
+                                        style = NeonButtonStyle.TERTIARY,
+                                        modifier = Modifier
+                                            .width(120.dp)
+                                    ) {
+                                        if (target.icon != null) {
+                                            Image(
+                                                bitmap = target.icon,
+                                                contentDescription = stringResource(
+                                                    R.string.content_desc_share_to_app,
+                                                    target.appName
+                                                ),
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        } else {
+                                            Icon(
+                                                Icons.Default.Share,
+                                                contentDescription = stringResource(
+                                                    R.string.content_desc_share_to_app,
+                                                    target.appName
+                                                ),
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        }
+                                        Spacer(Modifier.width(6.dp))
+                                        Text(
+                                            text = target.appName,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
+                                }
+                            }
+                        }
 
                         // Action buttons
                         Row(
@@ -621,24 +698,3 @@ private fun formatPreview(content: String, maxChars: Int = 60): String {
     return content.replace("\n", " ").take(maxChars)
 }
 
-/**
- * Share JSON via Android share sheet.
- */
-private fun shareJson(context: Context, json: String, type: ExportType) {
-    val typeName = context.getString(
-        when (type) {
-            ExportType.TEMPLATE_PACK -> R.string.export_type_template_pack
-            ExportType.FULL_BACKUP -> R.string.export_type_full_backup
-        }
-    )
-
-    val intent = Intent(Intent.ACTION_SEND).apply {
-        this.type = "text/plain"
-        putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.subject_qwelcome_export, typeName))
-        putExtra(Intent.EXTRA_TEXT, json)
-    }
-
-    context.startActivity(
-        Intent.createChooser(intent, context.getString(R.string.chooser_share_type, typeName))
-    )
-}

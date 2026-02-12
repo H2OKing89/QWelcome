@@ -36,23 +36,29 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.InputChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -63,7 +69,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -74,6 +79,8 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -92,6 +99,7 @@ import com.kingpaging.qwelcome.ui.components.InteractivePlaceholderChip
 import com.kingpaging.qwelcome.ui.components.NeonButton
 import com.kingpaging.qwelcome.ui.components.NeonButtonStyle
 import com.kingpaging.qwelcome.ui.components.NeonOutlinedField
+import com.kingpaging.qwelcome.ui.components.NeonWarningBanner
 import com.kingpaging.qwelcome.ui.theme.LocalDarkTheme
 import com.kingpaging.qwelcome.util.rememberHapticFeedback
 import com.kingpaging.qwelcome.di.LocalSoundPlayer
@@ -100,7 +108,6 @@ import com.kingpaging.qwelcome.viewmodel.templates.TemplateListEvent
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.drop
-import kotlinx.coroutines.launch
 
 /**
  * Marker ID for new templates being created (not yet persisted).
@@ -171,11 +178,11 @@ fun TemplateListScreen(
             template = template,
             isNew = isNewTemplate,
             defaultContent = vm.getDefaultTemplateContent(),
-            onSave = { name, content ->
+            onSave = { name, content, tags ->
                 if (isNewTemplate) {
-                    vm.createTemplate(name, content)
+                    vm.createTemplate(name, content, tags)
                 } else {
-                    vm.updateTemplate(template.id, name, content)
+                    vm.updateTemplate(template.id, name, content, tags)
                 }
             },
             onDismiss = { vm.cancelEditing() }
@@ -233,16 +240,32 @@ fun TemplateListScreen(
                     CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 }
             } else {
-                // Filter templates by search query (default always shown at top)
-                val filteredTemplates = remember(uiState.templates, uiState.searchQuery) {
+                // Filter templates by search query + selected tags (OR semantics for tags)
+                val filteredTemplates = remember(uiState.templates, uiState.searchQuery, uiState.selectedTags) {
                     val query = uiState.searchQuery.trim().lowercase()
+                    val normalizedSelectedTags = uiState.selectedTags
+                        .map { it.trim().lowercase() }
+                        .filter { it.isNotBlank() }
+                        .toSet()
+                    val matchesTag: (Template) -> Boolean = { template ->
+                        normalizedSelectedTags.isEmpty() || template.tags.any { tag ->
+                            tag.trim().lowercase() in normalizedSelectedTags
+                        }
+                    }
+                    val defaultTemplate = uiState.templates
+                        .find { it.id == DEFAULT_TEMPLATE_ID }
+                        ?.takeIf(matchesTag)
+
                     if (query.isEmpty()) {
-                        uiState.templates
-                    } else {
-                        // Default template always shown at top, then filtered user templates
-                        val defaultTemplate = uiState.templates.find { it.id == DEFAULT_TEMPLATE_ID }
                         val userTemplates = uiState.templates
                             .filter { it.id != DEFAULT_TEMPLATE_ID }
+                            .filter(matchesTag)
+                        listOfNotNull(defaultTemplate) + userTemplates
+                    } else {
+                        // Default template always shown at top, then filtered user templates
+                        val userTemplates = uiState.templates
+                            .filter { it.id != DEFAULT_TEMPLATE_ID }
+                            .filter(matchesTag)
                             .filter { it.name.lowercase().contains(query) }
                         listOfNotNull(defaultTemplate) + userTemplates
                     }
@@ -282,6 +305,48 @@ fun TemplateListScreen(
                             modifier = Modifier.padding(bottom = 4.dp)
                         )
                     }
+
+                    if (uiState.allTags.isNotEmpty()) {
+                        item(key = "tag_filters") {
+                            FlowRow(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.padding(bottom = 4.dp)
+                            ) {
+                                FilterChip(
+                                    selected = uiState.selectedTags.isEmpty(),
+                                    onClick = { haptic(); vm.clearTagFilter() },
+                                    label = { Text(stringResource(R.string.label_all_tags)) }
+                                )
+
+                                uiState.allTags.sorted().forEach { tag ->
+                                    val isSelected = tag in uiState.selectedTags
+                                    FilterChip(
+                                        selected = isSelected,
+                                        onClick = { haptic(); vm.updateTagFilter(tag) },
+                                        label = { Text(tag) },
+                                        leadingIcon = if (isSelected) {
+                                            {
+                                                Icon(
+                                                    Icons.Default.Check,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(FilterChipDefaults.IconSize)
+                                                )
+                                            }
+                                        } else {
+                                            null
+                                        },
+                                        modifier = Modifier.semantics {
+                                            contentDescription = context.getString(
+                                                R.string.content_desc_filter_by_tag,
+                                                tag
+                                            )
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
                     
                     // Help text
                     item(key = "header") {
@@ -291,6 +356,18 @@ fun TemplateListScreen(
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                             modifier = Modifier.padding(vertical = 4.dp)
                         )
+                    }
+
+                    if (uiState.showTemplateLimitWarning && !uiState.warningDismissed) {
+                        item(key = "template_limit_warning") {
+                            NeonWarningBanner(
+                                text = stringResource(
+                                    R.string.warning_template_limit,
+                                    uiState.templates.size
+                                ),
+                                onDismiss = { haptic(); vm.dismissTemplateLimitWarning() }
+                            )
+                        }
                     }
 
                     items(
@@ -309,10 +386,15 @@ fun TemplateListScreen(
                     }
                     
                     // No results message
-                    if (filteredTemplates.isEmpty() || (filteredTemplates.size == 1 && filteredTemplates.first().id == DEFAULT_TEMPLATE_ID && uiState.searchQuery.isNotEmpty())) {
+                    val hasActiveFilters = uiState.searchQuery.isNotEmpty() || uiState.selectedTags.isNotEmpty()
+                    if (filteredTemplates.isEmpty() || (filteredTemplates.size == 1 && filteredTemplates.first().id == DEFAULT_TEMPLATE_ID && hasActiveFilters)) {
                         item(key = "no_results") {
                             Text(
-                                stringResource(R.string.text_no_templates_match, uiState.searchQuery),
+                                if (uiState.searchQuery.isNotEmpty()) {
+                                    stringResource(R.string.text_no_templates_match, uiState.searchQuery)
+                                } else {
+                                    stringResource(R.string.text_no_templates_for_filters)
+                                },
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                                 modifier = Modifier.padding(vertical = 16.dp)
@@ -480,6 +562,27 @@ private fun TemplateCard(
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.padding(top = 6.dp)
             )
+
+            if (template.tags.isNotEmpty()) {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.padding(top = 8.dp)
+                ) {
+                    template.tags.forEach { tag ->
+                        AssistChip(
+                            onClick = {},
+                            label = {
+                                Text(
+                                    text = tag,
+                                    fontSize = 12.sp,
+                                    maxLines = 1
+                                )
+                            }
+                        )
+                    }
+                }
+            }
         }
     }
 }
@@ -509,7 +612,7 @@ private fun TemplateEditDialog(
     template: Template,
     isNew: Boolean,
     defaultContent: String,
-    onSave: (name: String, content: String) -> Unit,
+    onSave: (name: String, content: String, tags: List<String>) -> Unit,
     onDismiss: () -> Unit
 ) {
     val secondaryColor = MaterialTheme.colorScheme.secondary
@@ -519,19 +622,36 @@ private fun TemplateEditDialog(
         // Track original values for dirty detection
         val originalName = remember { if (isNew) "" else template.name }
         val originalContent = remember { if (isNew) defaultContent else template.content }
+        val originalTags = remember { template.tags }
         
         var name by remember { mutableStateOf(originalName) }
+        var tags by remember { mutableStateOf(originalTags) }
+        var newTagInput by remember { mutableStateOf("") }
         var nameError by remember { mutableStateOf<Int?>(null) }
         var contentError by remember { mutableStateOf<String?>(null) }
         var showDiscardDialog by remember { mutableStateOf(false) }
         
         val contentState = rememberTextFieldState(initialText = originalContent)
         val contentFocusRequester = remember { FocusRequester() }
-        val scope = rememberCoroutineScope()
         
         // Compute dirty state
         val currentContent = contentState.text.toString()
-        val isDirty = name != originalName || currentContent != originalContent
+        val isDirty = name != originalName || currentContent != originalContent || tags != originalTags
+        val suggestedTags = listOf(
+            stringResource(R.string.tag_residential),
+            stringResource(R.string.tag_business),
+            stringResource(R.string.tag_install),
+            stringResource(R.string.tag_repair),
+            stringResource(R.string.tag_troubleshooting)
+        )
+
+        val addTag: (String) -> Unit = { rawTag ->
+            val normalized = rawTag.trim().take(32)
+            if (normalized.isNotBlank() && tags.none { it.equals(normalized, ignoreCase = true) }) {
+                tags = tags + normalized
+            }
+            newTagInput = ""
+        }
         
         // Handle dismiss with unsaved changes check
         val handleDismiss: () -> Unit = {
@@ -657,7 +777,79 @@ private fun TemplateEditDialog(
                         )
                     )
 
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Text(
+                        text = stringResource(R.string.label_tags),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                     Spacer(modifier = Modifier.height(6.dp))
+
+                    if (tags.isNotEmpty()) {
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            tags.forEach { tag ->
+                                InputChip(
+                                    selected = true,
+                                    onClick = {
+                                        tags = tags.filterNot { it.equals(tag, ignoreCase = true) }
+                                    },
+                                    label = {
+                                        Text(
+                                            text = tag,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    },
+                                    trailingIcon = {
+                                        Icon(
+                                            Icons.Default.Close,
+                                            contentDescription = stringResource(
+                                                R.string.content_desc_remove_tag,
+                                                tag
+                                            ),
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+
+                    NeonOutlinedField(
+                        value = newTagInput,
+                        onValueChange = { newTagInput = it },
+                        label = { Text(stringResource(R.string.hint_add_tag)) },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(
+                            onDone = { addTag(newTagInput) }
+                        )
+                    )
+
+                    val availableSuggestions = suggestedTags.filter { suggestion ->
+                        tags.none { it.equals(suggestion, ignoreCase = true) }
+                    }
+                    if (availableSuggestions.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            availableSuggestions.forEach { suggestion ->
+                                SuggestionChip(
+                                    onClick = { addTag(suggestion) },
+                                    label = { Text(suggestion) }
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
                     
                     // Inline placeholder chips with legend
                     Row(
@@ -786,7 +978,7 @@ private fun TemplateEditDialog(
                                 if (name.isBlank()) {
                                     nameError = R.string.error_name_required
                                 } else if (contentError == null) {
-                                    onSave(name, contentState.text.toString())
+                                    onSave(name, contentState.text.toString(), tags)
                                 }
                             },
                             enabled = canSave,
