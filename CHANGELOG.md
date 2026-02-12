@@ -9,6 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No unreleased changes.
 
+## [2.7.0] - 2026-02-11
+
+### Added
+
+- **Template Tags and Filtering** - Added template tags in the editor, tag suggestions, and tag filter chips in template management for faster organization and lookup
+- **Template Count Soft-Limit Warning** - Added a dismissible warning banner when template count exceeds 20 to help keep the app responsive with large template sets
+- **Recent Share Targets** - Added recent share target memory and quick-share actions in export so frequently used apps are one tap away
+
+### Changed
+
+- **Share Flow Enhancements** - Improved sharing with optional subjects, direct share-to-app support, and chooser target tracking to streamline repeat exports
+- **Import/Export Roadmap Organization** - Moved JSON import/export roadmap and related archived planning docs under `docs/ARCHIVE` for clearer documentation structure
+- **Build Docs Clarity** - Updated README build/test instructions for Windows and Unix workflows, including Gradle daemon metadata notes
+
+### Fixed
+
+- **Share Target Error Handling** - Hardened share target resolution and fallback behavior to avoid failures when apps are unavailable or restricted
+- **Imported Default Template Selection** - Fixed default template activation after import when conflict resolution remaps template IDs
+
 ## [2.6.1] - 2026-02-10
 
 ### Fixed
