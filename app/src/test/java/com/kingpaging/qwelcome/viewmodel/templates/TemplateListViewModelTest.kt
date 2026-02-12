@@ -176,6 +176,24 @@ class TemplateListViewModelTest {
     }
 
     @Test
+    fun `duplicateAndEdit saves copy emits event and sets editingTemplate`() = runTest {
+        vm.events.test {
+            vm.duplicateAndEdit(userTemplate)
+            advanceUntilIdle()
+
+            coVerify { mockStore.saveTemplate(match { it.id != userTemplate.id }) }
+
+            val event = awaitItem()
+            assertTrue(event is TemplateListEvent.TemplateDuplicated)
+        }
+
+        val editingTemplate = vm.uiState.value.editingTemplate
+        assertNotNull(editingTemplate)
+        assertTrue(editingTemplate!!.id != userTemplate.id)
+        assertTrue(vm.uiState.value.validationError == null)
+    }
+
+    @Test
     fun `startEditing sets editingTemplate in state`() {
         vm.startEditing(userTemplate)
         assertEquals(userTemplate, vm.uiState.value.editingTemplate)
