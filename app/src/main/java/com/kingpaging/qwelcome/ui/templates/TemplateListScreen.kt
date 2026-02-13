@@ -60,7 +60,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.data.DEFAULT_TEMPLATE_ID
 import com.kingpaging.qwelcome.data.NEW_TEMPLATE_ID
@@ -75,6 +78,7 @@ import com.kingpaging.qwelcome.ui.components.NeonWarningBanner
 import com.kingpaging.qwelcome.ui.theme.LocalDarkTheme
 import com.kingpaging.qwelcome.util.rememberHapticFeedback
 import com.kingpaging.qwelcome.viewmodel.templates.TemplateListEvent
+import kotlinx.coroutines.launch
 
 @Suppress("LocalContextGetResourceValueCall")
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -86,51 +90,55 @@ fun TemplateListScreen(
     val vm = LocalTemplateListViewModel.current
     val soundPlayer = LocalSoundPlayer.current
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     val uiState by vm.uiState.collectAsStateWithLifecycle()
     val haptic = rememberHapticFeedback()
 
     BackHandler { onBack() }
 
-    LaunchedEffect(Unit) {
-        vm.navigateToEditor.collect {
-            onOpenEditor()
-        }
-    }
-
-    LaunchedEffect(Unit) {
-        vm.events.collect { event ->
-            when (event) {
-                is TemplateListEvent.Error -> {
-                    soundPlayer.playBeep()
-                    Toast.makeText(context, event.message, Toast.LENGTH_LONG).show()
+    LaunchedEffect(vm, lifecycleOwner, onOpenEditor, soundPlayer, context) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            launch {
+                vm.navigateToEditor.collect {
+                    onOpenEditor()
                 }
+            }
+            launch {
+                vm.events.collect { event ->
+                    when (event) {
+                        is TemplateListEvent.Error -> {
+                            soundPlayer.playBeep()
+                            Toast.makeText(context, event.message, Toast.LENGTH_LONG).show()
+                        }
 
-                is TemplateListEvent.TemplateDeleted -> {
-                    Toast.makeText(
-                        context,
-                        context.getString(R.string.toast_template_deleted, event.name),
-                        Toast.LENGTH_SHORT
-                    ).show()
+                        is TemplateListEvent.TemplateDeleted -> {
+                            Toast.makeText(
+                                context,
+                                context.getString(R.string.toast_template_deleted, event.name),
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+
+                        is TemplateListEvent.TemplateDuplicated -> {
+                            Toast.makeText(
+                                context,
+                                context.getString(R.string.toast_template_duplicated, event.template.name),
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+
+                        is TemplateListEvent.ActiveTemplateChanged -> {
+                            Toast.makeText(
+                                context,
+                                context.getString(R.string.toast_template_active, event.template.name),
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+
+                        is TemplateListEvent.TemplateCreated,
+                        is TemplateListEvent.TemplateUpdated -> Unit
+                    }
                 }
-
-                is TemplateListEvent.TemplateDuplicated -> {
-                    Toast.makeText(
-                        context,
-                        context.getString(R.string.toast_template_duplicated, event.template.name),
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-
-                is TemplateListEvent.ActiveTemplateChanged -> {
-                    Toast.makeText(
-                        context,
-                        context.getString(R.string.toast_template_active, event.template.name),
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-
-                is TemplateListEvent.TemplateCreated,
-                is TemplateListEvent.TemplateUpdated -> Unit
             }
         }
     }
