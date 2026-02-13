@@ -27,4 +27,8 @@ object Routes {
     /** Template list screen */
     @Serializable
     object TemplateList
+
+    /** Full-screen template editor */
+    @Serializable
+    object TemplateEditor
 }

@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kingpaging.qwelcome.data.DEFAULT_TEMPLATE_ID
+import com.kingpaging.qwelcome.data.NEW_TEMPLATE_ID
 import com.kingpaging.qwelcome.data.SettingsStore
 import com.kingpaging.qwelcome.data.Template
 import kotlinx.coroutines.CancellationException
@@ -16,6 +17,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.Instant
 
 private const val TAG = "TemplateListViewModel"
 private const val TEMPLATE_SOFT_LIMIT = 20
@@ -36,6 +38,19 @@ data class TemplateListUiState(
     val showTemplateLimitWarning: Boolean = false,
     val warningDismissed: Boolean = false,
     val validationError: String? = null // For required placeholder errors
+)
+
+/**
+ * UI state for the template editor.
+ */
+data class TemplateEditorUiState(
+    val name: String = "",
+    val tags: List<String> = emptyList(),
+    val newTagInput: String = "",
+    val contentText: String = "",
+    val nameError: Int? = null,
+    val contentError: String? = null,
+    val showDiscardDialog: Boolean = false
 )
 
 /**
@@ -61,8 +76,14 @@ class TemplateListViewModel(
     private val _uiState = MutableStateFlow(TemplateListUiState())
     val uiState: StateFlow<TemplateListUiState> = _uiState.asStateFlow()
 
+    private val _templateEditorUiState = MutableStateFlow(TemplateEditorUiState())
+    val templateEditorUiState: StateFlow<TemplateEditorUiState> = _templateEditorUiState.asStateFlow()
+
     private val _events = MutableSharedFlow<TemplateListEvent>(replay = 0, extraBufferCapacity = 1)
     val events: SharedFlow<TemplateListEvent> = _events.asSharedFlow()
+
+    private val _navigateToEditor = MutableSharedFlow<Unit>(replay = 0, extraBufferCapacity = 1)
+    val navigateToEditor: SharedFlow<Unit> = _navigateToEditor.asSharedFlow()
 
     init {
         // Combine templates and active template ID into UI state
@@ -128,6 +149,14 @@ class TemplateListViewModel(
      */
     fun startEditing(template: Template?) {
         _uiState.update { it.copy(editingTemplate = template) }
+        if (template != null) {
+            initializeTemplateEditorState(template)
+            viewModelScope.launch {
+                _navigateToEditor.emit(Unit)
+            }
+        } else {
+            resetTemplateEditorState()
+        }
     }
 
     /**
@@ -135,6 +164,45 @@ class TemplateListViewModel(
      */
     fun cancelEditing() {
         _uiState.update { it.copy(editingTemplate = null) }
+        resetTemplateEditorState()
+    }
+
+    fun updateName(name: String) {
+        _templateEditorUiState.update { current ->
+            current.copy(
+                name = name.take(50),
+                nameError = null
+            )
+        }
+    }
+
+    fun updateTags(tags: List<String>) {
+        _templateEditorUiState.update { it.copy(tags = sanitizeTags(tags)) }
+    }
+
+    fun updateNewTagInput(newTagInput: String) {
+        _templateEditorUiState.update { it.copy(newTagInput = newTagInput.take(MAX_TAG_LENGTH)) }
+    }
+
+    fun updateContent(content: String) {
+        _templateEditorUiState.update { current ->
+            current.copy(
+                contentText = content,
+                contentError = missingPlaceholdersError(content)
+            )
+        }
+    }
+
+    fun setNameError(nameError: Int?) {
+        _templateEditorUiState.update { it.copy(nameError = nameError) }
+    }
+
+    fun setContentError(contentError: String?) {
+        _templateEditorUiState.update { it.copy(contentError = contentError) }
+    }
+
+    fun toggleDiscardDialog(show: Boolean = !_templateEditorUiState.value.showDiscardDialog) {
+        _templateEditorUiState.update { it.copy(showDiscardDialog = show) }
     }
 
     /**
@@ -147,6 +215,7 @@ class TemplateListViewModel(
         if (missingPlaceholders.isNotEmpty()) {
             val errorMsg = "Required placeholders missing: ${missingPlaceholders.joinToString(", ")}"
             _uiState.update { it.copy(validationError = errorMsg) }
+            setContentError(missingPlaceholdersError(content))
             viewModelScope.launch {
                 _events.emit(TemplateListEvent.Error(errorMsg))
             }
@@ -158,6 +227,7 @@ class TemplateListViewModel(
                 val template = Template.create(name.trim(), content).copy(tags = sanitizeTags(tags))
                 settingsStore.saveTemplate(template)
                 _uiState.update { it.copy(editingTemplate = null, validationError = null) }
+                resetTemplateEditorState()
                 _events.emit(TemplateListEvent.TemplateCreated(template))
             } catch (e: CancellationException) {
                 throw e
@@ -178,6 +248,7 @@ class TemplateListViewModel(
         if (missingPlaceholders.isNotEmpty()) {
             val errorMsg = "Required placeholders missing: ${missingPlaceholders.joinToString(", ")}"
             _uiState.update { it.copy(validationError = errorMsg) }
+            setContentError(missingPlaceholdersError(content))
             viewModelScope.launch {
                 _events.emit(TemplateListEvent.Error(errorMsg))
             }
@@ -192,10 +263,11 @@ class TemplateListViewModel(
                         name = name.trim(),
                         content = Template.normalizeContent(content),
                         tags = sanitizeTags(tags),
-                        modifiedAt = java.time.Instant.now().toString()
+                        modifiedAt = Instant.now().toString()
                     )
                     settingsStore.saveTemplate(updated)
                     _uiState.update { it.copy(editingTemplate = null, validationError = null) }
+                    resetTemplateEditorState()
                     _events.emit(TemplateListEvent.TemplateUpdated(updated))
                 }
             } catch (e: CancellationException) {
@@ -278,6 +350,8 @@ class TemplateListViewModel(
                 _events.emit(TemplateListEvent.TemplateDuplicated(duplicate))
                 // Immediately open the duplicate for editing, clear any stale validation error
                 _uiState.update { it.copy(editingTemplate = duplicate, validationError = null) }
+                initializeTemplateEditorState(duplicate)
+                _navigateToEditor.emit(Unit)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -318,6 +392,41 @@ class TemplateListViewModel(
      */
     fun clearValidationError() {
         _uiState.update { it.copy(validationError = null) }
+    }
+
+    private fun initializeTemplateEditorState(template: Template) {
+        val isNewTemplate = template.id == NEW_TEMPLATE_ID
+        val initialName = if (isNewTemplate) "" else template.name
+        val initialContent = if (isNewTemplate) {
+            settingsStore.defaultTemplateContent
+        } else {
+            template.content
+        }
+
+        _templateEditorUiState.value = TemplateEditorUiState(
+            name = initialName,
+            tags = sanitizeTags(template.tags),
+            newTagInput = "",
+            contentText = initialContent,
+            nameError = null,
+            contentError = missingPlaceholdersError(initialContent),
+            showDiscardDialog = false
+        )
+    }
+
+    private fun resetTemplateEditorState() {
+        _templateEditorUiState.value = TemplateEditorUiState()
+    }
+
+    private fun missingPlaceholdersError(content: String): String? {
+        val missing = Template.findMissingPlaceholders(content)
+        return if (missing.isNotEmpty()) {
+            missing.joinToString(", ") {
+                it.removePrefix("{{ ").removeSuffix(" }}")
+            }
+        } else {
+            null
+        }
     }
 
     private fun sanitizeTags(tags: List<String>): List<String> {

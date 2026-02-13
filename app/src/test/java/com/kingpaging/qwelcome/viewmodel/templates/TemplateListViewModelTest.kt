@@ -11,7 +11,9 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -176,9 +178,65 @@ class TemplateListViewModelTest {
     }
 
     @Test
+    fun `duplicateAndEdit saves copy emits event and sets editingTemplate`() = runTest {
+        vm.events.test {
+            vm.duplicateAndEdit(userTemplate)
+            advanceUntilIdle()
+
+            coVerify { mockStore.saveTemplate(match { it.id != userTemplate.id }) }
+
+            val event = awaitItem()
+            assertTrue(event is TemplateListEvent.TemplateDuplicated)
+        }
+
+        val editingTemplate = vm.uiState.value.editingTemplate
+        assertNotNull(editingTemplate)
+        assertTrue(editingTemplate!!.id != userTemplate.id)
+        assertTrue(vm.uiState.value.validationError == null)
+    }
+
+    @Test
+    fun `duplicateAndEdit emits navigateToEditor for rapid requests`() = runTest {
+        val eventsCollector = backgroundScope.launch {
+            vm.events.collect { /* drain duplicate events so emit never blocks */ }
+        }
+
+        try {
+            vm.navigateToEditor.test {
+                repeat(3) {
+                    vm.duplicateAndEdit(userTemplate)
+                }
+                advanceUntilIdle()
+
+                repeat(3) {
+                    awaitItem()
+                }
+            }
+        } finally {
+            eventsCollector.cancel()
+        }
+    }
+
+    @Test
     fun `startEditing sets editingTemplate in state`() {
         vm.startEditing(userTemplate)
         assertEquals(userTemplate, vm.uiState.value.editingTemplate)
+    }
+
+    @Test
+    fun `startEditing emits navigateToEditor when template is non-null`() = runTest {
+        vm.navigateToEditor.test {
+            vm.startEditing(userTemplate)
+            awaitItem()
+        }
+    }
+
+    @Test
+    fun `startEditing does not emit navigateToEditor when template is null`() = runTest {
+        vm.navigateToEditor.test {
+            vm.startEditing(null)
+            expectNoEvents()
+        }
     }
 
     @Test

@@ -1,49 +1,34 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
-
 package com.kingpaging.qwelcome.ui.templates
 
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.text.input.TextFieldLineLimits
-import androidx.compose.foundation.text.input.TextFieldState
-import androidx.compose.foundation.text.input.delete
-import androidx.compose.foundation.text.input.insert
-import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -53,29 +38,18 @@ import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.InputChip
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SuggestionChip
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -83,86 +57,92 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.data.DEFAULT_TEMPLATE_ID
-import com.kingpaging.qwelcome.data.MessageTemplate
+import com.kingpaging.qwelcome.data.NEW_TEMPLATE_ID
 import com.kingpaging.qwelcome.data.Template
+import com.kingpaging.qwelcome.di.LocalSoundPlayer
 import com.kingpaging.qwelcome.di.LocalTemplateListViewModel
 import com.kingpaging.qwelcome.ui.components.CyberpunkBackdrop
-import com.kingpaging.qwelcome.ui.components.InteractivePlaceholderChip
 import com.kingpaging.qwelcome.ui.components.NeonButton
 import com.kingpaging.qwelcome.ui.components.NeonButtonStyle
 import com.kingpaging.qwelcome.ui.components.NeonOutlinedField
 import com.kingpaging.qwelcome.ui.components.NeonWarningBanner
 import com.kingpaging.qwelcome.ui.theme.LocalDarkTheme
 import com.kingpaging.qwelcome.util.rememberHapticFeedback
-import com.kingpaging.qwelcome.di.LocalSoundPlayer
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kingpaging.qwelcome.viewmodel.templates.TemplateListEvent
-import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.drop
-
-/**
- * Marker ID for new templates being created (not yet persisted).
- * Using a dedicated sentinel value that cannot collide with real UUIDs.
- */
-private const val NEW_TEMPLATE_ID = "__new__"
+import kotlinx.coroutines.launch
 
 @Suppress("LocalContextGetResourceValueCall")
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun TemplateListScreen(
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onOpenEditor: () -> Unit
 ) {
     val vm = LocalTemplateListViewModel.current
     val soundPlayer = LocalSoundPlayer.current
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     val uiState by vm.uiState.collectAsStateWithLifecycle()
     val haptic = rememberHapticFeedback()
 
-    // Handle system back button
-    BackHandler {
-        if (uiState.editingTemplate != null) {
-            vm.cancelEditing()
-        } else {
-            onBack()
-        }
-    }
+    BackHandler { onBack() }
 
-    // Handle one-shot events
-    LaunchedEffect(Unit) {
-        vm.events.collect { event ->
-            when (event) {
-                is TemplateListEvent.Error -> {
-                    soundPlayer.playBeep()
-                    Toast.makeText(context, event.message, Toast.LENGTH_LONG).show()
+    LaunchedEffect(vm, lifecycleOwner, onOpenEditor, soundPlayer, context) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            launch {
+                vm.navigateToEditor.collect {
+                    onOpenEditor()
                 }
-                is TemplateListEvent.TemplateCreated -> {
-                    Toast.makeText(context, context.getString(R.string.toast_template_created, event.template.name), Toast.LENGTH_SHORT).show()
-                }
-                is TemplateListEvent.TemplateUpdated -> {
-                    Toast.makeText(context, context.getString(R.string.toast_template_updated, event.template.name), Toast.LENGTH_SHORT).show()
-                }
-                is TemplateListEvent.TemplateDeleted -> {
-                    Toast.makeText(context, context.getString(R.string.toast_template_deleted, event.name), Toast.LENGTH_SHORT).show()
-                }
-                is TemplateListEvent.TemplateDuplicated -> {
-                    Toast.makeText(context, context.getString(R.string.toast_template_duplicated, event.template.name), Toast.LENGTH_SHORT).show()
-                }
-                is TemplateListEvent.ActiveTemplateChanged -> {
-                    Toast.makeText(context, context.getString(R.string.toast_template_active, event.template.name), Toast.LENGTH_SHORT).show()
+            }
+            launch {
+                vm.events.collect { event ->
+                    when (event) {
+                        is TemplateListEvent.Error -> {
+                            soundPlayer.playBeep()
+                            Toast.makeText(context, event.message, Toast.LENGTH_LONG).show()
+                        }
+
+                        is TemplateListEvent.TemplateDeleted -> {
+                            Toast.makeText(
+                                context,
+                                context.getString(R.string.toast_template_deleted, event.name),
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+
+                        is TemplateListEvent.TemplateDuplicated -> {
+                            Toast.makeText(
+                                context,
+                                context.getString(R.string.toast_template_duplicated, event.template.name),
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+
+                        is TemplateListEvent.ActiveTemplateChanged -> {
+                            Toast.makeText(
+                                context,
+                                context.getString(R.string.toast_template_active, event.template.name),
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+
+                        is TemplateListEvent.TemplateCreated,
+                        is TemplateListEvent.TemplateUpdated -> Unit
+                    }
                 }
             }
         }
     }
 
-    // Delete confirmation dialog
     uiState.showDeleteConfirmation?.let { template ->
         DeleteConfirmationDialog(
             templateName = template.name,
@@ -171,62 +151,45 @@ fun TemplateListScreen(
         )
     }
 
-    // Edit/Create dialog
-    uiState.editingTemplate?.let { template ->
-        val isNewTemplate = template.id == NEW_TEMPLATE_ID
-        TemplateEditDialog(
-            template = template,
-            isNew = isNewTemplate,
-            defaultContent = vm.getDefaultTemplateContent(),
-            onSave = { name, content, tags ->
-                if (isNewTemplate) {
-                    vm.createTemplate(name, content, tags)
-                } else {
-                    vm.updateTemplate(template.id, name, content, tags)
-                }
-            },
-            onDismiss = { vm.cancelEditing() }
-        )
-    }
-
     CyberpunkBackdrop {
         Scaffold(
             containerColor = Color.Transparent,
             topBar = {
                 TopAppBar(
-                    title = { Text(stringResource(R.string.title_templates), color = MaterialTheme.colorScheme.primary) },
+                    title = {
+                        Text(
+                            text = stringResource(R.string.title_templates),
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    },
                     navigationIcon = {
                         IconButton(onClick = {
                             haptic()
-                            if (uiState.editingTemplate != null) {
-                                vm.cancelEditing()
-                            } else {
-                                onBack()
-                            }
+                            onBack()
                         }) {
                             Icon(
-                                Icons.AutoMirrored.Filled.ArrowBack,
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = stringResource(R.string.content_desc_back),
                                 tint = MaterialTheme.colorScheme.primary
                             )
                         }
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = Color.Transparent
-                    )
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
                 )
             },
             floatingActionButton = {
                 FloatingActionButton(
                     onClick = {
                         haptic()
-                        // Create a placeholder template for "new" using explicit marker
                         vm.startEditing(Template(id = NEW_TEMPLATE_ID, name = "", content = ""))
                     },
                     containerColor = MaterialTheme.colorScheme.secondary,
                     contentColor = MaterialTheme.colorScheme.onSecondary
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = stringResource(R.string.content_desc_create_template))
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = stringResource(R.string.content_desc_create_template)
+                    )
                 }
             }
         ) { padding ->
@@ -240,7 +203,6 @@ fun TemplateListScreen(
                     CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 }
             } else {
-                // Filter templates by search query + selected tags (OR semantics for tags)
                 val filteredTemplates = remember(uiState.templates, uiState.searchQuery, uiState.selectedTags) {
                     val query = uiState.searchQuery.trim().lowercase()
                     val normalizedSelectedTags = uiState.selectedTags
@@ -262,7 +224,6 @@ fun TemplateListScreen(
                             .filter(matchesTag)
                         listOfNotNull(defaultTemplate) + userTemplates
                     } else {
-                        // Default template always shown at top, then filtered user templates
                         val userTemplates = uiState.templates
                             .filter { it.id != DEFAULT_TEMPLATE_ID }
                             .filter(matchesTag)
@@ -270,7 +231,7 @@ fun TemplateListScreen(
                         listOfNotNull(defaultTemplate) + userTemplates
                     }
                 }
-                
+
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
@@ -278,7 +239,6 @@ fun TemplateListScreen(
                         .padding(horizontal = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    // Search bar
                     item(key = "search") {
                         NeonOutlinedField(
                             value = uiState.searchQuery,
@@ -289,14 +249,14 @@ fun TemplateListScreen(
                                 if (uiState.searchQuery.isNotEmpty()) {
                                     IconButton(onClick = { haptic(); vm.updateSearchQuery("") }) {
                                         Icon(
-                                            Icons.Default.Search,
+                                            imageVector = Icons.Default.Search,
                                             contentDescription = stringResource(R.string.content_desc_clear_search),
                                             tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                                         )
                                     }
                                 } else {
                                     Icon(
-                                        Icons.Default.Search,
+                                        imageVector = Icons.Default.Search,
                                         contentDescription = stringResource(R.string.content_desc_search_templates),
                                         tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                                     )
@@ -328,7 +288,7 @@ fun TemplateListScreen(
                                         leadingIcon = if (isSelected) {
                                             {
                                                 Icon(
-                                                    Icons.Default.Check,
+                                                    imageVector = Icons.Default.Check,
                                                     contentDescription = null,
                                                     modifier = Modifier.size(FilterChipDefaults.IconSize)
                                                 )
@@ -347,11 +307,10 @@ fun TemplateListScreen(
                             }
                         }
                     }
-                    
-                    // Help text
+
                     item(key = "header") {
                         Text(
-                            stringResource(R.string.text_template_actions_help),
+                            text = stringResource(R.string.text_template_actions_help),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                             modifier = Modifier.padding(vertical = 4.dp)
@@ -370,27 +329,38 @@ fun TemplateListScreen(
                         }
                     }
 
-                    items(
-                        items = filteredTemplates,
-                        key = { it.id }
-                    ) { template ->
+                    items(items = filteredTemplates, key = { it.id }) { template ->
                         TemplateCard(
                             template = template,
                             isActive = template.id == uiState.activeTemplateId,
                             isDefault = template.id == DEFAULT_TEMPLATE_ID,
                             onSelect = { haptic(); vm.setActiveTemplate(template.id) },
-                            onEdit = { haptic(); vm.startEditing(template) },
+                            onEdit = {
+                                haptic()
+                                if (template.id == DEFAULT_TEMPLATE_ID) {
+                                    vm.duplicateAndEdit(template)
+                                } else {
+                                    vm.startEditing(template)
+                                }
+                            },
                             onDuplicate = { haptic(); vm.duplicateTemplate(template) },
                             onDelete = { haptic(); vm.showDeleteConfirmation(template) }
                         )
                     }
-                    
-                    // No results message
+
                     val hasActiveFilters = uiState.searchQuery.isNotEmpty() || uiState.selectedTags.isNotEmpty()
-                    if (filteredTemplates.isEmpty() || (filteredTemplates.size == 1 && filteredTemplates.first().id == DEFAULT_TEMPLATE_ID && hasActiveFilters)) {
+                    val shouldShowNoResults = (
+                        filteredTemplates.isEmpty() ||
+                        (
+                            filteredTemplates.size == 1 &&
+                                filteredTemplates.first().id == DEFAULT_TEMPLATE_ID &&
+                                hasActiveFilters
+                            )
+                    )
+                    if (shouldShowNoResults) {
                         item(key = "no_results") {
                             Text(
-                                if (uiState.searchQuery.isNotEmpty()) {
+                                text = if (uiState.searchQuery.isNotEmpty()) {
                                     stringResource(R.string.text_no_templates_match, uiState.searchQuery)
                                 } else {
                                     stringResource(R.string.text_no_templates_for_filters)
@@ -403,7 +373,7 @@ fun TemplateListScreen(
                     }
 
                     item(key = "bottom_spacer") {
-                        Spacer(Modifier.height(80.dp)) // Space for FAB
+                        Spacer(modifier = Modifier.height(80.dp))
                     }
                 }
             }
@@ -411,6 +381,7 @@ fun TemplateListScreen(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun TemplateCard(
     template: Template,
@@ -441,7 +412,9 @@ private fun TemplateCard(
                 if (isActive) MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
                 else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
             )
-        } else null,
+        } else {
+            null
+        },
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
@@ -451,13 +424,11 @@ private fun TemplateCard(
                 .fillMaxWidth()
                 .padding(12.dp)
         ) {
-            // Header row with title and action icons
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Title and status icons
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -472,7 +443,7 @@ private fun TemplateCard(
                     )
                     if (isActive) {
                         Icon(
-                            Icons.Default.Check,
+                            imageVector = Icons.Default.Check,
                             contentDescription = stringResource(R.string.label_active),
                             tint = MaterialTheme.colorScheme.secondary,
                             modifier = Modifier.size(18.dp)
@@ -480,7 +451,7 @@ private fun TemplateCard(
                     }
                     if (isDefault) {
                         Icon(
-                            Icons.Default.Lock,
+                            imageVector = Icons.Default.Lock,
                             contentDescription = stringResource(R.string.content_desc_builtin_template),
                             tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                             modifier = Modifier.size(16.dp)
@@ -488,21 +459,19 @@ private fun TemplateCard(
                     }
                 }
 
-                // Always-visible action icon buttons
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(0.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Edit button - for default template, triggers duplicate instead
                     IconButton(
                         onClick = {
                             haptic()
-                            if (isDefault) onDuplicate() else onEdit()
+                            onEdit()
                         },
                         modifier = Modifier.size(36.dp)
                     ) {
                         Icon(
-                            if (isDefault) Icons.Default.ContentCopy else Icons.Default.Edit,
+                            imageVector = if (isDefault) Icons.Default.ContentCopy else Icons.Default.Edit,
                             contentDescription = if (isDefault) {
                                 stringResource(R.string.content_desc_duplicate_to_edit)
                             } else {
@@ -513,7 +482,6 @@ private fun TemplateCard(
                         )
                     }
 
-                    // Duplicate button
                     IconButton(
                         onClick = {
                             haptic()
@@ -522,14 +490,13 @@ private fun TemplateCard(
                         modifier = Modifier.size(36.dp)
                     ) {
                         Icon(
-                            Icons.Default.ContentCopy,
+                            imageVector = Icons.Default.ContentCopy,
                             contentDescription = stringResource(R.string.content_desc_duplicate_template),
                             tint = MaterialTheme.colorScheme.tertiary,
                             modifier = Modifier.size(18.dp)
                         )
                     }
 
-                    // Delete button (hidden for default template)
                     if (!isDefault) {
                         IconButton(
                             onClick = {
@@ -539,7 +506,7 @@ private fun TemplateCard(
                             modifier = Modifier.size(36.dp)
                         ) {
                             Icon(
-                                Icons.Default.Delete,
+                                imageVector = Icons.Default.Delete,
                                 contentDescription = stringResource(R.string.content_desc_delete_template),
                                 tint = MaterialTheme.colorScheme.error.copy(alpha = 0.8f),
                                 modifier = Modifier.size(18.dp)
@@ -549,9 +516,9 @@ private fun TemplateCard(
                 }
             }
 
-            // Content preview
             Text(
-                text = template.content.take(100).replace("\n", " ") + if (template.content.length > 100) "..." else "",
+                text = template.content.take(100).replace("\n", " ") +
+                    if (template.content.length > 100) "..." else "",
                 style = MaterialTheme.typography.bodySmall.copy(
                     fontFamily = FontFamily.Monospace,
                     fontSize = 11.sp,
@@ -587,419 +554,6 @@ private fun TemplateCard(
     }
 }
 
-/**
- * Inserts text at the current cursor position in a TextFieldState.
- * If there's a selection, replaces the selected text.
- */
-private fun insertAtCursor(state: TextFieldState, textToInsert: String) {
-    if (textToInsert.isEmpty()) return
-    state.edit {
-        val selection = this.selection
-        // Delete any selected text first
-        if (selection.start != selection.end) {
-            delete(selection.start, selection.end)
-        }
-        // Insert at cursor position
-        insert(selection.start, textToInsert)
-        // Move cursor to end of inserted text
-        placeCursorAfterCharAt(selection.start + textToInsert.length - 1)
-    }
-}
-
-@OptIn(FlowPreview::class, ExperimentalLayoutApi::class, ExperimentalFoundationApi::class)
-@Composable
-private fun TemplateEditDialog(
-    template: Template,
-    isNew: Boolean,
-    defaultContent: String,
-    onSave: (name: String, content: String, tags: List<String>) -> Unit,
-    onDismiss: () -> Unit
-) {
-    val secondaryColor = MaterialTheme.colorScheme.secondary
-    
-    // Key the composable so editor state resets cleanly per-template
-    key(template.id) {
-        // Track original values for dirty detection
-        val originalName = remember { if (isNew) "" else template.name }
-        val originalContent = remember { if (isNew) defaultContent else template.content }
-        val originalTags = remember { template.tags }
-        
-        var name by remember { mutableStateOf(originalName) }
-        var tags by remember { mutableStateOf(originalTags) }
-        var newTagInput by remember { mutableStateOf("") }
-        var nameError by remember { mutableStateOf<Int?>(null) }
-        var contentError by remember { mutableStateOf<String?>(null) }
-        var showDiscardDialog by remember { mutableStateOf(false) }
-        
-        val contentState = rememberTextFieldState(initialText = originalContent)
-        val contentFocusRequester = remember { FocusRequester() }
-        
-        // Compute dirty state
-        val currentContent = contentState.text.toString()
-        val isDirty = name != originalName || currentContent != originalContent || tags != originalTags
-        val suggestedTags = listOf(
-            stringResource(R.string.tag_residential),
-            stringResource(R.string.tag_business),
-            stringResource(R.string.tag_install),
-            stringResource(R.string.tag_repair),
-            stringResource(R.string.tag_troubleshooting)
-        )
-
-        val addTag: (String) -> Unit = { rawTag ->
-            val normalized = rawTag.trim().take(32)
-            if (normalized.isNotBlank() && tags.none { it.equals(normalized, ignoreCase = true) }) {
-                tags = tags + normalized
-            }
-            newTagInput = ""
-        }
-        
-        // Handle dismiss with unsaved changes check
-        val handleDismiss: () -> Unit = {
-            if (isDirty) {
-                showDiscardDialog = true
-            } else {
-                onDismiss()
-            }
-        }
-        
-        // Validate on content changes (debounced, skip initial)
-        LaunchedEffect(Unit) {
-            snapshotFlow { contentState.text.toString() }
-                .drop(1) // Skip initial value to avoid flash
-                .debounce(150)
-                .collect { text ->
-                    val missing = Template.findMissingPlaceholders(text)
-                    contentError = if (missing.isNotEmpty()) {
-                        missing.joinToString(", ") {
-                            it.removePrefix("{{ ").removeSuffix(" }}")
-                        }
-                    } else {
-                        null
-                    }
-                }
-        }
-        
-        // Discard changes confirmation dialog
-        if (showDiscardDialog) {
-            AlertDialog(
-                onDismissRequest = { showDiscardDialog = false },
-                containerColor = MaterialTheme.colorScheme.surface,
-                title = { Text(stringResource(R.string.dialog_discard_changes_title), color = MaterialTheme.colorScheme.secondary) },
-                text = {
-                    Text(
-                        stringResource(R.string.text_template_unsaved_changes_warning),
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                },
-                confirmButton = {
-                    NeonButton(
-                        onClick = { 
-                            showDiscardDialog = false
-                            onDismiss() 
-                        },
-                        glowColor = MaterialTheme.colorScheme.error,
-                        style = NeonButtonStyle.PRIMARY
-                    ) {
-                        Text(stringResource(R.string.action_discard))
-                    }
-                },
-                dismissButton = {
-                    NeonButton(
-                        onClick = { showDiscardDialog = false },
-                        glowColor = secondaryColor,
-                        style = NeonButtonStyle.TERTIARY
-                    ) {
-                        Text(stringResource(R.string.action_keep_editing))
-                    }
-                }
-            )
-        }
-        
-        Dialog(
-            onDismissRequest = handleDismiss,
-            properties = DialogProperties(
-                usePlatformDefaultWidth = false,
-                decorFitsSystemWindows = false
-            )
-        ) {
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth(0.95f)
-                    .fillMaxHeight(0.85f)
-                    .imePadding(),
-                shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.surface,
-                tonalElevation = 6.dp
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp)
-                ) {
-                    // Title - compact
-                    Text(
-                        text = if (isNew) {
-                            stringResource(R.string.title_create_template)
-                        } else {
-                            stringResource(R.string.title_edit_template)
-                        },
-                        style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.secondary
-                    )
-                    
-                    Spacer(modifier = Modifier.height(12.dp))
-                    
-                    // Template Name field - compact with keyboard navigation
-                    OutlinedTextField(
-                        value = name,
-                        onValueChange = { newValue ->
-                            // Max 50 chars for template name
-                            if (newValue.length <= 50) {
-                                name = newValue
-                                nameError = null
-                            }
-                        },
-                        label = { Text(stringResource(R.string.label_name)) },
-                        isError = nameError != null,
-                        supportingText = nameError?.let { { Text(stringResource(it)) } },
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                        keyboardActions = KeyboardActions(
-                            onNext = { contentFocusRequester.requestFocus() }
-                        ),
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = secondaryColor,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                            cursorColor = secondaryColor,
-                            focusedLabelColor = secondaryColor,
-                            unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    )
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    Text(
-                        text = stringResource(R.string.label_tags),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-
-                    if (tags.isNotEmpty()) {
-                        FlowRow(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            tags.forEach { tag ->
-                                InputChip(
-                                    selected = true,
-                                    onClick = {
-                                        tags = tags.filterNot { it.equals(tag, ignoreCase = true) }
-                                    },
-                                    label = {
-                                        Text(
-                                            text = tag,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
-                                    },
-                                    trailingIcon = {
-                                        Icon(
-                                            Icons.Default.Close,
-                                            contentDescription = stringResource(
-                                                R.string.content_desc_remove_tag,
-                                                tag
-                                            ),
-                                            modifier = Modifier.size(16.dp)
-                                        )
-                                    }
-                                )
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(8.dp))
-                    }
-
-                    NeonOutlinedField(
-                        value = newTagInput,
-                        onValueChange = { newTagInput = it },
-                        label = { Text(stringResource(R.string.hint_add_tag)) },
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                        keyboardActions = KeyboardActions(
-                            onDone = { addTag(newTagInput) }
-                        )
-                    )
-
-                    val availableSuggestions = suggestedTags.filter { suggestion ->
-                        tags.none { it.equals(suggestion, ignoreCase = true) }
-                    }
-                    if (availableSuggestions.isNotEmpty()) {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        FlowRow(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            availableSuggestions.forEach { suggestion ->
-                                SuggestionChip(
-                                    onClick = { addTag(suggestion) },
-                                    label = { Text(suggestion) }
-                                )
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-                    
-                    // Inline placeholder chips with legend
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Text(
-                            stringResource(R.string.label_insert),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                        )
-                        Text(
-                            "·",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
-                        )
-                        Text(
-                            stringResource(R.string.hint_template_required_placeholders),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.7f)
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(4.dp))
-                    FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        MessageTemplate.PLACEHOLDERS.forEach { (placeholder, _) ->
-                            InteractivePlaceholderChip(
-                                placeholder = placeholder,
-                                onClick = {
-                                    insertAtCursor(contentState, placeholder)
-                                    contentFocusRequester.requestFocus()
-                                },
-                                isRequired = placeholder in Template.REQUIRED_PLACEHOLDERS
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    // Template Content field - expands to fill space, handles own scrolling
-                    val contentInteractionSource = remember { MutableInteractionSource() }
-                    val hasContentError = contentError != null
-                    BasicTextField(
-                        state = contentState,
-                        lineLimits = TextFieldLineLimits.MultiLine(
-                            minHeightInLines = 6,
-                            maxHeightInLines = Int.MAX_VALUE
-                        ),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f)
-                            .focusRequester(contentFocusRequester),
-                        textStyle = MaterialTheme.typography.bodyMedium.copy(
-                            color = MaterialTheme.colorScheme.onSurface
-                        ),
-                        cursorBrush = androidx.compose.ui.graphics.SolidColor(secondaryColor),
-                        interactionSource = contentInteractionSource,
-                        decorator = { innerTextField ->
-                            OutlinedTextFieldDefaults.DecorationBox(
-                                value = contentState.text.toString(),
-                                innerTextField = innerTextField,
-                                enabled = true,
-                                singleLine = false,
-                                visualTransformation = androidx.compose.ui.text.input.VisualTransformation.None,
-                                interactionSource = contentInteractionSource,
-                                label = { Text(stringResource(R.string.label_message)) },
-                                isError = hasContentError,
-                                supportingText = if (hasContentError) {
-                                    {
-                                        Text(
-                                            stringResource(
-                                                R.string.error_template_missing_placeholders,
-                                                contentError ?: ""
-                                            ),
-                                            color = MaterialTheme.colorScheme.error
-                                        )
-                                    }
-                                } else null,
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = if (hasContentError) MaterialTheme.colorScheme.error else secondaryColor,
-                                    unfocusedBorderColor = if (hasContentError) MaterialTheme.colorScheme.error.copy(alpha = 0.6f) else MaterialTheme.colorScheme.outline,
-                                    cursorColor = secondaryColor,
-                                    focusedLabelColor = if (hasContentError) MaterialTheme.colorScheme.error else secondaryColor,
-                                    unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
-                                ),
-                                container = {
-                                    OutlinedTextFieldDefaults.Container(
-                                        enabled = true,
-                                        isError = hasContentError,
-                                        interactionSource = contentInteractionSource,
-                                        colors = OutlinedTextFieldDefaults.colors(
-                                            focusedBorderColor = if (hasContentError) MaterialTheme.colorScheme.error else secondaryColor,
-                                            unfocusedBorderColor = if (hasContentError) MaterialTheme.colorScheme.error.copy(alpha = 0.6f) else MaterialTheme.colorScheme.outline
-                                        )
-                                    )
-                                }
-                            )
-                        }
-                    )
-
-                    Spacer(modifier = Modifier.height(12.dp))
-                    
-                    // Button row - both magenta for consistency
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        // Cancel - tertiary magenta (checks for unsaved changes)
-                        NeonButton(
-                            onClick = handleDismiss,
-                            glowColor = secondaryColor,
-                            style = NeonButtonStyle.TERTIARY
-                        ) {
-                            Text(stringResource(R.string.action_cancel))
-                        }
-                        
-                        Spacer(modifier = Modifier.width(8.dp))
-                        
-                        // Save - primary magenta (filled)
-                        val canSave = name.isNotBlank() && contentError == null
-                        NeonButton(
-                            onClick = {
-                                if (name.isBlank()) {
-                                    nameError = R.string.error_name_required
-                                } else if (contentError == null) {
-                                    onSave(name, contentState.text.toString(), tags)
-                                }
-                            },
-                            enabled = canSave,
-                            glowColor = secondaryColor,
-                            style = NeonButtonStyle.PRIMARY
-                        ) {
-                            Text(
-                                if (isNew) {
-                                    stringResource(R.string.action_create)
-                                } else {
-                                    stringResource(R.string.action_save)
-                                }
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
 @Composable
 private fun DeleteConfirmationDialog(
     templateName: String,
@@ -1010,16 +564,18 @@ private fun DeleteConfirmationDialog(
         onDismissRequest = onDismiss,
         containerColor = MaterialTheme.colorScheme.surface,
         title = {
-            Text(stringResource(R.string.title_delete_template), color = MaterialTheme.colorScheme.error)
+            Text(
+                text = stringResource(R.string.title_delete_template),
+                color = MaterialTheme.colorScheme.error
+            )
         },
         text = {
             Text(
-                stringResource(R.string.text_delete_template_confirm, templateName),
+                text = stringResource(R.string.text_delete_template_confirm, templateName),
                 color = MaterialTheme.colorScheme.onSurface
             )
         },
         confirmButton = {
-            // Destructive action - PRIMARY style with error color
             NeonButton(
                 onClick = onConfirm,
                 glowColor = MaterialTheme.colorScheme.error,
@@ -1029,7 +585,6 @@ private fun DeleteConfirmationDialog(
             }
         },
         dismissButton = {
-            // Cancel - TERTIARY magenta for consistency
             NeonButton(
                 onClick = onDismiss,
                 glowColor = MaterialTheme.colorScheme.secondary,

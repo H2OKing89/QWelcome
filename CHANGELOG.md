@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-No unreleased changes.
+### Fixed
+
+- **Template Editor Keyboard Overlap** - Replaced dialog-based template editing with a dedicated full-screen editor route so keyboard insets no longer hide editor actions, while preserving validation and unsaved-change protections
 
 ## [2.7.0] - 2026-02-11
 

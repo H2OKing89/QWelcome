@@ -8,6 +8,7 @@ import com.kingpaging.qwelcome.ui.CustomerIntakeScreen
 import com.kingpaging.qwelcome.ui.export.ExportScreen
 import com.kingpaging.qwelcome.ui.import_pkg.ImportScreen
 import com.kingpaging.qwelcome.ui.settings.SettingsScreen
+import com.kingpaging.qwelcome.ui.templates.TemplateEditorScreen
 import com.kingpaging.qwelcome.ui.templates.TemplateListScreen
 
 /**
@@ -61,7 +62,14 @@ fun AppNavGraph(navController: NavHostController) {
                 onBack = {
                     // Navigate back to the origin screen
                     navController.popBackStack()
-                }
+                },
+                onOpenEditor = { navController.navigate(Routes.TemplateEditor) }
+            )
+        }
+
+        composable<Routes.TemplateEditor> {
+            TemplateEditorScreen(
+                onBack = { navController.popBackStack() }
             )
         }
     }
