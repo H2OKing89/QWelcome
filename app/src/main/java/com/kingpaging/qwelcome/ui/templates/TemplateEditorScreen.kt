@@ -871,10 +871,7 @@ private fun ContentEditorField(
             minHeightInLines = 8,
             maxHeightInLines = Int.MAX_VALUE
         ),
-        modifier = modifier
-            .fillMaxWidth()
-            .heightIn(min = 240.dp)
-            .focusRequester(contentFocusRequester),
+        modifier = modifier.focusRequester(contentFocusRequester),
         textStyle = MaterialTheme.typography.bodyMedium.copy(
             color = MaterialTheme.colorScheme.onSurface
         ),

@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.Instant
 
 private const val TAG = "TemplateListViewModel"
 private const val TEMPLATE_SOFT_LIMIT = 20
@@ -150,7 +151,9 @@ class TemplateListViewModel(
         _uiState.update { it.copy(editingTemplate = template) }
         if (template != null) {
             initializeTemplateEditorState(template)
-            _navigateToEditor.tryEmit(Unit)
+            viewModelScope.launch {
+                _navigateToEditor.emit(Unit)
+            }
         } else {
             resetTemplateEditorState()
         }
@@ -260,7 +263,7 @@ class TemplateListViewModel(
                         name = name.trim(),
                         content = Template.normalizeContent(content),
                         tags = sanitizeTags(tags),
-                        modifiedAt = java.time.Instant.now().toString()
+                        modifiedAt = Instant.now().toString()
                     )
                     settingsStore.saveTemplate(updated)
                     _uiState.update { it.copy(editingTemplate = null, validationError = null) }
@@ -348,7 +351,7 @@ class TemplateListViewModel(
                 // Immediately open the duplicate for editing, clear any stale validation error
                 _uiState.update { it.copy(editingTemplate = duplicate, validationError = null) }
                 initializeTemplateEditorState(duplicate)
-                _navigateToEditor.tryEmit(Unit)
+                _navigateToEditor.emit(Unit)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
