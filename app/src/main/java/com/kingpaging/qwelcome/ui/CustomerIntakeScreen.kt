@@ -145,6 +145,12 @@ fun CustomerIntakeScreen(
             uiState.passwordError == null
     }
 
+    // Reset sheet state when QR conditions become invalid, so the sheet
+    // doesn't silently reappear once the fields become valid again.
+    LaunchedEffect(qrEnabled) {
+        if (!qrEnabled) showQrSheet = false
+    }
+
     if (showQrSheet && qrEnabled) {
         QrCodeBottomSheet(
             ssid = uiState.ssid,
