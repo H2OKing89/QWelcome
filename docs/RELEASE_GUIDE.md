@@ -30,10 +30,37 @@
 
 ## Full Release Workflow
 
+### Phase 0 — Merge All Pending Fix / Feature PRs First
+
+> **This step must happen before creating the release branch.** The release branch is a snapshot of `master` at the point it is cut. Any bug fix or feature that should be included in the release must already be on `master` before you proceed.
+
+**Required order of operations:**
+
+1. **Fix / feature work** lives on its own branch (`fix/<desc>` or `feature/<desc>`).
+2. **Open a PR** from that branch → `master`. Fill in the body, get CI green, get approval.
+3. **Merge the PR** into `master`.
+4. **Pull `master` locally** (`git pull origin master`) to incorporate the merged commits.
+5. **Only then** proceed to Phase 1 to create the release branch.
+
+```powershell
+# Confirm master is fully up to date before cutting the release branch
+git checkout master
+git pull origin master
+
+# Verify all expected fix/feature commits are present
+git log --oneline -10
+```
+
+> **Why?** If you create the release branch before merging a fix PR, that fix is absent from the
+> release unless you manually cherry-pick or re-merge — both of which are error-prone. Always
+> let `master` converge first.
+
+---
+
 ### Phase 1 — Prepare the Release Branch
 
 ```powershell
-# 1. Make sure you are on master and up to date
+# 1. Make sure you are on master and up to date (repeat git pull if needed after Phase 0)
 git checkout master
 git pull origin master
 
@@ -263,6 +290,18 @@ For an AI agent performing a release, here is the exact sequence of operations.
 **The agent handles everything — no manual steps required.**
 
 ```text
+# ── Phase 0: Land all fix/feature PRs into master first ──────────────────────
+0a. For each pending fix/feature:
+    a. git checkout -b fix/<desc> (or feature/<desc>) from master
+    b. Commit the changes
+    c. git push -u origin HEAD
+    d. Create PR → master via API/MCP tools
+    e. Wait for CI green + approval
+    f. Merge the PR on GitHub
+0b. git checkout master && git pull origin master
+    # Confirm all expected commits are present: git log --oneline -10
+# ─────────────────────────────────────────────────────────────────────────────
+
 1.  git checkout master && git pull origin master
 2.  git fetch --tags
 3.  $LAST_TAG = git describe --tags --abbrev=0 --match "v*"
