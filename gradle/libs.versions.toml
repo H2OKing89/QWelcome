@@ -1,5 +1,5 @@
 [versions]
-agp = "9.0.0"
+agp = "9.0.1"
 coreKtx = "1.17.0"
 appcompat = "1.7.1"
 junit = "4.13.2"
@@ -9,7 +9,7 @@ espressoCore = "3.7.0"
 # Includes collectAsStateWithLifecycle and other improvements
 lifecycle = "2.10.0"
 activityCompose = "1.12.2"
-kotlin = "2.0.21"
+kotlin = "2.2.10"
 composeBom = "2026.01.00"
 datastorePreferences = "1.2.0"
 splashscreen = "1.2.0"

@@ -95,7 +95,6 @@ fun CustomerIntakeScreen(
     val templateUiState by templateListViewModel.uiState.collectAsStateWithLifecycle()
     // Use rememberSaveable so rotation/process death doesn't reset these
     var passwordVisible by rememberSaveable { mutableStateOf(false) }
-    var showQrSheet by rememberSaveable { mutableStateOf(false) }
     // Dropdown state is transient - use remember so it collapses on rotation
     var templateDropdownExpanded by remember { mutableStateOf(false) }
     // Copy success feedback - brief visual confirmation (ChatGPT feedback: animate meaning)
@@ -132,25 +131,14 @@ fun CustomerIntakeScreen(
         }
     }
 
-    // QR Code Bottom Sheet
-    // For open networks, only SSID is required
-    // For secured networks, both SSID and valid password are required
-    val qrEnabled = if (uiState.isOpenNetwork) {
-        uiState.ssid.isNotBlank() && uiState.ssidError == null
-    } else {
-        uiState.ssid.isNotBlank() &&
-            uiState.ssidError == null &&
-            uiState.password.isNotBlank() &&
-            uiState.password.length >= WifiQrGenerator.MIN_PASSWORD_LENGTH &&
-            uiState.passwordError == null
-    }
-
-    if (showQrSheet && qrEnabled) {
+    // QR Code Bottom Sheet — showQrSheet and qrEnabled live in the ViewModel
+    // so the auto-reset (qrEnabled → false clears the sheet) is testable.
+    if (uiState.showQrSheet) {
         QrCodeBottomSheet(
             ssid = uiState.ssid,
             password = uiState.password,
             isOpenNetwork = uiState.isOpenNetwork,
-            onDismiss = { showQrSheet = false }
+            onDismiss = { customerIntakeViewModel.setShowQrSheet(false) }
         )
     }
 
@@ -240,10 +228,10 @@ fun CustomerIntakeScreen(
 
                 QrCodeSection(
                     uiState = uiState,
-                    enabled = qrEnabled,
+                    enabled = uiState.qrEnabled,
                     onShowQrClick = {
                         hapticFeedback()
-                        showQrSheet = true
+                        customerIntakeViewModel.setShowQrSheet(true)
                     }
                 )
             }

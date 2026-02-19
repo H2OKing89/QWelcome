@@ -123,6 +123,22 @@ class CustomerIntakeViewModel(
     // Track last action time for rate limiting
     private var lastActionTime: Long = 0L
 
+    /**
+     * Wraps [MutableStateFlow.update] with an automatic guard:
+     * if the resulting state has [CustomerIntakeUiState.showQrSheet] true
+     * but [CustomerIntakeUiState.qrEnabled] false, the sheet flag is cleared.
+     */
+    private inline fun updateState(transform: (CustomerIntakeUiState) -> CustomerIntakeUiState) {
+        _uiState.update { current ->
+            val next = transform(current)
+            if (next.showQrSheet && !next.qrEnabled) next.copy(showQrSheet = false) else next
+        }
+    }
+
+    fun setShowQrSheet(show: Boolean) {
+        updateState { it.copy(showQrSheet = show) }
+    }
+
     fun onPause() {
         savedStateHandle[KEY_BACKGROUND_TIMESTAMP] = timeProvider.elapsedRealtime()
     }
@@ -158,7 +174,7 @@ class CustomerIntakeViewModel(
     fun onSsidChanged(ssid: String) {
         // Real-time validation for SSID byte length (WiFi spec: max 32 bytes UTF-8)
         val error = if (ssid.isEmpty()) null else getWifiErrorMessage(WifiQrGenerator.validateSsid(ssid))
-        _uiState.update { it.copy(ssid = ssid, ssidError = error) }
+        updateState { it.copy(ssid = ssid, ssidError = error) }
     }
 
     fun onPasswordChanged(password: String) {
@@ -171,7 +187,7 @@ class CustomerIntakeViewModel(
             )
             else -> getWifiErrorMessage(WifiQrGenerator.validatePassword(password))
         }
-        _uiState.update { it.copy(password = password, passwordError = error) }
+        updateState { it.copy(password = password, passwordError = error) }
     }
 
     fun onAccountNumberChanged(accountNumber: String) {
@@ -183,7 +199,7 @@ class CustomerIntakeViewModel(
      * and the password field is cleared/disabled (for guest networks without passwords).
      */
     fun onOpenNetworkChanged(isOpen: Boolean) {
-        _uiState.update { state ->
+        updateState { state ->
             state.copy(
                 isOpenNetwork = isOpen,
                 // Clear password and error when switching to open network
@@ -293,7 +309,7 @@ class CustomerIntakeViewModel(
         val accountNumberError = if (currentState.accountNumber.isBlank()) resourceProvider.getString(R.string.error_account_empty) else null
 
         // Batch all error updates into a single state change to minimize recompositions
-        _uiState.update { state ->
+        updateState { state ->
             state.copy(
                 customerNameError = customerNameError,
                 customerPhoneError = customerPhoneError,
