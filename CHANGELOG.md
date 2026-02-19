@@ -9,6 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No unreleased changes.
 
+## [2.7.2] - 2026-02-18
+
+### Fixed
+
+- **QR Sheet Reappear Bug** - QR code bottom sheet no longer silently reopens after a user clears the SSID or password and then re-enters valid values; sheet state is now managed in the ViewModel with an automatic guard that resets the sheet whenever QR conditions become invalid
+- **QR Enabled Logic Centralized** - Moved `qrEnabled` computation from the composable into `CustomerIntakeUiState` as a derived property and `showQrSheet` into ViewModel state, making both testable and consistently enforced across all state transitions
+
+### Changed
+
+- **AGP 9.0.0 → 9.0.1** - Updated Android Gradle Plugin to latest patch release
+- **Kotlin 2.0.21 → 2.2.10** - Updated Kotlin to latest release
+- **Gradle 9.1.0 → 9.2.1** - Updated Gradle wrapper distribution
+
+### Documentation
+
+- **Release Guide Phase 0** - Documented the required pre-release flow: all fix/feature PRs must be merged into `master` before the release branch is cut
+
 ## [2.7.1] - 2026-02-12
 
 ### Fixed
