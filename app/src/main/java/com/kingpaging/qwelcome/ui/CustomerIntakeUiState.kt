@@ -2,6 +2,7 @@ package com.kingpaging.qwelcome.ui
 
 import com.kingpaging.qwelcome.data.CustomerData
 import com.kingpaging.qwelcome.util.StringUtils
+import com.kingpaging.qwelcome.util.WifiQrGenerator
 
 /**
  * UI state for the Customer Intake form.
@@ -26,7 +27,21 @@ data class CustomerIntakeUiState(
     val accountNumberError: String? = null,
     /** When true, password validation is skipped (for open/guest networks) */
     val isOpenNetwork: Boolean = false,
+    /** Whether the QR code bottom sheet is currently shown */
+    val showQrSheet: Boolean = false,
 ) {
+
+    /** True when the WiFi fields are valid enough to generate a QR code. */
+    val qrEnabled: Boolean
+        get() = if (isOpenNetwork) {
+            ssid.isNotBlank() && ssidError == null
+        } else {
+            ssid.isNotBlank() &&
+                ssidError == null &&
+                password.isNotBlank() &&
+                password.length >= WifiQrGenerator.MIN_PASSWORD_LENGTH &&
+                passwordError == null
+        }
 
     /**
      * Returns true if all form fields pass validation (no errors present).
