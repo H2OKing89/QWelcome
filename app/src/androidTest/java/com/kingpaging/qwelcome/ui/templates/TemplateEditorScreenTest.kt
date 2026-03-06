@@ -6,6 +6,7 @@ import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -87,9 +88,11 @@ class TemplateEditorScreenTest {
     @Test
     fun newTemplate_nameFieldIsEmpty() {
         setScreenContentNewTemplate()
+        val nameLabel = appContext.getString(R.string.label_name)
 
-        composeRule.onNodeWithText(appContext.getString(R.string.label_name))
+        composeRule.onNode(editableFieldWithLabel(nameLabel))
             .assertIsDisplayed()
+            .assertTextEquals(nameLabel, "")
     }
 
     @Test
@@ -297,38 +300,59 @@ class TemplateEditorScreenTest {
     // ── Name validation ──────────────────────────────────────────────
 
     @Test
-    fun savingWithBlankName_showsNameError() {
+    fun createButton_disabledAfterClearingName() {
         setScreenContentNewTemplate()
+        val nameLabel = appContext.getString(R.string.label_name)
 
-        // Content has default placeholders (valid), but name is blank
-        // Force save attempt by clearing name and pressing Create
-        composeRule.onNodeWithText(appContext.getString(R.string.action_create))
-            .performClick()
+        // Enter a name — button becomes enabled
+        composeRule.onNode(editableFieldWithLabel(nameLabel))
+            .performTextInput("Temporary Name")
         composeRule.waitForIdle()
 
-        composeRule.onNodeWithText(appContext.getString(R.string.error_name_required))
-            .assertIsDisplayed()
+        composeRule.onNodeWithText(appContext.getString(R.string.action_create))
+            .assertIsEnabled()
+
+        // Clear the name — button becomes disabled again
+        composeRule.onNode(editableFieldWithLabel(nameLabel))
+            .performTextClearance()
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithText(appContext.getString(R.string.action_create))
+            .assertIsNotEnabled()
     }
 
     @Test
-    fun typingAfterNameError_clearsError() {
+    fun createButton_reEnabledAfterRetypingName() {
         setScreenContentNewTemplate()
+        val nameLabel = appContext.getString(R.string.label_name)
 
-        // Trigger name error
+        // Start with blank name — button disabled
         composeRule.onNodeWithText(appContext.getString(R.string.action_create))
-            .performClick()
+            .assertIsNotEnabled()
+
+        // Type a name — button enabled
+        composeRule.onNode(editableFieldWithLabel(nameLabel))
+            .performTextInput("First Name")
         composeRule.waitForIdle()
 
-        composeRule.onNodeWithText(appContext.getString(R.string.error_name_required))
-            .assertIsDisplayed()
+        composeRule.onNodeWithText(appContext.getString(R.string.action_create))
+            .assertIsEnabled()
 
-        // Now type a name — error should clear
-        composeRule.onNode(editableFieldWithLabel(appContext.getString(R.string.label_name)))
-            .performTextInput("Fixed Name")
+        // Clear it — button disabled
+        composeRule.onNode(editableFieldWithLabel(nameLabel))
+            .performTextClearance()
         composeRule.waitForIdle()
 
-        composeRule.onNodeWithText(appContext.getString(R.string.error_name_required))
-            .assertDoesNotExist()
+        composeRule.onNodeWithText(appContext.getString(R.string.action_create))
+            .assertIsNotEnabled()
+
+        // Re-enter a name — button re-enabled
+        composeRule.onNode(editableFieldWithLabel(nameLabel))
+            .performTextInput("Second Name")
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithText(appContext.getString(R.string.action_create))
+            .assertIsEnabled()
     }
 
     // ── Discard dialog ───────────────────────────────────────────────
@@ -427,6 +451,8 @@ class TemplateEditorScreenTest {
             .performClick()
         composeRule.waitForIdle()
 
+        composeRule.onNodeWithText(appContext.getString(R.string.label_message))
+            .assertIsDisplayed()
         composeRule.onNodeWithText(appContext.getString(R.string.action_done))
             .assertIsDisplayed()
     }
@@ -482,7 +508,7 @@ class TemplateEditorScreenTest {
         tags: List<String> = emptyList()
     ) {
         val template = Template(
-            id = "test-template-id",
+            id = "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
             name = name,
             content = content,
             tags = tags
