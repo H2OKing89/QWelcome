@@ -91,7 +91,10 @@
     <string name="text_template_actions_help">Tap to select. Actions: edit, duplicate, delete.</string>
     <string name="text_no_templates_match">No templates match "%1$s"</string>
     <string name="text_no_templates_for_filters">No templates match the selected filters.</string>
-    <string name="warning_template_limit">You have %1$d templates. Consider archiving unused ones for best performance.</string>
+    <plurals name="warning_template_limit">
+      <item quantity="one">You have %1$d template. Consider archiving unused ones for best performance.</item>
+      <item quantity="other">You have %1$d templates. Consider archiving unused ones for best performance.</item>
+  </plurals>
     <string name="content_desc_builtin_template">Built-in (duplicate to customize)</string>
     <string name="content_desc_duplicate_to_edit">Duplicate to edit</string>
     <string name="content_desc_edit_template">Edit template</string>
@@ -113,7 +116,7 @@
     <string name="title_import">Import</string>
     <string name="title_import_intro">Import Templates or a Full Backup</string>
     <string name="text_import_intro_description">You can import from a file or paste the backup text directly.</string>
-    <string name="status_decoding">Decoding...</string>
+    <string name="status_decoding">Decoding&#8230;</string>
     <string name="content_desc_select_file_to_import">Select file to import</string>
     <string name="action_select_file">Select File</string>
     <string name="content_desc_paste_from_clipboard">Paste from clipboard</string>
@@ -130,7 +133,7 @@
     <string name="error_invalid_import_data">Invalid import data</string>
     <string name="error_import_failed">Failed to apply import: %1$s</string>
     <string name="error_unexpected_import">An unexpected error occurred during import: %1$s</string>
-    <string name="status_importing">Importing...</string>
+    <string name="status_importing">Importing&#8230;</string>
     <string name="content_desc_confirm_import">Confirm import</string>
     <string name="content_desc_success">Success</string>
     <string name="title_import_complete">Import Complete!</string>
@@ -230,20 +233,20 @@
     <string name="title_update_available">Update Available</string>
     <string name="text_update_download_confirm">Download v%1$s (%2$s)? This may use mobile data.</string>
     <string name="action_download_update">Download Update</string>
-    <string name="status_download_queued">Download queued...</string>
-    <string name="status_downloading_unknown">Downloading update...</string>
+    <string name="status_download_queued">Download queued&#8230;</string>
+    <string name="status_downloading_unknown">Downloading update&#8230;</string>
     <string name="status_downloading_progress">Downloading %1$s of %2$s (%3$d%%)</string>
-    <string name="status_verifying_update">Verifying update...</string>
+    <string name="status_verifying_update">Verifying update&#8230;</string>
     <string name="status_ready_to_install">Update ready to install</string>
     <string name="status_permission_required">Allow app installs for Q Welcome in system settings, then retry.</string>
-    <string name="status_installing">Launching Android installer...</string>
+    <string name="status_installing">Launching Android installer&#8230;</string>
     <string name="action_install_update">Install Update</string>
     <string name="action_open_install_settings">Allow Install</string>
     <string name="action_retry_install">Retry Install</string>
     <string name="content_desc_dismiss_update">Dismiss update</string>
     <string name="status_check_failed">Check failed</string>
     <string name="content_desc_check_updates">Check for updates</string>
-    <string name="status_checking_updates">Checking...</string>
+    <string name="status_checking_updates">Checking&#8230;</string>
     <string name="action_check_updates">Check for Updates</string>
     <string name="content_desc_view_github">View on GitHub</string>
     <string name="action_view_github">View on GitHub</string>
