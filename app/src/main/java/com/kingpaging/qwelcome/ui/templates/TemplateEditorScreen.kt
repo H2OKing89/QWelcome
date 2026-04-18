@@ -892,7 +892,7 @@ private fun ContentEditorField(
                         Text(
                             text = stringResource(
                                 R.string.error_template_missing_placeholders,
-                                contentError ?: ""
+                                contentError
                             ),
                             color = MaterialTheme.colorScheme.error
                         )
