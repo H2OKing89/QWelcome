@@ -23,7 +23,9 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalClipboardManager
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
@@ -45,7 +47,8 @@ fun TemplateVariablesSheet(
     onDismiss: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val clipboardManager = LocalClipboardManager.current
+    val clipboardManager = LocalClipboard.current
+    val scope = rememberCoroutineScope()
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -93,7 +96,13 @@ fun TemplateVariablesSheet(
                         placeholder = key,
                         description = description,
                         onCopy = {
-                            clipboardManager.setText(AnnotatedString(key))
+                            scope.launch {
+                                clipboardManager.setClipEntry(
+                                    androidx.compose.ui.platform.ClipEntry(
+                                        android.content.ClipData.newPlainText("Template Variable", key)
+                                    )
+                                )
+                            }
                         }
                     )
                 }

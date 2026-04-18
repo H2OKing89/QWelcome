@@ -320,8 +320,9 @@ fun TemplateListScreen(
                     if (uiState.showTemplateLimitWarning && !uiState.warningDismissed) {
                         item(key = "template_limit_warning") {
                             NeonWarningBanner(
-                                text = stringResource(
-                                    R.string.warning_template_limit,
+                                text = androidx.compose.ui.res.pluralStringResource(
+                                    R.plurals.warning_template_limit,
+                                    uiState.templates.size,
                                     uiState.templates.size
                                 ),
                                 onDismiss = { haptic(); vm.dismissTemplateLimitWarning() }
