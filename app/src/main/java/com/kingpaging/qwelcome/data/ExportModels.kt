@@ -53,7 +53,7 @@ data class TemplatePack(
     val templates: List<Template>,
     val defaults: ExportDefaults = ExportDefaults(),
     // Legacy field for backward compatibility - prefer defaults.defaultTemplateId
-    @Deprecated("Use defaults.defaultTemplateId instead")
+    @Deprecated("Use defaults.defaultTemplateId instead", ReplaceWith("defaults.defaultTemplateId"))
     val defaultTemplateId: String? = null
 ) {
     init {
@@ -66,6 +66,7 @@ data class TemplatePack(
      * Get the effective default template ID, checking both new and legacy locations.
      */
     fun getEffectiveDefaultTemplateId(): String? {
+        @Suppress("DEPRECATION")
         return defaults.defaultTemplateId ?: defaultTemplateId
     }
 
@@ -161,7 +162,7 @@ data class FullBackup(
     val defaults: ExportDefaults = ExportDefaults(),
     val settings: ExportedSettings? = null,
     // Legacy field for backward compatibility - prefer defaults.defaultTemplateId
-    @Deprecated("Use defaults.defaultTemplateId instead")
+    @Deprecated("Use defaults.defaultTemplateId instead", ReplaceWith("defaults.defaultTemplateId"))
     val defaultTemplateId: String? = null
 ) {
     init {
@@ -173,7 +174,9 @@ data class FullBackup(
     /**
      * Get the effective default template ID, checking both new and legacy locations.
      */
+    @Suppress("DEPRECATION")
     fun getEffectiveDefaultTemplateId(): String? {
+        @Suppress("DEPRECATION")
         return defaults.defaultTemplateId ?: defaultTemplateId
     }
 

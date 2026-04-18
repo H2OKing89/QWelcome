@@ -9,7 +9,8 @@ dependencies {
 
 protobuf {
     protoc {
-        artifact = libs.protobuf.protoc.get().toString()
+        // The protobuf plugin requires standard artifact spec format to not trigger gradle deprecations
+        artifact = "com.google.protobuf:protoc:${libs.versions.protobuf.get()}"
     }
     generateProtoTasks {
         all().forEach {
