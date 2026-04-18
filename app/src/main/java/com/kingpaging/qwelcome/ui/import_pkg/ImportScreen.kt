@@ -50,7 +50,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalClipboardManager
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -83,7 +85,8 @@ fun ImportScreen(
     val vm = LocalImportViewModel.current
     val soundPlayer = LocalSoundPlayer.current
     val context = LocalContext.current
-    val clipboardManager = LocalClipboardManager.current
+    val clipboardManager = LocalClipboard.current
+    val scope = rememberCoroutineScope()
     val maxImportSizeLabel = remember { formatBytesAsMb(MAX_IMPORT_SIZE_BYTES.toLong()) }
     val uiState by vm.uiState.collectAsStateWithLifecycle()
 
@@ -196,9 +199,11 @@ fun ImportScreen(
                                 error = uiState.error,
                                 onOpenFile = { vm.onOpenFileRequest() },
                                 onPaste = {
+                                scope.launch {
                                     try {
-                                        clipboardManager.getText()?.let {
-                                            if (exceedsImportLimit(it.text, MAX_IMPORT_SIZE_BYTES)) {
+                                        clipboardManager.getClipEntry()?.let {
+                                            val text = it.clipData.getItemAt(0).text.toString()
+                                            if (exceedsImportLimit(text, MAX_IMPORT_SIZE_BYTES)) {
                                                 soundPlayer.playBeep()
                                                 Toast.makeText(
                                                     context,
@@ -206,7 +211,7 @@ fun ImportScreen(
                                                     Toast.LENGTH_LONG
                                                 ).show()
                                             } else {
-                                                vm.onPasteContent(it.text)
+                                                vm.onPasteContent(text)
                                             }
                                         } ?: Toast.makeText(context, R.string.toast_clipboard_empty, Toast.LENGTH_SHORT).show()
                                     } catch (e: SecurityException) {
@@ -214,6 +219,7 @@ fun ImportScreen(
                                         soundPlayer.playBeep()
                                         Toast.makeText(context, R.string.toast_cannot_access_clipboard, Toast.LENGTH_SHORT).show()
                                     }
+                                }
                                 }
                             )
                         }
