@@ -12,9 +12,11 @@ No unreleased changes.
 ## [2.7.3] - 2026-04-18
 
 ### Added
+
 - **UI Tests for Template Editor** - Added comprehensive automated UI tests for the Template Editor screen ensuring reliable validation, character limit handling, and discard dialog behavior.
 
 ### Changed
+
 - **Dependency Updates** - Updated various core dependencies to their latest stable versions for 2026:
   - Kotlin 2.3.20
   - Compose BOM 2026.03.01
@@ -25,8 +27,8 @@ No unreleased changes.
 - **Gradle 10 Compatibility** - Resolved various deprecation warnings including multi-string dependency notation in the proto module and deprecated ClipboardManager APIs.
 
 ### Fixed
-- **Code Quality Cleanup** - Fixed multiple Kotlin compiler warnings, removed unnecessary non-null assertions, and migrated to modern `LocalClipboard` APIs.
 
+- **Code Quality Cleanup** - Fixed multiple Kotlin compiler warnings, removed unnecessary non-null assertions, and migrated to modern `LocalClipboard` APIs (Note: `Navigator.kt` continues to use the standard system `ClipboardManager` as it operates outside the Compose context).
 
 ## [2.7.2] - 2026-02-18
 
