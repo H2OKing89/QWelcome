@@ -3,7 +3,6 @@
 package com.kingpaging.qwelcome.ui.export
 
 import android.content.ClipData
-import android.content.ClipboardManager
 import android.content.Context
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
@@ -65,7 +64,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.ClipEntry
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
@@ -88,6 +90,7 @@ import com.kingpaging.qwelcome.di.LocalSoundPlayer
 import com.kingpaging.qwelcome.viewmodel.export.ExportEvent
 import com.kingpaging.qwelcome.viewmodel.export.ExportType
 import java.io.IOException
+import kotlinx.coroutines.launch
 
 @Suppress("LocalContextGetResourceValueCall")
 @Composable
@@ -98,6 +101,8 @@ fun ExportScreen(
     val soundPlayer = LocalSoundPlayer.current
     val context = LocalContext.current
     val navigator = LocalNavigator.current
+    val clipboardManager = LocalClipboard.current
+    val scope = rememberCoroutineScope()
     val uiState by vm.uiState.collectAsStateWithLifecycle()
     val haptic = rememberHapticFeedback()
 
@@ -357,8 +362,10 @@ fun ExportScreen(
                             NeonMagentaButton(
                                 onClick = {
                                     uiState.lastExportedJson?.let { json ->
-                                        copyToClipboard(context, json)
-                                        vm.onCopiedToClipboard()
+                                        scope.launch {
+                                            clipboardManager.setClipEntry(ClipEntry(ClipData.newPlainText(context.getString(R.string.title_export), json)))
+                                            vm.onCopiedToClipboard()
+                                        }
                                     }
                                 },
                                 modifier = Modifier.weight(1f)
@@ -680,14 +687,6 @@ private fun ExportOptionCard(
     }
 }
 
-/**
- * Copy JSON to system clipboard.
- */
-private fun copyToClipboard(context: Context, json: String) {
-    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-    val clip = ClipData.newPlainText(context.getString(R.string.title_export), json)
-    clipboard.setPrimaryClip(clip)
-}
 
 /**
  * Format content for preview display.

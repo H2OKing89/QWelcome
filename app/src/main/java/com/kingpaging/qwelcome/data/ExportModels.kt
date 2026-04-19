@@ -65,8 +65,8 @@ data class TemplatePack(
     /**
      * Get the effective default template ID, checking both new and legacy locations.
      */
+    @Suppress("DEPRECATION")
     fun getEffectiveDefaultTemplateId(): String? {
-        @Suppress("DEPRECATION")
         return defaults.defaultTemplateId ?: defaultTemplateId
     }
 
@@ -176,7 +176,6 @@ data class FullBackup(
      */
     @Suppress("DEPRECATION")
     fun getEffectiveDefaultTemplateId(): String? {
-        @Suppress("DEPRECATION")
         return defaults.defaultTemplateId ?: defaultTemplateId
     }
 

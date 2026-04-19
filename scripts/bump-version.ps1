@@ -10,7 +10,7 @@
     Version bump type: major, minor, patch, or explicit X.Y.Z
 
 .PARAMETER Push
-    Push the release branch to remote after creation (tag is NOT pushed —
+    Push the release branch to remote after creation (tag is NOT pushed -
     it must be recreated on master after the PR is merged)
 
 .PARAMETER Force
@@ -172,7 +172,7 @@ VERSION_CODE=$NewCode
                 }
                 "collecting" {
                     if ($line -match '^\s*## \[') {
-                        # Hit the next version heading — done collecting
+                        # Hit the next version heading - done collecting
                         EmitUnreleasedSection $newLines $unreleasedLines $NewName $today
                         $newLines.Add($line)
                         $state = "after"
@@ -208,12 +208,12 @@ VERSION_CODE=$NewCode
     Write-Host "`nCreated commit and tag v$NewName" -ForegroundColor Green
 
     # ── Optional push ─────────────────────────────────────────────────────
-    # Only push the branch — NEVER the tag. The tag must be recreated on
+    # Only push the branch - NEVER the tag. The tag must be recreated on
     # master after the PR is merged (see docs/RELEASE_GUIDE.md Phase 6).
     if ($Push) {
         Write-Host "`nPushing branch to remote..." -ForegroundColor Yellow
         git push -u origin HEAD
-        Write-Host "Branch pushed (tag NOT pushed — retag on master after merge)." -ForegroundColor Green
+        Write-Host "Branch pushed (tag NOT pushed - retag on master after merge)." -ForegroundColor Green
     }
 
     Write-Host "`n✅ Done! Release v$NewName (code $NewCode) is ready." -ForegroundColor Cyan

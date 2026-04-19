@@ -887,7 +887,7 @@ private fun ContentEditorField(
                 interactionSource = contentInteractionSource,
                 label = { Text(stringResource(R.string.label_message)) },
                 isError = hasContentError,
-                supportingText = if (hasContentError) {
+                supportingText = if (contentError != null) {
                     {
                         Text(
                             text = stringResource(
