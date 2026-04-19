@@ -201,19 +201,30 @@ fun ImportScreen(
                                 onPaste = {
                                 scope.launch {
                                     try {
-                                        clipboardManager.getClipEntry()?.let {
-                                            val text = it.clipData.getItemAt(0).text.toString()
-                                            if (exceedsImportLimit(text, MAX_IMPORT_SIZE_BYTES)) {
-                                                soundPlayer.playBeep()
-                                                Toast.makeText(
-                                                    context,
-                                                    context.getString(R.string.toast_import_too_large, maxImportSizeLabel),
-                                                    Toast.LENGTH_LONG
-                                                ).show()
+                                        clipboardManager.getClipEntry()?.let { entry ->
+                                            val text = entry.clipData.getItemAt(0).coerceToText(context).toString()
+                                            if (text.isNotBlank()) {
+                                                if (exceedsImportLimit(text, MAX_IMPORT_SIZE_BYTES)) {
+                                                    soundPlayer.playBeep()
+                                                    Toast.makeText(
+                                                        context,
+                                                        context.getString(
+                                                            R.string.toast_import_too_large,
+                                                            maxImportSizeLabel
+                                                        ),
+                                                        Toast.LENGTH_LONG
+                                                    ).show()
+                                                } else {
+                                                    vm.onPasteContent(text)
+                                                }
                                             } else {
-                                                vm.onPasteContent(text)
+                                                soundPlayer.playBeep()
+                                                Toast.makeText(context, R.string.toast_clipboard_empty, Toast.LENGTH_SHORT).show()
                                             }
-                                        } ?: Toast.makeText(context, R.string.toast_clipboard_empty, Toast.LENGTH_SHORT).show()
+                                        } ?: run {
+                                            soundPlayer.playBeep()
+                                            Toast.makeText(context, R.string.toast_clipboard_empty, Toast.LENGTH_SHORT).show()
+                                        }
                                     } catch (e: SecurityException) {
                                         Log.w("ImportScreen", "Clipboard access denied", e)
                                         soundPlayer.playBeep()
