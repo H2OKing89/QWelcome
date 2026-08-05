@@ -1,7 +1,7 @@
 package com.kingpaging.qwelcome.data
 
 object MessageTemplate {
-    private val PLACEHOLDER = Regex("""\{\{\s*(\w+)\s*}}""")
+    private val PLACEHOLDER = Regex("""\{\{\s*(\w+)\s*\}\}""")
 
     /** Placeholder keys - single source of truth */
     const val KEY_CUSTOMER_NAME = "{{ customer_name }}"
@@ -39,19 +39,23 @@ object MessageTemplate {
         data: CustomerData,
         techProfile: TechProfile?
     ): String {
-        val valueMap = mutableMapOf(
-            "customer_name" to data.customerName,
-            "ssid" to data.ssid,
-            "password" to data.password,
-            "account_number" to data.accountNumber
+        val valueMap = mapOf(
+            rawKey(KEY_CUSTOMER_NAME) to data.customerName,
+            rawKey(KEY_SSID) to data.ssid,
+            rawKey(KEY_PASSWORD) to data.password,
+            rawKey(KEY_ACCOUNT_NUMBER) to data.accountNumber,
+            rawKey(KEY_TECH_SIGNATURE) to techProfile?.let(::buildTechSignature).orEmpty()
         )
-
-        valueMap["tech_signature"] = techProfile?.let(::buildTechSignature).orEmpty()
 
         return template.replace(PLACEHOLDER) { match ->
             valueMap[match.groupValues[1]] ?: ""
         }
     }
+
+    private fun rawKey(placeholder: String): String = placeholder
+        .removePrefix("{{")
+        .removeSuffix("}}")
+        .trim()
 
     /**
      * Builds a formatted tech signature from profile info.

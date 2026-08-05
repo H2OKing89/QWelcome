@@ -6,6 +6,7 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -80,6 +81,18 @@ class SettingsScreenUpdateDialogTest {
         composeRule.runOnIdle { vm.dismissDownloadConfirmation() }
         composeRule.waitForIdle()
         composeRule.onAllNodesWithText(title).assertCountEquals(0)
+    }
+
+    @Test
+    fun privacySwitches_have_title_content_descriptions() {
+        setScreenContent()
+
+        composeRule.onNodeWithContentDescription(
+            appContext.getString(R.string.label_crash_reporting)
+        ).assertIsDisplayed()
+        composeRule.onNodeWithContentDescription(
+            appContext.getString(R.string.label_screen_capture_protection)
+        ).assertIsDisplayed()
     }
 
     private fun setScreenContent() {

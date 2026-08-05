@@ -1,6 +1,10 @@
 package com.kingpaging.qwelcome.data
 
 import com.kingpaging.qwelcome.viewmodel.factory.AppViewModelProvider
+import java.io.IOException
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -70,6 +74,16 @@ class SettingsStoreMappersTest {
 
         assertTrue(mapped.crashReportingEnabled)
         assertTrue(!mapped.screenCaptureProtectionEnabled)
+    }
+
+    @Test
+    fun `privacy settings I O fallback disables crash reporting and protects screen capture`() = runTest {
+        val settings = flow<UserPreferences> { throw IOException("read failed") }
+            .readPrivacySettings()
+            .first()
+
+        assertTrue(!settings.crashReportingEnabled)
+        assertTrue(settings.screenCaptureProtectionEnabled)
     }
 
 }

@@ -115,11 +115,7 @@ class SettingsViewModelTest {
         vm.setCrashReportingEnabled(false)
         advanceUntilIdle()
 
-        coVerify {
-            mockStore.savePrivacySettings(
-                PrivacySettings(crashReportingEnabled = false)
-            )
-        }
+        coVerify { mockStore.updatePrivacySettings(any()) }
     }
 
     @Test
@@ -127,11 +123,26 @@ class SettingsViewModelTest {
         vm.setScreenCaptureProtectionEnabled(true)
         advanceUntilIdle()
 
-        coVerify {
-            mockStore.savePrivacySettings(
-                PrivacySettings(screenCaptureProtectionEnabled = true)
-            )
+        coVerify { mockStore.updatePrivacySettings(any()) }
+    }
+
+    @Test
+    fun `privacy setters preserve both changes when invoked before dispatcher advancement`() = runTest {
+        var storedSettings = PrivacySettings()
+        coEvery { mockStore.updatePrivacySettings(any()) } coAnswers {
+            @Suppress("UNCHECKED_CAST")
+            val transform = invocation.args[0] as (PrivacySettings) -> PrivacySettings
+            storedSettings = transform(storedSettings)
         }
+
+        vm.setCrashReportingEnabled(false)
+        vm.setScreenCaptureProtectionEnabled(true)
+        advanceUntilIdle()
+
+        assertEquals(
+            PrivacySettings(crashReportingEnabled = false, screenCaptureProtectionEnabled = true),
+            storedSettings
+        )
     }
 
     @Test

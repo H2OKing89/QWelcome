@@ -2,333 +2,196 @@
 <SmellBaseline>
   <ManuallySuppressedIssues/>
   <CurrentIssues>
-    <ID>ConstructorParameterNaming:UpdateChecker.kt$GitHubAsset$val browser_download_url: String</ID>
-    <ID>ConstructorParameterNaming:UpdateChecker.kt$GitHubRelease$val html_url: String</ID>
-    <ID>ConstructorParameterNaming:UpdateChecker.kt$GitHubRelease$val tag_name: String</ID>
-    <ID>CyclomaticComplexMethod:ExportScreen.kt$@Suppress("LocalContextGetResourceValueCall") @Composable fun ExportScreen( onBack: () -&gt; Unit )</ID>
-    <ID>CyclomaticComplexMethod:ImportApplyService.kt$ImportApplyService$suspend fun applyFullBackup( backup: FullBackup, importTechProfile: Boolean = false, importDefaultTemplate: Boolean = true, resolutions: Map&lt;String, ConflictResolution&gt; = emptyMap() ): ImportApplyResult</ID>
-    <ID>CyclomaticComplexMethod:ImportScreen.kt$@Suppress("LocalContextGetResourceValueCall", "LocalContextResourcesRead") @Composable fun ImportScreen( onBack: () -&gt; Unit, onImportComplete: () -&gt; Unit )</ID>
-    <ID>CyclomaticComplexMethod:NeonComponents.kt$@Composable fun NeonButton( onClick: () -&gt; Unit, modifier: Modifier = Modifier, glowColor: Color = MaterialTheme.colorScheme.primary, enabled: Boolean = true, style: NeonButtonStyle = NeonButtonStyle.PRIMARY, content: @Composable RowScope.() -&gt; Unit )</ID>
-    <ID>CyclomaticComplexMethod:QrCodeBottomSheet.kt$private suspend fun saveQrCodeToGallery( context: Context, wifiString: String, ssid: String )</ID>
-    <ID>CyclomaticComplexMethod:SettingsScreen.kt$@Composable fun SettingsScreen( onBack: () -&gt; Unit, onOpenExport: () -&gt; Unit = {}, onOpenImport: () -&gt; Unit = {}, onOpenTemplates: () -&gt; Unit = {} )</ID>
-    <ID>CyclomaticComplexMethod:TemplateListScreen.kt$@OptIn(ExperimentalLayoutApi::class) @Composable private fun TemplateCard( template: Template, isActive: Boolean, isDefault: Boolean, onSelect: () -&gt; Unit, onEdit: () -&gt; Unit, onDuplicate: () -&gt; Unit, onDelete: () -&gt; Unit )</ID>
-    <ID>CyclomaticComplexMethod:TemplateListScreen.kt$@Suppress("LocalContextGetResourceValueCall") @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class) @Composable fun TemplateListScreen( onBack: () -&gt; Unit, onOpenEditor: () -&gt; Unit )</ID>
-    <ID>ForbiddenComment:Type.kt$// TODO: Reserved for future light mode header shadows if design requires them.</ID>
-    <ID>FunctionNaming:AppNavGraph.kt$@Composable fun AppNavGraph(navController: NavHostController)</ID>
-    <ID>FunctionNaming:ContentEditorDialog.kt$@Composable internal fun ContentEditorField( contentState: TextFieldState, contentFocusRequester: FocusRequester, contentInteractionSource: MutableInteractionSource, contentError: String?, modifier: Modifier = Modifier )</ID>
-    <ID>FunctionNaming:ContentEditorDialog.kt$@OptIn(ExperimentalLayoutApi::class) @Composable internal fun ContentEditorDialog( contentState: TextFieldState, contentFocusRequester: FocusRequester, contentInteractionSource: MutableInteractionSource, contentError: String?, onDismissRequest: () -&gt; Unit, onInsertPlaceholder: (String) -&gt; Unit )</ID>
-    <ID>FunctionNaming:CustomerIntakeScreen.kt$@Composable private fun ActionButtonRow( copySuccess: Boolean, onSmsClick: () -&gt; Unit, onShareClick: () -&gt; Unit, onCopyClick: () -&gt; Unit )</ID>
-    <ID>FunctionNaming:CustomerIntakeScreen.kt$@Composable private fun CustomerFormFields( uiState: CustomerIntakeUiState, passwordVisible: Boolean, onCustomerNameChanged: (String) -&gt; Unit, onCustomerPhoneChanged: (String) -&gt; Unit, onSsidChanged: (String) -&gt; Unit, securityType: WifiQrGenerator.SecurityType, securityDropdownExpanded: Boolean, onSecurityDropdownExpandedChange: (Boolean) -&gt; Unit, onSecurityTypeChanged: (WifiQrGenerator.SecurityType) -&gt; Unit, isHiddenNetwork: Boolean, onHiddenNetworkChanged: (Boolean) -&gt; Unit, onOpenNetworkChanged: (Boolean) -&gt; Unit, onPasswordChanged: (String) -&gt; Unit, onPasswordVisibilityToggle: () -&gt; Unit, onAccountNumberChanged: (String) -&gt; Unit )</ID>
-    <ID>FunctionNaming:CustomerIntakeScreen.kt$@Composable private fun QrCodeSection( uiState: CustomerIntakeUiState, enabled: Boolean, onShowQrClick: () -&gt; Unit )</ID>
-    <ID>FunctionNaming:CustomerIntakeScreen.kt$@Composable private fun TemplateSelector( templateUiState: TemplateListUiState, expanded: Boolean, onExpandedChange: (Boolean) -&gt; Unit, onTemplateSelected: (String) -&gt; Unit, onManageTemplates: () -&gt; Unit )</ID>
-    <ID>FunctionNaming:CustomerIntakeScreen.kt$@Suppress("LocalContextGetResourceValueCall") @Composable fun CustomerIntakeScreen( onOpenSettings: () -&gt; Unit, onOpenTemplates: () -&gt; Unit = {} )</ID>
-    <ID>FunctionNaming:CyberpunkBackdrop.kt$@Composable fun CyberpunkBackdrop( modifier: Modifier = Modifier, content: @Composable BoxScope.() -&gt; Unit )</ID>
-    <ID>FunctionNaming:CyberpunkBackdrop.kt$@Composable private fun ScanlineOverlay(modifier: Modifier = Modifier, isDark: Boolean = true)</ID>
-    <ID>FunctionNaming:CyberpunkTheme.kt$@Composable fun CyberpunkTheme( darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable () -&gt; Unit )</ID>
-    <ID>FunctionNaming:ExportScreen.kt$@Composable private fun ExportOptionCard( title: String, description: String, icon: ImageVector, iconTint: Color, isLoading: Boolean, onClick: () -&gt; Unit )</ID>
-    <ID>FunctionNaming:ExportScreen.kt$@Composable private fun TemplateSelectionDialog( templates: List&lt;Template&gt;, selectedIds: Set&lt;String&gt;, onToggleTemplate: (String) -&gt; Unit, onToggleSelectAll: () -&gt; Unit, onDismiss: () -&gt; Unit, onExport: () -&gt; Unit )</ID>
-    <ID>FunctionNaming:ExportScreen.kt$@Composable private fun TemplateSelectionItem( template: Template, isSelected: Boolean, onToggle: () -&gt; Unit )</ID>
-    <ID>FunctionNaming:ExportScreen.kt$@Suppress("LocalContextGetResourceValueCall") @Composable fun ExportScreen( onBack: () -&gt; Unit )</ID>
-    <ID>FunctionNaming:GradientHeader.kt$@Composable fun QWelcomeHeader( modifier: Modifier = Modifier )</ID>
-    <ID>FunctionNaming:GradientHeader.kt$@Composable fun QWelcomeHeaderLarge( modifier: Modifier = Modifier )</ID>
-    <ID>FunctionNaming:ImportScreen.kt$@Composable private fun CompleteStep( onDone: () -&gt; Unit )</ID>
-    <ID>FunctionNaming:ImportScreen.kt$@Composable private fun ConfirmStep( isLoading: Boolean, validationResult: ImportValidationResult, onConfirm: () -&gt; Unit, onCancel: () -&gt; Unit )</ID>
-    <ID>FunctionNaming:ImportScreen.kt$@Composable private fun IdleStep( isLoading: Boolean, error: String?, onOpenFile: () -&gt; Unit, onPaste: () -&gt; Unit )</ID>
-    <ID>FunctionNaming:ImportScreen.kt$@Composable private fun InfoRow(label: String, value: String)</ID>
-    <ID>FunctionNaming:ImportScreen.kt$@Suppress("LocalContextGetResourceValueCall", "LocalContextResourcesRead") @Composable fun ImportScreen( onBack: () -&gt; Unit, onImportComplete: () -&gt; Unit )</ID>
-    <ID>FunctionNaming:NeonComponents.kt$@Composable fun InteractivePlaceholderChip( placeholder: String, onClick: () -&gt; Unit, modifier: Modifier = Modifier, isRequired: Boolean = false )</ID>
-    <ID>FunctionNaming:NeonComponents.kt$@Composable fun NeonButton( onClick: () -&gt; Unit, modifier: Modifier = Modifier, glowColor: Color = MaterialTheme.colorScheme.primary, enabled: Boolean = true, style: NeonButtonStyle = NeonButtonStyle.PRIMARY, content: @Composable RowScope.() -&gt; Unit )</ID>
-    <ID>FunctionNaming:NeonComponents.kt$@Composable fun NeonCyanButton( onClick: () -&gt; Unit, modifier: Modifier = Modifier, enabled: Boolean = true, style: NeonButtonStyle = NeonButtonStyle.PRIMARY, content: @Composable RowScope.() -&gt; Unit )</ID>
-    <ID>FunctionNaming:NeonComponents.kt$@Composable fun NeonMagentaButton( onClick: () -&gt; Unit, modifier: Modifier = Modifier, enabled: Boolean = true, style: NeonButtonStyle = NeonButtonStyle.SECONDARY, content: @Composable RowScope.() -&gt; Unit )</ID>
-    <ID>FunctionNaming:NeonComponents.kt$@Composable fun NeonPanel( modifier: Modifier = Modifier, accentColor: Color = MaterialTheme.colorScheme.primary, content: @Composable ColumnScope.() -&gt; Unit )</ID>
-    <ID>FunctionNaming:NeonComponents.kt$@Composable fun NeonWarningBanner( text: String, modifier: Modifier = Modifier, onDismiss: (() -&gt; Unit)? = null )</ID>
-    <ID>FunctionNaming:NeonComponents.kt$@Composable fun PlaceholderChip( text: String, modifier: Modifier = Modifier, isRequired: Boolean = false )</ID>
-    <ID>FunctionNaming:NeonComponents.kt$@OptIn(ExperimentalLayoutApi::class) @Composable fun CollapsiblePlaceholderChips( placeholders: List&lt;Pair&lt;String, String&gt;&gt;, onChipClick: (String) -&gt; Unit, modifier: Modifier = Modifier, collapsedMaxRows: Int = 2, showOverflowToggle: Boolean = true )</ID>
-    <ID>FunctionNaming:NeonComponents.kt$@OptIn(ExperimentalLayoutApi::class) @Composable fun PlaceholderChipsRow( placeholders: List&lt;Pair&lt;String, String&gt;&gt;, // (placeholder, description) modifier: Modifier = Modifier )</ID>
-    <ID>FunctionNaming:NeonComponents.kt$@OptIn(ExperimentalMaterial3Api::class) @Composable fun NeonOutlinedField( value: String, onValueChange: (String) -&gt; Unit, label: @Composable (() -&gt; Unit), modifier: Modifier = Modifier, enabled: Boolean = true, singleLine: Boolean = true, isError: Boolean = false, supportingText: @Composable (() -&gt; Unit)? = null, trailingIcon: @Composable (() -&gt; Unit)? = null, visualTransformation: VisualTransformation = VisualTransformation.None, keyboardOptions: KeyboardOptions = KeyboardOptions.Default, keyboardActions: KeyboardActions = KeyboardActions.Default )</ID>
-    <ID>FunctionNaming:NeonDropdownMenuBox.kt$@OptIn(ExperimentalMaterial3Api::class) @Composable fun NeonDropdownMenuBox( expanded: Boolean, onExpandedChange: (Boolean) -&gt; Unit, selectedText: String, label: @Composable () -&gt; Unit, modifier: Modifier = Modifier, menuContent: @Composable ColumnScope.() -&gt; Unit )</ID>
-    <ID>FunctionNaming:NeonTopAppBar.kt$@OptIn(ExperimentalMaterial3Api::class) @Composable fun NeonTopAppBar( title: @Composable () -&gt; Unit, modifier: Modifier = Modifier, navigationIcon: @Composable () -&gt; Unit = {}, actions: @Composable RowScope.() -&gt; Unit = {}, containerColor: Color = Color.Transparent, titleContentColor: Color = MaterialTheme.colorScheme.onBackground, navigationIconContentColor: Color = MaterialTheme.colorScheme.onBackground, actionIconContentColor: Color = MaterialTheme.colorScheme.onBackground )</ID>
-    <ID>FunctionNaming:QrCodeBottomSheet.kt$@Composable fun QrCodeBottomSheet( ssid: String, password: String, isOpenNetwork: Boolean = false, securityType: WifiQrGenerator.SecurityType = WifiQrGenerator.SecurityType.WPA2_PSK, isHiddenNetwork: Boolean = false, onDismiss: () -&gt; Unit )</ID>
-    <ID>FunctionNaming:SettingsScreen.kt$@Composable fun SettingsScreen( onBack: () -&gt; Unit, onOpenExport: () -&gt; Unit = {}, onOpenImport: () -&gt; Unit = {}, onOpenTemplates: () -&gt; Unit = {} )</ID>
-    <ID>FunctionNaming:SettingsScreen.kt$@Composable private fun PrivacySettingRow( title: String, description: String, checked: Boolean, enabled: Boolean, onCheckedChange: (Boolean) -&gt; Unit )</ID>
-    <ID>FunctionNaming:TemplateEditorChrome.kt$@Composable internal fun DiscardChangesDialog( onDiscard: () -&gt; Unit, onKeepEditing: () -&gt; Unit )</ID>
-    <ID>FunctionNaming:TemplateEditorChrome.kt$@Composable internal fun TemplateEditorBottomBar( isNew: Boolean, canSave: Boolean, onCancel: () -&gt; Unit, onSave: () -&gt; Unit )</ID>
-    <ID>FunctionNaming:TemplateEditorChrome.kt$@Composable internal fun TemplateEditorTopBar( isNew: Boolean, onBack: () -&gt; Unit )</ID>
-    <ID>FunctionNaming:TemplateEditorForm.kt$@Composable internal fun MessageContentLauncher( contentText: String, contentError: String?, onOpenEditor: () -&gt; Unit )</ID>
-    <ID>FunctionNaming:TemplateEditorForm.kt$@Composable internal fun TemplateNameField( name: String, nameError: Int?, onNameChange: (String) -&gt; Unit, onNext: () -&gt; Unit )</ID>
-    <ID>FunctionNaming:TemplateEditorForm.kt$@OptIn(ExperimentalLayoutApi::class) @Composable internal fun PlaceholderChipsSection( onInsertPlaceholder: (String) -&gt; Unit )</ID>
-    <ID>FunctionNaming:TemplateEditorForm.kt$@OptIn(ExperimentalLayoutApi::class) @Composable internal fun TagsSection( tags: List&lt;String&gt;, newTagInput: String, availableSuggestions: List&lt;String&gt;, onNewTagInputChange: (String) -&gt; Unit, onAddTag: (String) -&gt; Unit, onRemoveTag: (String) -&gt; Unit, onSuggestionSelected: (String) -&gt; Unit )</ID>
-    <ID>FunctionNaming:TemplateEditorScreen.kt$@Suppress("LocalContextGetResourceValueCall") @Composable fun TemplateEditorScreen( onBack: () -&gt; Unit )</ID>
-    <ID>FunctionNaming:TemplateEditorState.kt$@Composable private fun BindTemplateEditorState( state: TemplateEditorState, contentText: String, onContentChange: (String) -&gt; Unit, contentFocusRequester: FocusRequester )</ID>
-    <ID>FunctionNaming:TemplateEditorState.kt$@OptIn(ExperimentalLayoutApi::class) @Composable internal fun TemplateEditorContent( template: Template, defaultContent: String, editorUiState: TemplateEditorUiState, onCreate: (name: String, content: String, tags: List&lt;String&gt;) -&gt; Unit, onUpdate: (templateId: String, name: String, content: String, tags: List&lt;String&gt;) -&gt; Unit, onCancelEditing: () -&gt; Unit, onNameChange: (String) -&gt; Unit, onTagsChange: (List&lt;String&gt;) -&gt; Unit, onNewTagInputChange: (String) -&gt; Unit, onContentChange: (String) -&gt; Unit, onNameErrorChange: (Int?) -&gt; Unit, onToggleDiscardDialog: (Boolean) -&gt; Unit )</ID>
-    <ID>FunctionNaming:TemplateListScreen.kt$@Composable private fun DeleteConfirmationDialog( templateName: String, onConfirm: () -&gt; Unit, onDismiss: () -&gt; Unit )</ID>
-    <ID>FunctionNaming:TemplateListScreen.kt$@OptIn(ExperimentalLayoutApi::class) @Composable private fun TemplateCard( template: Template, isActive: Boolean, isDefault: Boolean, onSelect: () -&gt; Unit, onEdit: () -&gt; Unit, onDuplicate: () -&gt; Unit, onDelete: () -&gt; Unit )</ID>
-    <ID>FunctionNaming:TemplateListScreen.kt$@Suppress("LocalContextGetResourceValueCall") @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class) @Composable fun TemplateListScreen( onBack: () -&gt; Unit, onOpenEditor: () -&gt; Unit )</ID>
-    <ID>FunctionNaming:TemplateVariablesSheet.kt$@Composable private fun VariableItem( placeholder: String, description: String, onCopy: () -&gt; Unit )</ID>
-    <ID>FunctionNaming:TemplateVariablesSheet.kt$@OptIn(ExperimentalMaterial3Api::class) @Composable fun TemplateVariablesSheet( onDismiss: () -&gt; Unit )</ID>
-    <ID>LongMethod:ContentEditorDialog.kt$@Composable internal fun ContentEditorField( contentState: TextFieldState, contentFocusRequester: FocusRequester, contentInteractionSource: MutableInteractionSource, contentError: String?, modifier: Modifier = Modifier )</ID>
-    <ID>LongMethod:ContentEditorDialog.kt$@OptIn(ExperimentalLayoutApi::class) @Composable internal fun ContentEditorDialog( contentState: TextFieldState, contentFocusRequester: FocusRequester, contentInteractionSource: MutableInteractionSource, contentError: String?, onDismissRequest: () -&gt; Unit, onInsertPlaceholder: (String) -&gt; Unit )</ID>
-    <ID>LongMethod:CustomerIntakeScreen.kt$@Composable private fun ActionButtonRow( copySuccess: Boolean, onSmsClick: () -&gt; Unit, onShareClick: () -&gt; Unit, onCopyClick: () -&gt; Unit )</ID>
-    <ID>LongMethod:CustomerIntakeScreen.kt$@Composable private fun CustomerFormFields( uiState: CustomerIntakeUiState, passwordVisible: Boolean, onCustomerNameChanged: (String) -&gt; Unit, onCustomerPhoneChanged: (String) -&gt; Unit, onSsidChanged: (String) -&gt; Unit, securityType: WifiQrGenerator.SecurityType, securityDropdownExpanded: Boolean, onSecurityDropdownExpandedChange: (Boolean) -&gt; Unit, onSecurityTypeChanged: (WifiQrGenerator.SecurityType) -&gt; Unit, isHiddenNetwork: Boolean, onHiddenNetworkChanged: (Boolean) -&gt; Unit, onOpenNetworkChanged: (Boolean) -&gt; Unit, onPasswordChanged: (String) -&gt; Unit, onPasswordVisibilityToggle: () -&gt; Unit, onAccountNumberChanged: (String) -&gt; Unit )</ID>
-    <ID>LongMethod:CustomerIntakeScreen.kt$@Suppress("LocalContextGetResourceValueCall") @Composable fun CustomerIntakeScreen( onOpenSettings: () -&gt; Unit, onOpenTemplates: () -&gt; Unit = {} )</ID>
-    <ID>LongMethod:ExportScreen.kt$@Composable private fun ExportOptionCard( title: String, description: String, icon: ImageVector, iconTint: Color, isLoading: Boolean, onClick: () -&gt; Unit )</ID>
-    <ID>LongMethod:ExportScreen.kt$@Composable private fun TemplateSelectionDialog( templates: List&lt;Template&gt;, selectedIds: Set&lt;String&gt;, onToggleTemplate: (String) -&gt; Unit, onToggleSelectAll: () -&gt; Unit, onDismiss: () -&gt; Unit, onExport: () -&gt; Unit )</ID>
-    <ID>LongMethod:ExportScreen.kt$@Suppress("LocalContextGetResourceValueCall") @Composable fun ExportScreen( onBack: () -&gt; Unit )</ID>
-    <ID>LongMethod:ExportService.kt$ExportService$suspend fun exportTemplatePack(templateIds: List&lt;String&gt; = emptyList()): ExportResult</ID>
-    <ID>LongMethod:ImportScreen.kt$@Composable private fun ConfirmStep( isLoading: Boolean, validationResult: ImportValidationResult, onConfirm: () -&gt; Unit, onCancel: () -&gt; Unit )</ID>
-    <ID>LongMethod:ImportScreen.kt$@Composable private fun IdleStep( isLoading: Boolean, error: String?, onOpenFile: () -&gt; Unit, onPaste: () -&gt; Unit )</ID>
-    <ID>LongMethod:ImportScreen.kt$@Suppress("LocalContextGetResourceValueCall", "LocalContextResourcesRead") @Composable fun ImportScreen( onBack: () -&gt; Unit, onImportComplete: () -&gt; Unit )</ID>
-    <ID>LongMethod:MainActivity.kt$MainActivity$override fun onCreate(savedInstanceState: Bundle?)</ID>
-    <ID>LongMethod:NeonComponents.kt$@Composable fun NeonButton( onClick: () -&gt; Unit, modifier: Modifier = Modifier, glowColor: Color = MaterialTheme.colorScheme.primary, enabled: Boolean = true, style: NeonButtonStyle = NeonButtonStyle.PRIMARY, content: @Composable RowScope.() -&gt; Unit )</ID>
-    <ID>LongMethod:NeonComponents.kt$@Composable fun NeonPanel( modifier: Modifier = Modifier, accentColor: Color = MaterialTheme.colorScheme.primary, content: @Composable ColumnScope.() -&gt; Unit )</ID>
-    <ID>LongMethod:QrCodeBottomSheet.kt$@Composable fun QrCodeBottomSheet( ssid: String, password: String, isOpenNetwork: Boolean = false, securityType: WifiQrGenerator.SecurityType = WifiQrGenerator.SecurityType.WPA2_PSK, isHiddenNetwork: Boolean = false, onDismiss: () -&gt; Unit )</ID>
-    <ID>LongMethod:SettingsScreen.kt$@Composable fun SettingsScreen( onBack: () -&gt; Unit, onOpenExport: () -&gt; Unit = {}, onOpenImport: () -&gt; Unit = {}, onOpenTemplates: () -&gt; Unit = {} )</ID>
-    <ID>LongMethod:SettingsViewModel.kt$SettingsViewModel$private suspend fun monitorDownload( available: UpdateState.Available, downloadId: Long )</ID>
-    <ID>LongMethod:TemplateEditorForm.kt$@OptIn(ExperimentalLayoutApi::class) @Composable internal fun TagsSection( tags: List&lt;String&gt;, newTagInput: String, availableSuggestions: List&lt;String&gt;, onNewTagInputChange: (String) -&gt; Unit, onAddTag: (String) -&gt; Unit, onRemoveTag: (String) -&gt; Unit, onSuggestionSelected: (String) -&gt; Unit )</ID>
-    <ID>LongMethod:TemplateEditorScreen.kt$@Suppress("LocalContextGetResourceValueCall") @Composable fun TemplateEditorScreen( onBack: () -&gt; Unit )</ID>
-    <ID>LongMethod:TemplateEditorState.kt$@OptIn(ExperimentalLayoutApi::class) @Composable internal fun TemplateEditorContent( template: Template, defaultContent: String, editorUiState: TemplateEditorUiState, onCreate: (name: String, content: String, tags: List&lt;String&gt;) -&gt; Unit, onUpdate: (templateId: String, name: String, content: String, tags: List&lt;String&gt;) -&gt; Unit, onCancelEditing: () -&gt; Unit, onNameChange: (String) -&gt; Unit, onTagsChange: (List&lt;String&gt;) -&gt; Unit, onNewTagInputChange: (String) -&gt; Unit, onContentChange: (String) -&gt; Unit, onNameErrorChange: (Int?) -&gt; Unit, onToggleDiscardDialog: (Boolean) -&gt; Unit )</ID>
-    <ID>LongMethod:TemplateListScreen.kt$@OptIn(ExperimentalLayoutApi::class) @Composable private fun TemplateCard( template: Template, isActive: Boolean, isDefault: Boolean, onSelect: () -&gt; Unit, onEdit: () -&gt; Unit, onDuplicate: () -&gt; Unit, onDelete: () -&gt; Unit )</ID>
-    <ID>LongMethod:TemplateListScreen.kt$@Suppress("LocalContextGetResourceValueCall") @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class) @Composable fun TemplateListScreen( onBack: () -&gt; Unit, onOpenEditor: () -&gt; Unit )</ID>
-    <ID>LongMethod:TemplateVariablesSheet.kt$@OptIn(ExperimentalMaterial3Api::class) @Composable fun TemplateVariablesSheet( onDismiss: () -&gt; Unit )</ID>
-    <ID>LongParameterList:ContentEditorDialog.kt$( contentState: TextFieldState, contentFocusRequester: FocusRequester, contentInteractionSource: MutableInteractionSource, contentError: String?, onDismissRequest: () -&gt; Unit, onInsertPlaceholder: (String) -&gt; Unit )</ID>
-    <ID>LongParameterList:CustomerIntakeScreen.kt$( uiState: CustomerIntakeUiState, passwordVisible: Boolean, onCustomerNameChanged: (String) -&gt; Unit, onCustomerPhoneChanged: (String) -&gt; Unit, onSsidChanged: (String) -&gt; Unit, securityType: WifiQrGenerator.SecurityType, securityDropdownExpanded: Boolean, onSecurityDropdownExpandedChange: (Boolean) -&gt; Unit, onSecurityTypeChanged: (WifiQrGenerator.SecurityType) -&gt; Unit, isHiddenNetwork: Boolean, onHiddenNetworkChanged: (Boolean) -&gt; Unit, onOpenNetworkChanged: (Boolean) -&gt; Unit, onPasswordChanged: (String) -&gt; Unit, onPasswordVisibilityToggle: () -&gt; Unit, onAccountNumberChanged: (String) -&gt; Unit )</ID>
-    <ID>LongParameterList:ExportScreen.kt$( templates: List&lt;Template&gt;, selectedIds: Set&lt;String&gt;, onToggleTemplate: (String) -&gt; Unit, onToggleSelectAll: () -&gt; Unit, onDismiss: () -&gt; Unit, onExport: () -&gt; Unit )</ID>
-    <ID>LongParameterList:ExportScreen.kt$( title: String, description: String, icon: ImageVector, iconTint: Color, isLoading: Boolean, onClick: () -&gt; Unit )</ID>
-    <ID>LongParameterList:NeonComponents.kt$( onClick: () -&gt; Unit, modifier: Modifier = Modifier, glowColor: Color = MaterialTheme.colorScheme.primary, enabled: Boolean = true, style: NeonButtonStyle = NeonButtonStyle.PRIMARY, content: @Composable RowScope.() -&gt; Unit )</ID>
-    <ID>LongParameterList:NeonComponents.kt$( value: String, onValueChange: (String) -&gt; Unit, label: @Composable (() -&gt; Unit), modifier: Modifier = Modifier, enabled: Boolean = true, singleLine: Boolean = true, isError: Boolean = false, supportingText: @Composable (() -&gt; Unit)? = null, trailingIcon: @Composable (() -&gt; Unit)? = null, visualTransformation: VisualTransformation = VisualTransformation.None, keyboardOptions: KeyboardOptions = KeyboardOptions.Default, keyboardActions: KeyboardActions = KeyboardActions.Default )</ID>
-    <ID>LongParameterList:NeonDropdownMenuBox.kt$( expanded: Boolean, onExpandedChange: (Boolean) -&gt; Unit, selectedText: String, label: @Composable () -&gt; Unit, modifier: Modifier = Modifier, menuContent: @Composable ColumnScope.() -&gt; Unit )</ID>
-    <ID>LongParameterList:NeonTopAppBar.kt$( title: @Composable () -&gt; Unit, modifier: Modifier = Modifier, navigationIcon: @Composable () -&gt; Unit = {}, actions: @Composable RowScope.() -&gt; Unit = {}, containerColor: Color = Color.Transparent, titleContentColor: Color = MaterialTheme.colorScheme.onBackground, navigationIconContentColor: Color = MaterialTheme.colorScheme.onBackground, actionIconContentColor: Color = MaterialTheme.colorScheme.onBackground )</ID>
-    <ID>LongParameterList:QrCodeBottomSheet.kt$( ssid: String, password: String, isOpenNetwork: Boolean = false, securityType: WifiQrGenerator.SecurityType = WifiQrGenerator.SecurityType.WPA2_PSK, isHiddenNetwork: Boolean = false, onDismiss: () -&gt; Unit )</ID>
-    <ID>LongParameterList:TemplateEditorForm.kt$( tags: List&lt;String&gt;, newTagInput: String, availableSuggestions: List&lt;String&gt;, onNewTagInputChange: (String) -&gt; Unit, onAddTag: (String) -&gt; Unit, onRemoveTag: (String) -&gt; Unit, onSuggestionSelected: (String) -&gt; Unit )</ID>
-    <ID>LongParameterList:TemplateEditorState.kt$( template: Template, defaultContent: String, editorUiState: TemplateEditorUiState, onCreate: (name: String, content: String, tags: List&lt;String&gt;) -&gt; Unit, onUpdate: (templateId: String, name: String, content: String, tags: List&lt;String&gt;) -&gt; Unit, onCancelEditing: () -&gt; Unit, onNameChange: (String) -&gt; Unit, onTagsChange: (List&lt;String&gt;) -&gt; Unit, onNewTagInputChange: (String) -&gt; Unit, onContentChange: (String) -&gt; Unit, onNameErrorChange: (Int?) -&gt; Unit, onToggleDiscardDialog: (Boolean) -&gt; Unit )</ID>
-    <ID>LongParameterList:TemplateEditorState.kt$TemplateEditorState$( isNew: Boolean, templateId: String, editorUiState: TemplateEditorUiState, onCreate: (name: String, content: String, tags: List&lt;String&gt;) -&gt; Unit, onUpdate: (templateId: String, name: String, content: String, tags: List&lt;String&gt;) -&gt; Unit, onNameErrorChange: (Int?) -&gt; Unit )</ID>
-    <ID>LongParameterList:TemplateListScreen.kt$( template: Template, isActive: Boolean, isDefault: Boolean, onSelect: () -&gt; Unit, onEdit: () -&gt; Unit, onDuplicate: () -&gt; Unit, onDelete: () -&gt; Unit )</ID>
-    <ID>MagicNumber:Color.kt$CyberColors$0xFF00838F</ID>
-    <ID>MagicNumber:Color.kt$CyberColors$0xFF00E5FF</ID>
-    <ID>MagicNumber:Color.kt$CyberColors$0xFF00E676</ID>
-    <ID>MagicNumber:Color.kt$CyberColors$0xFF2E7D32</ID>
-    <ID>MagicNumber:Color.kt$CyberColors$0xFF558B2F</ID>
-    <ID>MagicNumber:Color.kt$CyberColors$0xFF9BFF00</ID>
-    <ID>MagicNumber:Color.kt$CyberColors$0xFFE65100</ID>
-    <ID>MagicNumber:Color.kt$CyberColors$0xFFFFD600</ID>
-    <ID>MagicNumber:CustomerIntakeScreen.kt$1500L</ID>
-    <ID>MagicNumber:CustomerIntakeViewModel.kt$CustomerIntakeViewModel.Companion$10</ID>
-    <ID>MagicNumber:CustomerIntakeViewModel.kt$CustomerIntakeViewModel.Companion$11</ID>
-    <ID>MagicNumber:CustomerIntakeViewModel.kt$CustomerIntakeViewModel.Companion$3</ID>
-    <ID>MagicNumber:CustomerIntakeViewModel.kt$CustomerIntakeViewModel.Companion$6</ID>
-    <ID>MagicNumber:CyberpunkBackdrop.kt$0xFF05030A</ID>
-    <ID>MagicNumber:CyberpunkBackdrop.kt$0xFF120A1C</ID>
-    <ID>MagicNumber:CyberpunkBackdrop.kt$0xFFF5F0FA</ID>
-    <ID>MagicNumber:CyberpunkBackdrop.kt$0xFFFFFFFF</ID>
-    <ID>MagicNumber:CyberpunkTheme.kt$0xFF001014</ID>
-    <ID>MagicNumber:CyberpunkTheme.kt$0xFF002022</ID>
-    <ID>MagicNumber:CyberpunkTheme.kt$0xFF003910</ID>
-    <ID>MagicNumber:CyberpunkTheme.kt$0xFF004D5A</ID>
-    <ID>MagicNumber:CyberpunkTheme.kt$0xFF005221</ID>
-    <ID>MagicNumber:CyberpunkTheme.kt$0xFF006877</ID>
-    <ID>MagicNumber:CyberpunkTheme.kt$0xFF00838F</ID>
-    <ID>MagicNumber:CyberpunkTheme.kt$0xFF00E5FF</ID>
-    <ID>MagicNumber:CyberpunkTheme.kt$0xFF00E676</ID>
-    <ID>MagicNumber:CyberpunkTheme.kt$0xFF05030A</ID>
-    <ID>MagicNumber:CyberpunkTheme.kt$0xFF080010</ID>
-    <ID>MagicNumber:CyberpunkTheme.kt$0xFF0D0812</ID>
-    <ID>MagicNumber:CyberpunkTheme.kt$0xFF120A1C</ID>
-    <ID>MagicNumber:CyberpunkTheme.kt$0xFF140008</ID>
-    <ID>MagicNumber:CyberpunkTheme.kt$0xFF14000F</ID>
-    <ID>MagicNumber:CyberpunkTheme.kt$0xFF1A0F28</ID>
-    <ID>MagicNumber:CyberpunkTheme.kt$0xFF1C1B1F</ID>
-    <ID>MagicNumber:CyberpunkTheme.kt$0xFF1E1030</ID>
-    <ID>MagicNumber:CyberpunkTheme.kt$0xFF21005D</ID>
-    <ID>MagicNumber:CyberpunkTheme.kt$0xFF2E7D32</ID>
-    <ID>MagicNumber:CyberpunkTheme.kt$0xFF31111D</ID>
-    <ID>MagicNumber:CyberpunkTheme.kt$0xFF313033</ID>
-    <ID>MagicNumber:CyberpunkTheme.kt$0xFF3D2600</ID>
-    <ID>MagicNumber:CyberpunkTheme.kt$0xFF410E0B</ID>
-    <ID>MagicNumber:CyberpunkTheme.kt$0xFF49454F</ID>
-    <ID>MagicNumber:CyberpunkTheme.kt$0xFF4A3362</ID>
-    <ID>MagicNumber:CyberpunkTheme.kt$0xFF558B2F</ID>
-    <ID>MagicNumber:CyberpunkTheme.kt$0xFF5C1049</ID>
-    <ID>MagicNumber:CyberpunkTheme.kt$0xFF5C3D00</ID>
-    <ID>MagicNumber:CyberpunkTheme.kt$0xFF6200EA</ID>
-    <ID>MagicNumber:CyberpunkTheme.kt$0xFF79747E</ID>
-    <ID>MagicNumber:CyberpunkTheme.kt$0xFF93000A</ID>
-    <ID>MagicNumber:CyberpunkTheme.kt$0xFF938F99</ID>
-    <ID>MagicNumber:CyberpunkTheme.kt$0xFF97F0FF</ID>
-    <ID>MagicNumber:CyberpunkTheme.kt$0xFF9BFF00</ID>
-    <ID>MagicNumber:CyberpunkTheme.kt$0xFFA371F7</ID>
-    <ID>MagicNumber:CyberpunkTheme.kt$0xFFB2EBF2</ID>
-    <ID>MagicNumber:CyberpunkTheme.kt$0xFFBA1A1A</ID>
-    <ID>MagicNumber:CyberpunkTheme.kt$0xFFBEC8DC</ID>
-    <ID>MagicNumber:CyberpunkTheme.kt$0xFFC2185B</ID>
-    <ID>MagicNumber:CyberpunkTheme.kt$0xFFC8E6C9</ID>
-    <ID>MagicNumber:CyberpunkTheme.kt$0xFFCAC4D0</ID>
-    <ID>MagicNumber:CyberpunkTheme.kt$0xFFE65100</ID>
-    <ID>MagicNumber:CyberpunkTheme.kt$0xFFE6E0E9</ID>
-    <ID>MagicNumber:CyberpunkTheme.kt$0xFFE8DEF8</ID>
-    <ID>MagicNumber:CyberpunkTheme.kt$0xFFE9DDFF</ID>
-    <ID>MagicNumber:CyberpunkTheme.kt$0xFFEDE7F2</ID>
-    <ID>MagicNumber:CyberpunkTheme.kt$0xFFF0F5FF</ID>
-    <ID>MagicNumber:CyberpunkTheme.kt$0xFFF3EDF7</ID>
-    <ID>MagicNumber:CyberpunkTheme.kt$0xFFF4EFF4</ID>
-    <ID>MagicNumber:CyberpunkTheme.kt$0xFFF9DEDC</ID>
-    <ID>MagicNumber:CyberpunkTheme.kt$0xFFFAF8FC</ID>
-    <ID>MagicNumber:CyberpunkTheme.kt$0xFFFCE4EC</ID>
-    <ID>MagicNumber:CyberpunkTheme.kt$0xFFFF2BD6</ID>
-    <ID>MagicNumber:CyberpunkTheme.kt$0xFFFF4D6D</ID>
-    <ID>MagicNumber:CyberpunkTheme.kt$0xFFFFD600</ID>
-    <ID>MagicNumber:CyberpunkTheme.kt$0xFFFFD8EE</ID>
-    <ID>MagicNumber:CyberpunkTheme.kt$0xFFFFDAD6</ID>
-    <ID>MagicNumber:CyberpunkTheme.kt$0xFFFFE0B2</ID>
-    <ID>MagicNumber:CyberpunkTheme.kt$0xFFFFFFFF</ID>
-    <ID>MagicNumber:ExportService.kt$ExportService$200</ID>
-    <ID>MagicNumber:ExportService.kt$ExportService$500</ID>
-    <ID>MagicNumber:GradientHeader.kt$0xFF311B92</ID>
-    <ID>MagicNumber:GradientHeader.kt$0xFF4527A0</ID>
-    <ID>MagicNumber:GradientHeader.kt$0xFF6200EA</ID>
-    <ID>MagicNumber:GradientHeader.kt$0xFF6D28D9</ID>
-    <ID>MagicNumber:GradientHeader.kt$0xFF7B1FA2</ID>
-    <ID>MagicNumber:GradientHeader.kt$0xFF7C3AED</ID>
-    <ID>MagicNumber:GradientHeader.kt$0xFF9D4EDD</ID>
-    <ID>MagicNumber:GradientHeader.kt$0xFFAB47BC</ID>
-    <ID>MagicNumber:GradientHeader.kt$0xFFC19EE0</ID>
-    <ID>MagicNumber:GradientHeader.kt$0xFFC2185B</ID>
-    <ID>MagicNumber:GradientHeader.kt$0xFFEC4899</ID>
-    <ID>MagicNumber:GradientHeader.kt$0xFFFF10F0</ID>
-    <ID>MagicNumber:ImportScreen.kt$0.7f</ID>
-    <ID>MagicNumber:ImportScreen.kt$0.8f</ID>
-    <ID>MagicNumber:ImportScreen.kt$0.9f</ID>
-    <ID>MagicNumber:ImportScreen.kt$1024</ID>
-    <ID>MagicNumber:Navigator.kt$AndroidNavigator$1001</ID>
-    <ID>MagicNumber:NeonComponents.kt$0.02f</ID>
-    <ID>MagicNumber:NeonComponents.kt$0.03f</ID>
-    <ID>MagicNumber:NeonComponents.kt$0.04f</ID>
-    <ID>MagicNumber:NeonComponents.kt$0.06f</ID>
-    <ID>MagicNumber:NeonComponents.kt$0.08f</ID>
-    <ID>MagicNumber:NeonComponents.kt$0.12f</ID>
-    <ID>MagicNumber:NeonComponents.kt$0.16f</ID>
-    <ID>MagicNumber:NeonComponents.kt$0.22f</ID>
-    <ID>MagicNumber:NeonComponents.kt$0.3f</ID>
-    <ID>MagicNumber:NeonComponents.kt$0.6f</ID>
-    <ID>MagicNumber:NeonComponents.kt$0.7f</ID>
-    <ID>MagicNumber:NeonComponents.kt$0.8f</ID>
-    <ID>MagicNumber:NeonComponents.kt$4</ID>
-    <ID>MagicNumber:PhoneUtils.kt$PhoneUtils$10</ID>
-    <ID>MagicNumber:PhoneUtils.kt$PhoneUtils$11</ID>
-    <ID>MagicNumber:PhoneUtils.kt$PhoneUtils$3</ID>
-    <ID>MagicNumber:PhoneUtils.kt$PhoneUtils$4</ID>
-    <ID>MagicNumber:PhoneUtils.kt$PhoneUtils$6</ID>
-    <ID>MagicNumber:PhoneUtils.kt$PhoneUtils$7</ID>
-    <ID>MagicNumber:QrCodeBottomSheet.kt$.25f</ID>
-    <ID>MagicNumber:QrCodeBottomSheet.kt$10</ID>
-    <ID>MagicNumber:QrCodeBottomSheet.kt$100</ID>
-    <ID>MagicNumber:SettingsScreen.kt$100.0</ID>
-    <ID>MagicNumber:SettingsScreen.kt$1024.0</ID>
-    <ID>MagicNumber:SettingsViewModel.kt$SettingsViewModel$1000</ID>
-    <ID>MagicNumber:SettingsViewModel.kt$SettingsViewModel$1000L</ID>
-    <ID>MagicNumber:SettingsViewModel.kt$SettingsViewModel$5_000</ID>
-    <ID>MagicNumber:SoundManager.kt$SoundManager$0.1</ID>
-    <ID>MagicNumber:SoundManager.kt$SoundManager$1000.0</ID>
-    <ID>MagicNumber:SoundManager.kt$SoundManager$20</ID>
-    <ID>MagicNumber:SoundManager.kt$SoundManager$44100</ID>
-    <ID>MagicNumber:SoundManager.kt$SoundManager$50</ID>
-    <ID>MagicNumber:Template.kt$Template.Companion$50</ID>
-    <ID>MagicNumber:Template.kt$Template.Companion$8</ID>
-    <ID>MagicNumber:TemplateEditorState.kt$32</ID>
-    <ID>MagicNumber:TemplateListScreen.kt$100</ID>
-    <ID>MagicNumber:TemplateListViewModel.kt$TemplateListViewModel$50</ID>
-    <ID>MagicNumber:Type.kt$0xFF0097A7</ID>
-    <ID>MagicNumber:Type.kt$0xFF00E5FF</ID>
-    <ID>MagicNumber:Type.kt$0xFFD81B60</ID>
-    <ID>MagicNumber:Type.kt$0xFFFF2BD6</ID>
-    <ID>MagicNumber:UpdateChecker.kt$UpdateChecker$1000</ID>
-    <ID>MagicNumber:UpdateChecker.kt$UpdateChecker$10_000</ID>
-    <ID>MatchingDeclarationName:Color.kt$CyberColors</ID>
-    <ID>MaxLineLength:CustomerIntakeScreen.kt$Icon(Icons.Filled.PersonAdd, contentDescription = stringResource(R.string.content_desc_new_customer))</ID>
-    <ID>MaxLineLength:CustomerIntakeScreen.kt$Icon(Icons.Filled.Settings, contentDescription = stringResource(R.string.content_desc_settings))</ID>
-    <ID>MaxLineLength:CustomerIntakeScreen.kt$uiState.isOpenNetwork &amp;&amp; uiState.ssid.isNotBlank() -&gt; stringResource(R.string.hint_qr_open_network, uiState.ssid)</ID>
-    <ID>MaxLineLength:CustomerIntakeViewModel.kt$CustomerIntakeViewModel$val accountNumberError = if (currentState.accountNumber.isBlank()) resourceProvider.getString(R.string.error_account_empty) else null</ID>
-    <ID>MaxLineLength:CustomerIntakeViewModel.kt$CustomerIntakeViewModel$val customerNameError = if (currentState.customerName.isBlank()) resourceProvider.getString(R.string.error_name_empty) else null</ID>
-    <ID>MaxLineLength:ExportScreen.kt$Toast.makeText(context, context.getString(R.string.toast_failed_save_file, e.message), Toast.LENGTH_LONG).show()</ID>
-    <ID>MaxLineLength:ExportScreen.kt$Toast.makeText(context, context.getString(R.string.toast_type_copied, typeName), Toast.LENGTH_SHORT).show()</ID>
-    <ID>MaxLineLength:ExportScreen.kt$Toast.makeText(context, context.getString(R.string.toast_type_saved, typeName), Toast.LENGTH_SHORT).show()</ID>
-    <ID>MaxLineLength:ExportScreen.kt$clipboardManager.setClipEntry(ClipEntry(ClipData.newPlainText(context.getString(R.string.title_export), json)))</ID>
-    <ID>MaxLineLength:ExportScreen.kt$containerColor = if (isDark) MaterialTheme.colorScheme.surface.copy(alpha = 0.6f) else MaterialTheme.colorScheme.surface</ID>
-    <ID>MaxLineLength:ImportExportRepository.kt$ImportWarning.NewerVersion$override fun toString()</ID>
-    <ID>MaxLineLength:ImportScreen.kt$InfoRow(stringResource(R.string.label_backup_type), stringResource(R.string.export_type_full_backup))</ID>
-    <ID>MaxLineLength:ImportScreen.kt$InfoRow(stringResource(R.string.label_backup_type), stringResource(R.string.export_type_template_pack))</ID>
-    <ID>MaxLineLength:ImportScreen.kt$InfoRow(stringResource(R.string.label_conflicts), pluralStringResource(R.plurals.import_conflicts, count, count))</ID>
-    <ID>MaxLineLength:ImportScreen.kt$InfoRow(stringResource(R.string.label_template_count), validationResult.backup.templates.size.toString())</ID>
-    <ID>MaxLineLength:ImportScreen.kt$InfoRow(stringResource(R.string.label_template_count), validationResult.pack.templates.size.toString())</ID>
-    <ID>MaxLineLength:ImportScreen.kt$Toast.makeText(context, R.string.toast_cannot_access_clipboard, Toast.LENGTH_SHORT).show()</ID>
-    <ID>MaxLineLength:ImportScreen.kt$Toast.makeText(context, R.string.toast_clipboard_empty, Toast.LENGTH_SHORT).show()</ID>
-    <ID>MaxLineLength:ImportScreen.kt$Toast.makeText(context, context.getString(R.string.toast_error_reading_file, detail), Toast.LENGTH_LONG).show()</ID>
-    <ID>MaxLineLength:ImportScreen.kt$Toast.makeText(context, context.getString(R.string.toast_unexpected_error, detail), Toast.LENGTH_LONG).show()</ID>
-    <ID>MaxLineLength:MessageTemplateTest.kt$MessageTemplateTest$val template = "Hi {{ customer_name }}, your WiFi is {{ ssid }} with password {{ password }}. Account: {{ account_number }}"</ID>
-    <ID>MaxLineLength:Navigator.kt$AndroidNavigator$context</ID>
-    <ID>MaxLineLength:NeonComponents.kt$NeonButtonStyle.PRIMARY -&gt; if (isDark) glowColor.copy(alpha = 0.08f) else colorScheme.onSurface.copy(alpha = 0.12f)</ID>
-    <ID>MaxLineLength:NeonComponents.kt$NeonButtonStyle.TERTIARY -&gt; if (isDark) Color.Transparent else colorScheme.surfaceVariant.copy(alpha = 0.3f)</ID>
-    <ID>MaxLineLength:NeonComponents.kt$disabledContentColor = if (isDark) glowColor.copy(alpha = 0.38f) else colorScheme.onSurface.copy(alpha = 0.38f)</ID>
-    <ID>MaxLineLength:PreferencesToProtoMigration.kt$PreferencesToProtoMigration$"Template migration failed; preserving legacy preferences for manual recovery. JSON length: ${e.rawTemplatesJson.length}"</ID>
-    <ID>MaxLineLength:QrCodeBottomSheet.kt$Text(stringResource(R.string.label_network), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))</ID>
-    <ID>MaxLineLength:QrCodeBottomSheet.kt$Text(stringResource(R.string.label_open_no_password), color = MaterialTheme.colorScheme.tertiary, fontWeight = FontWeight.Medium)</ID>
-    <ID>MaxLineLength:QrCodeBottomSheet.kt$Text(stringResource(R.string.label_security), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))</ID>
-    <ID>MaxLineLength:TemplateListScreen.kt$color = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface</ID>
-    <ID>MaxLineLength:TemplateListViewModelTest.kt$TemplateListViewModelTest$coVerify { mockStore.saveTemplate(match { it.name == "Updated Name" &amp;&amp; it.content == "Hi {{ customer_name }}, SSID: {{ ssid }}" }) }</ID>
-    <ID>MaxLineLength:WifiQrGenerator.kt$WifiQrGenerator$WifiValidationRules.isPasswordTooShort(password) -&gt; ValidationResult.Error(R.string.error_password_too_short)</ID>
-    <ID>NewLineAtEndOfFile:Color.kt$com.kingpaging.qwelcome.ui.theme.Color.kt</ID>
-    <ID>NewLineAtEndOfFile:CustomerIntakeUiState.kt$com.kingpaging.qwelcome.ui.CustomerIntakeUiState.kt</ID>
-    <ID>PackageNaming:ImportScreen.kt$package com.kingpaging.qwelcome.ui.import_pkg</ID>
-    <ID>PackageNaming:ImportViewModel.kt$package com.kingpaging.qwelcome.viewmodel.import_pkg</ID>
-    <ID>PackageNaming:ImportViewModelTest.kt$package com.kingpaging.qwelcome.viewmodel.import_pkg</ID>
-    <ID>ReturnCount:ExportService.kt$ExportService$suspend fun exportFullBackup(): ExportResult</ID>
-    <ID>ReturnCount:ExportService.kt$ExportService$suspend fun exportTemplatePack(templateIds: List&lt;String&gt; = emptyList()): ExportResult</ID>
-    <ID>ReturnCount:ExportViewModel.kt$ExportViewModel$private fun resolveRecentShareTarget(packageName: String): RecentShareTargetUi?</ID>
-    <ID>ReturnCount:ImportScreen.kt$private fun exceedsImportLimit(text: CharSequence, maxBytes: Int): Boolean</ID>
-    <ID>ReturnCount:ImportValidationService.kt$ImportValidationService$private suspend fun parseFullBackup( jsonString: String, warnings: MutableList&lt;ImportWarning&gt; ): ImportValidationResult</ID>
-    <ID>ReturnCount:ImportValidationService.kt$ImportValidationService$private suspend fun parseTemplatePack( jsonString: String, warnings: MutableList&lt;ImportWarning&gt; ): ImportValidationResult</ID>
-    <ID>ReturnCount:ImportValidationService.kt$ImportValidationService$suspend fun validateImport(jsonString: String): ImportValidationResult</ID>
-    <ID>ReturnCount:SettingsViewModel.kt$SettingsViewModel$private suspend fun monitorDownload( available: UpdateState.Available, downloadId: Long )</ID>
-    <ID>ReturnCount:UpdateChecker.kt$UpdateChecker$internal fun parseUpdateResponse( responseBody: String, currentVersionName: String ): UpdateCheckResult</ID>
-    <ID>ReturnCount:VersionComparator.kt$VersionComparator$fun isNewerVersion(remote: String, current: String): Boolean</ID>
-    <ID>ReturnCount:VersionComparator.kt$VersionComparator$internal fun comparePreRelease(remotePre: String?, currentPre: String?): Int</ID>
-    <ID>SwallowedException:SoundManager.kt$SoundManager$e: Exception</ID>
-    <ID>ThrowsCount:QrCodeBottomSheet.kt$private suspend fun saveQrCodeToGallery( context: Context, wifiString: String, ssid: String )</ID>
-    <ID>TooGenericExceptionCaught:ExportService.kt$ExportService$e: Exception</ID>
-    <ID>TooGenericExceptionCaught:ExportViewModel.kt$ExportViewModel$e: Exception</ID>
-    <ID>TooGenericExceptionCaught:ImportScreen.kt$e: Exception</ID>
-    <ID>TooGenericExceptionCaught:ImportViewModel.kt$ImportViewModel$e: Exception</ID>
-    <ID>TooGenericExceptionCaught:Navigator.kt$AndroidNavigator$e: Exception</ID>
-    <ID>TooGenericExceptionCaught:QWelcomeApplication.kt$QWelcomeApplication.&lt;no name provided&gt;$e: Exception</ID>
-    <ID>TooGenericExceptionCaught:SettingsViewModel.kt$SettingsViewModel$e: Exception</ID>
-    <ID>TooGenericExceptionCaught:SoundManager.kt$SoundManager$e: Exception</ID>
-    <ID>TooGenericExceptionCaught:TemplateListViewModel.kt$TemplateListViewModel$e: Exception</ID>
-    <ID>TooGenericExceptionCaught:UpdateChecker.kt$UpdateChecker$e: Exception</ID>
-    <ID>TooGenericExceptionThrown:QrCodeBottomSheet.kt$throw Exception("Failed to create cache directory")</ID>
-    <ID>TooManyFunctions:CustomerIntakeViewModel.kt$CustomerIntakeViewModel : ViewModel</ID>
-    <ID>TooManyFunctions:ExportViewModel.kt$ExportViewModel : ViewModel</ID>
-    <ID>TooManyFunctions:GitHubAppUpdater.kt$GitHubAppUpdater : AppUpdater</ID>
-    <ID>TooManyFunctions:NeonComponents.kt$com.kingpaging.qwelcome.ui.components.NeonComponents.kt</ID>
-    <ID>TooManyFunctions:SettingsStore.kt$SettingsStore</ID>
-    <ID>TooManyFunctions:SettingsViewModel.kt$SettingsViewModel : ViewModel</ID>
-    <ID>TooManyFunctions:TemplateListViewModel.kt$TemplateListViewModel : ViewModel</ID>
-    <ID>UnusedPrivateProperty:NeonComponents.kt$var hasOverflow by remember { mutableStateOf(false) }</ID>
-    <ID>UseCheckOrError:QrCodeBottomSheet.kt$throw IllegalStateException("Failed to decode QR code bitmap from bytes")</ID>
-    <ID>UseRequire:WifiQrGenerator.kt$WifiQrGenerator$throw IllegalArgumentException("Invalid SSID")</ID>
-    <ID>UseRequire:WifiQrGenerator.kt$WifiQrGenerator$throw IllegalArgumentException("Invalid password")</ID>
-    <ID>WildcardImport:CyberpunkBackdrop.kt$import androidx.compose.animation.core.*</ID>
-    <ID>WildcardImport:CyberpunkBackdrop.kt$import androidx.compose.foundation.layout.*</ID>
-    <ID>WildcardImport:CyberpunkBackdrop.kt$import androidx.compose.runtime.*</ID>
-    <ID>WildcardImport:CyberpunkBackdrop.kt$import androidx.compose.ui.graphics.*</ID>
-    <ID>WildcardImport:CyberpunkBackdrop.kt$import com.kingpaging.qwelcome.ui.theme.*</ID>
-    <ID>WildcardImport:CyberpunkTheme.kt$import androidx.compose.material3.*</ID>
-    <ID>WildcardImport:GradientHeader.kt$import androidx.compose.foundation.layout.*</ID>
-    <ID>WildcardImport:MessageTemplateTest.kt$import org.junit.Assert.*</ID>
-    <ID>WildcardImport:NeonComponents.kt$import androidx.compose.foundation.layout.*</ID>
-    <ID>WildcardImport:NeonComponents.kt$import androidx.compose.material3.*</ID>
-    <ID>WildcardImport:PhoneUtilsTest.kt$import org.junit.Assert.*</ID>
-    <ID>WildcardImport:QrCodeBottomSheet.kt$import androidx.compose.foundation.layout.*</ID>
-    <ID>WildcardImport:QrCodeBottomSheet.kt$import androidx.compose.material3.*</ID>
-    <ID>WildcardImport:QrCodeBottomSheet.kt$import androidx.compose.runtime.*</ID>
-    <ID>WildcardImport:WifiQrGeneratorTest.kt$import org.junit.Assert.*</ID>
+    <ID>ConstructorParameterNaming:UpdateChecker.kt:GitHubAsset$val browser_download_url: String</ID>
+    <ID>ConstructorParameterNaming:UpdateChecker.kt:GitHubRelease$val html_url: String</ID>
+    <ID>ConstructorParameterNaming:UpdateChecker.kt:GitHubRelease$val tag_name: String</ID>
+    <ID>CyclomaticComplexMethod:ExportScreen.kt:@Suppress("LocalContextGetResourceValueCall") @Composable fun ExportScreen</ID>
+    <ID>CyclomaticComplexMethod:ImportApplyService.kt:ImportApplyService$suspend fun applyFullBackup: ImportApplyResult</ID>
+    <ID>CyclomaticComplexMethod:ImportScreen.kt:@Suppress("LocalContextGetResourceValueCall", "LocalContextResourcesRead") @Composable fun ImportScreen</ID>
+    <ID>CyclomaticComplexMethod:NeonComponents.kt:@Composable fun NeonButton</ID>
+    <ID>CyclomaticComplexMethod:QrCodeBottomSheet.kt:private suspend fun saveQrCodeToGallery</ID>
+    <ID>CyclomaticComplexMethod:SettingsScreen.kt:@Composable fun SettingsScreen</ID>
+    <ID>CyclomaticComplexMethod:TemplateListScreen.kt:@OptIn(ExperimentalLayoutApi::class) @Composable private fun TemplateCard</ID>
+    <ID>CyclomaticComplexMethod:TemplateListScreen.kt:@Suppress("LocalContextGetResourceValueCall") @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class) @Composable fun TemplateListScreen</ID>
+    <ID>ForbiddenComment:Type.kt:// TODO: Reserved for future light mode header shadows if design requires them.</ID>
+    <ID>FunctionNaming:AppNavGraph.kt:@Composable fun AppNavGraph</ID>
+    <ID>FunctionNaming:ContentEditorDialog.kt:@Composable internal fun ContentEditorField</ID>
+    <ID>FunctionNaming:ContentEditorDialog.kt:@OptIn(ExperimentalLayoutApi::class) @Composable internal fun ContentEditorDialog</ID>
+    <ID>FunctionNaming:CustomerIntakeScreen.kt:@Composable private fun ActionButtonRow</ID>
+    <ID>FunctionNaming:CustomerIntakeScreen.kt:@Composable private fun CustomerFormFields</ID>
+    <ID>FunctionNaming:CustomerIntakeScreen.kt:@Composable private fun QrCodeSection</ID>
+    <ID>FunctionNaming:CustomerIntakeScreen.kt:@Composable private fun TemplateSelector</ID>
+    <ID>FunctionNaming:CustomerIntakeScreen.kt:@Suppress("LocalContextGetResourceValueCall") @Composable fun CustomerIntakeScreen</ID>
+    <ID>FunctionNaming:CyberpunkBackdrop.kt:@Composable fun CyberpunkBackdrop</ID>
+    <ID>FunctionNaming:CyberpunkBackdrop.kt:@Composable private fun ScanlineOverlay</ID>
+    <ID>FunctionNaming:CyberpunkTheme.kt:@Composable fun CyberpunkTheme</ID>
+    <ID>FunctionNaming:ExportScreen.kt:@Composable private fun ExportOptionCard</ID>
+    <ID>FunctionNaming:ExportScreen.kt:@Composable private fun TemplateSelectionDialog</ID>
+    <ID>FunctionNaming:ExportScreen.kt:@Composable private fun TemplateSelectionItem</ID>
+    <ID>FunctionNaming:ExportScreen.kt:@Suppress("LocalContextGetResourceValueCall") @Composable fun ExportScreen</ID>
+    <ID>FunctionNaming:GradientHeader.kt:@Composable fun QWelcomeHeader</ID>
+    <ID>FunctionNaming:GradientHeader.kt:@Composable fun QWelcomeHeaderLarge</ID>
+    <ID>FunctionNaming:ImportScreen.kt:@Composable private fun CompleteStep</ID>
+    <ID>FunctionNaming:ImportScreen.kt:@Composable private fun ConfirmStep</ID>
+    <ID>FunctionNaming:ImportScreen.kt:@Composable private fun IdleStep</ID>
+    <ID>FunctionNaming:ImportScreen.kt:@Composable private fun InfoRow</ID>
+    <ID>FunctionNaming:ImportScreen.kt:@Suppress("LocalContextGetResourceValueCall", "LocalContextResourcesRead") @Composable fun ImportScreen</ID>
+    <ID>FunctionNaming:NeonComponents.kt:@Composable fun InteractivePlaceholderChip</ID>
+    <ID>FunctionNaming:NeonComponents.kt:@Composable fun NeonButton</ID>
+    <ID>FunctionNaming:NeonComponents.kt:@Composable fun NeonCyanButton</ID>
+    <ID>FunctionNaming:NeonComponents.kt:@Composable fun NeonMagentaButton</ID>
+    <ID>FunctionNaming:NeonComponents.kt:@Composable fun NeonPanel</ID>
+    <ID>FunctionNaming:NeonComponents.kt:@Composable fun NeonWarningBanner</ID>
+    <ID>FunctionNaming:NeonComponents.kt:@Composable fun PlaceholderChip</ID>
+    <ID>FunctionNaming:NeonComponents.kt:@OptIn(ExperimentalLayoutApi::class) @Composable fun CollapsiblePlaceholderChips</ID>
+    <ID>FunctionNaming:NeonComponents.kt:@OptIn(ExperimentalLayoutApi::class) @Composable fun PlaceholderChipsRow</ID>
+    <ID>FunctionNaming:NeonComponents.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun NeonOutlinedField</ID>
+    <ID>FunctionNaming:NeonDropdownMenuBox.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun NeonDropdownMenuBox</ID>
+    <ID>FunctionNaming:NeonTopAppBar.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun NeonTopAppBar</ID>
+    <ID>FunctionNaming:QrCodeBottomSheet.kt:@Composable fun QrCodeBottomSheet</ID>
+    <ID>FunctionNaming:SettingsScreen.kt:@Composable fun SettingsScreen</ID>
+    <ID>FunctionNaming:SettingsScreen.kt:@Composable private fun PrivacySettingRow</ID>
+    <ID>FunctionNaming:TemplateEditorChrome.kt:@Composable internal fun DiscardChangesDialog</ID>
+    <ID>FunctionNaming:TemplateEditorChrome.kt:@Composable internal fun TemplateEditorBottomBar</ID>
+    <ID>FunctionNaming:TemplateEditorChrome.kt:@Composable internal fun TemplateEditorTopBar</ID>
+    <ID>FunctionNaming:TemplateEditorForm.kt:@Composable internal fun MessageContentLauncher</ID>
+    <ID>FunctionNaming:TemplateEditorForm.kt:@Composable internal fun TemplateNameField</ID>
+    <ID>FunctionNaming:TemplateEditorForm.kt:@OptIn(ExperimentalLayoutApi::class) @Composable internal fun PlaceholderChipsSection</ID>
+    <ID>FunctionNaming:TemplateEditorForm.kt:@OptIn(ExperimentalLayoutApi::class) @Composable internal fun TagsSection</ID>
+    <ID>FunctionNaming:TemplateEditorScreen.kt:@Suppress("LocalContextGetResourceValueCall") @Composable fun TemplateEditorScreen</ID>
+    <ID>FunctionNaming:TemplateEditorState.kt:@Composable private fun BindTemplateEditorState</ID>
+    <ID>FunctionNaming:TemplateEditorState.kt:@OptIn(ExperimentalLayoutApi::class) @Composable internal fun TemplateEditorContent</ID>
+    <ID>FunctionNaming:TemplateListScreen.kt:@Composable private fun DeleteConfirmationDialog</ID>
+    <ID>FunctionNaming:TemplateListScreen.kt:@OptIn(ExperimentalLayoutApi::class) @Composable private fun TemplateCard</ID>
+    <ID>FunctionNaming:TemplateListScreen.kt:@Suppress("LocalContextGetResourceValueCall") @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class) @Composable fun TemplateListScreen</ID>
+    <ID>FunctionNaming:TemplateVariablesSheet.kt:@Composable private fun VariableItem</ID>
+    <ID>FunctionNaming:TemplateVariablesSheet.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun TemplateVariablesSheet</ID>
+    <ID>LongMethod:ContentEditorDialog.kt:@Composable internal fun ContentEditorField</ID>
+    <ID>LongMethod:ContentEditorDialog.kt:@OptIn(ExperimentalLayoutApi::class) @Composable internal fun ContentEditorDialog</ID>
+    <ID>LongMethod:CustomerIntakeScreen.kt:@Composable private fun CustomerFormFields</ID>
+    <ID>LongMethod:CustomerIntakeScreen.kt:@Suppress("LocalContextGetResourceValueCall") @Composable fun CustomerIntakeScreen</ID>
+    <ID>LongMethod:ExportScreen.kt:@Composable private fun ExportOptionCard</ID>
+    <ID>LongMethod:ExportScreen.kt:@Composable private fun TemplateSelectionDialog</ID>
+    <ID>LongMethod:ExportScreen.kt:@Suppress("LocalContextGetResourceValueCall") @Composable fun ExportScreen</ID>
+    <ID>LongMethod:ExportService.kt:ExportService$suspend fun exportTemplatePack: ExportResult</ID>
+    <ID>LongMethod:ImportScreen.kt:@Composable private fun ConfirmStep</ID>
+    <ID>LongMethod:ImportScreen.kt:@Composable private fun IdleStep</ID>
+    <ID>LongMethod:ImportScreen.kt:@Suppress("LocalContextGetResourceValueCall", "LocalContextResourcesRead") @Composable fun ImportScreen</ID>
+    <ID>LongMethod:MainActivity.kt:MainActivity$override fun onCreate</ID>
+    <ID>LongMethod:NeonComponents.kt:@Composable fun NeonButton</ID>
+    <ID>LongMethod:NeonComponents.kt:@Composable fun NeonPanel</ID>
+    <ID>LongMethod:QrCodeBottomSheet.kt:@Composable fun QrCodeBottomSheet</ID>
+    <ID>LongMethod:SettingsScreen.kt:@Composable fun SettingsScreen</ID>
+    <ID>LongMethod:SettingsViewModel.kt:SettingsViewModel$private suspend fun monitorDownload</ID>
+    <ID>LongMethod:TemplateEditorForm.kt:@OptIn(ExperimentalLayoutApi::class) @Composable internal fun TagsSection</ID>
+    <ID>LongMethod:TemplateEditorScreen.kt:@Suppress("LocalContextGetResourceValueCall") @Composable fun TemplateEditorScreen</ID>
+    <ID>LongMethod:TemplateEditorState.kt:@OptIn(ExperimentalLayoutApi::class) @Composable internal fun TemplateEditorContent</ID>
+    <ID>LongMethod:TemplateListScreen.kt:@OptIn(ExperimentalLayoutApi::class) @Composable private fun TemplateCard</ID>
+    <ID>LongMethod:TemplateListScreen.kt:@Suppress("LocalContextGetResourceValueCall") @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class) @Composable fun TemplateListScreen</ID>
+    <ID>MagicNumber:CustomerIntakeScreen.kt:1500L</ID>
+    <ID>MagicNumber:CustomerIntakeViewModel.kt:CustomerIntakeViewModel.Companion$10</ID>
+    <ID>MagicNumber:CustomerIntakeViewModel.kt:CustomerIntakeViewModel.Companion$11</ID>
+    <ID>MagicNumber:CyberpunkBackdrop.kt:0xFF05030A</ID>
+    <ID>MagicNumber:CyberpunkBackdrop.kt:0xFF120A1C</ID>
+    <ID>MagicNumber:CyberpunkBackdrop.kt:0xFFF5F0FA</ID>
+    <ID>MagicNumber:CyberpunkBackdrop.kt:0xFFFFFFFF</ID>
+    <ID>MagicNumber:ImportScreen.kt:0.7f</ID>
+    <ID>MagicNumber:ImportScreen.kt:0.8f</ID>
+    <ID>MagicNumber:ImportScreen.kt:0.9f</ID>
+    <ID>MagicNumber:PhoneUtils.kt:PhoneUtils$10</ID>
+    <ID>MagicNumber:PhoneUtils.kt:PhoneUtils$11</ID>
+    <ID>MagicNumber:QrCodeBottomSheet.kt:.25f</ID>
+    <ID>MagicNumber:QrCodeBottomSheet.kt:100</ID>
+    <ID>MagicNumber:SettingsScreen.kt:1024.0</ID>
+    <ID>MagicNumber:SoundManager.kt:SoundManager$20</ID>
+    <ID>MagicNumber:SoundManager.kt:SoundManager$50</ID>
+    <ID>MagicNumber:Template.kt:Template.Companion$8</ID>
+    <ID>MagicNumber:TemplateListScreen.kt:100</ID>
+    <ID>MagicNumber:TemplateListViewModel.kt:TemplateListViewModel$50</ID>
+    <ID>MagicNumber:UpdateChecker.kt:UpdateChecker$10_000</ID>
+    <ID>MatchingDeclarationName:Color.kt:CyberColors</ID>
+    <ID>MaxLineLength:CustomerIntakeScreen.kt:Icon(Icons.Filled.PersonAdd, contentDescription = stringResource(R.string.content_desc_new_customer))</ID>
+    <ID>MaxLineLength:CustomerIntakeScreen.kt:Icon(Icons.Filled.Settings, contentDescription = stringResource(R.string.content_desc_settings))</ID>
+    <ID>MaxLineLength:CustomerIntakeScreen.kt:uiState.isOpenNetwork &amp;&amp; uiState.ssid.isNotBlank() -&gt; stringResource(R.string.hint_qr_open_network, uiState.ssid)</ID>
+    <ID>MaxLineLength:CustomerIntakeViewModel.kt:CustomerIntakeViewModel$val accountNumberError = if (currentState.accountNumber.isBlank()) resourceProvider.getString(R.string.error_account_empty) else null</ID>
+    <ID>MaxLineLength:CustomerIntakeViewModel.kt:CustomerIntakeViewModel$val customerNameError = if (currentState.customerName.isBlank()) resourceProvider.getString(R.string.error_name_empty) else null</ID>
+    <ID>MaxLineLength:ExportScreen.kt:Toast.makeText(context, context.getString(R.string.toast_failed_save_file, e.message), Toast.LENGTH_LONG).show()</ID>
+    <ID>MaxLineLength:ExportScreen.kt:Toast.makeText(context, context.getString(R.string.toast_type_copied, typeName), Toast.LENGTH_SHORT).show()</ID>
+    <ID>MaxLineLength:ExportScreen.kt:Toast.makeText(context, context.getString(R.string.toast_type_saved, typeName), Toast.LENGTH_SHORT).show()</ID>
+    <ID>MaxLineLength:ExportScreen.kt:clipboardManager.setClipEntry(ClipEntry(ClipData.newPlainText(context.getString(R.string.title_export), json)))</ID>
+    <ID>MaxLineLength:ExportScreen.kt:containerColor = if (isDark) MaterialTheme.colorScheme.surface.copy(alpha = 0.6f) else MaterialTheme.colorScheme.surface</ID>
+    <ID>MaxLineLength:ImportExportRepository.kt:ImportWarning.NewerVersion$override fun toString</ID>
+    <ID>MaxLineLength:ImportScreen.kt:InfoRow(stringResource(R.string.label_backup_type), stringResource(R.string.export_type_full_backup))</ID>
+    <ID>MaxLineLength:ImportScreen.kt:InfoRow(stringResource(R.string.label_backup_type), stringResource(R.string.export_type_template_pack))</ID>
+    <ID>MaxLineLength:ImportScreen.kt:InfoRow(stringResource(R.string.label_conflicts), pluralStringResource(R.plurals.import_conflicts, count, count))</ID>
+    <ID>MaxLineLength:ImportScreen.kt:InfoRow(stringResource(R.string.label_template_count), validationResult.backup.templates.size.toString())</ID>
+    <ID>MaxLineLength:ImportScreen.kt:InfoRow(stringResource(R.string.label_template_count), validationResult.pack.templates.size.toString())</ID>
+    <ID>MaxLineLength:ImportScreen.kt:Toast.makeText(context, R.string.toast_cannot_access_clipboard, Toast.LENGTH_SHORT).show()</ID>
+    <ID>MaxLineLength:ImportScreen.kt:Toast.makeText(context, R.string.toast_clipboard_empty, Toast.LENGTH_SHORT).show()</ID>
+    <ID>MaxLineLength:ImportScreen.kt:Toast.makeText(context, context.getString(R.string.toast_error_reading_file, detail), Toast.LENGTH_LONG).show()</ID>
+    <ID>MaxLineLength:ImportScreen.kt:Toast.makeText(context, context.getString(R.string.toast_unexpected_error, detail), Toast.LENGTH_LONG).show()</ID>
+    <ID>MaxLineLength:MessageTemplateTest.kt:MessageTemplateTest$val template = "Hi {{ customer_name }}, your WiFi is {{ ssid }} with password {{ password }}. Account: {{ account_number }}"</ID>
+    <ID>MaxLineLength:Navigator.kt:AndroidNavigator$context</ID>
+    <ID>MaxLineLength:NeonComponents.kt:NeonButtonStyle.PRIMARY -&gt; if (isDark) glowColor.copy(alpha = 0.08f) else colorScheme.onSurface.copy(alpha = 0.12f)</ID>
+    <ID>MaxLineLength:NeonComponents.kt:NeonButtonStyle.TERTIARY -&gt; if (isDark) Color.Transparent else colorScheme.surfaceVariant.copy(alpha = 0.3f)</ID>
+    <ID>MaxLineLength:NeonComponents.kt:disabledContentColor = if (isDark) glowColor.copy(alpha = 0.38f) else colorScheme.onSurface.copy(alpha = 0.38f)</ID>
+    <ID>MaxLineLength:PreferencesToProtoMigration.kt:PreferencesToProtoMigration$"Template migration failed; preserving legacy preferences for manual recovery. JSON length: ${e.rawTemplatesJson.length}"</ID>
+    <ID>MaxLineLength:QrCodeBottomSheet.kt:Text(stringResource(R.string.label_network), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))</ID>
+    <ID>MaxLineLength:QrCodeBottomSheet.kt:Text(stringResource(R.string.label_open_no_password), color = MaterialTheme.colorScheme.tertiary, fontWeight = FontWeight.Medium)</ID>
+    <ID>MaxLineLength:QrCodeBottomSheet.kt:Text(stringResource(R.string.label_security), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))</ID>
+    <ID>MaxLineLength:TemplateListScreen.kt:color = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface</ID>
+    <ID>MaxLineLength:TemplateListViewModelTest.kt:TemplateListViewModelTest$coVerify { mockStore.saveTemplate(match { it.name == "Updated Name" &amp;&amp; it.content == "Hi {{ customer_name }}, SSID: {{ ssid }}" }) }</ID>
+    <ID>MaxLineLength:WifiQrGenerator.kt:WifiQrGenerator$WifiValidationRules.isPasswordTooShort(password) -&gt; ValidationResult.Error(R.string.error_password_too_short)</ID>
+    <ID>NewLineAtEndOfFile:Color.kt:com.kingpaging.qwelcome.ui.theme.Color.kt</ID>
+    <ID>NewLineAtEndOfFile:CustomerIntakeUiState.kt:com.kingpaging.qwelcome.ui.CustomerIntakeUiState.kt</ID>
+    <ID>PackageNaming:ImportScreen.kt:package com.kingpaging.qwelcome.ui.import_pkg</ID>
+    <ID>PackageNaming:ImportViewModel.kt:package com.kingpaging.qwelcome.viewmodel.import_pkg</ID>
+    <ID>PackageNaming:ImportViewModelTest.kt:package com.kingpaging.qwelcome.viewmodel.import_pkg</ID>
+    <ID>ReturnCount:ExportService.kt:ExportService$suspend fun exportFullBackup: ExportResult</ID>
+    <ID>ReturnCount:ExportService.kt:ExportService$suspend fun exportTemplatePack: ExportResult</ID>
+    <ID>ReturnCount:ExportViewModel.kt:ExportViewModel$private fun resolveRecentShareTarget: RecentShareTargetUi?</ID>
+    <ID>ReturnCount:ImportScreen.kt:private fun exceedsImportLimit: Boolean</ID>
+    <ID>ReturnCount:ImportValidationService.kt:ImportValidationService$private suspend fun parseFullBackup: ImportValidationResult</ID>
+    <ID>ReturnCount:ImportValidationService.kt:ImportValidationService$private suspend fun parseTemplatePack: ImportValidationResult</ID>
+    <ID>ReturnCount:ImportValidationService.kt:ImportValidationService$suspend fun validateImport: ImportValidationResult</ID>
+    <ID>ReturnCount:SettingsViewModel.kt:SettingsViewModel$private suspend fun monitorDownload</ID>
+    <ID>ReturnCount:UpdateChecker.kt:UpdateChecker$internal fun parseUpdateResponse: UpdateCheckResult</ID>
+    <ID>ReturnCount:VersionComparator.kt:VersionComparator$fun isNewerVersion: Boolean</ID>
+    <ID>ReturnCount:VersionComparator.kt:VersionComparator$internal fun comparePreRelease: Int</ID>
+    <ID>SwallowedException:SoundManager.kt:SoundManager$e: Exception</ID>
+    <ID>ThrowsCount:QrCodeBottomSheet.kt:private suspend fun saveQrCodeToGallery</ID>
+    <ID>TooGenericExceptionCaught:ExportService.kt:ExportService$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:ExportViewModel.kt:ExportViewModel$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:ImportScreen.kt:e: Exception</ID>
+    <ID>TooGenericExceptionCaught:ImportViewModel.kt:ImportViewModel$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:Navigator.kt:AndroidNavigator$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:QWelcomeApplication.kt:QWelcomeApplication.&lt;no name provided&gt;$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:SettingsViewModel.kt:SettingsViewModel$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:SoundManager.kt:SoundManager$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:TemplateListViewModel.kt:TemplateListViewModel$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:UpdateChecker.kt:UpdateChecker$e: Exception</ID>
+    <ID>TooGenericExceptionThrown:QrCodeBottomSheet.kt:throw Exception("Failed to create cache directory")</ID>
+    <ID>TooManyFunctions:CustomerIntakeViewModel.kt:CustomerIntakeViewModel : ViewModel</ID>
+    <ID>TooManyFunctions:ExportViewModel.kt:ExportViewModel : ViewModel</ID>
+    <ID>TooManyFunctions:GitHubAppUpdater.kt:GitHubAppUpdater : AppUpdater</ID>
+    <ID>TooManyFunctions:NeonComponents.kt:com.kingpaging.qwelcome.ui.components.NeonComponents.kt</ID>
+    <ID>TooManyFunctions:SettingsStore.kt:SettingsStore</ID>
+    <ID>TooManyFunctions:SettingsViewModel.kt:SettingsViewModel : ViewModel</ID>
+    <ID>TooManyFunctions:TemplateListViewModel.kt:TemplateListViewModel : ViewModel</ID>
+    <ID>WildcardImport:CyberpunkBackdrop.kt:import androidx.compose.animation.core.*</ID>
+    <ID>WildcardImport:CyberpunkBackdrop.kt:import androidx.compose.foundation.layout.*</ID>
+    <ID>WildcardImport:CyberpunkBackdrop.kt:import androidx.compose.runtime.*</ID>
+    <ID>WildcardImport:CyberpunkBackdrop.kt:import androidx.compose.ui.graphics.*</ID>
+    <ID>WildcardImport:CyberpunkBackdrop.kt:import com.kingpaging.qwelcome.ui.theme.*</ID>
+    <ID>WildcardImport:CyberpunkTheme.kt:import androidx.compose.material3.*</ID>
+    <ID>WildcardImport:GradientHeader.kt:import androidx.compose.foundation.layout.*</ID>
+    <ID>WildcardImport:MessageTemplateTest.kt:import org.junit.Assert.*</ID>
+    <ID>WildcardImport:NeonComponents.kt:import androidx.compose.foundation.layout.*</ID>
+    <ID>WildcardImport:NeonComponents.kt:import androidx.compose.material3.*</ID>
+    <ID>WildcardImport:PhoneUtilsTest.kt:import org.junit.Assert.*</ID>
+    <ID>WildcardImport:QrCodeBottomSheet.kt:import androidx.compose.foundation.layout.*</ID>
+    <ID>WildcardImport:QrCodeBottomSheet.kt:import androidx.compose.material3.*</ID>
+    <ID>WildcardImport:QrCodeBottomSheet.kt:import androidx.compose.runtime.*</ID>
+    <ID>WildcardImport:WifiQrGeneratorTest.kt:import org.junit.Assert.*</ID>
   </CurrentIssues>
 </SmellBaseline>

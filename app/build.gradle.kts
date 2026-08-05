@@ -1,7 +1,7 @@
 import java.util.Properties
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
-import io.gitlab.arturbosch.detekt.extensions.DetektExtension
+import dev.detekt.gradle.extensions.DetektExtension
 
 plugins {
     alias(libs.plugins.android.application)
@@ -86,8 +86,8 @@ tasks.withType<KotlinJvmCompile>().configureEach {
 }
 
 extensions.configure<DetektExtension> {
-    buildUponDefaultConfig = true
-    baseline = file("detekt-baseline.xml")
+    buildUponDefaultConfig.set(true)
+    baseline.set(file("detekt-baseline.xml"))
 }
 
 dependencies {

@@ -174,8 +174,8 @@ fun CustomerIntakeScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
-                    .imePadding()
                     .verticalScroll(rememberScrollState())
+                    .imePadding()
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp) // Top-aligned with spacing feels more like a tool
             ) {
@@ -345,34 +345,6 @@ private fun CustomerFormFields(
             supportingText = { uiState.customerNameError?.let { Text(it) } }
         )
 
-        NeonDropdownMenuBox(
-            expanded = securityDropdownExpanded,
-            onExpandedChange = onSecurityDropdownExpandedChange,
-            selectedText = stringResource(
-                if (securityType == WifiQrGenerator.SecurityType.WPA2_PSK) {
-                    R.string.security_wpa2
-                } else {
-                    R.string.security_wpa3_sae
-                }
-            ),
-            label = { Text(stringResource(R.string.label_wifi_security)) },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            DropdownMenuItem(
-                text = { Text(stringResource(R.string.security_wpa2)) },
-                onClick = {
-                    onSecurityTypeChanged(WifiQrGenerator.SecurityType.WPA2_PSK)
-                    onSecurityDropdownExpandedChange(false)
-                }
-            )
-            DropdownMenuItem(
-                text = { Text(stringResource(R.string.security_wpa3_sae)) },
-                onClick = {
-                    onSecurityTypeChanged(WifiQrGenerator.SecurityType.WPA3_SAE)
-                    onSecurityDropdownExpandedChange(false)
-                }
-            )
-        }
         NeonOutlinedField(
             value = uiState.customerPhone,
             onValueChange = onCustomerPhoneChanged,
@@ -476,6 +448,36 @@ private fun CustomerFormFields(
                 }
             }
         )
+        if (!uiState.isOpenNetwork) {
+            NeonDropdownMenuBox(
+                expanded = securityDropdownExpanded,
+                onExpandedChange = onSecurityDropdownExpandedChange,
+                selectedText = stringResource(
+                    if (securityType == WifiQrGenerator.SecurityType.WPA2_PSK) {
+                        R.string.security_wpa2
+                    } else {
+                        R.string.security_wpa3_sae
+                    }
+                ),
+                label = { Text(stringResource(R.string.label_wifi_security)) },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.security_wpa2)) },
+                    onClick = {
+                        onSecurityTypeChanged(WifiQrGenerator.SecurityType.WPA2_PSK)
+                        onSecurityDropdownExpandedChange(false)
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.security_wpa3_sae)) },
+                    onClick = {
+                        onSecurityTypeChanged(WifiQrGenerator.SecurityType.WPA3_SAE)
+                        onSecurityDropdownExpandedChange(false)
+                    }
+                )
+            }
+        }
         NeonOutlinedField(
             value = uiState.accountNumber,
             onValueChange = onAccountNumberChanged,

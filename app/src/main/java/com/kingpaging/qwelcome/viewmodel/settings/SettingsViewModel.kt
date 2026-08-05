@@ -25,7 +25,6 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -100,8 +99,7 @@ class SettingsViewModel(
     private fun updatePrivacySettings(transform: (PrivacySettings) -> PrivacySettings) {
         viewModelScope.launch {
             try {
-                val currentSettings = privacySettings.value ?: store.privacySettingsFlow.first()
-                store.savePrivacySettings(transform(currentSettings))
+                store.updatePrivacySettings(transform)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {

@@ -83,14 +83,23 @@ private class TemplateEditorState(
             return
         }
 
+        val draftTag = editorUiState.newTagInput.trim().take(32)
+        val tags = if (
+            draftTag.isBlank() || editorUiState.tags.any { it.equals(draftTag, ignoreCase = true) }
+        ) {
+            editorUiState.tags
+        } else {
+            editorUiState.tags + draftTag
+        }
+
         if (isNew) {
-            onCreate(editorUiState.name, editorUiState.contentText, editorUiState.tags)
+            onCreate(editorUiState.name, editorUiState.contentText, tags)
         } else {
             onUpdate(
                 templateId,
                 editorUiState.name,
                 editorUiState.contentText,
-                editorUiState.tags
+                tags
             )
         }
     }
@@ -205,7 +214,8 @@ internal fun TemplateEditorContent(
 
     val isDirty = editorUiState.name != originalName ||
         editorUiState.contentText != originalContent ||
-        editorUiState.tags != originalTags
+        editorUiState.tags != originalTags ||
+        editorUiState.newTagInput.isNotBlank()
     val canSave = editorUiState.name.isNotBlank() && editorUiState.contentError == null
     val suggestedTags = listOf(
         stringResource(R.string.tag_residential),

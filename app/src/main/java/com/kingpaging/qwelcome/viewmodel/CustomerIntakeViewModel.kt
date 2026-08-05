@@ -43,7 +43,8 @@ class CustomerIntakeViewModel(
     private val savedStateHandle: SavedStateHandle,
     private val settingsStore: SettingsStore,
     private val resourceProvider: ResourceProvider,
-    private val timeProvider: TimeProvider = SystemTimeProvider()
+    private val timeProvider: TimeProvider = SystemTimeProvider(),
+    private val enableForegroundInactivityTimer: Boolean = true
 ) : ViewModel() {
 
     companion object {
@@ -150,11 +151,11 @@ class CustomerIntakeViewModel(
 
     fun onResume() {
         val lastActivityTimestamp = savedStateHandle.get<Long>(KEY_LAST_ACTIVITY_TIMESTAMP)
-        if (lastActivityTimestamp != null && lastActivityTimestamp > 0L && _uiState.value.hasCustomerData) {
+        if (lastActivityTimestamp != null) {
             val elapsed = timeProvider.elapsedRealtime() - lastActivityTimestamp
             if (elapsed >= AUTO_CLEAR_TIMEOUT_MS) {
                 clearForm()
-            } else {
+            } else if (_uiState.value.hasCustomerData && enableForegroundInactivityTimer) {
                 scheduleInactivityClear(AUTO_CLEAR_TIMEOUT_MS - elapsed)
             }
         }
@@ -163,7 +164,7 @@ class CustomerIntakeViewModel(
     fun clearForm() {
         inactivityJob?.cancel()
         inactivityJob = null
-        savedStateHandle[KEY_LAST_ACTIVITY_TIMESTAMP] = 0L
+        savedStateHandle.remove<Long>(KEY_LAST_ACTIVITY_TIMESTAMP)
         _uiState.update { CustomerIntakeUiState() }
         viewModelScope.launch {
             _uiEvent.emit(UiEvent.ShowToast(resourceProvider.getString(R.string.toast_form_cleared)))
@@ -237,20 +238,26 @@ class CustomerIntakeViewModel(
     fun recordUserActivity() {
         if (!_uiState.value.hasCustomerData) return
         savedStateHandle[KEY_LAST_ACTIVITY_TIMESTAMP] = timeProvider.elapsedRealtime()
-        scheduleInactivityClear(AUTO_CLEAR_TIMEOUT_MS)
+        if (enableForegroundInactivityTimer) {
+            scheduleInactivityClear(AUTO_CLEAR_TIMEOUT_MS)
+        }
     }
 
     private fun scheduleInactivityClear(delayMillis: Long) {
         inactivityJob?.cancel()
         inactivityJob = viewModelScope.launch {
             delay(delayMillis)
-            val lastActivityTimestamp = savedStateHandle.get<Long>(KEY_LAST_ACTIVITY_TIMESTAMP) ?: return@launch
-            val elapsed = timeProvider.elapsedRealtime() - lastActivityTimestamp
-            if (elapsed >= AUTO_CLEAR_TIMEOUT_MS) {
-                clearForm()
-            } else {
-                scheduleInactivityClear(AUTO_CLEAR_TIMEOUT_MS - elapsed)
-            }
+            checkInactivityTimeout()
+        }
+    }
+
+    internal fun checkInactivityTimeout() {
+        val lastActivityTimestamp = savedStateHandle.get<Long>(KEY_LAST_ACTIVITY_TIMESTAMP) ?: return
+        val elapsed = timeProvider.elapsedRealtime() - lastActivityTimestamp
+        if (elapsed >= AUTO_CLEAR_TIMEOUT_MS) {
+            clearForm()
+        } else if (elapsed > 0L) {
+            scheduleInactivityClear(AUTO_CLEAR_TIMEOUT_MS - elapsed)
         }
     }
 

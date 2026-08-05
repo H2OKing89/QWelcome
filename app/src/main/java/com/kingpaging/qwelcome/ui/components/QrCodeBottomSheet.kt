@@ -32,6 +32,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.FileProvider
 import com.kingpaging.qwelcome.ui.theme.CyberDarkScheme
 import com.kingpaging.qwelcome.util.sanitizeFileName
@@ -108,6 +109,8 @@ fun QrCodeBottomSheet(
     if (showSaveWarning) {
         AlertDialog(
             onDismissRequest = { showSaveWarning = false },
+            modifier = Modifier.imePadding(),
+            properties = DialogProperties(decorFitsSystemWindows = false),
             title = { Text(stringResource(R.string.title_save_qr_warning)) },
             text = { Text(stringResource(R.string.text_save_qr_warning)) },
             confirmButton = {

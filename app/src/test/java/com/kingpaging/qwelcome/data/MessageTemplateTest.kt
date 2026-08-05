@@ -224,7 +224,7 @@ class MessageTemplateTest {
     }
 
     @Test
-    fun `generate leaves unrecognized placeholders unchanged`() {
+    fun `generate removes unrecognized placeholders`() {
         val template = "Hello {{ unknown_field }}!"
         val data = createCustomerData()
 

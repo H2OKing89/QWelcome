@@ -32,6 +32,22 @@ private fun Flow<UserPreferences>.catchIoException(
     }
 }
 
+internal fun Flow<UserPreferences>.readPrivacySettings(): Flow<PrivacySettings> = map { preferences ->
+    PrivacySettings.fromProto(preferences.privacySettings)
+}.catch { exception ->
+    if (exception is IOException) {
+        Log.e(TAG, "Error reading privacy settings.", exception)
+        emit(
+            PrivacySettings(
+                crashReportingEnabled = false,
+                screenCaptureProtectionEnabled = true
+            )
+        )
+    } else {
+        throw exception
+    }
+}
+
 /**
  * Manages app settings and template storage using Proto DataStore.
  */
@@ -55,14 +71,20 @@ class SettingsStore(private val context: Context) {
 
     // ========== Privacy Settings ==========
 
-    val privacySettingsFlow: Flow<PrivacySettings> = dataStore.data
-        .catchIoException("Error reading privacy settings.")
-        .map { preferences -> PrivacySettings.fromProto(preferences.privacySettings) }
+    val privacySettingsFlow: Flow<PrivacySettings> = dataStore.data.readPrivacySettings()
 
     suspend fun savePrivacySettings(settings: PrivacySettings) {
         dataStore.updateData { preferences ->
             preferences.toBuilder()
                 .setPrivacySettings(settings.toProto())
+                .build()
+        }
+    }
+
+    suspend fun updatePrivacySettings(transform: (PrivacySettings) -> PrivacySettings) {
+        dataStore.updateData { preferences ->
+            preferences.toBuilder()
+                .setPrivacySettings(transform(PrivacySettings.fromProto(preferences.privacySettings)).toProto())
                 .build()
         }
     }

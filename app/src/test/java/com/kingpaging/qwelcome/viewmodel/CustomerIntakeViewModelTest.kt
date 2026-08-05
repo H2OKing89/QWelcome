@@ -16,7 +16,6 @@ import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
-import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -54,12 +53,14 @@ class CustomerIntakeViewModelTest {
             savedStateHandle = savedStateHandle,
             settingsStore = mockStore,
             resourceProvider = fakeResourceProvider,
-            timeProvider = fakeTimeProvider
+            timeProvider = fakeTimeProvider,
+            enableForegroundInactivityTimer = false
         )
     }
 
     @After
     fun tearDown() {
+        vm.onPause()
         AppViewModelProvider.resetForTesting()
     }
 
@@ -365,7 +366,8 @@ class CustomerIntakeViewModelTest {
             savedStateHandle = savedStateHandle, // Same SavedStateHandle
             settingsStore = mockStore,
             resourceProvider = fakeResourceProvider,
-            timeProvider = fakeTimeProvider
+            timeProvider = fakeTimeProvider,
+            enableForegroundInactivityTimer = false
         )
 
         newVm.uiEvent.test {
@@ -380,21 +382,38 @@ class CustomerIntakeViewModelTest {
             val event = awaitItem()
             assertTrue(event is UiEvent.ShowToast)
         }
+    }
 
-        @Test
-        fun `auto-clear clears form after foreground inactivity timeout`() = runTest {
-            fillValidFields()
+    @Test
+    fun `auto-clear clears form after foreground inactivity timeout`() {
+        fillValidFields()
 
-            vm.uiEvent.test {
-                fakeTimeProvider.advanceBy(10 * 60 * 1000L)
-                advanceTimeBy(10 * 60 * 1000L)
-                advanceUntilIdle()
+        fakeTimeProvider.advanceBy(10 * 60 * 1000L)
+        vm.checkInactivityTimeout()
 
-                assertEquals("", vm.uiState.value.customerName)
-                assertEquals("", vm.uiState.value.ssid)
-                assertTrue(awaitItem() is UiEvent.ShowToast)
-            }
-        }
+        assertEquals("", vm.uiState.value.customerName)
+        assertEquals("", vm.uiState.value.ssid)
+    }
+
+    @Test
+    fun `auto-clear clears form from zero-valued activity timestamp`() = runTest {
+        val zeroTimeProvider = FakeTimeProvider()
+        val zeroTimestampState = SavedStateHandle()
+        val zeroTimestampVm = CustomerIntakeViewModel(
+            savedStateHandle = zeroTimestampState,
+            settingsStore = mockStore,
+            resourceProvider = fakeResourceProvider,
+            timeProvider = zeroTimeProvider,
+            enableForegroundInactivityTimer = false
+        )
+
+        zeroTimestampVm.onCustomerNameChanged("Alice")
+        zeroTimeProvider.advanceBy(10 * 60 * 1000L)
+
+        zeroTimestampVm.onResume()
+        advanceUntilIdle()
+
+        assertEquals("", zeroTimestampVm.uiState.value.customerName)
     }
 
     private fun fillValidFields() {

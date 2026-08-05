@@ -117,6 +117,31 @@ class GitHubAppUpdaterTest {
     }
 
     @Test
+    fun `enqueueDownload uses a regular-file destination for blank or dot asset names`() = runTest {
+        val downloadManager = mockk<DownloadManager>(relaxed = true)
+        val downloadsDir = tempFolder.newFolder("downloads-invalid-asset-name")
+        every { downloadManager.enqueue(any()) } returns 42L
+        val updater = createUpdater(downloadManager = downloadManager, externalFilesDir = downloadsDir)
+
+        listOf("", ".").forEach { assetName ->
+            val update = UpdateCheckResult.UpdateAvailable(
+                latestVersion = "3.0.0",
+                downloadUrl = "https://github.com/H2OKing89/QWelcome/releases/download/v3.0.0/QWelcome.apk",
+                releaseNotes = "notes",
+                assetName = assetName,
+                assetSizeBytes = 1000L,
+                sha256Hex = "a".repeat(64)
+            )
+
+            val result = updater.enqueueDownload(update) as DownloadEnqueueResult.Started
+            val destination = File(result.apkPath)
+            assertTrue(destination.name.isNotEmpty())
+            assertFalse(destination.name == "." || destination.name == "..")
+            assertEquals(File(downloadsDir, "updates"), destination.parentFile)
+        }
+    }
+
+    @Test
     fun `getDownloadStatus returns InProgress for running download`() = runTest {
         val downloadManager = mockk<DownloadManager>(relaxed = true)
         val cursor = mockk<Cursor>(relaxed = true)

@@ -15,7 +15,7 @@ A modern Android app for fiber internet technicians to quickly send professional
 - **Cyberpunk Theme** — Beautiful dark/light mode with neon accents
 - **Custom Templates** — Create and manage multiple message templates
 - **Import/Export** — Backup and share templates between devices
-- **Privacy-Focused** — Customer data is stored on-device and auto-clears after 10 minutes in the background; crash reporting can be enabled or disabled in Settings
+- **Privacy-Focused** — Customer data is stored on-device; after 10 minutes of inactivity, only the active intake form and its entered data are cleared. Crash reporting can be enabled or disabled in Settings
 - **Input Validation** — Real-time validation with helpful error messages
 
 ## Requirements
@@ -39,17 +39,6 @@ A modern Android app for fiber internet technicians to quickly send professional
 git clone https://github.com/H2OKing89/QWelcome.git
 cd QWelcome
 
-# The Google Services plugin requires this file. Use a Firebase configuration
-# for your own app, or create the same dummy configuration used by CI:
-cat > app/google-services.json <<'EOF'
-{"project_info":{"project_number":"000000000000","project_id":"qwelcome-local","storage_bucket":"qwelcome-local.appspot.com"},"client":[{"client_info":{"mobilesdk_app_id":"1:000000000000:android:00000000000000000000000000000000","android_client_info":{"package_name":"com.kingpaging.qwelcome"}},"api_key":[{"current_key":"dummy"}]}],"configuration_version":"1"}
-EOF
-
-# Windows PowerShell equivalent:
-@'
-{"project_info":{"project_number":"000000000000","project_id":"qwelcome-local","storage_bucket":"qwelcome-local.appspot.com"},"client":[{"client_info":{"mobilesdk_app_id":"1:000000000000:android:00000000000000000000000000000000","android_client_info":{"package_name":"com.kingpaging.qwelcome"}},"api_key":[{"current_key":"dummy"}]}],"configuration_version":"1"}
-'@ | Set-Content app/google-services.json
-
 # Make gradlew executable (Unix/Mac only)
 chmod +x gradlew
 
@@ -61,6 +50,8 @@ gradlew.bat assembleDebug
 
 # APK will be at: app/build/outputs/apk/debug/app-debug.apk
 ```
+
+The repository includes a non-production Firebase configuration for debug builds. A release build requires your own `app/google-services.json` in addition to release signing.
 
 ## Tech Stack
 
@@ -98,10 +89,12 @@ app/src/main/java/com/kingpaging/qwelcome/
 ### Prerequisites
 
 - Android Studio (latest stable recommended)
-- JDK 11+
+- JDK 17 or newer (required by Gradle and CI; app Java and Kotlin bytecode targets remain 11)
 - Android SDK 36
 
 ### Building
+
+The Gradle tasks below are tested with JDK 17.
 
 ```bash
 # Debug build
