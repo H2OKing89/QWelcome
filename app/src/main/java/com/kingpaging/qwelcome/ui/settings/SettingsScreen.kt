@@ -31,6 +31,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -83,6 +84,7 @@ fun SettingsScreen(
     var showDiscardDialog by rememberSaveable { mutableStateOf(false) }
 
     val currentProfile by vm.techProfile.collectAsStateWithLifecycle()
+    val privacySettings by vm.privacySettings.collectAsStateWithLifecycle()
     val activeTemplate by vm.activeTemplate.collectAsStateWithLifecycle()
     val updateState by vm.updateState.collectAsStateWithLifecycle()
 
@@ -306,6 +308,38 @@ fun SettingsScreen(
                             stringResource(R.string.action_save_profile)
                         } else {
                             stringResource(R.string.label_no_changes)
+                        }
+                    )
+                }
+
+                Spacer(Modifier.height(16.dp))
+
+                // === PRIVACY SECTION ===
+                Text(
+                    stringResource(R.string.header_privacy),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                NeonPanel {
+                    PrivacySettingRow(
+                        title = stringResource(R.string.label_crash_reporting),
+                        description = stringResource(R.string.text_crash_reporting_description),
+                        checked = privacySettings?.crashReportingEnabled ?: false,
+                        enabled = privacySettings != null,
+                        onCheckedChange = {
+                            haptic()
+                            vm.setCrashReportingEnabled(it)
+                        }
+                    )
+                    Spacer(Modifier.height(16.dp))
+                    PrivacySettingRow(
+                        title = stringResource(R.string.label_screen_capture_protection),
+                        description = stringResource(R.string.text_screen_capture_protection_description),
+                        checked = privacySettings?.screenCaptureProtectionEnabled ?: false,
+                        enabled = privacySettings != null,
+                        onCheckedChange = {
+                            haptic()
+                            vm.setScreenCaptureProtectionEnabled(it)
                         }
                     )
                 }
@@ -588,6 +622,35 @@ fun SettingsScreen(
                 Spacer(Modifier.height(32.dp))
             }
         }
+    }
+}
+
+@Composable
+private fun PrivacySettingRow(
+    title: String,
+    description: String,
+    checked: Boolean,
+    enabled: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.bodyLarge)
+            Text(
+                description,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+            )
+        }
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            enabled = enabled
+        )
     }
 }
 

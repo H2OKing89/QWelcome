@@ -8,6 +8,7 @@ import android.content.Intent
 import android.app.PendingIntent
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.PersistableBundle
 import android.util.Log
 import android.widget.Toast
 import com.kingpaging.qwelcome.R
@@ -192,7 +193,12 @@ class AndroidNavigator(private val context: Context) : Navigator {
                 Log.e(TAG, "Failed to get ClipboardManager")
                 return false
             }
-            clipboard.setPrimaryClip(ClipData.newPlainText(label, text))
+            val clip = ClipData.newPlainText(label, text).apply {
+                description.extras = PersistableBundle().apply {
+                    putBoolean("android.content.extra.IS_SENSITIVE", true)
+                }
+            }
+            clipboard.setPrimaryClip(clip)
             true
         } catch (e: SecurityException) {
             Log.e(TAG, "SecurityException accessing clipboard", e)

@@ -230,7 +230,31 @@ class MessageTemplateTest {
 
         val result = MessageTemplate.generate(template, data)
 
-        assertEquals("Hello {{ unknown_field }}!", result)
+        assertEquals("Hello !", result)
+    }
+
+    @Test
+    fun `generate replaces placeholders with or without whitespace`() {
+        val template = "{{customer_name}} {{ ssid }} {{password}}"
+        val data = createCustomerData(
+            customerName = "Jane",
+            ssid = "HomeNet",
+            password = "pass1234"
+        )
+
+        val result = MessageTemplate.generate(template, data)
+
+        assertEquals("Jane HomeNet pass1234", result)
+    }
+
+    @Test
+    fun `generate does not process placeholders in customer values`() {
+        val template = "Hello {{ customer_name }}, password: {{ password }}"
+        val data = createCustomerData(customerName = "{{ password }}", password = "secret123")
+
+        val result = MessageTemplate.generate(template, data)
+
+        assertEquals("Hello {{ password }}, password: secret123", result)
     }
 
     @Test

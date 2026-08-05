@@ -23,6 +23,8 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /** One-shot UI events emitted by the ViewModel */
@@ -48,7 +50,7 @@ class CustomerIntakeViewModel(
         private const val AUTO_CLEAR_TIMEOUT_MINUTES = 10
         private const val AUTO_CLEAR_TIMEOUT_MS = AUTO_CLEAR_TIMEOUT_MINUTES * 60 * 1000L
         private const val ACTION_COOLDOWN_MS = 2000L // 2 seconds between actions
-        private const val KEY_BACKGROUND_TIMESTAMP = "background_timestamp"
+        private const val KEY_LAST_ACTIVITY_TIMESTAMP = "last_activity_timestamp"
 
         // Regex for stripping non-digits from phone numbers - reused to avoid allocation
         private val NON_DIGIT_REGEX = Regex("\\D")
@@ -122,6 +124,7 @@ class CustomerIntakeViewModel(
 
     // Track last action time for rate limiting
     private var lastActionTime: Long = 0L
+    private var inactivityJob: Job? = null
 
     /**
      * Wraps [MutableStateFlow.update] with an automatic guard:
@@ -137,24 +140,30 @@ class CustomerIntakeViewModel(
 
     fun setShowQrSheet(show: Boolean) {
         updateState { it.copy(showQrSheet = show) }
+        if (show) recordUserActivity()
     }
 
     fun onPause() {
-        savedStateHandle[KEY_BACKGROUND_TIMESTAMP] = timeProvider.elapsedRealtime()
+        inactivityJob?.cancel()
+        inactivityJob = null
     }
 
     fun onResume() {
-        val backgroundTimestamp = savedStateHandle.get<Long>(KEY_BACKGROUND_TIMESTAMP)
-        if (backgroundTimestamp != null && backgroundTimestamp > 0) {
-            val elapsed = timeProvider.elapsedRealtime() - backgroundTimestamp
+        val lastActivityTimestamp = savedStateHandle.get<Long>(KEY_LAST_ACTIVITY_TIMESTAMP)
+        if (lastActivityTimestamp != null && lastActivityTimestamp > 0L && _uiState.value.hasCustomerData) {
+            val elapsed = timeProvider.elapsedRealtime() - lastActivityTimestamp
             if (elapsed >= AUTO_CLEAR_TIMEOUT_MS) {
                 clearForm()
+            } else {
+                scheduleInactivityClear(AUTO_CLEAR_TIMEOUT_MS - elapsed)
             }
-            savedStateHandle[KEY_BACKGROUND_TIMESTAMP] = 0L
         }
     }
 
     fun clearForm() {
+        inactivityJob?.cancel()
+        inactivityJob = null
+        savedStateHandle[KEY_LAST_ACTIVITY_TIMESTAMP] = 0L
         _uiState.update { CustomerIntakeUiState() }
         viewModelScope.launch {
             _uiEvent.emit(UiEvent.ShowToast(resourceProvider.getString(R.string.toast_form_cleared)))
@@ -163,18 +172,21 @@ class CustomerIntakeViewModel(
 
     fun onCustomerNameChanged(name: String) {
         _uiState.update { it.copy(customerName = name, customerNameError = null) }
+        recordUserActivity()
     }
 
     fun onCustomerPhoneChanged(phone: String) {
         // Real-time validation with progressive feedback
         val error = validatePhoneNumber(phone, progressiveMode = true, resourceProvider)
         _uiState.update { it.copy(customerPhone = phone, customerPhoneError = error) }
+        recordUserActivity()
     }
 
     fun onSsidChanged(ssid: String) {
         // Real-time validation for SSID byte length (WiFi spec: max 32 bytes UTF-8)
         val error = if (ssid.isEmpty()) null else getWifiErrorMessage(WifiQrGenerator.validateSsid(ssid))
         updateState { it.copy(ssid = ssid, ssidError = error) }
+        recordUserActivity()
     }
 
     fun onPasswordChanged(password: String) {
@@ -188,10 +200,12 @@ class CustomerIntakeViewModel(
             else -> getWifiErrorMessage(WifiQrGenerator.validatePassword(password))
         }
         updateState { it.copy(password = password, passwordError = error) }
+        recordUserActivity()
     }
 
     fun onAccountNumberChanged(accountNumber: String) {
         _uiState.update { it.copy(accountNumber = accountNumber, accountNumberError = null) }
+        recordUserActivity()
     }
 
     /**
@@ -206,6 +220,37 @@ class CustomerIntakeViewModel(
                 password = if (isOpen) "" else state.password,
                 passwordError = null
             )
+        }
+        recordUserActivity()
+    }
+
+    fun onSecurityTypeChanged(securityType: WifiQrGenerator.SecurityType) {
+        updateState { it.copy(securityType = securityType) }
+        recordUserActivity()
+    }
+
+    fun onHiddenNetworkChanged(isHidden: Boolean) {
+        updateState { it.copy(isHiddenNetwork = isHidden) }
+        recordUserActivity()
+    }
+
+    fun recordUserActivity() {
+        if (!_uiState.value.hasCustomerData) return
+        savedStateHandle[KEY_LAST_ACTIVITY_TIMESTAMP] = timeProvider.elapsedRealtime()
+        scheduleInactivityClear(AUTO_CLEAR_TIMEOUT_MS)
+    }
+
+    private fun scheduleInactivityClear(delayMillis: Long) {
+        inactivityJob?.cancel()
+        inactivityJob = viewModelScope.launch {
+            delay(delayMillis)
+            val lastActivityTimestamp = savedStateHandle.get<Long>(KEY_LAST_ACTIVITY_TIMESTAMP) ?: return@launch
+            val elapsed = timeProvider.elapsedRealtime() - lastActivityTimestamp
+            if (elapsed >= AUTO_CLEAR_TIMEOUT_MS) {
+                clearForm()
+            } else {
+                scheduleInactivityClear(AUTO_CLEAR_TIMEOUT_MS - elapsed)
+            }
         }
     }
 
@@ -228,6 +273,7 @@ class CustomerIntakeViewModel(
      * @param navigator The Navigator instance for launching intents (injected for testability)
      */
     fun onSmsClicked(navigator: Navigator) = viewModelScope.launch {
+        recordUserActivity()
         if (!checkRateLimit()) return@launch
         if (!validateInputs(requirePhone = true)) {
             _uiEvent.emit(UiEvent.ValidationFailed)
@@ -246,6 +292,7 @@ class CustomerIntakeViewModel(
      * @param navigator The Navigator instance for launching intents (injected for testability)
      */
     fun onShareClicked(navigator: Navigator) = viewModelScope.launch {
+        recordUserActivity()
         if (!checkRateLimit()) return@launch
         if (!validateInputs(requirePhone = false)) {
             _uiEvent.emit(UiEvent.ValidationFailed)
@@ -261,6 +308,7 @@ class CustomerIntakeViewModel(
      * @param navigator The Navigator instance for launching intents (injected for testability)
      */
     fun onCopyClicked(navigator: Navigator) = viewModelScope.launch {
+        recordUserActivity()
         if (!checkRateLimit()) return@launch
         if (!validateInputs(requirePhone = false)) {
             _uiEvent.emit(UiEvent.ValidationFailed)

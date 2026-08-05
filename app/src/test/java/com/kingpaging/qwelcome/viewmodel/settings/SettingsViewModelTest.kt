@@ -4,6 +4,7 @@ import app.cash.turbine.test
 import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.data.DownloadEnqueueResult
 import com.kingpaging.qwelcome.data.DownloadStatus
+import com.kingpaging.qwelcome.data.PrivacySettings
 import com.kingpaging.qwelcome.data.SettingsStore
 import com.kingpaging.qwelcome.data.TechProfile
 import com.kingpaging.qwelcome.data.Template
@@ -47,6 +48,7 @@ class SettingsViewModelTest {
     fun setup() {
         AppViewModelProvider.resetForTesting()
         every { mockStore.techProfileFlow } returns flowOf(testProfile)
+        every { mockStore.privacySettingsFlow } returns flowOf(PrivacySettings())
         every { mockStore.allTemplatesFlow } returns flowOf(listOf(testTemplate))
         every { mockStore.activeTemplateFlow } returns flowOf(testTemplate)
         every { mockStore.defaultTemplateContent } returns "Default content"
@@ -106,6 +108,30 @@ class SettingsViewModelTest {
         advanceUntilIdle()
 
         coVerify { mockStore.saveTechProfile(newProfile) }
+    }
+
+    @Test
+    fun `setCrashReportingEnabled saves updated privacy settings`() = runTest {
+        vm.setCrashReportingEnabled(false)
+        advanceUntilIdle()
+
+        coVerify {
+            mockStore.savePrivacySettings(
+                PrivacySettings(crashReportingEnabled = false)
+            )
+        }
+    }
+
+    @Test
+    fun `setScreenCaptureProtectionEnabled saves updated privacy settings`() = runTest {
+        vm.setScreenCaptureProtectionEnabled(true)
+        advanceUntilIdle()
+
+        coVerify {
+            mockStore.savePrivacySettings(
+                PrivacySettings(screenCaptureProtectionEnabled = true)
+            )
+        }
     }
 
     @Test

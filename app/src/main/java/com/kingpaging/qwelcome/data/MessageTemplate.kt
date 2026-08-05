@@ -1,6 +1,7 @@
 package com.kingpaging.qwelcome.data
 
 object MessageTemplate {
+    private val PLACEHOLDER = Regex("""\{\{\s*(\w+)\s*}}""")
 
     /** Placeholder keys - single source of truth */
     const val KEY_CUSTOMER_NAME = "{{ customer_name }}"
@@ -38,25 +39,17 @@ object MessageTemplate {
         data: CustomerData,
         techProfile: TechProfile?
     ): String {
-        // Map placeholder keys to their values from CustomerData
         val valueMap = mutableMapOf(
-            KEY_CUSTOMER_NAME to data.customerName,
-            KEY_SSID to data.ssid,
-            KEY_PASSWORD to data.password,
-            KEY_ACCOUNT_NUMBER to data.accountNumber
+            "customer_name" to data.customerName,
+            "ssid" to data.ssid,
+            "password" to data.password,
+            "account_number" to data.accountNumber
         )
 
-        // Build tech signature if profile is provided
-        if (techProfile != null) {
-            valueMap[KEY_TECH_SIGNATURE] = buildTechSignature(techProfile)
-        } else {
-            // If no profile, remove the placeholder entirely
-            valueMap[KEY_TECH_SIGNATURE] = ""
-        }
+        valueMap["tech_signature"] = techProfile?.let(::buildTechSignature).orEmpty()
 
-        // Apply all replacements using the single source of truth
-        return PLACEHOLDERS.fold(template) { result, (key, _) ->
-            result.replace(key, valueMap[key] ?: "")
+        return template.replace(PLACEHOLDER) { match ->
+            valueMap[match.groupValues[1]] ?: ""
         }
     }
 
@@ -71,4 +64,3 @@ object MessageTemplate {
             .joinToString("\n")
     }
 }
-

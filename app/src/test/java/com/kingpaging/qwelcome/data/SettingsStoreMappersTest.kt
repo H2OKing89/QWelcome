@@ -52,4 +52,24 @@ class SettingsStoreMappersTest {
         assertTrue(mapped.tags.isEmpty())
     }
 
+    @Test
+    fun `privacy settings toProto and fromProto preserve values`() {
+        val settings = PrivacySettings(
+            crashReportingEnabled = false,
+            screenCaptureProtectionEnabled = true
+        )
+
+        val roundTrip = PrivacySettings.fromProto(settings.toProto())
+
+        assertEquals(settings, roundTrip)
+    }
+
+    @Test
+    fun `privacy settings from legacy proto enables crash reporting by default`() {
+        val mapped = PrivacySettings.fromProto(PrivacySettingsProto.getDefaultInstance())
+
+        assertTrue(mapped.crashReportingEnabled)
+        assertTrue(!mapped.screenCaptureProtectionEnabled)
+    }
+
 }

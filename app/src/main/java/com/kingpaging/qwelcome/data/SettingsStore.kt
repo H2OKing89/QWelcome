@@ -53,6 +53,20 @@ class SettingsStore(private val context: Context) {
 
     private val dataStore = context.protoDataStore
 
+    // ========== Privacy Settings ==========
+
+    val privacySettingsFlow: Flow<PrivacySettings> = dataStore.data
+        .catchIoException("Error reading privacy settings.")
+        .map { preferences -> PrivacySettings.fromProto(preferences.privacySettings) }
+
+    suspend fun savePrivacySettings(settings: PrivacySettings) {
+        dataStore.updateData { preferences ->
+            preferences.toBuilder()
+                .setPrivacySettings(settings.toProto())
+                .build()
+        }
+    }
+
     // ========== Tech Profile ==========
 
     val techProfileFlow: Flow<TechProfile> = dataStore.data

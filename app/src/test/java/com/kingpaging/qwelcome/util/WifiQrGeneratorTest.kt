@@ -144,6 +144,35 @@ class WifiQrGeneratorTest {
     }
 
     @Test
+    fun `generateWifiString produces SAE format for WPA3`() {
+        val result = WifiQrGenerator.generateWifiString(
+            "MyNetwork",
+            "password123",
+            securityType = WifiQrGenerator.SecurityType.WPA3_SAE
+        )
+
+        assertEquals("WIFI:T:SAE;S:MyNetwork;P:password123;;", result)
+    }
+
+    @Test
+    fun `generateWifiString marks hidden networks`() {
+        val result = WifiQrGenerator.generateWifiString(
+            "MyNetwork",
+            "password123",
+            isHidden = true
+        )
+
+        assertEquals("WIFI:T:WPA;S:MyNetwork;P:password123;H:true;;", result)
+    }
+
+    @Test
+    fun `generateOpenNetworkString marks hidden networks`() {
+        val result = WifiQrGenerator.generateOpenNetworkString("MyNetwork", isHidden = true)
+
+        assertEquals("WIFI:T:nopass;S:MyNetwork;H:true;;", result)
+    }
+
+    @Test
     fun `generateWifiString escapes semicolons`() {
         val result = WifiQrGenerator.generateWifiString("My;Network", "pass;word")
         assertEquals("WIFI:T:WPA;S:My\\;Network;P:pass\\;word;;", result)

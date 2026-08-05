@@ -9,12 +9,14 @@ import com.kingpaging.qwelcome.testutil.FakeNavigator
 import com.kingpaging.qwelcome.testutil.FakeResourceProvider
 import com.kingpaging.qwelcome.testutil.FakeTimeProvider
 import com.kingpaging.qwelcome.testutil.MainDispatcherRule
+import com.kingpaging.qwelcome.util.WifiQrGenerator
 import com.kingpaging.qwelcome.viewmodel.factory.AppViewModelProvider
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -116,6 +118,15 @@ class CustomerIntakeViewModelTest {
         vm.onAccountNumberChanged("ACC-123")
         assertEquals("ACC-123", vm.uiState.value.accountNumber)
         assertNull(vm.uiState.value.accountNumberError)
+    }
+
+    @Test
+    fun `security and hidden network options update state`() {
+        vm.onSecurityTypeChanged(WifiQrGenerator.SecurityType.WPA3_SAE)
+        vm.onHiddenNetworkChanged(true)
+
+        assertEquals(WifiQrGenerator.SecurityType.WPA3_SAE, vm.uiState.value.securityType)
+        assertTrue(vm.uiState.value.isHiddenNetwork)
     }
 
     @Test
@@ -369,6 +380,21 @@ class CustomerIntakeViewModelTest {
             val event = awaitItem()
             assertTrue(event is UiEvent.ShowToast)
         }
+
+        @Test
+        fun `auto-clear clears form after foreground inactivity timeout`() = runTest {
+            fillValidFields()
+
+            vm.uiEvent.test {
+                fakeTimeProvider.advanceBy(10 * 60 * 1000L)
+                advanceTimeBy(10 * 60 * 1000L)
+                advanceUntilIdle()
+
+                assertEquals("", vm.uiState.value.customerName)
+                assertEquals("", vm.uiState.value.ssid)
+                assertTrue(awaitItem() is UiEvent.ShowToast)
+            }
+        }
     }
 
     private fun fillValidFields() {
@@ -379,5 +405,3 @@ class CustomerIntakeViewModelTest {
         vm.onAccountNumberChanged("ACC-001")
     }
 }
-
-

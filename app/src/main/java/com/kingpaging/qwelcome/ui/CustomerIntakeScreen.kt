@@ -95,6 +95,7 @@ fun CustomerIntakeScreen(
     val templateUiState by templateListViewModel.uiState.collectAsStateWithLifecycle()
     // Use rememberSaveable so rotation/process death doesn't reset these
     var passwordVisible by rememberSaveable { mutableStateOf(false) }
+    var securityDropdownExpanded by remember { mutableStateOf(false) }
     // Dropdown state is transient - use remember so it collapses on rotation
     var templateDropdownExpanded by remember { mutableStateOf(false) }
     // Copy success feedback - brief visual confirmation (ChatGPT feedback: animate meaning)
@@ -138,6 +139,8 @@ fun CustomerIntakeScreen(
             ssid = uiState.ssid,
             password = uiState.password,
             isOpenNetwork = uiState.isOpenNetwork,
+            securityType = uiState.securityType,
+            isHiddenNetwork = uiState.isHiddenNetwork,
             onDismiss = { customerIntakeViewModel.setShowQrSheet(false) }
         )
     }
@@ -198,6 +201,18 @@ fun CustomerIntakeScreen(
                     onCustomerNameChanged = customerIntakeViewModel::onCustomerNameChanged,
                     onCustomerPhoneChanged = customerIntakeViewModel::onCustomerPhoneChanged,
                     onSsidChanged = customerIntakeViewModel::onSsidChanged,
+                    securityType = uiState.securityType,
+                    securityDropdownExpanded = securityDropdownExpanded,
+                    onSecurityDropdownExpandedChange = { securityDropdownExpanded = it },
+                    onSecurityTypeChanged = {
+                        hapticFeedback()
+                        customerIntakeViewModel.onSecurityTypeChanged(it)
+                    },
+                    isHiddenNetwork = uiState.isHiddenNetwork,
+                    onHiddenNetworkChanged = {
+                        hapticFeedback()
+                        customerIntakeViewModel.onHiddenNetworkChanged(it)
+                    },
                     onOpenNetworkChanged = {
                         hapticFeedback()
                         customerIntakeViewModel.onOpenNetworkChanged(it)
@@ -308,6 +323,12 @@ private fun CustomerFormFields(
     onCustomerNameChanged: (String) -> Unit,
     onCustomerPhoneChanged: (String) -> Unit,
     onSsidChanged: (String) -> Unit,
+    securityType: WifiQrGenerator.SecurityType,
+    securityDropdownExpanded: Boolean,
+    onSecurityDropdownExpandedChange: (Boolean) -> Unit,
+    onSecurityTypeChanged: (WifiQrGenerator.SecurityType) -> Unit,
+    isHiddenNetwork: Boolean,
+    onHiddenNetworkChanged: (Boolean) -> Unit,
     onOpenNetworkChanged: (Boolean) -> Unit,
     onPasswordChanged: (String) -> Unit,
     onPasswordVisibilityToggle: () -> Unit,
@@ -323,6 +344,35 @@ private fun CustomerFormFields(
             isError = uiState.customerNameError != null,
             supportingText = { uiState.customerNameError?.let { Text(it) } }
         )
+
+        NeonDropdownMenuBox(
+            expanded = securityDropdownExpanded,
+            onExpandedChange = onSecurityDropdownExpandedChange,
+            selectedText = stringResource(
+                if (securityType == WifiQrGenerator.SecurityType.WPA2_PSK) {
+                    R.string.security_wpa2
+                } else {
+                    R.string.security_wpa3_sae
+                }
+            ),
+            label = { Text(stringResource(R.string.label_wifi_security)) },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.security_wpa2)) },
+                onClick = {
+                    onSecurityTypeChanged(WifiQrGenerator.SecurityType.WPA2_PSK)
+                    onSecurityDropdownExpandedChange(false)
+                }
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.security_wpa3_sae)) },
+                onClick = {
+                    onSecurityTypeChanged(WifiQrGenerator.SecurityType.WPA3_SAE)
+                    onSecurityDropdownExpandedChange(false)
+                }
+            )
+        }
         NeonOutlinedField(
             value = uiState.customerPhone,
             onValueChange = onCustomerPhoneChanged,
@@ -361,6 +411,33 @@ private fun CustomerFormFields(
             )
             Text(
                 text = stringResource(R.string.label_open_network),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(start = 8.dp)
+            )
+        }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .toggleable(
+                    value = isHiddenNetwork,
+                    onValueChange = onHiddenNetworkChanged,
+                    role = Role.Checkbox
+                )
+                .padding(vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Checkbox(
+                checked = isHiddenNetwork,
+                onCheckedChange = null,
+                colors = CheckboxDefaults.colors(
+                    checkedColor = MaterialTheme.colorScheme.secondary,
+                    uncheckedColor = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            )
+            Text(
+                text = stringResource(R.string.label_hidden_network),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(start = 8.dp)

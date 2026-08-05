@@ -72,6 +72,9 @@
     <string name="toast_failed_create_temp">Failed to create temporary file</string>
     <string name="toast_failed_share">Failed to share: %1$s</string>
     <string name="chooser_share_wifi_qr">Share WiFi QR Code</string>
+    <string name="title_save_qr_warning">Save WiFi QR code?</string>
+    <string name="text_save_qr_warning">This QR code contains the WiFi password. Pictures/QWelcome may be backed up to your cloud photo service.</string>
+    <string name="action_save_anyway">Save Anyway</string>
 
     <!-- Template list -->
     <string name="toast_template_created">Created: %1$s</string>
@@ -176,6 +179,10 @@
     <string name="label_customer_phone">Customer Phone</string>
     <string name="label_wifi_ssid">WiFi SSID</string>
     <string name="label_wifi_password">WiFi Password</string>
+    <string name="label_wifi_security">WiFi Security</string>
+    <string name="security_wpa2">WPA2-Personal</string>
+    <string name="security_wpa3_sae">WPA3-Personal (SAE)</string>
+    <string name="label_hidden_network">Hidden Network</string>
     <string name="content_desc_hide_password">Hide password</string>
     <string name="content_desc_show_password">Show password</string>
     <string name="label_account_number">Account Number</string>
@@ -224,6 +231,12 @@
     <string name="action_save_first">Save First</string>
     <string name="action_export">Export</string>
     <string name="action_import">Import</string>
+    <string name="header_privacy">Privacy</string>
+    <string name="label_crash_reporting">Crash reporting</string>
+    <string name="text_crash_reporting_description">Send crash diagnostics to help improve Q Welcome. You can turn this off at any time.</string>
+    <string name="label_screen_capture_protection">Screen capture protection</string>
+    <string name="text_screen_capture_protection_description">Blocks screenshots and hides this app in the recents screen.</string>
+    <string name="toast_failed_save_privacy_settings">Failed to save privacy settings</string>
     <string name="header_about">About</string>
     <string name="content_desc_version_info">Version information</string>
     <string name="label_version_format">Version %1$s</string>

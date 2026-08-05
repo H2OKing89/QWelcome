@@ -34,6 +34,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import com.kingpaging.qwelcome.ui.theme.CyberDarkScheme
+import com.kingpaging.qwelcome.util.sanitizeFileName
 import com.kingpaging.qwelcome.util.WifiQrGenerator
 import io.github.alexzhirkevich.qrose.options.QrBallShape
 import io.github.alexzhirkevich.qrose.options.QrBrush
@@ -57,17 +58,20 @@ fun QrCodeBottomSheet(
     ssid: String,
     password: String,
     isOpenNetwork: Boolean = false,
+    securityType: WifiQrGenerator.SecurityType = WifiQrGenerator.SecurityType.WPA2_PSK,
+    isHiddenNetwork: Boolean = false,
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var isSaving by remember { mutableStateOf(false) }
     var isSharing by remember { mutableStateOf(false) }
-    val wifiString = remember(ssid, password, isOpenNetwork) {
+    var showSaveWarning by remember { mutableStateOf(false) }
+    val wifiString = remember(ssid, password, isOpenNetwork, securityType, isHiddenNetwork) {
         if (isOpenNetwork) {
-            WifiQrGenerator.generateOpenNetworkString(ssid)
+            WifiQrGenerator.generateOpenNetworkString(ssid, isHiddenNetwork)
         } else {
-            WifiQrGenerator.generateWifiString(ssid, password)
+            WifiQrGenerator.generateWifiString(ssid, password, securityType, isHiddenNetwork)
         }
     }
 
@@ -100,6 +104,33 @@ fun QrCodeBottomSheet(
 
     // Start expanded to show all content
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    if (showSaveWarning) {
+        AlertDialog(
+            onDismissRequest = { showSaveWarning = false },
+            title = { Text(stringResource(R.string.title_save_qr_warning)) },
+            text = { Text(stringResource(R.string.text_save_qr_warning)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showSaveWarning = false
+                        scope.launch {
+                            isSaving = true
+                            saveQrCodeToGallery(context, wifiString, ssid)
+                            isSaving = false
+                        }
+                    }
+                ) {
+                    Text(stringResource(R.string.action_save_anyway))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showSaveWarning = false }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            }
+        )
+    }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -177,11 +208,7 @@ fun QrCodeBottomSheet(
             ) {
                 NeonCyanButton(
                     onClick = {
-                        scope.launch {
-                            isSaving = true
-                            saveQrCodeToGallery(context, wifiString, ssid)
-                            isSaving = false
-                        }
+                        showSaveWarning = true
                     },
                     enabled = !isSaving && !isSharing,
                     modifier = Modifier.weight(1f)
@@ -322,7 +349,7 @@ private suspend fun saveQrCodeToGallery(
     try {
         bitmap = withContext(Dispatchers.IO) {
             val bmp = generateHighResQrBitmap(wifiString)
-            val filename = "WiFi_QR_${ssid.replace(" ", "_")}_${System.currentTimeMillis()}.png"
+            val filename = "WiFi_QR_${sanitizeFileName(ssid)}_${System.currentTimeMillis()}.png"
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 val resolver = context.contentResolver
@@ -391,7 +418,7 @@ private suspend fun shareQrCode(
             if (!cacheDir.exists() && !cacheDir.mkdirs()) {
                 throw Exception("Failed to create cache directory")
             }
-            val file = File(cacheDir, "WiFi_QR_${ssid.replace(" ", "_")}.png")
+            val file = File(cacheDir, "WiFi_QR_${sanitizeFileName(ssid)}.png")
             FileOutputStream(file).use { stream ->
                 bmp.compress(Bitmap.CompressFormat.PNG, 100, stream)
             }

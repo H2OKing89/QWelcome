@@ -1,6 +1,7 @@
 import java.util.Properties
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
+import io.gitlab.arturbosch.detekt.extensions.DetektExtension
 
 plugins {
     alias(libs.plugins.android.application)
@@ -8,6 +9,8 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.google.services)
     alias(libs.plugins.firebase.crashlytics)
+    alias(libs.plugins.ktlint)
+    alias(libs.plugins.detekt)
 }
 
 val versionProps = rootProject.file("version.properties").inputStream().use { stream ->
@@ -82,6 +85,11 @@ tasks.withType<KotlinJvmCompile>().configureEach {
     }
 }
 
+extensions.configure<DetektExtension> {
+    buildUponDefaultConfig = true
+    baseline = file("detekt-baseline.xml")
+}
+
 dependencies {
     implementation(project(":proto"))
     implementation(libs.androidx.core.ktx)
@@ -108,7 +116,6 @@ dependencies {
     // Firebase (BOM manages versions)
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.crashlytics)
-    implementation(libs.firebase.analytics)
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)

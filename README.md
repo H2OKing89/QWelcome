@@ -3,7 +3,7 @@
 A modern Android app for fiber internet technicians to quickly send professional WiFi welcome messages to new customers.
 
 ![Android](https://img.shields.io/badge/Android-26%2B-green?logo=android)
-![Kotlin](https://img.shields.io/badge/Kotlin-1.9-blue?logo=kotlin)
+![Kotlin](https://img.shields.io/badge/Kotlin-2.3.20-blue?logo=kotlin)
 ![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-Material3-purple)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
 
@@ -15,13 +15,8 @@ A modern Android app for fiber internet technicians to quickly send professional
 - **Cyberpunk Theme** — Beautiful dark/light mode with neon accents
 - **Custom Templates** — Create and manage multiple message templates
 - **Import/Export** — Backup and share templates between devices
-- **Privacy-Focused** — All data stays on device, auto-clears after 10 minutes of inactivity
+- **Privacy-Focused** — Customer data is stored on-device and auto-clears after 10 minutes in the background; crash reporting can be enabled or disabled in Settings
 - **Input Validation** — Real-time validation with helpful error messages
-
-## Screenshots
-
-<!-- Add screenshots here -->
-<!-- ![Main Screen](docs/screenshots/main.png) -->
 
 ## Requirements
 
@@ -44,6 +39,17 @@ A modern Android app for fiber internet technicians to quickly send professional
 git clone https://github.com/H2OKing89/QWelcome.git
 cd QWelcome
 
+# The Google Services plugin requires this file. Use a Firebase configuration
+# for your own app, or create the same dummy configuration used by CI:
+cat > app/google-services.json <<'EOF'
+{"project_info":{"project_number":"000000000000","project_id":"qwelcome-local","storage_bucket":"qwelcome-local.appspot.com"},"client":[{"client_info":{"mobilesdk_app_id":"1:000000000000:android:00000000000000000000000000000000","android_client_info":{"package_name":"com.kingpaging.qwelcome"}},"api_key":[{"current_key":"dummy"}]}],"configuration_version":"1"}
+EOF
+
+# Windows PowerShell equivalent:
+@'
+{"project_info":{"project_number":"000000000000","project_id":"qwelcome-local","storage_bucket":"qwelcome-local.appspot.com"},"client":[{"client_info":{"mobilesdk_app_id":"1:000000000000:android:00000000000000000000000000000000","android_client_info":{"package_name":"com.kingpaging.qwelcome"}},"api_key":[{"current_key":"dummy"}]}],"configuration_version":"1"}
+'@ | Set-Content app/google-services.json
+
 # Make gradlew executable (Unix/Mac only)
 chmod +x gradlew
 
@@ -58,11 +64,14 @@ gradlew.bat assembleDebug
 
 ## Tech Stack
 
-- **Language:** Kotlin
+- **Language:** Kotlin 2.3.20
 - **UI:** Jetpack Compose with Material 3
 - **Architecture:** MVVM with StateFlow
-- **Storage:** DataStore (Preferences)
+- **Storage:** Proto DataStore
+- **Navigation:** Navigation Compose
 - **QR Generation:** QRose library
+- **Crash reporting:** Firebase Crashlytics (optional)
+- **Updates:** GitHub Releases in-app updater
 - **Min SDK:** 26 (Android 8.0)
 - **Target SDK:** 36
 
