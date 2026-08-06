@@ -2,6 +2,7 @@ package com.kingpaging.qwelcome.data
 
 object MessageTemplate {
     private val PLACEHOLDER = Regex("""\{\{\s*(\w+)\s*\}\}""")
+    private const val OPEN_NETWORK_PASSWORD = "No password - open network"
 
     /** Placeholder keys - single source of truth */
     const val KEY_CUSTOMER_NAME = "{{ customer_name }}"
@@ -34,6 +35,11 @@ object MessageTemplate {
         return applyPlaceholders(template, data, techProfile)
     }
 
+    fun usesPlaceholder(template: String, placeholder: String): Boolean {
+        val key = Regex.escape(rawKey(placeholder))
+        return Regex("""\{\{\s*$key\s*\}\}""").containsMatchIn(template)
+    }
+
     private fun applyPlaceholders(
         template: String,
         data: CustomerData,
@@ -42,7 +48,7 @@ object MessageTemplate {
         val valueMap = mapOf(
             rawKey(KEY_CUSTOMER_NAME) to data.customerName,
             rawKey(KEY_SSID) to data.ssid,
-            rawKey(KEY_PASSWORD) to data.password,
+            rawKey(KEY_PASSWORD) to if (data.isOpenNetwork) OPEN_NETWORK_PASSWORD else data.password,
             rawKey(KEY_ACCOUNT_NUMBER) to data.accountNumber,
             rawKey(KEY_TECH_SIGNATURE) to techProfile?.let(::buildTechSignature).orEmpty()
         )

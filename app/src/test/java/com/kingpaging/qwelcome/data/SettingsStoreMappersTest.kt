@@ -69,10 +69,10 @@ class SettingsStoreMappersTest {
     }
 
     @Test
-    fun `privacy settings from legacy proto enables crash reporting by default`() {
+    fun `privacy settings from legacy proto disables crash reporting by default`() {
         val mapped = PrivacySettings.fromProto(PrivacySettingsProto.getDefaultInstance())
 
-        assertTrue(mapped.crashReportingEnabled)
+        assertTrue(!mapped.crashReportingEnabled)
         assertTrue(!mapped.screenCaptureProtectionEnabled)
     }
 

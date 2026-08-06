@@ -234,6 +234,23 @@ class MessageTemplateTest {
     }
 
     @Test
+    fun `generate describes open networks without an empty password`() {
+        val result = MessageTemplate.generate(
+            template = "Password: {{ password }}",
+            data = CustomerData(
+                customerName = "Alice",
+                customerPhone = "",
+                ssid = "TestWiFi",
+                password = "",
+                accountNumber = "",
+                isOpenNetwork = true
+            )
+        )
+
+        assertEquals("Password: No password - open network", result)
+    }
+
+    @Test
     fun `generate replaces placeholders with or without whitespace`() {
         val template = "{{customer_name}} {{ ssid }} {{password}}"
         val data = createCustomerData(

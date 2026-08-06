@@ -75,17 +75,29 @@ class SettingsViewModel(
     private val _settingsEvents = MutableSharedFlow<SettingsEvent>(replay = 0, extraBufferCapacity = 1)
     val settingsEvents: SharedFlow<SettingsEvent> = _settingsEvents.asSharedFlow()
 
+    private val _profileSaved = MutableStateFlow(false)
+    val profileSaved: StateFlow<Boolean> = _profileSaved.asStateFlow()
+
     fun save(profile: TechProfile) {
         viewModelScope.launch {
             try {
                 store.saveTechProfile(profile)
+                _profileSaved.value = true
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to save tech profile", e)
-                _errorEvents.emit("Failed to save profile: ${e.message}")
+                _settingsEvents.emit(
+                    SettingsEvent.ShowToastError(
+                        resourceProvider.getString(R.string.toast_failed_save_profile)
+                    )
+                )
             }
         }
+    }
+
+    fun consumeProfileSaved() {
+        _profileSaved.value = false
     }
 
     fun setCrashReportingEnabled(enabled: Boolean) {

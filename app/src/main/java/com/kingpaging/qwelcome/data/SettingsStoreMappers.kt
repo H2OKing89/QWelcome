@@ -51,7 +51,7 @@ fun PrivacySettings.Companion.fromProto(proto: PrivacySettingsProto): PrivacySet
     crashReportingEnabled = if (proto.hasCrashReportingEnabled()) {
         proto.crashReportingEnabled
     } else {
-        true
+        false
     },
     screenCaptureProtectionEnabled = proto.screenCaptureProtectionEnabled
 )

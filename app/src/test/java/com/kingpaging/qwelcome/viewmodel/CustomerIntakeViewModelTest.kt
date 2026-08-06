@@ -261,6 +261,55 @@ class CustomerIntakeViewModelTest {
     }
 
     @Test
+    fun `clearFormWithUndo restores the manually cleared form`() {
+        fillValidFields()
+
+        vm.clearFormWithUndo()
+        assertEquals("", vm.uiState.value.customerName)
+
+        vm.undoClearForm()
+
+        assertEquals("Alice", vm.uiState.value.customerName)
+        assertEquals("TestWiFi", vm.uiState.value.ssid)
+    }
+
+    @Test
+    fun `discardClearFormUndo prevents restoring an expired clear`() {
+        fillValidFields()
+
+        val token = vm.clearFormWithUndo()
+        vm.discardClearFormUndo(token)
+        vm.undoClearForm()
+
+        assertEquals("", vm.uiState.value.customerName)
+    }
+
+    @Test
+    fun `discardClearFormUndo does not discard a newer snapshot`() {
+        fillValidFields()
+        val firstToken = vm.clearFormWithUndo()
+        vm.onCustomerNameChanged("Bob")
+        vm.onSsidChanged("SecondWiFi")
+        val secondToken = vm.clearFormWithUndo()
+
+        vm.discardClearFormUndo(firstToken)
+        vm.undoClearForm()
+
+        assertEquals("Bob", vm.uiState.value.customerName)
+        assertEquals("SecondWiFi", vm.uiState.value.ssid)
+        assertTrue(firstToken != secondToken)
+    }
+
+    @Test
+    fun `customer data preserves the entered name spelling`() {
+        val name = "McDonald O'Neil"
+
+        vm.onCustomerNameChanged(name)
+
+        assertEquals(name, vm.uiState.value.toCustomerData().customerName)
+    }
+
+    @Test
     fun `message generation uses template and profile`() = runTest {
         val navigator = FakeNavigator()
         fillValidFields()
@@ -304,6 +353,23 @@ class CustomerIntakeViewModelTest {
         advanceUntilIdle()
 
         assertEquals(1, navigator.shareCalls.size)
+    }
+
+    @Test
+    fun `onShareClicked only requires optional fields used by active template`() = runTest {
+        every { mockStore.activeTemplateFlow } returns flowOf(
+            testTemplate.copy(content = "Hello {{ customer_name }}, {{ ssid }}")
+        )
+        val navigator = FakeNavigator()
+        vm.onCustomerNameChanged("Alice")
+        vm.onSsidChanged("TestWiFi")
+
+        vm.onShareClicked(navigator)
+        advanceUntilIdle()
+
+        assertEquals(1, navigator.shareCalls.size)
+        assertNull(vm.uiState.value.passwordError)
+        assertNull(vm.uiState.value.accountNumberError)
     }
 
     @Test

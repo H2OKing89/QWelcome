@@ -126,6 +126,9 @@ class CustomerIntakeViewModel(
     // Track last action time for rate limiting
     private var lastActionTime: Long = 0L
     private var inactivityJob: Job? = null
+    private var clearedFormState: CustomerIntakeUiState? = null
+    private var clearedFormToken: Long? = null
+    private var nextClearedFormToken = 0L
 
     /**
      * Wraps [MutableStateFlow.update] with an automatic guard:
@@ -162,12 +165,43 @@ class CustomerIntakeViewModel(
     }
 
     fun clearForm() {
+        clearedFormState = null
+        clearedFormToken = null
+        clearForm(emitToast = true)
+    }
+
+    fun clearFormWithUndo(): Long {
+        val token = ++nextClearedFormToken
+        clearedFormState = _uiState.value.takeIf { it.hasCustomerData }
+        clearedFormToken = token.takeIf { clearedFormState != null }
+        clearForm(emitToast = false)
+        return token
+    }
+
+    fun discardClearFormUndo(token: Long) {
+        if (clearedFormToken == token) {
+            clearedFormState = null
+            clearedFormToken = null
+        }
+    }
+
+    fun undoClearForm() {
+        val state = clearedFormState ?: return
+        clearedFormState = null
+        clearedFormToken = null
+        _uiState.value = state.copy(showQrSheet = false)
+        recordUserActivity()
+    }
+
+    private fun clearForm(emitToast: Boolean) {
         inactivityJob?.cancel()
         inactivityJob = null
         savedStateHandle.remove<Long>(KEY_LAST_ACTIVITY_TIMESTAMP)
         _uiState.update { CustomerIntakeUiState() }
-        viewModelScope.launch {
-            _uiEvent.emit(UiEvent.ShowToast(resourceProvider.getString(R.string.toast_form_cleared)))
+        if (emitToast) {
+            viewModelScope.launch {
+                _uiEvent.emit(UiEvent.ShowToast(resourceProvider.getString(R.string.toast_form_cleared)))
+            }
         }
     }
 
@@ -336,8 +370,17 @@ class CustomerIntakeViewModel(
      * Validates form inputs before sending/sharing/copying.
      * @param requirePhone If true, validates phone number (for SMS). If false, skips phone validation (for Share/Copy).
      */
-    private fun validateInputs(requirePhone: Boolean): Boolean {
+    private suspend fun validateInputs(requirePhone: Boolean): Boolean {
         val currentState = _uiState.value
+        val activeTemplate = settingsStore.activeTemplateFlow.first()
+        val requiresPassword = MessageTemplate.usesPlaceholder(
+            activeTemplate.content,
+            MessageTemplate.KEY_PASSWORD
+        )
+        val requiresAccountNumber = MessageTemplate.usesPlaceholder(
+            activeTemplate.content,
+            MessageTemplate.KEY_ACCOUNT_NUMBER
+        )
 
         // Calculate all errors at once
         val customerNameError = if (currentState.customerName.isBlank()) resourceProvider.getString(R.string.error_name_empty) else null
@@ -355,13 +398,17 @@ class CustomerIntakeViewModel(
         }
 
         // Skip password validation for open networks
-        val passwordError = if (currentState.isOpenNetwork) {
+        val passwordError = if (!requiresPassword || currentState.isOpenNetwork) {
             null // Open networks don't require passwords
         } else {
             getWifiErrorMessage(WifiQrGenerator.validatePassword(currentState.password))
         }
 
-        val accountNumberError = if (currentState.accountNumber.isBlank()) resourceProvider.getString(R.string.error_account_empty) else null
+        val accountNumberError = if (requiresAccountNumber && currentState.accountNumber.isBlank()) {
+            resourceProvider.getString(R.string.error_account_empty)
+        } else {
+            null
+        }
 
         // Batch all error updates into a single state change to minimize recompositions
         updateState { state ->

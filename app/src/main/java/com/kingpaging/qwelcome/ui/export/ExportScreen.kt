@@ -15,6 +15,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -70,6 +71,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -496,13 +498,17 @@ private fun TemplateSelectionDialog(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { haptic(); onToggleSelectAll() }
+                        .toggleable(
+                            value = allSelected,
+                            onValueChange = { haptic(); onToggleSelectAll() },
+                            role = Role.Checkbox
+                        )
                         .padding(vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Checkbox(
                         checked = allSelected,
-                        onCheckedChange = { haptic(); onToggleSelectAll() },
+                        onCheckedChange = null,
                         colors = CheckboxDefaults.colors(
                             checkedColor = MaterialTheme.colorScheme.primary,
                             uncheckedColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
@@ -576,13 +582,17 @@ private fun TemplateSelectionItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { haptic(); onToggle() }
+            .toggleable(
+                value = isSelected,
+                onValueChange = { haptic(); onToggle() },
+                role = Role.Checkbox
+            )
             .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Checkbox(
             checked = isSelected,
-            onCheckedChange = { haptic(); onToggle() },
+            onCheckedChange = null,
             colors = CheckboxDefaults.colors(
                 checkedColor = MaterialTheme.colorScheme.secondary,
                 uncheckedColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)

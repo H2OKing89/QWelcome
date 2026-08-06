@@ -1,7 +1,6 @@
 package com.kingpaging.qwelcome.ui
 
 import com.kingpaging.qwelcome.data.CustomerData
-import com.kingpaging.qwelcome.util.StringUtils
 import com.kingpaging.qwelcome.util.WifiQrGenerator
 
 /**
@@ -80,10 +79,11 @@ data class CustomerIntakeUiState(
      * @return A CustomerData instance with the current form values
      */
     fun toCustomerData(): CustomerData = CustomerData(
-        customerName = StringUtils.toTitleCase(customerName),
+        customerName = customerName,
         customerPhone = customerPhone,
         ssid = ssid,
         password = password,
-        accountNumber = accountNumber
+        accountNumber = accountNumber,
+        isOpenNetwork = isOpenNetwork
     )
 }

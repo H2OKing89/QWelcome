@@ -23,6 +23,7 @@
     <string name="toast_copied_to_clipboard">Message copied to clipboard</string>
     <string name="toast_copy_failed">Failed to copy to clipboard</string>
     <string name="toast_form_cleared">Form cleared for new customer</string>
+    <string name="action_undo">Undo</string>
     <string name="toast_rate_limit">Rate limit exceeded. Please wait.</string>
     <string name="toast_no_browser">No browser available to open link</string>
     <string name="toast_untrusted_update_link">Blocked untrusted update link</string>
@@ -237,6 +238,7 @@
     <string name="label_screen_capture_protection">Screen capture protection</string>
     <string name="text_screen_capture_protection_description">Blocks screenshots and hides this app in the recents screen.</string>
     <string name="toast_failed_save_privacy_settings">Failed to save privacy settings</string>
+    <string name="toast_failed_save_profile">Failed to save profile</string>
     <string name="header_about">About</string>
     <string name="content_desc_version_info">Version information</string>
     <string name="label_version_format">Version %1$s</string>

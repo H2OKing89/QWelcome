@@ -24,6 +24,7 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -111,6 +112,20 @@ class SettingsViewModelTest {
     }
 
     @Test
+    fun `profile saved completion survives stopped collection and is consumed once`() = runTest {
+        vm.save(testProfile)
+        advanceUntilIdle()
+
+        vm.profileSaved.test {
+            assertTrue(awaitItem())
+
+            vm.consumeProfileSaved()
+
+            assertFalse(awaitItem())
+        }
+    }
+
+    @Test
     fun `setCrashReportingEnabled saves updated privacy settings`() = runTest {
         vm.setCrashReportingEnabled(false)
         advanceUntilIdle()
@@ -146,13 +161,17 @@ class SettingsViewModelTest {
     }
 
     @Test
-    fun `save error emits error event`() = runTest {
+    fun `save error emits settings error event`() = runTest {
         coEvery { mockStore.saveTechProfile(any()) } throws RuntimeException("DB error")
 
-        vm.errorEvents.test {
+        vm.settingsEvents.test {
             vm.save(testProfile)
-            val error = awaitItem()
-            assertTrue(error.contains("Failed to save profile"))
+            val event = awaitItem()
+            assertTrue(event is SettingsEvent.ShowToastError)
+            assertEquals(
+                fakeResourceProvider.getString(R.string.toast_failed_save_profile),
+                (event as SettingsEvent.ShowToastError).message
+            )
         }
     }
 

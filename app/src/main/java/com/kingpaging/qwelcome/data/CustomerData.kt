@@ -5,5 +5,6 @@ data class CustomerData(
     val customerPhone: String,
     val ssid: String,
     val password: String,
-    val accountNumber: String
+    val accountNumber: String,
+    val isOpenNetwork: Boolean = false
 )

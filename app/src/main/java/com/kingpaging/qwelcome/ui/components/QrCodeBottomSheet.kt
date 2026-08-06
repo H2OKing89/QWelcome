@@ -2,9 +2,11 @@
 
 package com.kingpaging.qwelcome.ui.components
 
+import android.Manifest
 import android.content.ActivityNotFoundException
 import android.content.ContentValues
 import android.content.Context
+import android.content.pm.PackageManager
 import android.content.Intent
 import android.graphics.Bitmap
 import android.os.Build
@@ -22,6 +24,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,9 +35,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.FileProvider
+import androidx.core.content.ContextCompat
 import com.kingpaging.qwelcome.ui.theme.CyberDarkScheme
 import com.kingpaging.qwelcome.util.sanitizeFileName
 import com.kingpaging.qwelcome.util.WifiQrGenerator
@@ -73,6 +79,22 @@ fun QrCodeBottomSheet(
             WifiQrGenerator.generateOpenNetworkString(ssid, isHiddenNetwork)
         } else {
             WifiQrGenerator.generateWifiString(ssid, password, securityType, isHiddenNetwork)
+        }
+    }
+    val saveQrCode: () -> Unit = {
+        scope.launch {
+            isSaving = true
+            saveQrCodeToGallery(context, wifiString, ssid)
+            isSaving = false
+        }
+    }
+    val storagePermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            saveQrCode()
+        } else {
+            Toast.makeText(context, R.string.toast_permission_denied, Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -117,10 +139,16 @@ fun QrCodeBottomSheet(
                 TextButton(
                     onClick = {
                         showSaveWarning = false
-                        scope.launch {
-                            isSaving = true
-                            saveQrCodeToGallery(context, wifiString, ssid)
-                            isSaving = false
+                        if (
+                            Build.VERSION.SDK_INT <= Build.VERSION_CODES.P &&
+                            ContextCompat.checkSelfPermission(
+                                context,
+                                Manifest.permission.WRITE_EXTERNAL_STORAGE
+                            ) != PackageManager.PERMISSION_GRANTED
+                        ) {
+                            storagePermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                        } else {
+                            saveQrCode()
                         }
                     }
                 ) {
@@ -184,24 +212,42 @@ fun QrCodeBottomSheet(
             }
             Spacer(Modifier.height(16.dp))
             NeonPanel(modifier = Modifier.fillMaxWidth()) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(stringResource(R.string.label_network), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
-                    Text(ssid, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)
-                }
+                Text(stringResource(R.string.label_network), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
+                Text(
+                    ssid,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
                 Spacer(Modifier.height(4.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(stringResource(R.string.label_security), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
-                    if (isOpenNetwork) {
-                        Text(stringResource(R.string.label_open_no_password), color = MaterialTheme.colorScheme.tertiary, fontWeight = FontWeight.Medium)
-                    } else {
-                        Text(password, color = MaterialTheme.colorScheme.secondary, fontWeight = FontWeight.Medium)
-                    }
+                Text(stringResource(R.string.label_security), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
+                Text(
+                    text = when {
+                        isOpenNetwork -> stringResource(R.string.label_open_no_password)
+                        securityType == WifiQrGenerator.SecurityType.WPA3_SAE -> {
+                            stringResource(R.string.security_wpa3_sae)
+                        }
+                        else -> stringResource(R.string.security_wpa2)
+                    },
+                    color = MaterialTheme.colorScheme.tertiary,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                if (!isOpenNetwork) {
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        stringResource(R.string.label_wifi_password),
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    )
+                    Text(
+                        password.map { "*" }.joinToString(""),
+                        color = MaterialTheme.colorScheme.secondary,
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
             }
             Spacer(Modifier.height(16.dp))

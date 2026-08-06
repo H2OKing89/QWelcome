@@ -217,6 +217,7 @@ fun TemplateListScreen(
                     val defaultTemplate = uiState.templates
                         .find { it.id == DEFAULT_TEMPLATE_ID }
                         ?.takeIf(matchesTag)
+                        ?.takeIf { query.isEmpty() || it.name.lowercase().contains(query) }
 
                     if (query.isEmpty()) {
                         val userTemplates = uiState.templates
@@ -349,15 +350,7 @@ fun TemplateListScreen(
                         )
                     }
 
-                    val hasActiveFilters = uiState.searchQuery.isNotEmpty() || uiState.selectedTags.isNotEmpty()
-                    val shouldShowNoResults = (
-                        filteredTemplates.isEmpty() ||
-                        (
-                            filteredTemplates.size == 1 &&
-                                filteredTemplates.first().id == DEFAULT_TEMPLATE_ID &&
-                                hasActiveFilters
-                            )
-                    )
+                    val shouldShowNoResults = filteredTemplates.isEmpty()
                     if (shouldShowNoResults) {
                         item(key = "no_results") {
                             Text(
@@ -469,7 +462,7 @@ private fun TemplateCard(
                             haptic()
                             onEdit()
                         },
-                        modifier = Modifier.size(36.dp)
+                        modifier = Modifier.size(48.dp)
                     ) {
                         Icon(
                             imageVector = if (isDefault) Icons.Default.ContentCopy else Icons.Default.Edit,
@@ -488,7 +481,7 @@ private fun TemplateCard(
                             haptic()
                             onDuplicate()
                         },
-                        modifier = Modifier.size(36.dp)
+                        modifier = Modifier.size(48.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.ContentCopy,
@@ -504,7 +497,7 @@ private fun TemplateCard(
                                 haptic()
                                 onDelete()
                             },
-                            modifier = Modifier.size(36.dp)
+                            modifier = Modifier.size(48.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Delete,

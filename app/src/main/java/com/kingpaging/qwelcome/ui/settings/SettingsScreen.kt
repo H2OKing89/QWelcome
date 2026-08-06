@@ -120,6 +120,17 @@ fun SettingsScreen(
 
     val launchIntentFailedMessage = stringResource(R.string.error_update_install_unavailable)
 
+    LaunchedEffect(lifecycleOwner, vm.profileSaved) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            vm.profileSaved.collect { saved ->
+                if (saved) {
+                    vm.consumeProfileSaved()
+                    onBack()
+                }
+            }
+        }
+    }
+
     // Collect one-shot settings events with lifecycle awareness
     LaunchedEffect(lifecycleOwner, vm.settingsEvents) {
         lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -299,7 +310,6 @@ fun SettingsScreen(
                 NeonMagentaButton(
                     onClick = {
                         vm.save(TechProfile(name, title, dept))
-                        onBack()
                     },
                     modifier = Modifier.fillMaxWidth(),
                     enabled = hasUnsavedChanges,
