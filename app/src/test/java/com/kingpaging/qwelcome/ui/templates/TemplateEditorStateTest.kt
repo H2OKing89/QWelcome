@@ -25,35 +25,36 @@ class TemplateEditorStateTest {
 
     @Test
     fun `save does not append a draft tag that differs only by case from an existing tag`() {
-        val savedTags = mutableListOf<List<String>>()
-        val state = TemplateEditorStateHarness()
+        val result = mergeDraftTag(existingTags = listOf("Residential"), draftTagInput = "residential")
 
-        state.save(
-            existingTags = listOf("Residential"),
-            newTagInput = "residential",
-            onTagsCaptured = { savedTags.add(it) }
-        )
-
-        assertEquals(listOf(listOf("Residential")), savedTags)
+        assertEquals(listOf("Residential"), result)
     }
-}
 
-/**
- * Minimal harness that exercises the same draft-tag normalization/dedup logic used by
- * `TemplateEditorState.save()`, since that class is file-private and not directly testable.
- */
-private class TemplateEditorStateHarness {
-    fun save(
-        existingTags: List<String>,
-        newTagInput: String,
-        onTagsCaptured: (List<String>) -> Unit
-    ) {
-        val draftTag = normalizeTemplateTag(newTagInput)
-        val tags = if (draftTag.isBlank() || existingTags.containsTagIgnoreCase(draftTag)) {
-            existingTags
-        } else {
-            existingTags + draftTag
-        }
-        onTagsCaptured(tags)
+    @Test
+    fun `mergeDraftTag ignores a blank draft tag`() {
+        val result = mergeDraftTag(existingTags = listOf("Residential"), draftTagInput = "   ")
+
+        assertEquals(listOf("Residential"), result)
+    }
+
+    @Test
+    fun `mergeDraftTag appends a normalized draft tag`() {
+        val result = mergeDraftTag(existingTags = listOf("Residential"), draftTagInput = "  Business  ")
+
+        assertEquals(listOf("Residential", "Business"), result)
+    }
+
+    @Test
+    fun `mergeDraftTag skips an exact duplicate draft tag`() {
+        val result = mergeDraftTag(existingTags = listOf("Residential"), draftTagInput = "Residential")
+
+        assertEquals(listOf("Residential"), result)
+    }
+
+    @Test
+    fun `mergeDraftTag skips a case-only duplicate draft tag`() {
+        val result = mergeDraftTag(existingTags = listOf("Residential"), draftTagInput = "RESIDENTIAL")
+
+        assertEquals(listOf("Residential"), result)
     }
 }

@@ -59,6 +59,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
+import java.io.OutputStream
 
 /** Fixed-width mask so the displayed password never leaks its actual length. */
 private const val MASKED_PASSWORD_DISPLAY = "********"
@@ -406,50 +407,22 @@ private suspend fun saveQrCodeToGallery(
         bitmap = withContext(Dispatchers.IO) {
             val bmp = generateHighResQrBitmap(wifiString)
             val filename = "WiFi_QR_${sanitizeFileName(ssid)}_${System.currentTimeMillis()}.png"
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                val resolver = context.contentResolver
-                val contentValues = ContentValues().apply {
-                    put(MediaStore.Images.Media.DISPLAY_NAME, filename)
-                    put(MediaStore.Images.Media.MIME_TYPE, "image/png")
-                    put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/QWelcome")
+            var writeSucceeded = false
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    writeQrBitmapToMediaStore(context, bmp, filename)
+                } else {
+                    writeQrBitmapToLegacyStorage(bmp, filename)
                 }
-                val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
-                    ?: throw IOException("Failed to create media entry")
-                var writeCompleted = false
-                try {
-                    val outputStream = resolver.openOutputStream(uri)
-                        ?: throw IOException("Failed to open media output stream")
-                    outputStream.use { stream ->
-                        val encoded = bmp.compress(Bitmap.CompressFormat.PNG, 100, stream)
-                        if (!encoded) {
-                            throw IOException("Failed to encode QR PNG")
-                        }
-                    }
-                    writeCompleted = true
-                } finally {
-                    // Covers thrown exceptions AND coroutine cancellation (e.g. the bottom
-                    // sheet is dismissed mid-write), so no orphaned/incomplete entry lingers.
-                    if (!writeCompleted) {
-                        resolver.delete(uri, null, null)
-                    }
-                }
-            } else {
-                @Suppress("DEPRECATION")
-                val picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
-                val qwelcomeDir = File(picturesDir, "QWelcome")
-                if (!qwelcomeDir.exists() && !qwelcomeDir.mkdirs()) {
-                    throw IOException("Failed to create pictures directory")
-                }
-                val file = File(qwelcomeDir, filename)
-                FileOutputStream(file).use { stream ->
-                    val encoded = bmp.compress(Bitmap.CompressFormat.PNG, 100, stream)
-                    if (!encoded) {
-                        throw IOException("Failed to encode QR PNG")
-                    }
+                writeSucceeded = true
+                bmp
+            } finally {
+                // If the write didn't finish (exception or cancellation), recycle here since
+                // `bitmap` outside this block never gets assigned in that case.
+                if (!writeSucceeded) {
+                    bmp.recycle()
                 }
             }
-            bmp
         }
         Toast.makeText(context, R.string.toast_qr_saved, Toast.LENGTH_SHORT).show()
     } catch (e: SecurityException) {
@@ -460,6 +433,50 @@ private suspend fun saveQrCodeToGallery(
         Toast.makeText(context, context.getString(R.string.toast_failed_save, e.message), Toast.LENGTH_SHORT).show()
     } finally {
         bitmap?.recycle()
+    }
+}
+
+private fun writeQrBitmapToMediaStore(context: Context, bmp: Bitmap, filename: String) {
+    val resolver = context.contentResolver
+    val contentValues = ContentValues().apply {
+        put(MediaStore.Images.Media.DISPLAY_NAME, filename)
+        put(MediaStore.Images.Media.MIME_TYPE, "image/png")
+        put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/QWelcome")
+    }
+    val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+        ?: throw IOException("Failed to create media entry")
+    var writeCompleted = false
+    try {
+        writeBitmapPngToStream(resolver.openOutputStream(uri), bmp)
+        writeCompleted = true
+    } finally {
+        // Covers thrown exceptions AND coroutine cancellation (e.g. the bottom
+        // sheet is dismissed mid-write), so no orphaned/incomplete entry lingers.
+        if (!writeCompleted) {
+            resolver.delete(uri, null, null)
+        }
+    }
+}
+
+private fun writeQrBitmapToLegacyStorage(bmp: Bitmap, filename: String) {
+    @Suppress("DEPRECATION")
+    val picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+    val qwelcomeDir = File(picturesDir, "QWelcome")
+    if (!qwelcomeDir.exists() && !qwelcomeDir.mkdirs()) {
+        throw IOException("Failed to create pictures directory")
+    }
+    val file = File(qwelcomeDir, filename)
+    writeBitmapPngToStream(FileOutputStream(file), bmp)
+}
+
+/** Encodes [bmp] as PNG into [outputStream], closing it and throwing if either step fails. */
+private fun writeBitmapPngToStream(outputStream: OutputStream?, bmp: Bitmap) {
+    val stream = outputStream ?: throw IOException("Failed to open output stream")
+    stream.use {
+        val encoded = bmp.compress(Bitmap.CompressFormat.PNG, 100, it)
+        if (!encoded) {
+            throw IOException("Failed to encode QR PNG")
+        }
     }
 }
 

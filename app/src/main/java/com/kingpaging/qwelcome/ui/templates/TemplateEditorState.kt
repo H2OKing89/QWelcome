@@ -49,6 +49,19 @@ internal fun normalizeTemplateTag(rawTag: String): String = rawTag.trim().take(T
 internal fun List<String>.containsTagIgnoreCase(tag: String): Boolean =
     any { it.equals(tag, ignoreCase = true) }
 
+/**
+ * Normalizes [draftTagInput] and appends it to [existingTags], unless it is blank after
+ * normalization or already present (case-insensitively).
+ */
+internal fun mergeDraftTag(existingTags: List<String>, draftTagInput: String): List<String> {
+    val draftTag = normalizeTemplateTag(draftTagInput)
+    return if (draftTag.isBlank() || existingTags.containsTagIgnoreCase(draftTag)) {
+        existingTags
+    } else {
+        existingTags + draftTag
+    }
+}
+
 private class TemplateEditorState(
     val contentFieldState: TextFieldState,
     private val pendingPlaceholderState: MutableState<String?>,
@@ -103,14 +116,7 @@ private class TemplateEditorState(
             return
         }
 
-        val draftTag = normalizeTemplateTag(editorUiState.newTagInput)
-        val tags = if (
-            draftTag.isBlank() || editorUiState.tags.containsTagIgnoreCase(draftTag)
-        ) {
-            editorUiState.tags
-        } else {
-            editorUiState.tags + draftTag
-        }
+        val tags = mergeDraftTag(editorUiState.tags, editorUiState.newTagInput)
 
         if (isNew) {
             onCreate(editorUiState.name, editorUiState.contentText, tags)

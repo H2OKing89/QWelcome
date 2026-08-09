@@ -27,4 +27,13 @@ class FileNameSanitizerTest {
         assertTrue(result.length <= 255)
         assertTrue(result.endsWith(".png"))
     }
+
+    @Test
+    fun `caps sanitized file name length even when extension exceeds the limit`() {
+        val longName = "a".repeat(10) + "." + "b".repeat(400)
+
+        val result = sanitizeFileName(longName)
+
+        assertTrue(result.length <= 255)
+    }
 }

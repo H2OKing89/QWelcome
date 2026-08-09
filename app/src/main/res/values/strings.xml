@@ -245,7 +245,7 @@
     <string name="label_crash_reporting">Crash reporting</string>
     <string name="text_crash_reporting_description">Send crash diagnostics to help improve Q Welcome. You can turn this off at any time.</string>
     <string name="label_screen_capture_protection">Screen capture protection</string>
-    <string name="text_screen_capture_protection_description">Blocks screenshots and hides this app in the recents screen.</string>
+    <string name="text_screen_capture_protection_description">Blocks screenshots, hides this app\'s content in the recents screen, and prevents it from appearing on non-secure displays (e.g. screen recording or casting).</string>
     <string name="toast_failed_save_privacy_settings">Failed to save privacy settings</string>
     <string name="toast_failed_save_profile">Failed to save profile</string>
     <string name="header_about">About</string>

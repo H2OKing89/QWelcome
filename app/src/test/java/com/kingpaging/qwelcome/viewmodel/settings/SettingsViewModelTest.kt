@@ -155,7 +155,7 @@ class SettingsViewModelTest {
 
     @Test
     fun `privacy setters preserve both changes when invoked before dispatcher advancement`() = runTest {
-        var storedSettings = PrivacySettings()
+        var storedSettings = PrivacySettings(crashReportingEnabled = true)
         coEvery { mockStore.updatePrivacySettings(any()) } coAnswers {
             @Suppress("UNCHECKED_CAST")
             val transform = invocation.args[0] as (PrivacySettings) -> PrivacySettings
