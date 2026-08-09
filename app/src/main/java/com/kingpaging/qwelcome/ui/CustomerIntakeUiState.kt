@@ -1,7 +1,6 @@
 package com.kingpaging.qwelcome.ui
 
 import com.kingpaging.qwelcome.data.CustomerData
-import com.kingpaging.qwelcome.util.StringUtils
 import com.kingpaging.qwelcome.util.WifiQrGenerator
 
 /**
@@ -27,6 +26,8 @@ data class CustomerIntakeUiState(
     val accountNumberError: String? = null,
     /** When true, password validation is skipped (for open/guest networks) */
     val isOpenNetwork: Boolean = false,
+    val securityType: WifiQrGenerator.SecurityType = WifiQrGenerator.SecurityType.WPA2_PSK,
+    val isHiddenNetwork: Boolean = false,
     /** Whether the QR code bottom sheet is currently shown */
     val showQrSheet: Boolean = false,
 ) {
@@ -58,6 +59,13 @@ data class CustomerIntakeUiState(
                 ssidError == null &&
                 (isOpenNetwork || passwordError == null) &&
                 accountNumberError == null
+
+    val hasCustomerData: Boolean
+        get() = customerName.isNotBlank() ||
+            customerPhone.isNotBlank() ||
+            ssid.isNotBlank() ||
+            password.isNotBlank() ||
+            accountNumber.isNotBlank()
     /**
      * Converts the UI state to a [CustomerData] instance.
      * 
@@ -71,10 +79,11 @@ data class CustomerIntakeUiState(
      * @return A CustomerData instance with the current form values
      */
     fun toCustomerData(): CustomerData = CustomerData(
-        customerName = StringUtils.toTitleCase(customerName),
+        customerName = customerName,
         customerPhone = customerPhone,
         ssid = ssid,
         password = password,
-        accountNumber = accountNumber
+        accountNumber = accountNumber,
+        isOpenNetwork = isOpenNetwork
     )
 }

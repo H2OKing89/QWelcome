@@ -31,6 +31,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -46,6 +47,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -59,6 +62,7 @@ import com.kingpaging.qwelcome.di.LocalSoundPlayer
 import com.kingpaging.qwelcome.ui.components.CyberpunkBackdrop
 import com.kingpaging.qwelcome.ui.components.NeonButton
 import com.kingpaging.qwelcome.ui.components.NeonButtonStyle
+import com.kingpaging.qwelcome.ui.components.NeonDiscardDialog
 import com.kingpaging.qwelcome.ui.components.NeonMagentaButton
 import com.kingpaging.qwelcome.ui.components.NeonOutlinedField
 import com.kingpaging.qwelcome.ui.components.NeonPanel
@@ -83,6 +87,7 @@ fun SettingsScreen(
     var showDiscardDialog by rememberSaveable { mutableStateOf(false) }
 
     val currentProfile by vm.techProfile.collectAsStateWithLifecycle()
+    val privacySettings by vm.privacySettings.collectAsStateWithLifecycle()
     val activeTemplate by vm.activeTemplate.collectAsStateWithLifecycle()
     val updateState by vm.updateState.collectAsStateWithLifecycle()
 
@@ -121,6 +126,7 @@ fun SettingsScreen(
         lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
             vm.settingsEvents.collect { event ->
                 when (event) {
+                    SettingsEvent.ProfileSaved -> onBack()
                     is SettingsEvent.ShowToast -> {
                         Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
                     }
@@ -146,24 +152,13 @@ fun SettingsScreen(
 
     // Discard changes confirmation dialog
     if (showDiscardDialog) {
-        AlertDialog(
-            onDismissRequest = { showDiscardDialog = false },
-            title = { Text(stringResource(R.string.dialog_discard_changes_title)) },
-            text = { Text(stringResource(R.string.dialog_discard_changes_message)) },
-            confirmButton = {
-                TextButton(onClick = {
-                    haptic()
-                    showDiscardDialog = false
-                    onBack()
-                }) {
-                    Text(stringResource(R.string.action_discard), color = MaterialTheme.colorScheme.error)
-                }
+        NeonDiscardDialog(
+            message = stringResource(R.string.dialog_discard_changes_message),
+            onDiscard = {
+                showDiscardDialog = false
+                onBack()
             },
-            dismissButton = {
-                TextButton(onClick = { haptic(); showDiscardDialog = false }) {
-                    Text(stringResource(R.string.action_keep_editing))
-                }
-            }
+            onKeepEditing = { showDiscardDialog = false }
         )
     }
 
@@ -181,18 +176,18 @@ fun SettingsScreen(
                 )
             },
             confirmButton = {
-                TextButton(onClick = {
-                    haptic()
-                    vm.confirmDownloadFromDialog()
-                }) {
+                NeonButton(
+                    onClick = { vm.confirmDownloadFromDialog() },
+                    style = NeonButtonStyle.PRIMARY
+                ) {
                     Text(stringResource(R.string.action_download_update))
                 }
             },
             dismissButton = {
-                TextButton(onClick = {
-                    haptic()
-                    vm.dismissDownloadConfirmation()
-                }) {
+                NeonButton(
+                    onClick = { vm.dismissDownloadConfirmation() },
+                    style = NeonButtonStyle.TERTIARY
+                ) {
                     Text(stringResource(R.string.action_cancel))
                 }
             }
@@ -295,7 +290,6 @@ fun SettingsScreen(
                 NeonMagentaButton(
                     onClick = {
                         vm.save(TechProfile(name, title, dept))
-                        onBack()
                     },
                     modifier = Modifier.fillMaxWidth(),
                     enabled = hasUnsavedChanges,
@@ -306,6 +300,38 @@ fun SettingsScreen(
                             stringResource(R.string.action_save_profile)
                         } else {
                             stringResource(R.string.label_no_changes)
+                        }
+                    )
+                }
+
+                Spacer(Modifier.height(16.dp))
+
+                // === PRIVACY SECTION ===
+                Text(
+                    stringResource(R.string.header_privacy),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                NeonPanel {
+                    PrivacySettingRow(
+                        title = stringResource(R.string.label_crash_reporting),
+                        description = stringResource(R.string.text_crash_reporting_description),
+                        checked = privacySettings?.crashReportingEnabled ?: false,
+                        enabled = privacySettings != null,
+                        onCheckedChange = {
+                            haptic()
+                            vm.setCrashReportingEnabled(it)
+                        }
+                    )
+                    Spacer(Modifier.height(16.dp))
+                    PrivacySettingRow(
+                        title = stringResource(R.string.label_screen_capture_protection),
+                        description = stringResource(R.string.text_screen_capture_protection_description),
+                        checked = privacySettings?.screenCaptureProtectionEnabled ?: false,
+                        enabled = privacySettings != null,
+                        onCheckedChange = {
+                            haptic()
+                            vm.setScreenCaptureProtectionEnabled(it)
                         }
                     )
                 }
@@ -588,6 +614,36 @@ fun SettingsScreen(
                 Spacer(Modifier.height(32.dp))
             }
         }
+    }
+}
+
+@Composable
+private fun PrivacySettingRow(
+    title: String,
+    description: String,
+    checked: Boolean,
+    enabled: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.bodyLarge)
+            Text(
+                description,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+            )
+        }
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            enabled = enabled,
+            modifier = Modifier.semantics { contentDescription = title }
+        )
     }
 }
 

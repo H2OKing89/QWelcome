@@ -9,6 +9,7 @@ import com.kingpaging.qwelcome.testutil.FakeNavigator
 import com.kingpaging.qwelcome.testutil.FakeResourceProvider
 import com.kingpaging.qwelcome.testutil.FakeTimeProvider
 import com.kingpaging.qwelcome.testutil.MainDispatcherRule
+import com.kingpaging.qwelcome.util.WifiQrGenerator
 import com.kingpaging.qwelcome.viewmodel.factory.AppViewModelProvider
 import io.mockk.every
 import io.mockk.mockk
@@ -52,12 +53,14 @@ class CustomerIntakeViewModelTest {
             savedStateHandle = savedStateHandle,
             settingsStore = mockStore,
             resourceProvider = fakeResourceProvider,
-            timeProvider = fakeTimeProvider
+            timeProvider = fakeTimeProvider,
+            enableForegroundInactivityTimer = false
         )
     }
 
     @After
     fun tearDown() {
+        vm.onPause()
         AppViewModelProvider.resetForTesting()
     }
 
@@ -116,6 +119,15 @@ class CustomerIntakeViewModelTest {
         vm.onAccountNumberChanged("ACC-123")
         assertEquals("ACC-123", vm.uiState.value.accountNumber)
         assertNull(vm.uiState.value.accountNumberError)
+    }
+
+    @Test
+    fun `security and hidden network options update state`() {
+        vm.onSecurityTypeChanged(WifiQrGenerator.SecurityType.WPA3_SAE)
+        vm.onHiddenNetworkChanged(true)
+
+        assertEquals(WifiQrGenerator.SecurityType.WPA3_SAE, vm.uiState.value.securityType)
+        assertTrue(vm.uiState.value.isHiddenNetwork)
     }
 
     @Test
@@ -249,6 +261,75 @@ class CustomerIntakeViewModelTest {
     }
 
     @Test
+    fun `clearFormWithUndo restores the manually cleared form`() {
+        fillValidFields()
+
+        val token = vm.clearFormWithUndo()
+        assertEquals("", vm.uiState.value.customerName)
+
+        vm.undoClearForm(token)
+
+        assertEquals("Alice", vm.uiState.value.customerName)
+        assertEquals("TestWiFi", vm.uiState.value.ssid)
+    }
+
+    @Test
+    fun `discardClearFormUndo prevents restoring an expired clear`() {
+        fillValidFields()
+
+        val token = vm.clearFormWithUndo()
+        vm.discardClearFormUndo(token)
+        vm.undoClearForm(token)
+
+        assertEquals("", vm.uiState.value.customerName)
+    }
+
+    @Test
+    fun `discardClearFormUndo does not discard a newer snapshot`() {
+        fillValidFields()
+        val firstToken = vm.clearFormWithUndo()
+        vm.onCustomerNameChanged("Bob")
+        vm.onSsidChanged("SecondWiFi")
+        val secondToken = vm.clearFormWithUndo()
+
+        vm.discardClearFormUndo(firstToken)
+        vm.undoClearForm(secondToken)
+
+        assertEquals("Bob", vm.uiState.value.customerName)
+        assertEquals("SecondWiFi", vm.uiState.value.ssid)
+        assertTrue(firstToken != secondToken)
+    }
+
+    @Test
+    fun `undoClearForm ignores a stale token and does not clobber the current snapshot`() {
+        fillValidFields()
+        val firstToken = vm.clearFormWithUndo()
+
+        vm.onCustomerNameChanged("Bob")
+        vm.onSsidChanged("SecondWiFi")
+        val secondToken = vm.clearFormWithUndo()
+
+        // A stale undo (e.g. from a first snackbar still visible when a second clear happened)
+        // must not restore or consume the current snapshot.
+        vm.undoClearForm(firstToken)
+        assertEquals("", vm.uiState.value.customerName)
+
+        // The current token can still restore its own snapshot.
+        vm.undoClearForm(secondToken)
+        assertEquals("Bob", vm.uiState.value.customerName)
+        assertEquals("SecondWiFi", vm.uiState.value.ssid)
+    }
+
+    @Test
+    fun `customer data preserves the entered name spelling`() {
+        val name = "McDonald O'Neil"
+
+        vm.onCustomerNameChanged(name)
+
+        assertEquals(name, vm.uiState.value.toCustomerData().customerName)
+    }
+
+    @Test
     fun `message generation uses template and profile`() = runTest {
         val navigator = FakeNavigator()
         fillValidFields()
@@ -292,6 +373,23 @@ class CustomerIntakeViewModelTest {
         advanceUntilIdle()
 
         assertEquals(1, navigator.shareCalls.size)
+    }
+
+    @Test
+    fun `onShareClicked only requires optional fields used by active template`() = runTest {
+        every { mockStore.activeTemplateFlow } returns flowOf(
+            testTemplate.copy(content = "Hello {{ customer_name }}, {{ ssid }}")
+        )
+        val navigator = FakeNavigator()
+        vm.onCustomerNameChanged("Alice")
+        vm.onSsidChanged("TestWiFi")
+
+        vm.onShareClicked(navigator)
+        advanceUntilIdle()
+
+        assertEquals(1, navigator.shareCalls.size)
+        assertNull(vm.uiState.value.passwordError)
+        assertNull(vm.uiState.value.accountNumberError)
     }
 
     @Test
@@ -354,7 +452,8 @@ class CustomerIntakeViewModelTest {
             savedStateHandle = savedStateHandle, // Same SavedStateHandle
             settingsStore = mockStore,
             resourceProvider = fakeResourceProvider,
-            timeProvider = fakeTimeProvider
+            timeProvider = fakeTimeProvider,
+            enableForegroundInactivityTimer = false
         )
 
         newVm.uiEvent.test {
@@ -371,6 +470,63 @@ class CustomerIntakeViewModelTest {
         }
     }
 
+    @Test
+    fun `auto-clear clears form after foreground inactivity timeout`() {
+        fillValidFields()
+
+        fakeTimeProvider.advanceBy(10 * 60 * 1000L)
+        vm.checkInactivityTimeout()
+
+        assertEquals("", vm.uiState.value.customerName)
+        assertEquals("", vm.uiState.value.ssid)
+    }
+
+    @Test
+    fun `auto-clear clears form from zero-valued activity timestamp`() = runTest {
+        val zeroTimeProvider = FakeTimeProvider()
+        val zeroTimestampState = SavedStateHandle()
+        val zeroTimestampVm = CustomerIntakeViewModel(
+            savedStateHandle = zeroTimestampState,
+            settingsStore = mockStore,
+            resourceProvider = fakeResourceProvider,
+            timeProvider = zeroTimeProvider,
+            enableForegroundInactivityTimer = false
+        )
+
+        zeroTimestampVm.onCustomerNameChanged("Alice")
+        zeroTimeProvider.advanceBy(10 * 60 * 1000L)
+
+        zeroTimestampVm.onResume()
+        advanceUntilIdle()
+
+        assertEquals("", zeroTimestampVm.uiState.value.customerName)
+    }
+
+    @Test
+    fun `auto-clear clears form when saved timestamp is later than current elapsed time`() = runTest {
+        // Simulates a device reboot: elapsedRealtime() resets to a small value while the
+        // SavedStateHandle still holds a timestamp recorded before the reboot (larger value).
+        val futureTimeProvider = FakeTimeProvider(1_000_000L)
+        val rebootState = SavedStateHandle()
+        val rebootVm = CustomerIntakeViewModel(
+            savedStateHandle = rebootState,
+            settingsStore = mockStore,
+            resourceProvider = fakeResourceProvider,
+            timeProvider = futureTimeProvider,
+            enableForegroundInactivityTimer = false
+        )
+
+        rebootVm.onCustomerNameChanged("Alice")
+
+        // elapsedRealtime() now reports a value lower than the saved timestamp.
+        futureTimeProvider.setTime(500L)
+
+        rebootVm.onResume()
+        advanceUntilIdle()
+
+        assertEquals("", rebootVm.uiState.value.customerName)
+    }
+
     private fun fillValidFields() {
         vm.onCustomerNameChanged("Alice")
         vm.onCustomerPhoneChanged("2125551234")
@@ -379,5 +535,3 @@ class CustomerIntakeViewModelTest {
         vm.onAccountNumberChanged("ACC-001")
     }
 }
-
-

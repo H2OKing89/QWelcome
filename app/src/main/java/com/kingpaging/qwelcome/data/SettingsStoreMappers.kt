@@ -42,6 +42,20 @@ fun TechProfile.Companion.fromProto(proto: TechProfileProto): TechProfile {
 val TechProfile.Companion.empty: TechProfile
     get() = TechProfile()
 
+fun PrivacySettings.toProto(): PrivacySettingsProto = PrivacySettingsProto.newBuilder()
+    .setCrashReportingEnabled(crashReportingEnabled)
+    .setScreenCaptureProtectionEnabled(screenCaptureProtectionEnabled)
+    .build()
+
+fun PrivacySettings.Companion.fromProto(proto: PrivacySettingsProto): PrivacySettings = PrivacySettings(
+    crashReportingEnabled = if (proto.hasCrashReportingEnabled()) {
+        proto.crashReportingEnabled
+    } else {
+        false
+    },
+    screenCaptureProtectionEnabled = proto.screenCaptureProtectionEnabled
+)
+
 fun Template.toProto(): TemplateProto = TemplateProto.newBuilder()
     .setId(id)
     .setName(name)

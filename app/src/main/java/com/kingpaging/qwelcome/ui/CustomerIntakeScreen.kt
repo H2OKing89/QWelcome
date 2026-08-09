@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.KeyboardOptions
@@ -19,6 +21,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.filled.Settings
@@ -33,6 +37,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -40,16 +47,20 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -78,6 +89,28 @@ import com.kingpaging.qwelcome.viewmodel.UiEvent
 import com.kingpaging.qwelcome.viewmodel.templates.TemplateListUiState
 import kotlinx.coroutines.launch
 
+private class FormFieldFocusTarget {
+    val focusRequester = FocusRequester()
+    val bringIntoViewRequester = BringIntoViewRequester()
+}
+
+private class CustomerFormFocusTargets {
+    val customerName = FormFieldFocusTarget()
+    val customerPhone = FormFieldFocusTarget()
+    val ssid = FormFieldFocusTarget()
+    val password = FormFieldFocusTarget()
+    val accountNumber = FormFieldFocusTarget()
+
+    fun firstInvalid(uiState: CustomerIntakeUiState): FormFieldFocusTarget? = when {
+        uiState.customerNameError != null -> customerName
+        uiState.customerPhoneError != null -> customerPhone
+        uiState.ssidError != null -> ssid
+        uiState.passwordError != null -> password
+        uiState.accountNumberError != null -> accountNumber
+        else -> null
+    }
+}
+
 @Suppress("LocalContextGetResourceValueCall")
 @Composable
 fun CustomerIntakeScreen(
@@ -90,16 +123,21 @@ fun CustomerIntakeScreen(
     val navigator = LocalNavigator.current
     val soundPlayer = LocalSoundPlayer.current
     val hapticFeedback = rememberHapticFeedback()
+    val formFocusTargets = remember { CustomerFormFocusTargets() }
 
     val uiState by customerIntakeViewModel.uiState.collectAsStateWithLifecycle()
     val templateUiState by templateListViewModel.uiState.collectAsStateWithLifecycle()
     // Use rememberSaveable so rotation/process death doesn't reset these
     var passwordVisible by rememberSaveable { mutableStateOf(false) }
+    var advancedWifiOptionsExpanded by rememberSaveable { mutableStateOf(false) }
+    var securityDropdownExpanded by remember { mutableStateOf(false) }
     // Dropdown state is transient - use remember so it collapses on rotation
     var templateDropdownExpanded by remember { mutableStateOf(false) }
     // Copy success feedback - brief visual confirmation (ChatGPT feedback: animate meaning)
     var copySuccess by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
 
     // Note: Lifecycle observer for auto-clear is registered in MainActivity
     // to ensure single registration and proper cleanup.
@@ -119,7 +157,13 @@ fun CustomerIntakeScreen(
                 is UiEvent.ShowToast -> {
                     Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
                 }
-                is UiEvent.ValidationFailed,
+                is UiEvent.ValidationFailed -> {
+                    soundPlayer.playBeep()
+                    formFocusTargets.firstInvalid(customerIntakeViewModel.uiState.value)?.let { target ->
+                        target.focusRequester.requestFocus()
+                        target.bringIntoViewRequester.bringIntoView()
+                    }
+                }
                 is UiEvent.ActionFailed -> {
                     soundPlayer.playBeep()
                 }
@@ -138,6 +182,8 @@ fun CustomerIntakeScreen(
             ssid = uiState.ssid,
             password = uiState.password,
             isOpenNetwork = uiState.isOpenNetwork,
+            securityType = uiState.securityType,
+            isHiddenNetwork = uiState.isHiddenNetwork,
             onDismiss = { customerIntakeViewModel.setShowQrSheet(false) }
         )
     }
@@ -146,13 +192,25 @@ fun CustomerIntakeScreen(
         Scaffold(
             // Intentional: keep scaffold transparent so the cyberpunk backdrop remains visible.
             containerColor = Color.Transparent,
+            snackbarHost = { SnackbarHost(snackbarHostState) },
             topBar = {
                 NeonTopAppBar(
                     title = { QWelcomeHeader() },
                     actions = {
                         IconButton(onClick = {
                             hapticFeedback()
-                            customerIntakeViewModel.clearForm()
+                            val undoToken = customerIntakeViewModel.clearFormWithUndo()
+                            scope.launch {
+                                val result = snackbarHostState.showSnackbar(
+                                    message = context.getString(R.string.toast_form_cleared),
+                                    actionLabel = context.getString(R.string.action_undo)
+                                )
+                                if (result == SnackbarResult.ActionPerformed) {
+                                    customerIntakeViewModel.undoClearForm(undoToken)
+                                } else {
+                                    customerIntakeViewModel.discardClearFormUndo(undoToken)
+                                }
+                            }
                         }) {
                             Icon(Icons.Filled.PersonAdd, contentDescription = stringResource(R.string.content_desc_new_customer))
                         }
@@ -194,10 +252,29 @@ fun CustomerIntakeScreen(
 
                 CustomerFormFields(
                     uiState = uiState,
+                    focusTargets = formFocusTargets,
                     passwordVisible = passwordVisible,
                     onCustomerNameChanged = customerIntakeViewModel::onCustomerNameChanged,
                     onCustomerPhoneChanged = customerIntakeViewModel::onCustomerPhoneChanged,
                     onSsidChanged = customerIntakeViewModel::onSsidChanged,
+                    advancedWifiOptionsExpanded = advancedWifiOptionsExpanded,
+                    onAdvancedWifiOptionsExpandedChange = { expanded ->
+                        hapticFeedback()
+                        advancedWifiOptionsExpanded = expanded
+                        if (!expanded) securityDropdownExpanded = false
+                    },
+                    securityType = uiState.securityType,
+                    securityDropdownExpanded = securityDropdownExpanded,
+                    onSecurityDropdownExpandedChange = { securityDropdownExpanded = it },
+                    onSecurityTypeChanged = {
+                        hapticFeedback()
+                        customerIntakeViewModel.onSecurityTypeChanged(it)
+                    },
+                    isHiddenNetwork = uiState.isHiddenNetwork,
+                    onHiddenNetworkChanged = {
+                        hapticFeedback()
+                        customerIntakeViewModel.onHiddenNetworkChanged(it)
+                    },
                     onOpenNetworkChanged = {
                         hapticFeedback()
                         customerIntakeViewModel.onOpenNetworkChanged(it)
@@ -304,10 +381,19 @@ private fun TemplateSelector(
 @Composable
 private fun CustomerFormFields(
     uiState: CustomerIntakeUiState,
+    focusTargets: CustomerFormFocusTargets,
     passwordVisible: Boolean,
     onCustomerNameChanged: (String) -> Unit,
     onCustomerPhoneChanged: (String) -> Unit,
     onSsidChanged: (String) -> Unit,
+    advancedWifiOptionsExpanded: Boolean,
+    onAdvancedWifiOptionsExpandedChange: (Boolean) -> Unit,
+    securityType: WifiQrGenerator.SecurityType,
+    securityDropdownExpanded: Boolean,
+    onSecurityDropdownExpandedChange: (Boolean) -> Unit,
+    onSecurityTypeChanged: (WifiQrGenerator.SecurityType) -> Unit,
+    isHiddenNetwork: Boolean,
+    onHiddenNetworkChanged: (Boolean) -> Unit,
     onOpenNetworkChanged: (Boolean) -> Unit,
     onPasswordChanged: (String) -> Unit,
     onPasswordVisibilityToggle: () -> Unit,
@@ -321,51 +407,33 @@ private fun CustomerFormFields(
             onValueChange = onCustomerNameChanged,
             label = { Text(stringResource(R.string.label_customer_name)) },
             isError = uiState.customerNameError != null,
-            supportingText = { uiState.customerNameError?.let { Text(it) } }
+            supportingText = { uiState.customerNameError?.let { Text(it) } },
+            modifier = Modifier
+                .focusRequester(focusTargets.customerName.focusRequester)
+                .bringIntoViewRequester(focusTargets.customerName.bringIntoViewRequester)
         )
+
         NeonOutlinedField(
             value = uiState.customerPhone,
             onValueChange = onCustomerPhoneChanged,
             label = { Text(stringResource(R.string.label_customer_phone)) },
             isError = uiState.customerPhoneError != null,
             supportingText = { uiState.customerPhoneError?.let { Text(it) } },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+            modifier = Modifier
+                .focusRequester(focusTargets.customerPhone.focusRequester)
+                .bringIntoViewRequester(focusTargets.customerPhone.bringIntoViewRequester)
         )
         NeonOutlinedField(
             value = uiState.ssid,
             onValueChange = onSsidChanged,
             label = { Text(stringResource(R.string.label_wifi_ssid)) },
             isError = uiState.ssidError != null,
-            supportingText = { uiState.ssidError?.let { Text(it) } }
-        )
-
-        // Open Network toggle - allows skipping password for guest networks
-        Row(
+            supportingText = { uiState.ssidError?.let { Text(it) } },
             modifier = Modifier
-                .fillMaxWidth()
-                .toggleable(
-                    value = uiState.isOpenNetwork,
-                    onValueChange = onOpenNetworkChanged,
-                    role = Role.Checkbox
-                )
-                .padding(vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Checkbox(
-                checked = uiState.isOpenNetwork,
-                onCheckedChange = null, // Handled by Row's toggleable
-                colors = CheckboxDefaults.colors(
-                    checkedColor = MaterialTheme.colorScheme.secondary,
-                    uncheckedColor = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            )
-            Text(
-                text = stringResource(R.string.label_open_network),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(start = 8.dp)
-            )
-        }
+                .focusRequester(focusTargets.ssid.focusRequester)
+                .bringIntoViewRequester(focusTargets.ssid.bringIntoViewRequester)
+        )
 
         NeonOutlinedField(
             value = if (uiState.isOpenNetwork) "" else uiState.password,
@@ -397,16 +465,160 @@ private fun CustomerFormFields(
                         Icon(imageVector = image, contentDescription = description)
                     }
                 }
-            }
+            },
+            modifier = Modifier
+                .focusRequester(focusTargets.password.focusRequester)
+                .bringIntoViewRequester(focusTargets.password.bringIntoViewRequester)
         )
+
+        val expandedLabel = stringResource(R.string.state_expanded)
+        val collapsedLabel = stringResource(R.string.state_collapsed)
+        NeonButton(
+            onClick = {
+                onAdvancedWifiOptionsExpandedChange(!advancedWifiOptionsExpanded)
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .semantics {
+                    stateDescription = if (advancedWifiOptionsExpanded) expandedLabel else collapsedLabel
+                },
+            style = NeonButtonStyle.TERTIARY
+        ) {
+            Text(
+                text = stringResource(R.string.label_advanced_wifi_options),
+                modifier = Modifier.weight(1f)
+            )
+            Icon(
+                imageVector = if (advancedWifiOptionsExpanded) {
+                    Icons.Default.ExpandLess
+                } else {
+                    Icons.Default.ExpandMore
+                },
+                contentDescription = null
+            )
+        }
+
+        if (advancedWifiOptionsExpanded) {
+            AdvancedWifiOptionsSection(
+                isOpenNetwork = uiState.isOpenNetwork,
+                onOpenNetworkChanged = onOpenNetworkChanged,
+                isHiddenNetwork = isHiddenNetwork,
+                onHiddenNetworkChanged = onHiddenNetworkChanged,
+                securityType = securityType,
+                securityDropdownExpanded = securityDropdownExpanded,
+                onSecurityDropdownExpandedChange = onSecurityDropdownExpandedChange,
+                onSecurityTypeChanged = onSecurityTypeChanged
+            )
+        }
+
         NeonOutlinedField(
             value = uiState.accountNumber,
             onValueChange = onAccountNumberChanged,
             label = { Text(stringResource(R.string.label_account_number)) },
             isError = uiState.accountNumberError != null,
             supportingText = { uiState.accountNumberError?.let { Text(it) } },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            modifier = Modifier
+                .focusRequester(focusTargets.accountNumber.focusRequester)
+                .bringIntoViewRequester(focusTargets.accountNumber.bringIntoViewRequester)
         )
+    }
+}
+
+@Composable
+private fun AdvancedWifiOptionsSection(
+    isOpenNetwork: Boolean,
+    onOpenNetworkChanged: (Boolean) -> Unit,
+    isHiddenNetwork: Boolean,
+    onHiddenNetworkChanged: (Boolean) -> Unit,
+    securityType: WifiQrGenerator.SecurityType,
+    securityDropdownExpanded: Boolean,
+    onSecurityDropdownExpandedChange: (Boolean) -> Unit,
+    onSecurityTypeChanged: (WifiQrGenerator.SecurityType) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .toggleable(
+                value = isOpenNetwork,
+                onValueChange = onOpenNetworkChanged,
+                role = Role.Checkbox
+            )
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Checkbox(
+            checked = isOpenNetwork,
+            onCheckedChange = null,
+            colors = CheckboxDefaults.colors(
+                checkedColor = MaterialTheme.colorScheme.secondary,
+                uncheckedColor = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        )
+        Text(
+            text = stringResource(R.string.label_open_network),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(start = 8.dp)
+        )
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .toggleable(
+                value = isHiddenNetwork,
+                onValueChange = onHiddenNetworkChanged,
+                role = Role.Checkbox
+            )
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Checkbox(
+            checked = isHiddenNetwork,
+            onCheckedChange = null,
+            colors = CheckboxDefaults.colors(
+                checkedColor = MaterialTheme.colorScheme.secondary,
+                uncheckedColor = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        )
+        Text(
+            text = stringResource(R.string.label_hidden_network),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(start = 8.dp)
+        )
+    }
+
+    if (!isOpenNetwork) {
+        NeonDropdownMenuBox(
+            expanded = securityDropdownExpanded,
+            onExpandedChange = onSecurityDropdownExpandedChange,
+            selectedText = stringResource(
+                if (securityType == WifiQrGenerator.SecurityType.WPA2_PSK) {
+                    R.string.security_wpa2
+                } else {
+                    R.string.security_wpa3_sae
+                }
+            ),
+            label = { Text(stringResource(R.string.label_wifi_security)) },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.security_wpa2)) },
+                onClick = {
+                    onSecurityTypeChanged(WifiQrGenerator.SecurityType.WPA2_PSK)
+                    onSecurityDropdownExpandedChange(false)
+                }
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.security_wpa3_sae)) },
+                onClick = {
+                    onSecurityTypeChanged(WifiQrGenerator.SecurityType.WPA3_SAE)
+                    onSecurityDropdownExpandedChange(false)
+                }
+            )
+        }
     }
 }
 

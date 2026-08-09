@@ -2,12 +2,12 @@ package com.kingpaging.qwelcome.ui.components
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
@@ -16,29 +16,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.ui.theme.DisplayFont
-import com.kingpaging.qwelcome.ui.theme.LocalDarkTheme
-
-// ============== DARK MODE GRADIENT ==============
-// Vibrant pink to purple gradient (matches Q logo)
-private val DarkGradientColors = listOf(
-    Color(0xFFFF10F0), // Hot pink
-    Color(0xFFEC4899), // Pink
-    Color(0xFFC19EE0), // Light purple
-    Color(0xFF9D4EDD), // Medium purple
-    Color(0xFF7C3AED), // Purple
-    Color(0xFF6D28D9)  // Deep purple
-)
-
-// ============== LIGHT MODE GRADIENT ==============
-// Deeper colors for better readability on light backgrounds
-private val LightGradientColors = listOf(
-    Color(0xFFC2185B), // Deep pink
-    Color(0xFFAB47BC), // Medium purple
-    Color(0xFF7B1FA2), // Purple
-    Color(0xFF6200EA), // Deep purple
-    Color(0xFF4527A0), // Indigo purple
-    Color(0xFF311B92)  // Deep indigo
-)
 
 /**
  * Header with Q logo and "WELCOME" text with gradient.
@@ -48,9 +25,12 @@ private val LightGradientColors = listOf(
 fun QWelcomeHeader(
     modifier: Modifier = Modifier
 ) {
-    val isDark = LocalDarkTheme.current
-    val gradientColors = if (isDark) DarkGradientColors else LightGradientColors
-    val textGradient = Brush.verticalGradient(gradientColors)
+    val textGradient = Brush.verticalGradient(
+        listOf(
+            MaterialTheme.colorScheme.secondary,
+            MaterialTheme.colorScheme.tertiary
+        )
+    )
     
     Row(
         modifier = modifier.padding(horizontal = 4.dp),
@@ -86,9 +66,12 @@ fun QWelcomeHeader(
 fun QWelcomeHeaderLarge(
     modifier: Modifier = Modifier
 ) {
-    val isDark = LocalDarkTheme.current
-    val gradientColors = if (isDark) DarkGradientColors else LightGradientColors
-    val textGradient = Brush.verticalGradient(gradientColors)
+    val textGradient = Brush.verticalGradient(
+        listOf(
+            MaterialTheme.colorScheme.secondary,
+            MaterialTheme.colorScheme.tertiary
+        )
+    )
     
     Column(
         modifier = modifier,

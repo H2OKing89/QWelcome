@@ -2,16 +2,22 @@ package com.kingpaging.qwelcome.ui
 
 import android.content.Context
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodes
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import androidx.lifecycle.SavedStateHandle
 import androidx.test.core.app.ApplicationProvider
@@ -106,6 +112,48 @@ class CustomerIntakeScreenTest {
             .performTextInput("password123")
 
         composeRule.onNodeWithText(context.getString(R.string.action_show_qr)).assertIsEnabled()
+    }
+
+    @Test
+    fun advancedWifiOptions_areCollapsedByDefaultAndExpandOnDemand() {
+        setScreenContent()
+        val context = appContext
+
+        composeRule.onAllNodesWithText(context.getString(R.string.label_open_network)).assertCountEquals(0)
+        composeRule.onAllNodesWithText(context.getString(R.string.label_hidden_network)).assertCountEquals(0)
+        composeRule.onAllNodesWithText(context.getString(R.string.label_wifi_security)).assertCountEquals(0)
+
+        composeRule.onNodeWithText(context.getString(R.string.label_advanced_wifi_options))
+            .performClick()
+
+        composeRule.onAllNodesWithText(context.getString(R.string.label_open_network)).assertCountEquals(1)
+        composeRule.onAllNodesWithText(context.getString(R.string.label_hidden_network)).assertCountEquals(1)
+        composeRule.onAllNodesWithText(context.getString(R.string.label_wifi_security)).assertCountEquals(1)
+    }
+
+    @Test
+    fun failedValidation_focusesTheFirstInvalidField() {
+        setScreenContent()
+        val context = appContext
+
+        composeRule.onNodeWithText(context.getString(R.string.action_sms))
+            .performScrollTo()
+            .performClick()
+
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule
+                .onAllNodes(
+                    editableFieldWithLabel(context.getString(R.string.label_customer_name)),
+                    useUnmergedTree = true
+                )
+                .fetchSemanticsNodes()
+                .any { it.config.getOrNull(SemanticsProperties.Focused) == true }
+        }
+
+        composeRule.onNode(
+            editableFieldWithLabel(context.getString(R.string.label_customer_name)),
+            useUnmergedTree = true
+        ).assertIsFocused()
     }
 
     @Test

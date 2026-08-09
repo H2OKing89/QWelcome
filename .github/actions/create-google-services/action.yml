@@ -1,0 +1,13 @@
+name: Create dummy Google Services configuration
+description: Creates the non-secret Firebase configuration required for CI builds.
+
+runs:
+  using: composite
+  steps:
+    - name: Create debug google-services.json
+      shell: bash
+      run: |
+        mkdir -p app/src/debug
+        cat > app/src/debug/google-services.json <<'EOF'
+        {"project_info":{"project_number":"000000000000","project_id":"qwelcome-ci","storage_bucket":"qwelcome-ci.appspot.com"},"client":[{"client_info":{"mobilesdk_app_id":"1:000000000000:android:00000000000000000000000000000000","android_client_info":{"package_name":"com.kingpaging.qwelcome"}},"api_key":[{"current_key":"dummy"}]}],"configuration_version":"1"}
+        EOF

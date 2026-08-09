@@ -10,6 +10,7 @@ import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.data.AppUpdater
 import com.kingpaging.qwelcome.data.DownloadEnqueueResult
 import com.kingpaging.qwelcome.data.DownloadStatus
+import com.kingpaging.qwelcome.data.PrivacySettings
 import com.kingpaging.qwelcome.data.SettingsStore
 import com.kingpaging.qwelcome.data.TechProfile
 import com.kingpaging.qwelcome.data.Template
@@ -43,6 +44,13 @@ class SettingsViewModel(
             initialValue = TechProfile()
         )
 
+    val privacySettings: StateFlow<PrivacySettings?> =
+        store.privacySettingsFlow.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = null
+        )
+
     val allTemplates: StateFlow<List<Template>> =
         store.allTemplatesFlow.stateIn(
             scope = viewModelScope,
@@ -71,11 +79,41 @@ class SettingsViewModel(
         viewModelScope.launch {
             try {
                 store.saveTechProfile(profile)
+                _settingsEvents.emit(SettingsEvent.ProfileSaved)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to save tech profile", e)
-                _errorEvents.emit("Failed to save profile: ${e.message}")
+                _settingsEvents.emit(
+                    SettingsEvent.ShowToastError(
+                        resourceProvider.getString(R.string.toast_failed_save_profile)
+                    )
+                )
+            }
+        }
+    }
+
+    fun setCrashReportingEnabled(enabled: Boolean) {
+        updatePrivacySettings { it.copy(crashReportingEnabled = enabled) }
+    }
+
+    fun setScreenCaptureProtectionEnabled(enabled: Boolean) {
+        updatePrivacySettings { it.copy(screenCaptureProtectionEnabled = enabled) }
+    }
+
+    private fun updatePrivacySettings(transform: (PrivacySettings) -> PrivacySettings) {
+        viewModelScope.launch {
+            try {
+                store.updatePrivacySettings(transform)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to save privacy settings", e)
+                _settingsEvents.emit(
+                    SettingsEvent.ShowToastError(
+                        resourceProvider.getString(R.string.toast_failed_save_privacy_settings)
+                    )
+                )
             }
         }
     }
@@ -413,6 +451,9 @@ sealed class UpdateState {
 
 /** One-shot events emitted by [SettingsViewModel]. */
 sealed class SettingsEvent {
+    /** Successful profile save; consumed only by an active collector. */
+    data object ProfileSaved : SettingsEvent()
+
     /** Informational toast without sound. */
     data class ShowToast(val message: String) : SettingsEvent()
 

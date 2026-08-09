@@ -3,7 +3,7 @@
 A modern Android app for fiber internet technicians to quickly send professional WiFi welcome messages to new customers.
 
 ![Android](https://img.shields.io/badge/Android-26%2B-green?logo=android)
-![Kotlin](https://img.shields.io/badge/Kotlin-1.9-blue?logo=kotlin)
+![Kotlin](https://img.shields.io/badge/Kotlin-2.3.20-blue?logo=kotlin)
 ![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-Material3-purple)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
 
@@ -15,13 +15,8 @@ A modern Android app for fiber internet technicians to quickly send professional
 - **Cyberpunk Theme** — Beautiful dark/light mode with neon accents
 - **Custom Templates** — Create and manage multiple message templates
 - **Import/Export** — Backup and share templates between devices
-- **Privacy-Focused** — All data stays on device, auto-clears after 10 minutes of inactivity
+- **Privacy-Focused** — Customer data is stored on-device; after 10 minutes of inactivity, only the active intake form and its entered data are cleared. Crash reporting can be enabled or disabled in Settings
 - **Input Validation** — Real-time validation with helpful error messages
-
-## Screenshots
-
-<!-- Add screenshots here -->
-<!-- ![Main Screen](docs/screenshots/main.png) -->
 
 ## Requirements
 
@@ -56,13 +51,27 @@ gradlew.bat assembleDebug
 # APK will be at: app/build/outputs/apk/debug/app-debug.apk
 ```
 
+The repository includes a non-production Firebase configuration for debug builds. A **local** release build requires your own `app/google-services.json` in addition to release signing.
+
+The **CI release workflow** (`.github/workflows/release.yml`) does not read a checked-in `app/google-services.json`; it generates one at build time and signs the APK from repository secrets. The following secrets must be configured under repo Settings → Secrets and variables → Actions:
+
+| Secret | Purpose |
+|---|---|
+| `GOOGLE_SERVICES_JSON_BASE64` | Base64-encoded `google-services.json` for the release Firebase project, decoded to `app/google-services.json` before the build. |
+| `KEYSTORE_BASE64` | Base64-encoded release signing keystore, decoded to `qwelcome-release.keystore`. |
+| `KEYSTORE_PASSWORD` | Password for the release keystore. |
+| `KEY_PASSWORD` | Password for the `qwelcome` signing key inside the keystore. |
+
 ## Tech Stack
 
-- **Language:** Kotlin
+- **Language:** Kotlin 2.3.20
 - **UI:** Jetpack Compose with Material 3
 - **Architecture:** MVVM with StateFlow
-- **Storage:** DataStore (Preferences)
+- **Storage:** Proto DataStore
+- **Navigation:** Navigation Compose
 - **QR Generation:** QRose library
+- **Crash reporting:** Firebase Crashlytics (optional)
+- **Updates:** GitHub Releases in-app updater
 - **Min SDK:** 26 (Android 8.0)
 - **Target SDK:** 36
 
@@ -89,10 +98,12 @@ app/src/main/java/com/kingpaging/qwelcome/
 ### Prerequisites
 
 - Android Studio (latest stable recommended)
-- JDK 11+
+- JDK 17 or newer (required by Gradle and CI; app Java and Kotlin bytecode targets remain 11)
 - Android SDK 36
 
 ### Building
+
+The Gradle tasks below are tested with JDK 17.
 
 ```bash
 # Debug build

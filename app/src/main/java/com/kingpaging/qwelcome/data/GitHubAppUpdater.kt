@@ -13,6 +13,8 @@ import android.provider.Settings
 import android.util.Log
 import androidx.core.content.FileProvider
 import com.google.firebase.crashlytics.FirebaseCrashlytics
+import com.kingpaging.qwelcome.util.sanitizeFileName
+import com.kingpaging.qwelcome.util.UPDATE_FALLBACK_FILE_NAME
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -48,7 +50,7 @@ class GitHubAppUpdater(
                     return@withContext DownloadEnqueueResult.Failed("Unable to create updates directory")
                 }
 
-                val safeAssetName = sanitizeAssetName(update.assetName)
+                val safeAssetName = sanitizeFileName(update.assetName, UPDATE_FALLBACK_FILE_NAME)
                 val destinationFile = File(updatesDir, safeAssetName)
                 if (destinationFile.exists()) {
                     val deleted = destinationFile.delete()
@@ -230,10 +232,6 @@ class GitHubAppUpdater(
             }
         }
         return digest.digest().toHexLowercase()
-    }
-
-    private fun sanitizeAssetName(name: String): String {
-        return name.replace(Regex("[^A-Za-z0-9._-]"), "_")
     }
 
     @Suppress("DEPRECATION")

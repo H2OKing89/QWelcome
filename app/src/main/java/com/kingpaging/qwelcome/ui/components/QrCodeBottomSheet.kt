@@ -2,9 +2,11 @@
 
 package com.kingpaging.qwelcome.ui.components
 
+import android.Manifest
 import android.content.ActivityNotFoundException
 import android.content.ContentValues
 import android.content.Context
+import android.content.pm.PackageManager
 import android.content.Intent
 import android.graphics.Bitmap
 import android.os.Build
@@ -22,6 +24,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,9 +35,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.FileProvider
+import androidx.core.content.ContextCompat
 import com.kingpaging.qwelcome.ui.theme.CyberDarkScheme
+import com.kingpaging.qwelcome.util.sanitizeFileName
 import com.kingpaging.qwelcome.util.WifiQrGenerator
 import io.github.alexzhirkevich.qrose.options.QrBallShape
 import io.github.alexzhirkevich.qrose.options.QrBrush
@@ -51,23 +59,46 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
+import java.io.OutputStream
+
+/** Fixed-width mask so the displayed password never leaks its actual length. */
+private const val MASKED_PASSWORD_DISPLAY = "********"
 
 @Composable
 fun QrCodeBottomSheet(
     ssid: String,
     password: String,
     isOpenNetwork: Boolean = false,
+    securityType: WifiQrGenerator.SecurityType = WifiQrGenerator.SecurityType.WPA2_PSK,
+    isHiddenNetwork: Boolean = false,
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var isSaving by remember { mutableStateOf(false) }
     var isSharing by remember { mutableStateOf(false) }
-    val wifiString = remember(ssid, password, isOpenNetwork) {
+    var showSaveWarning by remember { mutableStateOf(false) }
+    val wifiString = remember(ssid, password, isOpenNetwork, securityType, isHiddenNetwork) {
         if (isOpenNetwork) {
-            WifiQrGenerator.generateOpenNetworkString(ssid)
+            WifiQrGenerator.generateOpenNetworkString(ssid, isHiddenNetwork)
         } else {
-            WifiQrGenerator.generateWifiString(ssid, password)
+            WifiQrGenerator.generateWifiString(ssid, password, securityType, isHiddenNetwork)
+        }
+    }
+    val saveQrCode: () -> Unit = {
+        scope.launch {
+            isSaving = true
+            saveQrCodeToGallery(context, wifiString, ssid)
+            isSaving = false
+        }
+    }
+    val storagePermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            saveQrCode()
+        } else {
+            Toast.makeText(context, R.string.toast_permission_denied, Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -100,6 +131,45 @@ fun QrCodeBottomSheet(
 
     // Start expanded to show all content
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    if (showSaveWarning) {
+        AlertDialog(
+            onDismissRequest = { showSaveWarning = false },
+            modifier = Modifier.imePadding(),
+            properties = DialogProperties(decorFitsSystemWindows = false),
+            title = { Text(stringResource(R.string.title_save_qr_warning)) },
+            text = { Text(stringResource(R.string.text_save_qr_warning)) },
+            confirmButton = {
+                NeonButton(
+                    onClick = {
+                        showSaveWarning = false
+                        if (
+                            Build.VERSION.SDK_INT <= Build.VERSION_CODES.P &&
+                            ContextCompat.checkSelfPermission(
+                                context,
+                                Manifest.permission.WRITE_EXTERNAL_STORAGE
+                            ) != PackageManager.PERMISSION_GRANTED
+                        ) {
+                            storagePermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                        } else {
+                            saveQrCode()
+                        }
+                    },
+                    style = NeonButtonStyle.PRIMARY
+                ) {
+                    Text(stringResource(R.string.action_save_anyway))
+                }
+            },
+            dismissButton = {
+                NeonButton(
+                    onClick = { showSaveWarning = false },
+                    style = NeonButtonStyle.TERTIARY
+                ) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            }
+        )
+    }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -150,24 +220,42 @@ fun QrCodeBottomSheet(
             }
             Spacer(Modifier.height(16.dp))
             NeonPanel(modifier = Modifier.fillMaxWidth()) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(stringResource(R.string.label_network), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
-                    Text(ssid, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)
-                }
+                Text(stringResource(R.string.label_network), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
+                Text(
+                    ssid,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
                 Spacer(Modifier.height(4.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(stringResource(R.string.label_security), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
-                    if (isOpenNetwork) {
-                        Text(stringResource(R.string.label_open_no_password), color = MaterialTheme.colorScheme.tertiary, fontWeight = FontWeight.Medium)
-                    } else {
-                        Text(password, color = MaterialTheme.colorScheme.secondary, fontWeight = FontWeight.Medium)
-                    }
+                Text(stringResource(R.string.label_security), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
+                Text(
+                    text = when {
+                        isOpenNetwork -> stringResource(R.string.label_open_no_password)
+                        securityType == WifiQrGenerator.SecurityType.WPA3_SAE -> {
+                            stringResource(R.string.security_wpa3_sae)
+                        }
+                        else -> stringResource(R.string.security_wpa2)
+                    },
+                    color = MaterialTheme.colorScheme.tertiary,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                if (!isOpenNetwork) {
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        stringResource(R.string.label_wifi_password),
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    )
+                    Text(
+                        MASKED_PASSWORD_DISPLAY,
+                        color = MaterialTheme.colorScheme.secondary,
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
             }
             Spacer(Modifier.height(16.dp))
@@ -177,11 +265,7 @@ fun QrCodeBottomSheet(
             ) {
                 NeonCyanButton(
                     onClick = {
-                        scope.launch {
-                            isSaving = true
-                            saveQrCodeToGallery(context, wifiString, ssid)
-                            isSaving = false
-                        }
+                        showSaveWarning = true
                     },
                     enabled = !isSaving && !isSharing,
                     modifier = Modifier.weight(1f)
@@ -318,53 +402,21 @@ private suspend fun saveQrCodeToGallery(
     wifiString: String,
     ssid: String
 ) {
-    var bitmap: Bitmap? = null
     try {
-        bitmap = withContext(Dispatchers.IO) {
+        withContext(Dispatchers.IO) {
             val bmp = generateHighResQrBitmap(wifiString)
-            val filename = "WiFi_QR_${ssid.replace(" ", "_")}_${System.currentTimeMillis()}.png"
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                val resolver = context.contentResolver
-                val contentValues = ContentValues().apply {
-                    put(MediaStore.Images.Media.DISPLAY_NAME, filename)
-                    put(MediaStore.Images.Media.MIME_TYPE, "image/png")
-                    put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/QWelcome")
+            try {
+                val filename = "WiFi_QR_${sanitizeFileName(ssid)}_${System.currentTimeMillis()}.png"
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    writeQrBitmapToMediaStore(context, bmp, filename)
+                } else {
+                    writeQrBitmapToLegacyStorage(bmp, filename)
                 }
-                val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
-                    ?: throw IOException("Failed to create media entry")
-                try {
-                    val outputStream = resolver.openOutputStream(uri)
-                        ?: throw IOException("Failed to open media output stream")
-                    outputStream.use { stream ->
-                        val encoded = bmp.compress(Bitmap.CompressFormat.PNG, 100, stream)
-                        if (!encoded) {
-                            throw IOException("Failed to encode QR PNG")
-                        }
-                    }
-                } catch (e: IOException) {
-                    resolver.delete(uri, null, null)
-                    throw e
-                } catch (e: SecurityException) {
-                    resolver.delete(uri, null, null)
-                    throw e
-                }
-            } else {
-                @Suppress("DEPRECATION")
-                val picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
-                val qwelcomeDir = File(picturesDir, "QWelcome")
-                if (!qwelcomeDir.exists() && !qwelcomeDir.mkdirs()) {
-                    throw IOException("Failed to create pictures directory")
-                }
-                val file = File(qwelcomeDir, filename)
-                FileOutputStream(file).use { stream ->
-                    val encoded = bmp.compress(Bitmap.CompressFormat.PNG, 100, stream)
-                    if (!encoded) {
-                        throw IOException("Failed to encode QR PNG")
-                    }
-                }
+            } finally {
+                // Unconditional: covers success, thrown exceptions, and cancellation (even if it
+                // happens while the result is being delivered back from withContext).
+                bmp.recycle()
             }
-            bmp
         }
         Toast.makeText(context, R.string.toast_qr_saved, Toast.LENGTH_SHORT).show()
     } catch (e: SecurityException) {
@@ -373,8 +425,60 @@ private suspend fun saveQrCodeToGallery(
     } catch (e: IOException) {
         Log.e("QrCodeBottomSheet", "Failed to save QR image", e)
         Toast.makeText(context, context.getString(R.string.toast_failed_save, e.message), Toast.LENGTH_SHORT).show()
+    }
+}
+
+private fun writeQrBitmapToMediaStore(context: Context, bmp: Bitmap, filename: String) {
+    val resolver = context.contentResolver
+    val contentValues = ContentValues().apply {
+        put(MediaStore.Images.Media.DISPLAY_NAME, filename)
+        put(MediaStore.Images.Media.MIME_TYPE, "image/png")
+        put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/QWelcome")
+    }
+    val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+        ?: throw IOException("Failed to create media entry")
+    var writeCompleted = false
+    try {
+        writeBitmapPngToStream(resolver.openOutputStream(uri), bmp)
+        writeCompleted = true
     } finally {
-        bitmap?.recycle()
+        // Covers thrown exceptions AND coroutine cancellation (e.g. the bottom
+        // sheet is dismissed mid-write), so no orphaned/incomplete entry lingers.
+        if (!writeCompleted) {
+            resolver.delete(uri, null, null)
+        }
+    }
+}
+
+private fun writeQrBitmapToLegacyStorage(bmp: Bitmap, filename: String) {
+    @Suppress("DEPRECATION")
+    val picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+    val qwelcomeDir = File(picturesDir, "QWelcome")
+    if (!qwelcomeDir.exists() && !qwelcomeDir.mkdirs()) {
+        throw IOException("Failed to create pictures directory")
+    }
+    val file = File(qwelcomeDir, filename)
+    var writeCompleted = false
+    try {
+        writeBitmapPngToStream(FileOutputStream(file), bmp)
+        writeCompleted = true
+    } finally {
+        // Covers thrown exceptions AND coroutine cancellation, matching the MediaStore path,
+        // so no orphaned/incomplete file lingers on disk.
+        if (!writeCompleted) {
+            file.delete()
+        }
+    }
+}
+
+/** Encodes [bmp] as PNG into [outputStream], closing it and throwing if either step fails. */
+private fun writeBitmapPngToStream(outputStream: OutputStream?, bmp: Bitmap) {
+    val stream = outputStream ?: throw IOException("Failed to open output stream")
+    stream.use {
+        val encoded = bmp.compress(Bitmap.CompressFormat.PNG, 100, it)
+        if (!encoded) {
+            throw IOException("Failed to encode QR PNG")
+        }
     }
 }
 
@@ -391,7 +495,7 @@ private suspend fun shareQrCode(
             if (!cacheDir.exists() && !cacheDir.mkdirs()) {
                 throw Exception("Failed to create cache directory")
             }
-            val file = File(cacheDir, "WiFi_QR_${ssid.replace(" ", "_")}.png")
+            val file = File(cacheDir, "WiFi_QR_${sanitizeFileName(ssid)}.png")
             FileOutputStream(file).use { stream ->
                 bmp.compress(Bitmap.CompressFormat.PNG, 100, stream)
             }

@@ -1,5 +1,6 @@
 # Android Studio
 .gradle/
+/.gradle_backup/
 .idea/
 captures/
 .DS_Store
@@ -7,6 +8,7 @@ captures/
 # Build
 /build
 **/build/
+bin/
 *.apk
 *.aab
 *.ap_

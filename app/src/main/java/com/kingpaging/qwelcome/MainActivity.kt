@@ -1,16 +1,20 @@
 package com.kingpaging.qwelcome
 
 import android.os.Bundle
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
 import com.kingpaging.qwelcome.di.LocalCustomerIntakeViewModel
@@ -45,6 +49,10 @@ class MainActivity : ComponentActivity() {
         navigator = AndroidNavigator(applicationContext)
 
         enableEdgeToEdge()
+        window.setFlags(
+            WindowManager.LayoutParams.FLAG_SECURE,
+            WindowManager.LayoutParams.FLAG_SECURE
+        )
         setContent {
             val appViewModelFactory = remember { AppViewModelProvider(applicationContext) }
 
@@ -64,6 +72,17 @@ class MainActivity : ComponentActivity() {
             val templateListViewModel: TemplateListViewModel = viewModel(
                 factory = appViewModelFactory
             )
+            val privacySettings by settingsViewModel.privacySettings.collectAsStateWithLifecycle()
+            LaunchedEffect(privacySettings?.screenCaptureProtectionEnabled) {
+                if (privacySettings?.screenCaptureProtectionEnabled == true) {
+                    window.setFlags(
+                        WindowManager.LayoutParams.FLAG_SECURE,
+                        WindowManager.LayoutParams.FLAG_SECURE
+                    )
+                } else if (privacySettings != null) {
+                    window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                }
+            }
 
             // Navigation controller for Jetpack Navigation Compose
             val navController = rememberNavController()

@@ -4,6 +4,7 @@ import app.cash.turbine.test
 import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.data.DownloadEnqueueResult
 import com.kingpaging.qwelcome.data.DownloadStatus
+import com.kingpaging.qwelcome.data.PrivacySettings
 import com.kingpaging.qwelcome.data.SettingsStore
 import com.kingpaging.qwelcome.data.TechProfile
 import com.kingpaging.qwelcome.data.Template
@@ -47,6 +48,7 @@ class SettingsViewModelTest {
     fun setup() {
         AppViewModelProvider.resetForTesting()
         every { mockStore.techProfileFlow } returns flowOf(testProfile)
+        every { mockStore.privacySettingsFlow } returns flowOf(PrivacySettings())
         every { mockStore.allTemplatesFlow } returns flowOf(listOf(testTemplate))
         every { mockStore.activeTemplateFlow } returns flowOf(testTemplate)
         every { mockStore.defaultTemplateContent } returns "Default content"
@@ -109,13 +111,79 @@ class SettingsViewModelTest {
     }
 
     @Test
-    fun `save error emits error event`() = runTest {
+    fun `save emits one profile saved event without replay`() = runTest {
+        vm.settingsEvents.test {
+            vm.save(testProfile)
+            assertEquals(SettingsEvent.ProfileSaved, awaitItem())
+            expectNoEvents()
+        }
+
+        vm.settingsEvents.test {
+            expectNoEvents()
+        }
+    }
+
+    @Test
+    fun `setCrashReportingEnabled saves updated privacy settings`() = runTest {
+        var storedSettings = PrivacySettings(crashReportingEnabled = true)
+        coEvery { mockStore.updatePrivacySettings(any()) } coAnswers {
+            @Suppress("UNCHECKED_CAST")
+            val transform = invocation.args[0] as (PrivacySettings) -> PrivacySettings
+            storedSettings = transform(storedSettings)
+        }
+
+        vm.setCrashReportingEnabled(false)
+        advanceUntilIdle()
+
+        assertEquals(false, storedSettings.crashReportingEnabled)
+    }
+
+    @Test
+    fun `setScreenCaptureProtectionEnabled saves updated privacy settings`() = runTest {
+        var storedSettings = PrivacySettings(screenCaptureProtectionEnabled = false)
+        coEvery { mockStore.updatePrivacySettings(any()) } coAnswers {
+            @Suppress("UNCHECKED_CAST")
+            val transform = invocation.args[0] as (PrivacySettings) -> PrivacySettings
+            storedSettings = transform(storedSettings)
+        }
+
+        vm.setScreenCaptureProtectionEnabled(true)
+        advanceUntilIdle()
+
+        assertEquals(true, storedSettings.screenCaptureProtectionEnabled)
+    }
+
+    @Test
+    fun `privacy setters preserve both changes when invoked before dispatcher advancement`() = runTest {
+        var storedSettings = PrivacySettings(crashReportingEnabled = true)
+        coEvery { mockStore.updatePrivacySettings(any()) } coAnswers {
+            @Suppress("UNCHECKED_CAST")
+            val transform = invocation.args[0] as (PrivacySettings) -> PrivacySettings
+            storedSettings = transform(storedSettings)
+        }
+
+        vm.setCrashReportingEnabled(false)
+        vm.setScreenCaptureProtectionEnabled(true)
+        advanceUntilIdle()
+
+        assertEquals(
+            PrivacySettings(crashReportingEnabled = false, screenCaptureProtectionEnabled = true),
+            storedSettings
+        )
+    }
+
+    @Test
+    fun `save error emits settings error event`() = runTest {
         coEvery { mockStore.saveTechProfile(any()) } throws RuntimeException("DB error")
 
-        vm.errorEvents.test {
+        vm.settingsEvents.test {
             vm.save(testProfile)
-            val error = awaitItem()
-            assertTrue(error.contains("Failed to save profile"))
+            val event = awaitItem()
+            assertTrue(event is SettingsEvent.ShowToastError)
+            assertEquals(
+                fakeResourceProvider.getString(R.string.toast_failed_save_profile),
+                (event as SettingsEvent.ShowToastError).message
+            )
         }
     }
 
