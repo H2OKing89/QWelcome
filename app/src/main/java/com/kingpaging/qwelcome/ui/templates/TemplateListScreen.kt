@@ -484,7 +484,7 @@ private fun TemplateCard(
                                 Text(
                                     stringResource(
                                         if (isDefault) R.string.action_customize_copy
-                                        else R.string.content_desc_edit_template
+                                        else R.string.action_edit_template
                                     )
                                 )
                             },
@@ -502,7 +502,7 @@ private fun TemplateCard(
 
                         if (!isDefault) {
                             DropdownMenuItem(
-                                text = { Text(stringResource(R.string.content_desc_duplicate_template)) },
+                                text = { Text(stringResource(R.string.action_duplicate_template)) },
                                 leadingIcon = {
                                     Icon(
                                         imageVector = Icons.Default.ContentCopy,
@@ -516,7 +516,7 @@ private fun TemplateCard(
                             )
 
                             DropdownMenuItem(
-                                text = { Text(stringResource(R.string.content_desc_delete_template)) },
+                                text = { Text(stringResource(R.string.action_delete_template)) },
                                 leadingIcon = {
                                     Icon(
                                         imageVector = Icons.Default.Delete,

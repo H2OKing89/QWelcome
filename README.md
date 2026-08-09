@@ -51,7 +51,16 @@ gradlew.bat assembleDebug
 # APK will be at: app/build/outputs/apk/debug/app-debug.apk
 ```
 
-The repository includes a non-production Firebase configuration for debug builds. A release build requires your own `app/google-services.json` in addition to release signing.
+The repository includes a non-production Firebase configuration for debug builds. A **local** release build requires your own `app/google-services.json` in addition to release signing.
+
+The **CI release workflow** (`.github/workflows/release.yml`) does not read a checked-in `app/google-services.json`; it generates one at build time and signs the APK from repository secrets. The following secrets must be configured under repo Settings → Secrets and variables → Actions:
+
+| Secret | Purpose |
+|---|---|
+| `GOOGLE_SERVICES_JSON_BASE64` | Base64-encoded `google-services.json` for the release Firebase project, decoded to `app/google-services.json` before the build. |
+| `KEYSTORE_BASE64` | Base64-encoded release signing keystore, decoded to `qwelcome-release.keystore`. |
+| `KEYSTORE_PASSWORD` | Password for the release keystore. |
+| `KEY_PASSWORD` | Password for the `qwelcome` signing key inside the keystore. |
 
 ## Tech Stack
 

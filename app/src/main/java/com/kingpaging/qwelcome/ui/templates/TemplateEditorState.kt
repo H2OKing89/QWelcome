@@ -18,9 +18,11 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
@@ -38,14 +40,31 @@ import com.kingpaging.qwelcome.util.rememberHapticFeedback
 import com.kingpaging.qwelcome.viewmodel.templates.TemplateEditorUiState
 import kotlinx.coroutines.flow.distinctUntilChanged
 
-private class TemplateEditorState(
-    val contentFieldState: TextFieldState
-) {
-    var pendingPlaceholder by mutableStateOf<String?>(null)
-        private set
+private const val TAG_MAX_LENGTH = 32
 
-    var showContentEditorDialog by mutableStateOf(false)
-        private set
+/** Trims and caps a raw tag input to the shared tag length limit. */
+internal fun normalizeTemplateTag(rawTag: String): String = rawTag.trim().take(TAG_MAX_LENGTH)
+
+/** Case-insensitive containment check used to prevent duplicate tags. */
+internal fun List<String>.containsTagIgnoreCase(tag: String): Boolean =
+    any { it.equals(tag, ignoreCase = true) }
+
+private class TemplateEditorState(
+    val contentFieldState: TextFieldState,
+    private val pendingPlaceholderState: MutableState<String?>,
+    private val showContentEditorDialogState: MutableState<Boolean>
+) {
+    var pendingPlaceholder: String?
+        get() = pendingPlaceholderState.value
+        private set(value) {
+            pendingPlaceholderState.value = value
+        }
+
+    var showContentEditorDialog: Boolean
+        get() = showContentEditorDialogState.value
+        private set(value) {
+            showContentEditorDialogState.value = value
+        }
 
     fun openContentEditor() {
         showContentEditorDialog = true
@@ -84,9 +103,9 @@ private class TemplateEditorState(
             return
         }
 
-        val draftTag = editorUiState.newTagInput.trim().take(32)
+        val draftTag = normalizeTemplateTag(editorUiState.newTagInput)
         val tags = if (
-            draftTag.isBlank() || editorUiState.tags.any { it.equals(draftTag, ignoreCase = true) }
+            draftTag.isBlank() || editorUiState.tags.containsTagIgnoreCase(draftTag)
         ) {
             editorUiState.tags
         } else {
@@ -157,21 +176,21 @@ private fun rememberTemplateEditorState(
     initialContentText: String
 ): TemplateEditorState {
     val contentFieldState = rememberTextFieldState(initialText = initialContentText)
-    return remember { TemplateEditorState(contentFieldState) }
+    val pendingPlaceholderState = rememberSaveable { mutableStateOf<String?>(null) }
+    val showContentEditorDialogState = rememberSaveable { mutableStateOf(false) }
+    return remember {
+        TemplateEditorState(contentFieldState, pendingPlaceholderState, showContentEditorDialogState)
+    }
 }
 
 @Composable
 private fun BindTemplateEditorState(
     state: TemplateEditorState,
     contentText: String,
-    onContentChange: (String) -> Unit,
-    contentFocusRequester: FocusRequester
+    onContentChange: (String) -> Unit
 ) {
     LaunchedEffect(contentText) {
         state.syncContentFieldValue(contentText)
-    }
-    LaunchedEffect(state.showContentEditorDialog, state.pendingPlaceholder) {
-        state.consumePendingPlaceholder(onContentChange, contentFocusRequester)
     }
     LaunchedEffect(state.contentFieldState) {
         snapshotFlow { state.contentFieldState.text.toString() }
@@ -209,8 +228,7 @@ internal fun TemplateEditorContent(
     BindTemplateEditorState(
         state = editorState,
         contentText = editorUiState.contentText,
-        onContentChange = onContentChange,
-        contentFocusRequester = contentFocusRequester
+        onContentChange = onContentChange
     )
 
     val isDirty = editorUiState.name != originalName ||
@@ -230,10 +248,8 @@ internal fun TemplateEditorContent(
     }
 
     val addTag: (String) -> Unit = { rawTag ->
-        val normalized = rawTag.trim().take(32)
-        if (normalized.isNotBlank() &&
-            editorUiState.tags.none { it.equals(normalized, ignoreCase = true) }
-        ) {
+        val normalized = normalizeTemplateTag(rawTag)
+        if (normalized.isNotBlank() && !editorUiState.tags.containsTagIgnoreCase(normalized)) {
             onTagsChange(editorUiState.tags + normalized)
         }
         onNewTagInputChange("")
@@ -360,6 +376,10 @@ internal fun TemplateEditorContent(
                 contentFocusRequester = contentFocusRequester,
                 contentInteractionSource = contentInteractionSource,
                 contentError = editorUiState.contentError,
+                pendingPlaceholder = editorState.pendingPlaceholder,
+                onConsumePendingPlaceholder = {
+                    editorState.consumePendingPlaceholder(onContentChange, contentFocusRequester)
+                },
                 onDismissRequest = editorState::closeContentEditor,
                 onInsertPlaceholder = { placeholder ->
                     editorState.insertPlaceholder(

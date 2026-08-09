@@ -214,9 +214,13 @@ internal fun MessageContentLauncher(
             }
 
             Text(
-                text = contentText.ifBlank { " " },
+                text = contentText.ifBlank { stringResource(R.string.hint_template_empty_content) },
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
+                color = if (contentText.isBlank()) {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                } else {
+                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f)
+                },
                 maxLines = 4,
                 overflow = TextOverflow.Ellipsis
             )

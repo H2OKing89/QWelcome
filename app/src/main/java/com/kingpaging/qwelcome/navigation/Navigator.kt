@@ -2,12 +2,14 @@ package com.kingpaging.qwelcome.navigation
 
 import android.content.ActivityNotFoundException
 import android.content.ClipData
+import android.content.ClipDescription
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.app.PendingIntent
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.os.PersistableBundle
 import android.util.Log
 import android.widget.Toast
@@ -195,7 +197,12 @@ class AndroidNavigator(private val context: Context) : Navigator {
             }
             val clip = ClipData.newPlainText(label, text).apply {
                 description.extras = PersistableBundle().apply {
-                    putBoolean("android.content.extra.IS_SENSITIVE", true)
+                    val sensitiveKey = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        ClipDescription.EXTRA_IS_SENSITIVE
+                    } else {
+                        "android.content.extra.IS_SENSITIVE"
+                    }
+                    putBoolean(sensitiveKey, true)
                 }
             }
             clipboard.setPrimaryClip(clip)

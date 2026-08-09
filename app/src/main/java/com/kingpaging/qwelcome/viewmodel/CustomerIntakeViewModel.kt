@@ -7,6 +7,7 @@ import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.data.MessageTemplate
 import com.kingpaging.qwelcome.data.SettingsStore
 import com.kingpaging.qwelcome.data.TechProfile
+import com.kingpaging.qwelcome.data.Template
 import com.kingpaging.qwelcome.navigation.Navigator
 import com.kingpaging.qwelcome.ui.CustomerIntakeUiState
 import com.kingpaging.qwelcome.util.PhoneUtils
@@ -150,13 +151,15 @@ class CustomerIntakeViewModel(
     fun onPause() {
         inactivityJob?.cancel()
         inactivityJob = null
+        clearedFormState = null
+        clearedFormToken = null
     }
 
     fun onResume() {
         val lastActivityTimestamp = savedStateHandle.get<Long>(KEY_LAST_ACTIVITY_TIMESTAMP)
         if (lastActivityTimestamp != null) {
             val elapsed = timeProvider.elapsedRealtime() - lastActivityTimestamp
-            if (elapsed >= AUTO_CLEAR_TIMEOUT_MS) {
+            if (elapsed < 0L || elapsed >= AUTO_CLEAR_TIMEOUT_MS) {
                 clearForm()
             } else if (_uiState.value.hasCustomerData && enableForegroundInactivityTimer) {
                 scheduleInactivityClear(AUTO_CLEAR_TIMEOUT_MS - elapsed)
@@ -185,7 +188,8 @@ class CustomerIntakeViewModel(
         }
     }
 
-    fun undoClearForm() {
+    fun undoClearForm(token: Long) {
+        if (clearedFormToken != token) return
         val state = clearedFormState ?: return
         clearedFormState = null
         clearedFormToken = null
@@ -288,9 +292,9 @@ class CustomerIntakeViewModel(
     internal fun checkInactivityTimeout() {
         val lastActivityTimestamp = savedStateHandle.get<Long>(KEY_LAST_ACTIVITY_TIMESTAMP) ?: return
         val elapsed = timeProvider.elapsedRealtime() - lastActivityTimestamp
-        if (elapsed >= AUTO_CLEAR_TIMEOUT_MS) {
+        if (elapsed < 0L || elapsed >= AUTO_CLEAR_TIMEOUT_MS) {
             clearForm()
-        } else if (elapsed > 0L) {
+        } else {
             scheduleInactivityClear(AUTO_CLEAR_TIMEOUT_MS - elapsed)
         }
     }
@@ -316,11 +320,12 @@ class CustomerIntakeViewModel(
     fun onSmsClicked(navigator: Navigator) = viewModelScope.launch {
         recordUserActivity()
         if (!checkRateLimit()) return@launch
-        if (!validateInputs(requirePhone = true)) {
+        val activeTemplate = settingsStore.activeTemplateFlow.first()
+        if (!validateInputs(requirePhone = true, activeTemplate = activeTemplate)) {
             _uiEvent.emit(UiEvent.ValidationFailed)
             return@launch
         }
-        val message = generateMessage()
+        val message = generateMessage(activeTemplate)
         val normalizedPhone = PhoneUtils.normalize(_uiState.value.customerPhone)
         if (normalizedPhone != null) {
             navigator.openSms(normalizedPhone, message)
@@ -335,11 +340,12 @@ class CustomerIntakeViewModel(
     fun onShareClicked(navigator: Navigator) = viewModelScope.launch {
         recordUserActivity()
         if (!checkRateLimit()) return@launch
-        if (!validateInputs(requirePhone = false)) {
+        val activeTemplate = settingsStore.activeTemplateFlow.first()
+        if (!validateInputs(requirePhone = false, activeTemplate = activeTemplate)) {
             _uiEvent.emit(UiEvent.ValidationFailed)
             return@launch
         }
-        val message = generateMessage()
+        val message = generateMessage(activeTemplate)
         navigator.shareText(message)
     }
 
@@ -351,11 +357,12 @@ class CustomerIntakeViewModel(
     fun onCopyClicked(navigator: Navigator) = viewModelScope.launch {
         recordUserActivity()
         if (!checkRateLimit()) return@launch
-        if (!validateInputs(requirePhone = false)) {
+        val activeTemplate = settingsStore.activeTemplateFlow.first()
+        if (!validateInputs(requirePhone = false, activeTemplate = activeTemplate)) {
             _uiEvent.emit(UiEvent.ValidationFailed)
             return@launch
         }
-        val message = generateMessage()
+        val message = generateMessage(activeTemplate)
         val success = navigator.copyToClipboard("Customer Message", message)
         if (success) {
             _uiEvent.emit(UiEvent.CopySuccess)
@@ -369,10 +376,11 @@ class CustomerIntakeViewModel(
     /**
      * Validates form inputs before sending/sharing/copying.
      * @param requirePhone If true, validates phone number (for SMS). If false, skips phone validation (for Share/Copy).
+     * @param activeTemplate The template snapshot to validate against, resolved once by the caller
+     * so validation and message generation stay consistent even if the active template changes mid-action.
      */
-    private suspend fun validateInputs(requirePhone: Boolean): Boolean {
+    private fun validateInputs(requirePhone: Boolean, activeTemplate: Template): Boolean {
         val currentState = _uiState.value
-        val activeTemplate = settingsStore.activeTemplateFlow.first()
         val requiresPassword = MessageTemplate.usesPlaceholder(
             activeTemplate.content,
             MessageTemplate.KEY_PASSWORD
@@ -429,11 +437,11 @@ class CustomerIntakeViewModel(
      * Generates the welcome message from template and current UI state.
      * Uses the {{ tech_signature }} placeholder if present in template.
      * If placeholder is absent, signature is NOT added (user controls placement).
+     * @param template The template snapshot resolved by the caller, kept consistent with [validateInputs].
      */
-    private suspend fun generateMessage(): String {
+    private suspend fun generateMessage(template: Template): String {
         val uiState = _uiState.value
         val techProfile = settingsStore.techProfileFlow.first()
-        val template = settingsStore.activeTemplateFlow.first()
         val customerData = uiState.toCustomerData()
 
         // Only include signature if {{ tech_signature }} placeholder is present

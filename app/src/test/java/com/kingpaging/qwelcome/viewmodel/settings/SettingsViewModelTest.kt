@@ -125,18 +125,32 @@ class SettingsViewModelTest {
 
     @Test
     fun `setCrashReportingEnabled saves updated privacy settings`() = runTest {
+        var storedSettings = PrivacySettings(crashReportingEnabled = true)
+        coEvery { mockStore.updatePrivacySettings(any()) } coAnswers {
+            @Suppress("UNCHECKED_CAST")
+            val transform = invocation.args[0] as (PrivacySettings) -> PrivacySettings
+            storedSettings = transform(storedSettings)
+        }
+
         vm.setCrashReportingEnabled(false)
         advanceUntilIdle()
 
-        coVerify { mockStore.updatePrivacySettings(any()) }
+        assertEquals(false, storedSettings.crashReportingEnabled)
     }
 
     @Test
     fun `setScreenCaptureProtectionEnabled saves updated privacy settings`() = runTest {
+        var storedSettings = PrivacySettings(screenCaptureProtectionEnabled = false)
+        coEvery { mockStore.updatePrivacySettings(any()) } coAnswers {
+            @Suppress("UNCHECKED_CAST")
+            val transform = invocation.args[0] as (PrivacySettings) -> PrivacySettings
+            storedSettings = transform(storedSettings)
+        }
+
         vm.setScreenCaptureProtectionEnabled(true)
         advanceUntilIdle()
 
-        coVerify { mockStore.updatePrivacySettings(any()) }
+        assertEquals(true, storedSettings.screenCaptureProtectionEnabled)
     }
 
     @Test

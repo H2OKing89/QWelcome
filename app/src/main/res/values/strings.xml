@@ -102,6 +102,9 @@
     <string name="content_desc_builtin_template">Built-in (duplicate to customize)</string>
     <string name="content_desc_template_actions">Template actions</string>
     <string name="action_customize_copy">Customize a copy</string>
+    <string name="action_edit_template">Edit template</string>
+    <string name="action_duplicate_template">Duplicate template</string>
+    <string name="action_delete_template">Delete template</string>
     <string name="content_desc_edit_template">Edit template</string>
     <string name="content_desc_duplicate_template">Duplicate template</string>
     <string name="content_desc_delete_template">Delete template</string>
@@ -112,6 +115,7 @@
     <string name="label_name">Name</string>
     <string name="label_insert">Insert</string>
     <string name="hint_template_required_placeholders">Customer, SSID required</string>
+    <string name="hint_template_empty_content">No message content yet — tap edit to add your message</string>
     <string name="label_message">Message</string>
     <string name="error_name_required">Name is required</string>
     <string name="title_delete_template">Delete Template?</string>
@@ -182,6 +186,8 @@
     <string name="label_wifi_ssid">WiFi SSID</string>
     <string name="label_wifi_password">WiFi Password</string>
     <string name="label_advanced_wifi_options">Advanced WiFi Options</string>
+    <string name="state_expanded">Expanded</string>
+    <string name="state_collapsed">Collapsed</string>
     <string name="label_wifi_security">WiFi Security</string>
     <string name="security_wpa2">WPA2-Personal</string>
     <string name="security_wpa3_sae">WPA3-Personal (SAE)</string>

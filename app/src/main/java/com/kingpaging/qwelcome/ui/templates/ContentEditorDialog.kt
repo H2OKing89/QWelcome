@@ -43,13 +43,11 @@ internal fun ContentEditorDialog(
     contentFocusRequester: FocusRequester,
     contentInteractionSource: MutableInteractionSource,
     contentError: String?,
+    pendingPlaceholder: String?,
+    onConsumePendingPlaceholder: () -> Unit,
     onDismissRequest: () -> Unit,
     onInsertPlaceholder: (String) -> Unit
 ) {
-    LaunchedEffect(Unit) {
-        contentFocusRequester.requestFocus()
-    }
-
     Dialog(onDismissRequest = onDismissRequest) {
         Surface(
             modifier = Modifier
@@ -98,6 +96,18 @@ internal fun ContentEditorDialog(
                         .heightIn(min = 260.dp, max = 460.dp)
                 )
 
+                // Runs after ContentEditorField is composed in this Dialog's own
+                // sub-composition, so the FocusRequester is guaranteed to be attached.
+                LaunchedEffect(Unit) {
+                    contentFocusRequester.requestFocus()
+                }
+
+                LaunchedEffect(pendingPlaceholder) {
+                    if (pendingPlaceholder != null) {
+                        onConsumePendingPlaceholder()
+                    }
+                }
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End
@@ -124,6 +134,25 @@ internal fun ContentEditorField(
     modifier: Modifier = Modifier
 ) {
     val hasContentError = contentError != null
+    val fieldColors = OutlinedTextFieldDefaults.colors(
+        focusedBorderColor = if (hasContentError) {
+            MaterialTheme.colorScheme.error
+        } else {
+            MaterialTheme.colorScheme.secondary
+        },
+        unfocusedBorderColor = if (hasContentError) {
+            MaterialTheme.colorScheme.error.copy(alpha = 0.6f)
+        } else {
+            MaterialTheme.colorScheme.outline
+        },
+        cursorColor = MaterialTheme.colorScheme.secondary,
+        focusedLabelColor = if (hasContentError) {
+            MaterialTheme.colorScheme.error
+        } else {
+            MaterialTheme.colorScheme.secondary
+        },
+        unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+    )
     BasicTextField(
         state = contentState,
         lineLimits = TextFieldLineLimits.MultiLine(
@@ -159,44 +188,7 @@ internal fun ContentEditorField(
                 } else {
                     null
                 },
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = if (hasContentError) {
-                        MaterialTheme.colorScheme.error
-                    } else {
-                        MaterialTheme.colorScheme.secondary
-                    },
-                    unfocusedBorderColor = if (hasContentError) {
-                        MaterialTheme.colorScheme.error.copy(alpha = 0.6f)
-                    } else {
-                        MaterialTheme.colorScheme.outline
-                    },
-                    cursorColor = MaterialTheme.colorScheme.secondary,
-                    focusedLabelColor = if (hasContentError) {
-                        MaterialTheme.colorScheme.error
-                    } else {
-                        MaterialTheme.colorScheme.secondary
-                    },
-                    unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
-                ),
-                container = {
-                    OutlinedTextFieldDefaults.Container(
-                        enabled = true,
-                        isError = hasContentError,
-                        interactionSource = contentInteractionSource,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = if (hasContentError) {
-                                MaterialTheme.colorScheme.error
-                            } else {
-                                MaterialTheme.colorScheme.secondary
-                            },
-                            unfocusedBorderColor = if (hasContentError) {
-                                MaterialTheme.colorScheme.error.copy(alpha = 0.6f)
-                            } else {
-                                MaterialTheme.colorScheme.outline
-                            }
-                        )
-                    )
-                }
+                colors = fieldColors
             )
         }
     )

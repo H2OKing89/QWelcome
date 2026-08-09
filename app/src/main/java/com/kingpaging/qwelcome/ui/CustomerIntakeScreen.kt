@@ -60,6 +60,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -205,7 +206,7 @@ fun CustomerIntakeScreen(
                                     actionLabel = context.getString(R.string.action_undo)
                                 )
                                 if (result == SnackbarResult.ActionPerformed) {
-                                    customerIntakeViewModel.undoClearForm()
+                                    customerIntakeViewModel.undoClearForm(undoToken)
                                 } else {
                                     customerIntakeViewModel.discardClearFormUndo(undoToken)
                                 }
@@ -228,8 +229,8 @@ fun CustomerIntakeScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
-                    .verticalScroll(rememberScrollState())
                     .imePadding()
+                    .verticalScroll(rememberScrollState())
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp) // Top-aligned with spacing feels more like a tool
             ) {
@@ -470,11 +471,17 @@ private fun CustomerFormFields(
                 .bringIntoViewRequester(focusTargets.password.bringIntoViewRequester)
         )
 
+        val expandedLabel = stringResource(R.string.state_expanded)
+        val collapsedLabel = stringResource(R.string.state_collapsed)
         NeonButton(
             onClick = {
                 onAdvancedWifiOptionsExpandedChange(!advancedWifiOptionsExpanded)
             },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .semantics {
+                    stateDescription = if (advancedWifiOptionsExpanded) expandedLabel else collapsedLabel
+                },
             style = NeonButtonStyle.TERTIARY
         ) {
             Text(
@@ -492,90 +499,16 @@ private fun CustomerFormFields(
         }
 
         if (advancedWifiOptionsExpanded) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .toggleable(
-                        value = uiState.isOpenNetwork,
-                        onValueChange = onOpenNetworkChanged,
-                        role = Role.Checkbox
-                    )
-                    .padding(vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Checkbox(
-                    checked = uiState.isOpenNetwork,
-                    onCheckedChange = null,
-                    colors = CheckboxDefaults.colors(
-                        checkedColor = MaterialTheme.colorScheme.secondary,
-                        uncheckedColor = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                )
-                Text(
-                    text = stringResource(R.string.label_open_network),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(start = 8.dp)
-                )
-            }
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .toggleable(
-                        value = isHiddenNetwork,
-                        onValueChange = onHiddenNetworkChanged,
-                        role = Role.Checkbox
-                    )
-                    .padding(vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Checkbox(
-                    checked = isHiddenNetwork,
-                    onCheckedChange = null,
-                    colors = CheckboxDefaults.colors(
-                        checkedColor = MaterialTheme.colorScheme.secondary,
-                        uncheckedColor = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                )
-                Text(
-                    text = stringResource(R.string.label_hidden_network),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(start = 8.dp)
-                )
-            }
-
-            if (!uiState.isOpenNetwork) {
-                NeonDropdownMenuBox(
-                    expanded = securityDropdownExpanded,
-                    onExpandedChange = onSecurityDropdownExpandedChange,
-                    selectedText = stringResource(
-                        if (securityType == WifiQrGenerator.SecurityType.WPA2_PSK) {
-                            R.string.security_wpa2
-                        } else {
-                            R.string.security_wpa3_sae
-                        }
-                    ),
-                    label = { Text(stringResource(R.string.label_wifi_security)) },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.security_wpa2)) },
-                        onClick = {
-                            onSecurityTypeChanged(WifiQrGenerator.SecurityType.WPA2_PSK)
-                            onSecurityDropdownExpandedChange(false)
-                        }
-                    )
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.security_wpa3_sae)) },
-                        onClick = {
-                            onSecurityTypeChanged(WifiQrGenerator.SecurityType.WPA3_SAE)
-                            onSecurityDropdownExpandedChange(false)
-                        }
-                    )
-                }
-            }
+            AdvancedWifiOptionsSection(
+                isOpenNetwork = uiState.isOpenNetwork,
+                onOpenNetworkChanged = onOpenNetworkChanged,
+                isHiddenNetwork = isHiddenNetwork,
+                onHiddenNetworkChanged = onHiddenNetworkChanged,
+                securityType = securityType,
+                securityDropdownExpanded = securityDropdownExpanded,
+                onSecurityDropdownExpandedChange = onSecurityDropdownExpandedChange,
+                onSecurityTypeChanged = onSecurityTypeChanged
+            )
         }
 
         NeonOutlinedField(
@@ -589,6 +522,103 @@ private fun CustomerFormFields(
                 .focusRequester(focusTargets.accountNumber.focusRequester)
                 .bringIntoViewRequester(focusTargets.accountNumber.bringIntoViewRequester)
         )
+    }
+}
+
+@Composable
+private fun AdvancedWifiOptionsSection(
+    isOpenNetwork: Boolean,
+    onOpenNetworkChanged: (Boolean) -> Unit,
+    isHiddenNetwork: Boolean,
+    onHiddenNetworkChanged: (Boolean) -> Unit,
+    securityType: WifiQrGenerator.SecurityType,
+    securityDropdownExpanded: Boolean,
+    onSecurityDropdownExpandedChange: (Boolean) -> Unit,
+    onSecurityTypeChanged: (WifiQrGenerator.SecurityType) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .toggleable(
+                value = isOpenNetwork,
+                onValueChange = onOpenNetworkChanged,
+                role = Role.Checkbox
+            )
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Checkbox(
+            checked = isOpenNetwork,
+            onCheckedChange = null,
+            colors = CheckboxDefaults.colors(
+                checkedColor = MaterialTheme.colorScheme.secondary,
+                uncheckedColor = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        )
+        Text(
+            text = stringResource(R.string.label_open_network),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(start = 8.dp)
+        )
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .toggleable(
+                value = isHiddenNetwork,
+                onValueChange = onHiddenNetworkChanged,
+                role = Role.Checkbox
+            )
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Checkbox(
+            checked = isHiddenNetwork,
+            onCheckedChange = null,
+            colors = CheckboxDefaults.colors(
+                checkedColor = MaterialTheme.colorScheme.secondary,
+                uncheckedColor = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        )
+        Text(
+            text = stringResource(R.string.label_hidden_network),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(start = 8.dp)
+        )
+    }
+
+    if (!isOpenNetwork) {
+        NeonDropdownMenuBox(
+            expanded = securityDropdownExpanded,
+            onExpandedChange = onSecurityDropdownExpandedChange,
+            selectedText = stringResource(
+                if (securityType == WifiQrGenerator.SecurityType.WPA2_PSK) {
+                    R.string.security_wpa2
+                } else {
+                    R.string.security_wpa3_sae
+                }
+            ),
+            label = { Text(stringResource(R.string.label_wifi_security)) },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.security_wpa2)) },
+                onClick = {
+                    onSecurityTypeChanged(WifiQrGenerator.SecurityType.WPA2_PSK)
+                    onSecurityDropdownExpandedChange(false)
+                }
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.security_wpa3_sae)) },
+                onClick = {
+                    onSecurityTypeChanged(WifiQrGenerator.SecurityType.WPA3_SAE)
+                    onSecurityDropdownExpandedChange(false)
+                }
+            )
+        }
     }
 }
 

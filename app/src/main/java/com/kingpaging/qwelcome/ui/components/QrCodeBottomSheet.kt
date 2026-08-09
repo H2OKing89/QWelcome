@@ -60,6 +60,9 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 
+/** Fixed-width mask so the displayed password never leaks its actual length. */
+private const val MASKED_PASSWORD_DISPLAY = "********"
+
 @Composable
 fun QrCodeBottomSheet(
     ssid: String,
@@ -246,7 +249,7 @@ fun QrCodeBottomSheet(
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                     )
                     Text(
-                        password.map { "*" }.joinToString(""),
+                        MASKED_PASSWORD_DISPLAY,
                         color = MaterialTheme.colorScheme.secondary,
                         fontWeight = FontWeight.Medium,
                         maxLines = 2,
@@ -413,6 +416,7 @@ private suspend fun saveQrCodeToGallery(
                 }
                 val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
                     ?: throw IOException("Failed to create media entry")
+                var writeCompleted = false
                 try {
                     val outputStream = resolver.openOutputStream(uri)
                         ?: throw IOException("Failed to open media output stream")
@@ -422,12 +426,13 @@ private suspend fun saveQrCodeToGallery(
                             throw IOException("Failed to encode QR PNG")
                         }
                     }
-                } catch (e: IOException) {
-                    resolver.delete(uri, null, null)
-                    throw e
-                } catch (e: SecurityException) {
-                    resolver.delete(uri, null, null)
-                    throw e
+                    writeCompleted = true
+                } finally {
+                    // Covers thrown exceptions AND coroutine cancellation (e.g. the bottom
+                    // sheet is dismissed mid-write), so no orphaned/incomplete entry lingers.
+                    if (!writeCompleted) {
+                        resolver.delete(uri, null, null)
+                    }
                 }
             } else {
                 @Suppress("DEPRECATION")

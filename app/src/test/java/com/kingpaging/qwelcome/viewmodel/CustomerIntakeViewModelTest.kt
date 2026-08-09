@@ -264,10 +264,10 @@ class CustomerIntakeViewModelTest {
     fun `clearFormWithUndo restores the manually cleared form`() {
         fillValidFields()
 
-        vm.clearFormWithUndo()
+        val token = vm.clearFormWithUndo()
         assertEquals("", vm.uiState.value.customerName)
 
-        vm.undoClearForm()
+        vm.undoClearForm(token)
 
         assertEquals("Alice", vm.uiState.value.customerName)
         assertEquals("TestWiFi", vm.uiState.value.ssid)
@@ -279,7 +279,7 @@ class CustomerIntakeViewModelTest {
 
         val token = vm.clearFormWithUndo()
         vm.discardClearFormUndo(token)
-        vm.undoClearForm()
+        vm.undoClearForm(token)
 
         assertEquals("", vm.uiState.value.customerName)
     }
@@ -293,11 +293,31 @@ class CustomerIntakeViewModelTest {
         val secondToken = vm.clearFormWithUndo()
 
         vm.discardClearFormUndo(firstToken)
-        vm.undoClearForm()
+        vm.undoClearForm(secondToken)
 
         assertEquals("Bob", vm.uiState.value.customerName)
         assertEquals("SecondWiFi", vm.uiState.value.ssid)
         assertTrue(firstToken != secondToken)
+    }
+
+    @Test
+    fun `undoClearForm ignores a stale token and does not clobber the current snapshot`() {
+        fillValidFields()
+        val firstToken = vm.clearFormWithUndo()
+
+        vm.onCustomerNameChanged("Bob")
+        vm.onSsidChanged("SecondWiFi")
+        val secondToken = vm.clearFormWithUndo()
+
+        // A stale undo (e.g. from a first snackbar still visible when a second clear happened)
+        // must not restore or consume the current snapshot.
+        vm.undoClearForm(firstToken)
+        assertEquals("", vm.uiState.value.customerName)
+
+        // The current token can still restore its own snapshot.
+        vm.undoClearForm(secondToken)
+        assertEquals("Bob", vm.uiState.value.customerName)
+        assertEquals("SecondWiFi", vm.uiState.value.ssid)
     }
 
     @Test
@@ -480,6 +500,31 @@ class CustomerIntakeViewModelTest {
         advanceUntilIdle()
 
         assertEquals("", zeroTimestampVm.uiState.value.customerName)
+    }
+
+    @Test
+    fun `auto-clear clears form when saved timestamp is later than current elapsed time`() = runTest {
+        // Simulates a device reboot: elapsedRealtime() resets to a small value while the
+        // SavedStateHandle still holds a timestamp recorded before the reboot (larger value).
+        val futureTimeProvider = FakeTimeProvider(1_000_000L)
+        val rebootState = SavedStateHandle()
+        val rebootVm = CustomerIntakeViewModel(
+            savedStateHandle = rebootState,
+            settingsStore = mockStore,
+            resourceProvider = fakeResourceProvider,
+            timeProvider = futureTimeProvider,
+            enableForegroundInactivityTimer = false
+        )
+
+        rebootVm.onCustomerNameChanged("Alice")
+
+        // elapsedRealtime() now reports a value lower than the saved timestamp.
+        futureTimeProvider.setTime(500L)
+
+        rebootVm.onResume()
+        advanceUntilIdle()
+
+        assertEquals("", rebootVm.uiState.value.customerName)
     }
 
     private fun fillValidFields() {

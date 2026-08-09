@@ -5,6 +5,7 @@
     <ID>ConstructorParameterNaming:UpdateChecker.kt:GitHubAsset$val browser_download_url: String</ID>
     <ID>ConstructorParameterNaming:UpdateChecker.kt:GitHubRelease$val html_url: String</ID>
     <ID>ConstructorParameterNaming:UpdateChecker.kt:GitHubRelease$val tag_name: String</ID>
+    <ID>CyclomaticComplexMethod:CustomerIntakeScreen.kt:@Composable private fun CustomerFormFields</ID>
     <ID>CyclomaticComplexMethod:ExportScreen.kt:@Suppress("LocalContextGetResourceValueCall") @Composable fun ExportScreen</ID>
     <ID>CyclomaticComplexMethod:ImportApplyService.kt:ImportApplyService$suspend fun applyFullBackup: ImportApplyResult</ID>
     <ID>CyclomaticComplexMethod:ImportScreen.kt:@Suppress("LocalContextGetResourceValueCall", "LocalContextResourcesRead") @Composable fun ImportScreen</ID>
@@ -18,6 +19,7 @@
     <ID>FunctionNaming:ContentEditorDialog.kt:@Composable internal fun ContentEditorField</ID>
     <ID>FunctionNaming:ContentEditorDialog.kt:@OptIn(ExperimentalLayoutApi::class) @Composable internal fun ContentEditorDialog</ID>
     <ID>FunctionNaming:CustomerIntakeScreen.kt:@Composable private fun ActionButtonRow</ID>
+    <ID>FunctionNaming:CustomerIntakeScreen.kt:@Composable private fun AdvancedWifiOptionsSection</ID>
     <ID>FunctionNaming:CustomerIntakeScreen.kt:@Composable private fun CustomerFormFields</ID>
     <ID>FunctionNaming:CustomerIntakeScreen.kt:@Composable private fun QrCodeSection</ID>
     <ID>FunctionNaming:CustomerIntakeScreen.kt:@Composable private fun TemplateSelector</ID>
@@ -46,6 +48,7 @@
     <ID>FunctionNaming:NeonComponents.kt:@OptIn(ExperimentalLayoutApi::class) @Composable fun CollapsiblePlaceholderChips</ID>
     <ID>FunctionNaming:NeonComponents.kt:@OptIn(ExperimentalLayoutApi::class) @Composable fun PlaceholderChipsRow</ID>
     <ID>FunctionNaming:NeonComponents.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun NeonOutlinedField</ID>
+    <ID>FunctionNaming:NeonDiscardDialog.kt:@Composable fun NeonDiscardDialog</ID>
     <ID>FunctionNaming:NeonDropdownMenuBox.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun NeonDropdownMenuBox</ID>
     <ID>FunctionNaming:NeonTopAppBar.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun NeonTopAppBar</ID>
     <ID>FunctionNaming:QrCodeBottomSheet.kt:@Composable fun QrCodeBottomSheet</ID>
@@ -68,6 +71,7 @@
     <ID>FunctionNaming:TemplateVariablesSheet.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun TemplateVariablesSheet</ID>
     <ID>LongMethod:ContentEditorDialog.kt:@Composable internal fun ContentEditorField</ID>
     <ID>LongMethod:ContentEditorDialog.kt:@OptIn(ExperimentalLayoutApi::class) @Composable internal fun ContentEditorDialog</ID>
+    <ID>LongMethod:CustomerIntakeScreen.kt:@Composable private fun AdvancedWifiOptionsSection</ID>
     <ID>LongMethod:CustomerIntakeScreen.kt:@Composable private fun CustomerFormFields</ID>
     <ID>LongMethod:CustomerIntakeScreen.kt:@Suppress("LocalContextGetResourceValueCall") @Composable fun CustomerIntakeScreen</ID>
     <ID>LongMethod:ExportScreen.kt:@Composable private fun ExportOptionCard</ID>

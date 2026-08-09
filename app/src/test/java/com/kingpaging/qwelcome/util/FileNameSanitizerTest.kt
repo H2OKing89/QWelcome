@@ -1,7 +1,7 @@
 package com.kingpaging.qwelcome.util
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class FileNameSanitizerTest {
@@ -15,6 +15,16 @@ class FileNameSanitizerTest {
         }
 
         assertEquals(FALLBACK_FILE_NAME, sanitizeFileName("."))
-        assertNotEquals("..", sanitizeFileName(".."))
+        assertEquals(FALLBACK_FILE_NAME, sanitizeFileName(".."))
+    }
+
+    @Test
+    fun `caps sanitized file name length while preserving extension`() {
+        val longName = "a".repeat(400) + ".png"
+
+        val result = sanitizeFileName(longName)
+
+        assertTrue(result.length <= 255)
+        assertTrue(result.endsWith(".png"))
     }
 }
