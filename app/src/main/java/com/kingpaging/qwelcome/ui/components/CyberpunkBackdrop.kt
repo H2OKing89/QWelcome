@@ -1,22 +1,20 @@
 package com.kingpaging.qwelcome.ui.components
 
-import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.unit.dp
 import com.kingpaging.qwelcome.ui.theme.*
 
 /**
- * Cyberpunk-styled backdrop with animated grid and scanline effects.
+ * Cyberpunk-styled backdrop with a subtle grid effect.
  * Adapts to dark/light theme with appropriate styling:
- * - Dark mode: Deep space gradient with subtle grid, neon scanline
- * - Light mode: Clean white/purple gradient with subtle grid, softer scanline
+ * - Dark mode: Deep space gradient with subtle grid
+ * - Light mode: Clean white/purple gradient with subtle grid
  */
 @Composable
 fun CyberpunkBackdrop(
@@ -75,52 +73,8 @@ fun CyberpunkBackdrop(
             }
         }
 
-        // Animated scanline overlay
-        ScanlineOverlay(Modifier.matchParentSize(), isDark = isDark)
-
         // App content
         content()
-    }
-}
-
-/**
- * Animated horizontal scanline that moves down the screen.
- * Creates a subtle futuristic effect.
- */
-@Composable
-private fun ScanlineOverlay(modifier: Modifier = Modifier, isDark: Boolean = true) {
-    val infiniteTransition = rememberInfiniteTransition(label = "scanline")
-    val yPosition by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(ANIMATION_DURATION_MS, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "scanlineY"
-    )
-
-    val colorScheme = MaterialTheme.colorScheme
-
-    Canvas(modifier) {
-        val lineHeight = LINE_HEIGHT_DP.toPx()
-        val yPx = size.height * yPosition
-
-        // Gradient for scanline - fades at edges
-        val brush = Brush.horizontalGradient(
-            listOf(
-                Color.Transparent,
-                colorScheme.primary.copy(alpha = if (isDark) 0.40f else 0.20f),
-                Color.Transparent
-            )
-        )
-
-        drawRect(
-            brush = brush,
-            topLeft = Offset(0f, yPx),
-            size = Size(size.width, lineHeight),
-            alpha = if (isDark) 0.55f else 0.30f
-        )
     }
 }
 
@@ -129,5 +83,3 @@ private fun ScanlineOverlay(modifier: Modifier = Modifier, isDark: Boolean = tru
  * Centralized for easier adjustment of grid spacing, line sizes, and animation speed.
  */
 private val GRID_SPACING_DP = 28.dp
-private val LINE_HEIGHT_DP = 4.dp
-private const val ANIMATION_DURATION_MS = 8000

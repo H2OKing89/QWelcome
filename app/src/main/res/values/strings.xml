@@ -100,7 +100,8 @@
       <item quantity="other">You have %1$d templates. Consider archiving unused ones for best performance.</item>
   </plurals>
     <string name="content_desc_builtin_template">Built-in (duplicate to customize)</string>
-    <string name="content_desc_duplicate_to_edit">Duplicate to edit</string>
+    <string name="content_desc_template_actions">Template actions</string>
+    <string name="action_customize_copy">Customize a copy</string>
     <string name="content_desc_edit_template">Edit template</string>
     <string name="content_desc_duplicate_template">Duplicate template</string>
     <string name="content_desc_delete_template">Delete template</string>

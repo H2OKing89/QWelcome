@@ -324,9 +324,7 @@ fun NeonButton(
     val isDark = LocalDarkTheme.current
     val colorScheme = MaterialTheme.colorScheme
 
-    // MOTION BUDGET: Scanline is the ONE continuous animation per screen.
-    // Button glow is now STATIC (0.6 alpha) - no infinite pulse.
-    // This prevents "casino UI" while keeping the cyberpunk vibe.
+    // Keep the glow static so buttons do not add continuous decorative motion.
     val glowAlpha = 0.6f  // Static glow - no animation
 
     // Style-dependent properties - DECISIVE hierarchy per ChatGPT feedback

@@ -26,12 +26,15 @@ import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -46,7 +49,9 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -388,6 +393,7 @@ private fun TemplateCard(
 ) {
     val isDark = LocalDarkTheme.current
     val haptic = rememberHapticFeedback()
+    var actionsExpanded by remember { mutableStateOf(false) }
 
     Card(
         onClick = onSelect,
@@ -453,57 +459,75 @@ private fun TemplateCard(
                     }
                 }
 
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(0.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+                Box {
                     IconButton(
                         onClick = {
                             haptic()
-                            onEdit()
+                            actionsExpanded = true
                         },
                         modifier = Modifier.size(48.dp)
                     ) {
                         Icon(
-                            imageVector = if (isDefault) Icons.Default.ContentCopy else Icons.Default.Edit,
-                            contentDescription = if (isDefault) {
-                                stringResource(R.string.content_desc_duplicate_to_edit)
-                            } else {
-                                stringResource(R.string.content_desc_edit_template)
-                            },
+                            imageVector = Icons.Default.MoreVert,
+                            contentDescription = stringResource(R.string.content_desc_template_actions),
                             tint = MaterialTheme.colorScheme.secondary,
                             modifier = Modifier.size(18.dp)
                         )
                     }
 
-                    IconButton(
-                        onClick = {
-                            haptic()
-                            onDuplicate()
-                        },
-                        modifier = Modifier.size(48.dp)
+                    DropdownMenu(
+                        expanded = actionsExpanded,
+                        onDismissRequest = { actionsExpanded = false }
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.ContentCopy,
-                            contentDescription = stringResource(R.string.content_desc_duplicate_template),
-                            tint = MaterialTheme.colorScheme.tertiary,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-
-                    if (!isDefault) {
-                        IconButton(
-                            onClick = {
-                                haptic()
-                                onDelete()
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    stringResource(
+                                        if (isDefault) R.string.action_customize_copy
+                                        else R.string.content_desc_edit_template
+                                    )
+                                )
                             },
-                            modifier = Modifier.size(48.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Delete,
-                                contentDescription = stringResource(R.string.content_desc_delete_template),
-                                tint = MaterialTheme.colorScheme.error.copy(alpha = 0.8f),
-                                modifier = Modifier.size(18.dp)
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = if (isDefault) Icons.Default.ContentCopy else Icons.Default.Edit,
+                                    contentDescription = null
+                                )
+                            },
+                            onClick = {
+                                actionsExpanded = false
+                                onEdit()
+                            }
+                        )
+
+                        if (!isDefault) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.content_desc_duplicate_template)) },
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = Icons.Default.ContentCopy,
+                                        contentDescription = null
+                                    )
+                                },
+                                onClick = {
+                                    actionsExpanded = false
+                                    onDuplicate()
+                                }
+                            )
+
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.content_desc_delete_template)) },
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = Icons.Default.Delete,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.error
+                                    )
+                                },
+                                onClick = {
+                                    actionsExpanded = false
+                                    onDelete()
+                                }
                             )
                         }
                     }
