@@ -402,26 +402,20 @@ private suspend fun saveQrCodeToGallery(
     wifiString: String,
     ssid: String
 ) {
-    var bitmap: Bitmap? = null
     try {
-        bitmap = withContext(Dispatchers.IO) {
+        withContext(Dispatchers.IO) {
             val bmp = generateHighResQrBitmap(wifiString)
-            val filename = "WiFi_QR_${sanitizeFileName(ssid)}_${System.currentTimeMillis()}.png"
-            var writeSucceeded = false
             try {
+                val filename = "WiFi_QR_${sanitizeFileName(ssid)}_${System.currentTimeMillis()}.png"
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                     writeQrBitmapToMediaStore(context, bmp, filename)
                 } else {
                     writeQrBitmapToLegacyStorage(bmp, filename)
                 }
-                writeSucceeded = true
-                bmp
             } finally {
-                // If the write didn't finish (exception or cancellation), recycle here since
-                // `bitmap` outside this block never gets assigned in that case.
-                if (!writeSucceeded) {
-                    bmp.recycle()
-                }
+                // Unconditional: covers success, thrown exceptions, and cancellation (even if it
+                // happens while the result is being delivered back from withContext).
+                bmp.recycle()
             }
         }
         Toast.makeText(context, R.string.toast_qr_saved, Toast.LENGTH_SHORT).show()
@@ -431,8 +425,6 @@ private suspend fun saveQrCodeToGallery(
     } catch (e: IOException) {
         Log.e("QrCodeBottomSheet", "Failed to save QR image", e)
         Toast.makeText(context, context.getString(R.string.toast_failed_save, e.message), Toast.LENGTH_SHORT).show()
-    } finally {
-        bitmap?.recycle()
     }
 }
 
@@ -466,7 +458,17 @@ private fun writeQrBitmapToLegacyStorage(bmp: Bitmap, filename: String) {
         throw IOException("Failed to create pictures directory")
     }
     val file = File(qwelcomeDir, filename)
-    writeBitmapPngToStream(FileOutputStream(file), bmp)
+    var writeCompleted = false
+    try {
+        writeBitmapPngToStream(FileOutputStream(file), bmp)
+        writeCompleted = true
+    } finally {
+        // Covers thrown exceptions AND coroutine cancellation, matching the MediaStore path,
+        // so no orphaned/incomplete file lingers on disk.
+        if (!writeCompleted) {
+            file.delete()
+        }
+    }
 }
 
 /** Encodes [bmp] as PNG into [outputStream], closing it and throwing if either step fails. */
