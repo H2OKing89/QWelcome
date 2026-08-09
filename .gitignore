@@ -1,5 +1,6 @@
 # Android Studio
 .gradle/
+/.gradle_backup/
 .idea/
 captures/
 .DS_Store

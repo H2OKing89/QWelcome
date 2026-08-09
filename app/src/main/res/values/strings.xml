@@ -181,6 +181,7 @@
     <string name="label_customer_phone">Customer Phone</string>
     <string name="label_wifi_ssid">WiFi SSID</string>
     <string name="label_wifi_password">WiFi Password</string>
+    <string name="label_advanced_wifi_options">Advanced WiFi Options</string>
     <string name="label_wifi_security">WiFi Security</string>
     <string name="security_wpa2">WPA2-Personal</string>
     <string name="security_wpa3_sae">WPA3-Personal (SAE)</string>
@@ -205,6 +206,7 @@
     <string name="content_desc_send_sms">Send SMS</string>
     <string name="content_desc_copy_clipboard">Copy to clipboard</string>
     <string name="content_desc_show_qr">Show QR Code</string>
+    <string name="content_desc_warning">Warning</string>
 
     <!-- Open Network Support -->
     <string name="label_open_network">Open Network (No Password)</string>

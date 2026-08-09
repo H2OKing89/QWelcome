@@ -136,7 +136,7 @@ fun QrCodeBottomSheet(
             title = { Text(stringResource(R.string.title_save_qr_warning)) },
             text = { Text(stringResource(R.string.text_save_qr_warning)) },
             confirmButton = {
-                TextButton(
+                NeonButton(
                     onClick = {
                         showSaveWarning = false
                         if (
@@ -150,13 +150,17 @@ fun QrCodeBottomSheet(
                         } else {
                             saveQrCode()
                         }
-                    }
+                    },
+                    style = NeonButtonStyle.PRIMARY
                 ) {
                     Text(stringResource(R.string.action_save_anyway))
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showSaveWarning = false }) {
+                NeonButton(
+                    onClick = { showSaveWarning = false },
+                    style = NeonButtonStyle.TERTIARY
+                ) {
                     Text(stringResource(R.string.action_cancel))
                 }
             }

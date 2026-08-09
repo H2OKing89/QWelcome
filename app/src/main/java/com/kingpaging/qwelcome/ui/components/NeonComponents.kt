@@ -49,7 +49,6 @@ private val ButtonShape = RoundedCornerShape(8.dp)
 
 // Cyberpunk light mode constants
 private const val NEON_EDGE_ALPHA = 0.35f
-private const val LIGHT_BORDER_ALPHA = 0.25f  // Raised from 0.15 for better visibility on all displays
 
 /**
  * Button emphasis levels for proper visual hierarchy.
@@ -106,7 +105,7 @@ fun NeonPanel(
                     // Light mode: thin visible border
                     Modifier.border(
                         0.5.dp,
-                        colorScheme.outlineVariant.copy(alpha = LIGHT_BORDER_ALPHA),
+                        colorScheme.outline,
                         PanelShape
                     )
                 }
@@ -195,7 +194,7 @@ fun NeonWarningBanner(
         ) {
             Icon(
                 imageVector = Icons.Default.Warning,
-                contentDescription = null,
+                contentDescription = stringResource(R.string.content_desc_warning),
                 tint = cyberColors.onWarning
             )
             Text(
@@ -236,6 +235,7 @@ fun NeonOutlinedField(
     onValueChange: (String) -> Unit,
     label: @Composable (() -> Unit),
     modifier: Modifier = Modifier,
+    accentColor: Color = MaterialTheme.colorScheme.primary,
     enabled: Boolean = true,
     singleLine: Boolean = true,
     isError: Boolean = false,
@@ -271,10 +271,10 @@ fun NeonOutlinedField(
         modifier = modifier.fillMaxWidth(),
         colors = OutlinedTextFieldDefaults.colors(
             // Focused states - primary color for "terminal" feel
-            focusedBorderColor = colorScheme.primary,
-            focusedLabelColor = colorScheme.primary,
+            focusedBorderColor = accentColor,
+            focusedLabelColor = accentColor,
             focusedTextColor = colorScheme.onSurface,
-            cursorColor = colorScheme.primary,
+            cursorColor = accentColor,
             // Unfocused states - cleaner in light mode
             unfocusedBorderColor = if (isDark) {
                 Color.White.copy(alpha = 0.18f)

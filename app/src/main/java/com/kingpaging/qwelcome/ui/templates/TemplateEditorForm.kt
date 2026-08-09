@@ -20,8 +20,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.InputChip
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Text
@@ -46,23 +44,17 @@ internal fun TemplateNameField(
     onNameChange: (String) -> Unit,
     onNext: () -> Unit
 ) {
-    OutlinedTextField(
+    NeonOutlinedField(
         value = name,
         onValueChange = onNameChange,
         label = { Text(stringResource(R.string.label_name)) },
+        accentColor = MaterialTheme.colorScheme.secondary,
         isError = nameError != null,
         supportingText = nameError?.let { { Text(stringResource(it)) } },
         singleLine = true,
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
         keyboardActions = KeyboardActions(onNext = { onNext() }),
-        modifier = Modifier.fillMaxWidth(),
-        colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = MaterialTheme.colorScheme.secondary,
-            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-            cursorColor = MaterialTheme.colorScheme.secondary,
-            focusedLabelColor = MaterialTheme.colorScheme.secondary,
-            unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        modifier = Modifier.fillMaxWidth()
     )
 }
 

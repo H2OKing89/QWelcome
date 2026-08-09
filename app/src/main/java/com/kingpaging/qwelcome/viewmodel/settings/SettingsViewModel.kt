@@ -75,14 +75,11 @@ class SettingsViewModel(
     private val _settingsEvents = MutableSharedFlow<SettingsEvent>(replay = 0, extraBufferCapacity = 1)
     val settingsEvents: SharedFlow<SettingsEvent> = _settingsEvents.asSharedFlow()
 
-    private val _profileSaved = MutableStateFlow(false)
-    val profileSaved: StateFlow<Boolean> = _profileSaved.asStateFlow()
-
     fun save(profile: TechProfile) {
         viewModelScope.launch {
             try {
                 store.saveTechProfile(profile)
-                _profileSaved.value = true
+                _settingsEvents.emit(SettingsEvent.ProfileSaved)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -94,10 +91,6 @@ class SettingsViewModel(
                 )
             }
         }
-    }
-
-    fun consumeProfileSaved() {
-        _profileSaved.value = false
     }
 
     fun setCrashReportingEnabled(enabled: Boolean) {
@@ -458,6 +451,9 @@ sealed class UpdateState {
 
 /** One-shot events emitted by [SettingsViewModel]. */
 sealed class SettingsEvent {
+    /** Successful profile save; consumed only by an active collector. */
+    data object ProfileSaved : SettingsEvent()
+
     /** Informational toast without sound. */
     data class ShowToast(val message: String) : SettingsEvent()
 

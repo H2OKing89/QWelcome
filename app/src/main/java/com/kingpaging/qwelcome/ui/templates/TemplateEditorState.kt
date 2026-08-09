@@ -33,6 +33,7 @@ import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.data.NEW_TEMPLATE_ID
 import com.kingpaging.qwelcome.data.Template
 import com.kingpaging.qwelcome.ui.components.CyberpunkBackdrop
+import com.kingpaging.qwelcome.ui.components.NeonDiscardDialog
 import com.kingpaging.qwelcome.util.rememberHapticFeedback
 import com.kingpaging.qwelcome.viewmodel.templates.TemplateEditorUiState
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -244,7 +245,8 @@ internal fun TemplateEditorContent(
     }
 
     if (editorUiState.showDiscardDialog) {
-        DiscardChangesDialog(
+        NeonDiscardDialog(
+            message = stringResource(R.string.text_template_unsaved_changes_warning),
             onDiscard = {
                 onToggleDiscardDialog(false)
                 onCancelEditing()

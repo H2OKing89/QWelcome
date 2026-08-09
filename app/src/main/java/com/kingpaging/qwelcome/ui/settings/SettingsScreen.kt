@@ -62,6 +62,7 @@ import com.kingpaging.qwelcome.di.LocalSoundPlayer
 import com.kingpaging.qwelcome.ui.components.CyberpunkBackdrop
 import com.kingpaging.qwelcome.ui.components.NeonButton
 import com.kingpaging.qwelcome.ui.components.NeonButtonStyle
+import com.kingpaging.qwelcome.ui.components.NeonDiscardDialog
 import com.kingpaging.qwelcome.ui.components.NeonMagentaButton
 import com.kingpaging.qwelcome.ui.components.NeonOutlinedField
 import com.kingpaging.qwelcome.ui.components.NeonPanel
@@ -120,22 +121,12 @@ fun SettingsScreen(
 
     val launchIntentFailedMessage = stringResource(R.string.error_update_install_unavailable)
 
-    LaunchedEffect(lifecycleOwner, vm.profileSaved) {
-        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
-            vm.profileSaved.collect { saved ->
-                if (saved) {
-                    vm.consumeProfileSaved()
-                    onBack()
-                }
-            }
-        }
-    }
-
     // Collect one-shot settings events with lifecycle awareness
     LaunchedEffect(lifecycleOwner, vm.settingsEvents) {
         lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
             vm.settingsEvents.collect { event ->
                 when (event) {
+                    SettingsEvent.ProfileSaved -> onBack()
                     is SettingsEvent.ShowToast -> {
                         Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
                     }
@@ -161,24 +152,13 @@ fun SettingsScreen(
 
     // Discard changes confirmation dialog
     if (showDiscardDialog) {
-        AlertDialog(
-            onDismissRequest = { showDiscardDialog = false },
-            title = { Text(stringResource(R.string.dialog_discard_changes_title)) },
-            text = { Text(stringResource(R.string.dialog_discard_changes_message)) },
-            confirmButton = {
-                TextButton(onClick = {
-                    haptic()
-                    showDiscardDialog = false
-                    onBack()
-                }) {
-                    Text(stringResource(R.string.action_discard), color = MaterialTheme.colorScheme.error)
-                }
+        NeonDiscardDialog(
+            message = stringResource(R.string.dialog_discard_changes_message),
+            onDiscard = {
+                showDiscardDialog = false
+                onBack()
             },
-            dismissButton = {
-                TextButton(onClick = { haptic(); showDiscardDialog = false }) {
-                    Text(stringResource(R.string.action_keep_editing))
-                }
-            }
+            onKeepEditing = { showDiscardDialog = false }
         )
     }
 
@@ -196,18 +176,18 @@ fun SettingsScreen(
                 )
             },
             confirmButton = {
-                TextButton(onClick = {
-                    haptic()
-                    vm.confirmDownloadFromDialog()
-                }) {
+                NeonButton(
+                    onClick = { vm.confirmDownloadFromDialog() },
+                    style = NeonButtonStyle.PRIMARY
+                ) {
                     Text(stringResource(R.string.action_download_update))
                 }
             },
             dismissButton = {
-                TextButton(onClick = {
-                    haptic()
-                    vm.dismissDownloadConfirmation()
-                }) {
+                NeonButton(
+                    onClick = { vm.dismissDownloadConfirmation() },
+                    style = NeonButtonStyle.TERTIARY
+                ) {
                     Text(stringResource(R.string.action_cancel))
                 }
             }

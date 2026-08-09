@@ -24,7 +24,6 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -112,16 +111,15 @@ class SettingsViewModelTest {
     }
 
     @Test
-    fun `profile saved completion survives stopped collection and is consumed once`() = runTest {
-        vm.save(testProfile)
-        advanceUntilIdle()
+    fun `save emits one profile saved event without replay`() = runTest {
+        vm.settingsEvents.test {
+            vm.save(testProfile)
+            assertEquals(SettingsEvent.ProfileSaved, awaitItem())
+            expectNoEvents()
+        }
 
-        vm.profileSaved.test {
-            assertTrue(awaitItem())
-
-            vm.consumeProfileSaved()
-
-            assertFalse(awaitItem())
+        vm.settingsEvents.test {
+            expectNoEvents()
         }
     }
 
