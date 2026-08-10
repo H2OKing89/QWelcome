@@ -226,7 +226,7 @@ fun TemplateListScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .weight(1f),
-                        contentPadding = PaddingValues(top = 8.dp),
+                        contentPadding = PaddingValues(top = 8.dp, bottom = 96.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         if (uiState.showTemplateLimitWarning && !uiState.warningDismissed) {
@@ -348,7 +348,10 @@ private fun CollectTemplateListEffects(
             }
             launch {
                 viewModel.eventsFor(TemplateListEventOwner.LIBRARY).collectLatest { event ->
-                    val snackbar = event.toSnackbar(context, soundPlayer) ?: return@collectLatest
+                    val snackbar = event.toSnackbar(context) ?: return@collectLatest
+                    if (event.shouldBeep()) {
+                        soundPlayer.playBeep()
+                    }
                     val result = snackbarHostState.showSnackbar(
                         message = snackbar.message,
                         actionLabel = snackbar.actionLabel,
@@ -370,13 +373,12 @@ private data class TemplateSnackbar(
 )
 
 private fun TemplateListEvent.toSnackbar(
-    context: Context,
-    soundPlayer: SoundPlayer
+    context: Context
 ): TemplateSnackbar? = when (this) {
     is TemplateListEvent.Error -> TemplateSnackbar(
         message = checkNotNull(toTemplateErrorMessage(context)),
         duration = SnackbarDuration.Long
-    ).also { soundPlayer.playBeep() }
+    )
     is TemplateListEvent.TemplateDeleted -> TemplateSnackbar(
         context.getString(R.string.toast_template_deleted, name)
     )
@@ -392,13 +394,16 @@ private fun TemplateListEvent.toSnackbar(
         message = checkNotNull(toTemplateErrorMessage(context)),
         actionLabel = context.getString(R.string.action_fix),
         duration = SnackbarDuration.Long
-    ).also { soundPlayer.playBeep() }
+    )
     is TemplateListEvent.TemplateRenamed -> TemplateSnackbar(
         context.getString(R.string.toast_template_renamed, template.name)
     )
     is TemplateListEvent.TemplateCreated,
     is TemplateListEvent.TemplateUpdated -> null
 }
+
+private fun TemplateListEvent.shouldBeep(): Boolean =
+    this is TemplateListEvent.Error || this is TemplateListEvent.TemplateSelectionBlocked
 
 private fun TemplateListEvent.performSnackbarAction(viewModel: TemplateListViewModel) {
     when (this) {

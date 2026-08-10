@@ -85,7 +85,9 @@ internal fun TemplateCard(
     val colors = MaterialTheme.colorScheme
     val useDescription = stringResource(R.string.content_desc_use_named_template, template.name)
     val previewDescription = stringResource(R.string.content_desc_preview_named_template, template.name)
-    val isValid = Template.hasRequiredPlaceholders(template.content)
+    val isValid = remember(template.content) {
+        Template.hasRequiredPlaceholders(template.content)
+    }
     val preview = remember(template.content) { compactTemplatePreview(template.content) }
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()

@@ -50,9 +50,15 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.DialogProperties
 import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.data.Template
 import com.kingpaging.qwelcome.viewmodel.templates.MAX_TEMPLATE_NAME_LENGTH
+
+private fun String.takeCodePoints(maxCodePoints: Int): String {
+    if (codePointCount(0, length) <= maxCodePoints) return this
+    return substring(0, offsetByCodePoints(0, maxCodePoints))
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -202,6 +208,10 @@ internal fun RenameTemplateDialog(
     var name by rememberSaveable(template.id) { mutableStateOf(template.name) }
     val trimmedName = name.trim()
     val canRename = trimmedName.isNotEmpty() && trimmedName != template.name
+    val nameCodePointCount = name.codePointCount(0, name.length)
+    val shouldShowSupportingText = name.isBlank() ||
+        trimmedName == template.name ||
+        nameCodePointCount >= MAX_TEMPLATE_NAME_LENGTH
     val nameDescription = stringResource(R.string.content_desc_rename_template_name)
     val submit = {
         if (canRename) {
@@ -212,16 +222,23 @@ internal fun RenameTemplateDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         modifier = Modifier.imePadding(),
+        properties = DialogProperties(decorFitsSystemWindows = false),
         title = { Text(stringResource(R.string.title_rename_template)) },
         text = {
             OutlinedTextField(
                 value = name,
-                onValueChange = { name = it.take(MAX_TEMPLATE_NAME_LENGTH) },
+                onValueChange = { name = it.takeCodePoints(MAX_TEMPLATE_NAME_LENGTH) },
                 label = { Text(stringResource(R.string.label_name)) },
                 singleLine = true,
                 isError = name.isBlank(),
-                supportingText = if (name.isBlank()) {
-                    { Text(stringResource(R.string.error_name_required)) }
+                supportingText = if (shouldShowSupportingText) {
+                    {
+                        RenameSupportingText(
+                            nameIsBlank = name.isBlank(),
+                            nameIsUnchanged = trimmedName == template.name,
+                            nameCodePointCount = nameCodePointCount
+                        )
+                    }
                 } else {
                     null
                 },
@@ -243,6 +260,31 @@ internal fun RenameTemplateDialog(
             }
         }
     )
+}
+
+@Composable
+private fun RenameSupportingText(
+    nameIsBlank: Boolean,
+    nameIsUnchanged: Boolean,
+    nameCodePointCount: Int
+) {
+    when {
+        nameIsBlank -> Text(stringResource(R.string.error_name_required))
+        else -> Column {
+            if (nameIsUnchanged) {
+                Text(stringResource(R.string.hint_name_unchanged))
+            }
+            if (nameCodePointCount >= MAX_TEMPLATE_NAME_LENGTH) {
+                Text(
+                    stringResource(
+                        R.string.text_template_name_character_count,
+                        nameCodePointCount,
+                        MAX_TEMPLATE_NAME_LENGTH
+                    )
+                )
+            }
+        }
+    }
 }
 
 @Composable

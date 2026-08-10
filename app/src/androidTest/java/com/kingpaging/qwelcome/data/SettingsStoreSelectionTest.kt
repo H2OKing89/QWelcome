@@ -52,6 +52,26 @@ class SettingsStoreSelectionTest {
     }
 
     @Test
+    fun reselectingActiveTemplate_preservesUsageTimestamp() = runBlocking {
+        store.setActiveTemplate(firstTemplate.id)
+        val usageTimestamp = store.templateLastUsedFlow.first()[firstTemplate.id]
+
+        val result = store.setActiveTemplate(firstTemplate.id)
+
+        assertTrue(result is TemplateSelectionResult.AlreadyActive)
+        assertEquals(usageTimestamp, store.templateLastUsedFlow.first()[firstTemplate.id])
+    }
+
+    @Test
+    fun unknownSelection_doesNotMutateDefaultStateOrUsageHistory() = runBlocking {
+        val result = store.setActiveTemplate("missing-template")
+
+        assertTrue(result is TemplateSelectionResult.NotFound)
+        assertEquals(DEFAULT_TEMPLATE_ID, store.activeTemplateIdFlow.first())
+        assertTrue(store.templateLastUsedFlow.first().isEmpty())
+    }
+
+    @Test
     fun invalidSelection_doesNotMutateActiveIdOrUsageHistory() = runBlocking {
         val invalidTemplate = Template(
             id = "invalid",
@@ -75,6 +95,7 @@ class SettingsStoreSelectionTest {
         val change = (result as TemplateSelectionResult.Selected).change
 
         assertTrue(store.undoTemplateSelection(change))
+        assertFalse(store.undoTemplateSelection(change))
         assertEquals(secondTemplate.id, store.activeTemplateIdFlow.first())
         assertEquals(100L, store.templateLastUsedFlow.first()[firstTemplate.id])
     }

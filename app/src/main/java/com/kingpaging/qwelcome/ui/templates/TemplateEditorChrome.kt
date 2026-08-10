@@ -24,6 +24,12 @@ internal fun TemplateEditorTopBar(
     onBack: () -> Unit,
     onSave: () -> Unit
 ) {
+    val saveIconTint = if (canSave) {
+        MaterialTheme.colorScheme.secondary
+    } else {
+        MaterialTheme.colorScheme.secondary.copy(alpha = 0.38f)
+    }
+
     TopAppBar(
         title = {
             Text(
@@ -53,7 +59,8 @@ internal fun TemplateEditorTopBar(
                     imageVector = Icons.Default.Check,
                     contentDescription = stringResource(
                         if (isNew) R.string.action_create else R.string.action_save
-                    )
+                    ),
+                    tint = saveIconTint
                 )
             }
         },

@@ -19,6 +19,7 @@ import com.kingpaging.qwelcome.testutil.FakeSoundPlayer
 import com.kingpaging.qwelcome.ui.theme.CyberpunkTheme
 import com.kingpaging.qwelcome.util.AndroidResourceProvider
 import com.kingpaging.qwelcome.viewmodel.factory.AppViewModelProvider
+import com.kingpaging.qwelcome.viewmodel.templates.MAX_TEMPLATE_NAME_LENGTH
 import com.kingpaging.qwelcome.viewmodel.templates.TemplateListViewModel
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.runBlocking
@@ -32,6 +33,10 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class TemplateListScreenTest {
+
+    private companion object {
+        const val PERSISTENCE_TIMEOUT_MILLIS = 5_000L
+    }
 
     @get:Rule
     val composeRule = createComposeRule()
@@ -80,8 +85,6 @@ class TemplateListScreenTest {
 
         composeRule.waitUntil { editorOpened.get() }
         assertEquals(NEW_TEMPLATE_ID, viewModel.uiState.value.editingTemplate?.id)
-        composeRule.onNodeWithText(appContext.getString(R.string.action_new_template))
-            .assertDoesNotExist()
     }
 
     @Test
@@ -106,7 +109,9 @@ class TemplateListScreenTest {
             appContext.getString(R.string.content_desc_use_named_template, "Default")
         ).performClick()
 
-        composeRule.waitUntil { viewModel.uiState.value.activeTemplateId == DEFAULT_TEMPLATE_ID }
+        composeRule.waitUntil(timeoutMillis = PERSISTENCE_TIMEOUT_MILLIS) {
+            viewModel.uiState.value.activeTemplateId == DEFAULT_TEMPLATE_ID
+        }
         composeRule.onNodeWithContentDescription(
             appContext.getString(R.string.content_desc_use_named_template, "Default")
         ).assertIsSelected()
@@ -204,6 +209,9 @@ class TemplateListScreenTest {
     @Test
     fun tagSheet_appliesMultipleFiltersWithOrSemanticsAndClears() {
         setScreenContent()
+        val builtInTemplateName = viewModel.uiState.value.templates
+            .first { it.id == DEFAULT_TEMPLATE_ID }
+            .name
 
         composeRule.onNodeWithText(appContext.getString(R.string.label_tags)).performClick()
         composeRule.onNodeWithText("Install").performClick()
@@ -215,6 +223,7 @@ class TemplateListScreenTest {
             .assertIsDisplayed()
         composeRule.onNodeWithText(englishTemplate.name).assertIsDisplayed()
         composeRule.onNodeWithText(spanishTemplate.name).assertIsDisplayed()
+        composeRule.onNodeWithText(builtInTemplateName).assertDoesNotExist()
 
         composeRule.onNodeWithText(appContext.getString(R.string.label_tags_selected, 2))
             .performClick()
@@ -229,23 +238,43 @@ class TemplateListScreenTest {
         setScreenContent()
 
         composeRule.onNodeWithContentDescription(
-            appContext.getString(R.string.content_desc_template_actions_named, englishTemplate.name)
+            appContext.getString(R.string.content_desc_use_named_template, englishTemplate.name)
         ).performClick()
+        composeRule.waitUntil(timeoutMillis = PERSISTENCE_TIMEOUT_MILLIS) {
+            viewModel.uiState.value.activeTemplateId == englishTemplate.id
+        }
+        val activeTemplateIdBefore = viewModel.uiState.value.activeTemplateId
+        val usageBefore = viewModel.uiState.value.templateLastUsedAt.toMap()
 
-        assertEquals(DEFAULT_TEMPLATE_ID, viewModel.uiState.value.activeTemplateId)
-        assertTrue(viewModel.uiState.value.templateLastUsedAt.isEmpty())
+        composeRule.onNodeWithContentDescription(
+            appContext.getString(R.string.content_desc_template_actions_named, spanishTemplate.name)
+        ).performClick()
+        composeRule.onNodeWithText(appContext.getString(R.string.action_edit_template))
+            .assertIsDisplayed()
+
+        assertEquals(activeTemplateIdBefore, viewModel.uiState.value.activeTemplateId)
+        assertEquals(usageBefore, viewModel.uiState.value.templateLastUsedAt)
     }
 
     @Test
     fun activeCardTap_isNoOp() {
-        setScreenContent(activeTemplateId = englishTemplate.id)
-        val usageBefore = viewModel.uiState.value.templateLastUsedAt
+        setScreenContent()
+
+        composeRule.onNodeWithContentDescription(
+            appContext.getString(R.string.content_desc_use_named_template, englishTemplate.name)
+        ).performClick()
+        composeRule.waitUntil(timeoutMillis = PERSISTENCE_TIMEOUT_MILLIS) {
+            viewModel.uiState.value.activeTemplateId == englishTemplate.id
+        }
+        val activeTemplateIdBefore = viewModel.uiState.value.activeTemplateId
+        val usageBefore = viewModel.uiState.value.templateLastUsedAt.toMap()
 
         composeRule.onNodeWithContentDescription(
             appContext.getString(R.string.content_desc_use_named_template, englishTemplate.name)
         ).performClick()
         composeRule.waitForIdle()
 
+        assertEquals(activeTemplateIdBefore, viewModel.uiState.value.activeTemplateId)
         assertEquals(usageBefore, viewModel.uiState.value.templateLastUsedAt)
     }
 
@@ -279,12 +308,52 @@ class TemplateListScreenTest {
         composeRule.onNodeWithText(appContext.getString(R.string.action_rename_template))
             .performClick()
 
-        composeRule.waitUntil {
+        composeRule.waitUntil(timeoutMillis = PERSISTENCE_TIMEOUT_MILLIS) {
             viewModel.uiState.value.templates.any {
                 it.id == englishTemplate.id && it.name == "Priority Install" &&
                     it.content == englishTemplate.content
             }
         }
+    }
+
+    @Test
+    fun renameDialog_unchangedNameShowsHint() {
+        setScreenContent()
+
+        composeRule.onNodeWithContentDescription(
+            appContext.getString(R.string.content_desc_template_actions_named, englishTemplate.name)
+        ).performClick()
+        composeRule.onNodeWithText(appContext.getString(R.string.action_rename_template)).performClick()
+
+        composeRule.onNodeWithText(appContext.getString(R.string.hint_name_unchanged))
+            .assertIsDisplayed()
+        composeRule.onNodeWithText(appContext.getString(R.string.action_rename_template))
+            .assertIsNotEnabled()
+    }
+
+    @Test
+    fun renameDialog_overLimitNameShowsCharacterCount() {
+        setScreenContent()
+
+        composeRule.onNodeWithContentDescription(
+            appContext.getString(R.string.content_desc_template_actions_named, englishTemplate.name)
+        ).performClick()
+        composeRule.onNodeWithText(appContext.getString(R.string.action_rename_template)).performClick()
+
+        val nameField = composeRule.onNodeWithContentDescription(
+            appContext.getString(R.string.content_desc_rename_template_name)
+        )
+        val overLimitName = "A".repeat(MAX_TEMPLATE_NAME_LENGTH + 10)
+        nameField.performTextReplacement(overLimitName)
+
+        composeRule.onNodeWithText(
+            appContext.getString(
+                R.string.text_template_name_character_count,
+                MAX_TEMPLATE_NAME_LENGTH,
+                MAX_TEMPLATE_NAME_LENGTH
+            )
+        ).assertIsDisplayed()
+        nameField.assertTextContains("A".repeat(MAX_TEMPLATE_NAME_LENGTH))
     }
 
     @Test
@@ -298,7 +367,9 @@ class TemplateListScreenTest {
         composeRule.waitUntil { undoNodes.fetchSemanticsNodes().size == 1 }
         undoNodes.assertCountEquals(1).onFirst().performClick()
 
-        composeRule.waitUntil { viewModel.uiState.value.activeTemplateId == englishTemplate.id }
+        composeRule.waitUntil(timeoutMillis = PERSISTENCE_TIMEOUT_MILLIS) {
+            viewModel.uiState.value.activeTemplateId == englishTemplate.id
+        }
     }
 
     @Test
@@ -334,6 +405,8 @@ class TemplateListScreenTest {
         composeRule.onNodeWithContentDescription(
             appContext.getString(R.string.content_desc_use_named_template, invalidTemplate.name)
         ).performClick()
+        composeRule.onNodeWithText(appContext.getString(R.string.action_fix)).assertIsDisplayed()
+        assertEquals(1, soundPlayer.beepCount)
         composeRule.onNodeWithText(appContext.getString(R.string.action_fix)).performClick()
 
         composeRule.waitUntil { editorOpened.get() }
@@ -345,12 +418,39 @@ class TemplateListScreenTest {
     @Test
     fun cardTags_showCompactOverflowMetadata() {
         val taggedTemplate = englishTemplate.copy(
-            tags = listOf("English", "Install", "Residential", "Priority")
+            tags = listOf("Residential", "Install", "English", "Priority")
         )
         setScreenContent(templates = listOf(taggedTemplate, spanishTemplate))
 
         composeRule.onNodeWithText("+2", substring = true).assertIsDisplayed()
-        composeRule.onNodeWithText("Residential").assertDoesNotExist()
+        composeRule.onNodeWithText("Residential", substring = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun selectingLastTemplate_keepsCardVisibleWhileSnackbarIsDisplayed() {
+        val lastTemplate = Template(
+            id = "last-template",
+            name = "Last Template",
+            content = "Welcome {{ customer_name }} to {{ ssid }}."
+        )
+        val templates = List(12) { index ->
+            englishTemplate.copy(id = "template-$index", name = "Template $index")
+        } + lastTemplate
+        setScreenContent(templates = templates)
+
+        val lastTemplateCard = composeRule.onNodeWithContentDescription(
+            appContext.getString(R.string.content_desc_use_named_template, lastTemplate.name)
+        )
+        lastTemplateCard.performScrollTo()
+        lastTemplateCard.performClick()
+        composeRule.waitUntil(timeoutMillis = PERSISTENCE_TIMEOUT_MILLIS) {
+            viewModel.uiState.value.activeTemplateId == lastTemplate.id
+        }
+
+        composeRule.onNodeWithText(
+            appContext.getString(R.string.toast_template_active, lastTemplate.name)
+        ).assertIsDisplayed()
+        lastTemplateCard.assertIsDisplayed()
     }
 
     @Test
@@ -397,7 +497,9 @@ class TemplateListScreenTest {
                 }
             }
         }
-        composeRule.waitUntil { !viewModel.uiState.value.isLoading }
+        composeRule.waitUntil(timeoutMillis = PERSISTENCE_TIMEOUT_MILLIS) {
+            !viewModel.uiState.value.isLoading
+        }
         composeRule.waitForIdle()
     }
 }

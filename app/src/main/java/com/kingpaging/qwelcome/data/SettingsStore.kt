@@ -179,7 +179,6 @@ class SettingsStore(
 
     suspend fun setActiveTemplate(templateId: String): TemplateSelectionResult {
         var selectionResult: TemplateSelectionResult? = null
-        var selectedAt: Long? = null
         dataStore.updateData { preferences ->
             val template = preferences.findTemplate(templateId)
             val missingPlaceholders = template?.let {
@@ -198,13 +197,13 @@ class SettingsStore(
                 }
                 else -> {
                     val previousTimestamp = preferences.templateLastUsedEpochMillisMap[templateId]
-                    selectedAt = nextTemplateUseTimestamp(
+                    val selectedAt = nextTemplateUseTimestamp(
                         now = currentTimeMillis(),
                         existingTimestamps = preferences.templateLastUsedEpochMillisMap.values
                     )
                     val change = TemplateSelectionChange(
                         selectedTemplateId = templateId,
-                        selectedLastUsedAt = checkNotNull(selectedAt),
+                        selectedLastUsedAt = selectedAt,
                         previousActiveTemplateId = preferences.activeTemplateId.ifEmpty {
                             DEFAULT_TEMPLATE_ID
                         },
@@ -218,15 +217,19 @@ class SettingsStore(
                 ?: return@updateData preferences
             preferences.toBuilder()
                 .setActiveTemplateId(selected.template.id)
-                .putTemplateLastUsedEpochMillis(selected.template.id, checkNotNull(selectedAt))
+                .putTemplateLastUsedEpochMillis(
+                    selected.template.id,
+                    selected.change.selectedLastUsedAt
+                )
                 .build()
         }
         return checkNotNull(selectionResult)
     }
 
     suspend fun undoTemplateSelection(change: TemplateSelectionChange): Boolean {
-        var undone = false
-        dataStore.updateData { preferences ->
+        var restoredPreferences: UserPreferences? = null
+        val updatedPreferences = dataStore.updateData { preferences ->
+            restoredPreferences = null
             val activeTemplateId = preferences.activeTemplateId.ifEmpty { DEFAULT_TEMPLATE_ID }
             val selectedLastUsedAt = preferences.templateLastUsedEpochMillisMap[change.selectedTemplateId]
             if (activeTemplateId != change.selectedTemplateId ||
@@ -235,7 +238,6 @@ class SettingsStore(
                 return@updateData preferences
             }
 
-            undone = true
             val restoredActiveTemplateId = preferences.resolveValidTemplateId(
                 change.previousActiveTemplateId
             )
@@ -250,8 +252,9 @@ class SettingsStore(
                     }
                 }
                 .build()
+                .also { restoredPreferences = it }
         }
-        return undone
+        return updatedPreferences == restoredPreferences
     }
 
     suspend fun restoreActiveTemplate(templateId: String): String {

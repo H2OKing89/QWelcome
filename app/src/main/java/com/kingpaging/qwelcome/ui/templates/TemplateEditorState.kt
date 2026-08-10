@@ -16,6 +16,8 @@ import androidx.compose.foundation.text.input.insert
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SheetState
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
@@ -183,9 +185,11 @@ private fun TemplateTagsSheetHost(
     addTag: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
-    if (!visible) return
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    if (!visible && !sheetState.isVisible) return
 
     TemplateTagsSheet(
+        sheetState = sheetState,
         tags = editorUiState.tags,
         newTagInput = editorUiState.newTagInput,
         availableSuggestions = availableSuggestions,
@@ -240,8 +244,8 @@ internal fun TemplateEditorContent(
         editorUiState.contentText != originalContent ||
         editorUiState.tags != originalTags ||
         editorUiState.newTagInput.isNotBlank()
-    val canSave = editorUiState.name.isNotBlank() && editorUiState.contentError == null
-    val saveEnabled = canSave && isDirty
+    val isValid = editorUiState.name.isNotBlank() && editorUiState.contentError == null
+    val saveEnabled = isValid && isDirty
     val suggestedTags = listOf(
         stringResource(R.string.tag_residential),
         stringResource(R.string.tag_business),
@@ -262,7 +266,6 @@ internal fun TemplateEditorContent(
     }
 
     BackHandler(enabled = editorState.showContentEditorDialog) { editorState.closeContentEditor() }
-    BackHandler(enabled = showTagsSheet.value) { showTagsSheet.value = false }
     BackHandler(enabled = !editorState.showContentEditorDialog && !showTagsSheet.value) {
         editorState.dismiss(isDirty, onToggleDiscardDialog, onCancelEditing)
     }
@@ -316,10 +319,8 @@ internal fun TemplateEditorContent(
                         name = editorUiState.name,
                         nameError = editorUiState.nameError,
                         onNameChange = {
-                            if (it.length <= MAX_TEMPLATE_NAME_LENGTH) {
-                                onNameChange(it)
-                                onNameErrorChange(null)
-                            }
+                            onNameChange(it.take(MAX_TEMPLATE_NAME_LENGTH))
+                            onNameErrorChange(null)
                         },
                         onNext = { editorState.openContentEditor() }
                     )

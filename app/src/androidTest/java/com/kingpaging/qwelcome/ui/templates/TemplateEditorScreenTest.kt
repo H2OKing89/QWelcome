@@ -5,8 +5,10 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.test.core.app.ApplicationProvider
+import androidx.test.espresso.Espresso.pressBack
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.kingpaging.qwelcome.R
+import com.kingpaging.qwelcome.data.MessageTemplate
 import com.kingpaging.qwelcome.data.NEW_TEMPLATE_ID
 import com.kingpaging.qwelcome.data.SettingsStore
 import com.kingpaging.qwelcome.data.Template
@@ -17,9 +19,11 @@ import com.kingpaging.qwelcome.di.LocalSoundPlayer
 import com.kingpaging.qwelcome.di.LocalTemplateListViewModel
 import com.kingpaging.qwelcome.testutil.FakeNavigator
 import com.kingpaging.qwelcome.testutil.FakeSoundPlayer
+import com.kingpaging.qwelcome.ui.components.PlaceholderLabels
 import com.kingpaging.qwelcome.ui.theme.CyberpunkTheme
 import com.kingpaging.qwelcome.util.AndroidResourceProvider
 import com.kingpaging.qwelcome.viewmodel.factory.AppViewModelProvider
+import com.kingpaging.qwelcome.viewmodel.templates.MAX_TEMPLATE_NAME_LENGTH
 import com.kingpaging.qwelcome.viewmodel.templates.TemplateListViewModel
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.runBlocking
@@ -49,6 +53,9 @@ class TemplateEditorScreenTest {
 
         appContext = ApplicationProvider.getApplicationContext()
         val settingsStore = SettingsStore(appContext)
+        runBlocking {
+            appContext.protoDataStore.updateData { UserPreferences.getDefaultInstance() }
+        }
         templateListViewModel = TemplateListViewModel(
             settingsStore,
             AndroidResourceProvider(appContext)
@@ -232,11 +239,13 @@ class TemplateEditorScreenTest {
     fun variableToolbar_scrollsToLastVariable() {
         setScreenContentNewTemplate()
         openMessageWorkspace()
+        val lastPlaceholder = MessageTemplate.PLACEHOLDERS.last().first
 
         composeRule.onNodeWithTag(TEMPLATE_VARIABLE_TOOLBAR_TEST_TAG)
-            .performScrollToIndex(5)
+            .performScrollToIndex(MessageTemplate.PLACEHOLDERS.size)
 
-        composeRule.onNodeWithText("Signature").assertIsDisplayed()
+        composeRule.onNodeWithText(PlaceholderLabels.getShortLabel(lastPlaceholder))
+            .assertIsDisplayed()
     }
 
     // ── Message content ──────────────────────────────────────────────
@@ -427,14 +436,14 @@ class TemplateEditorScreenTest {
     fun nameField_enforcesMaxLength() {
         setScreenContentNewTemplate()
 
-        val longName = "A".repeat(60) // exceeds 50 char limit
+        val longName = "A".repeat(MAX_TEMPLATE_NAME_LENGTH + 10)
         composeRule.onNode(editableFieldWithLabel(appContext.getString(R.string.label_name)))
-            .performTextInput(longName)
+            .performTextReplacement(longName)
         composeRule.waitForIdle()
 
-        // The name displayed should be truncated to 50 chars
-        val expected = "A".repeat(50)
-        composeRule.onNodeWithText(expected).assertIsDisplayed()
+        val expected = "A".repeat(MAX_TEMPLATE_NAME_LENGTH)
+        composeRule.onNode(editableFieldWithLabel(appContext.getString(R.string.label_name)))
+            .assertTextEquals(appContext.getString(R.string.label_name), expected)
     }
 
     // ── Message workspace ───────────────────────────────────────────
@@ -444,7 +453,10 @@ class TemplateEditorScreenTest {
         setScreenContentNewTemplate()
         openMessageWorkspace()
 
-        composeRule.onNodeWithText(appContext.getString(R.string.label_message))
+        composeRule.onNode(
+            editableFieldWithLabel(appContext.getString(R.string.label_message)),
+            useUnmergedTree = true
+        )
             .assertIsDisplayed()
         composeRule.onNodeWithText(appContext.getString(R.string.action_done))
             .assertIsDisplayed()
@@ -493,6 +505,46 @@ class TemplateEditorScreenTest {
             .assertDoesNotExist()
         composeRule.onNodeWithText(appContext.getString(R.string.title_create_template))
             .assertIsDisplayed()
+    }
+
+    @Test
+    fun systemBack_closesMessageWorkspaceWithoutShowingDiscardDialog() {
+        setScreenContentExistingTemplate()
+        composeRule.onNode(
+            editableFieldWithLabel(appContext.getString(R.string.label_name)),
+            useUnmergedTree = true
+        ).performTextInput(" Modified")
+        openMessageWorkspace()
+
+        pressBack()
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithText(appContext.getString(R.string.action_done)).assertDoesNotExist()
+        composeRule.onNodeWithText(appContext.getString(R.string.title_edit_template))
+            .assertIsDisplayed()
+        composeRule.onNodeWithText(appContext.getString(R.string.dialog_discard_changes_title))
+            .assertDoesNotExist()
+    }
+
+    @Test
+    fun systemBack_closesTagsSheetWithoutShowingDiscardDialog() {
+        setScreenContentExistingTemplate()
+        composeRule.onNode(
+            editableFieldWithLabel(appContext.getString(R.string.label_name)),
+            useUnmergedTree = true
+        ).performTextInput(" Modified")
+        openTagsSheet()
+
+        pressBack()
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithContentDescription(
+            appContext.getString(R.string.content_desc_close_tags)
+        ).assertDoesNotExist()
+        composeRule.onNodeWithText(appContext.getString(R.string.title_edit_template))
+            .assertIsDisplayed()
+        composeRule.onNodeWithText(appContext.getString(R.string.dialog_discard_changes_title))
+            .assertDoesNotExist()
     }
 
     // ── Helpers ──────────────────────────────────────────────────────

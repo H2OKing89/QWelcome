@@ -92,6 +92,7 @@
     <string name="title_filter_tags">Filter by tags</string>
     <string name="text_no_tags">No tags</string>
     <string name="action_manage_tags">Manage tags</string>
+    <string name="content_desc_close_tags">Close tags</string>
     <string name="hint_add_tag">Add tag</string>
     <string name="content_desc_remove_tag">Remove tag: %1$s</string>
     <string name="content_desc_filter_by_tag">Filter by tag: %1$s</string>
@@ -122,6 +123,8 @@
     <string name="action_rename_template">Rename</string>
     <string name="title_rename_template">Rename template</string>
     <string name="content_desc_rename_template_name">Template name</string>
+    <string name="hint_name_unchanged">Name is unchanged</string>
+    <string name="text_template_name_character_count">%1$d/%2$d characters</string>
     <string name="action_clear">Clear</string>
     <string name="action_close">Close</string>
     <string name="action_fix">Fix</string>

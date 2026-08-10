@@ -2,6 +2,7 @@
 
 package com.kingpaging.qwelcome.ui.templates
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -28,12 +29,13 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.InputChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SheetState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -46,6 +48,7 @@ import com.kingpaging.qwelcome.data.MessageTemplate
 import com.kingpaging.qwelcome.data.Template
 import com.kingpaging.qwelcome.ui.components.InteractivePlaceholderChip
 import com.kingpaging.qwelcome.ui.components.NeonOutlinedField
+import kotlinx.coroutines.launch
 
 internal const val TEMPLATE_VARIABLE_TOOLBAR_TEST_TAG = "template_variable_toolbar"
 
@@ -207,6 +210,7 @@ internal fun TemplateTagsSummary(
 @Suppress("FunctionNaming")
 @Composable
 internal fun TemplateTagsSheet(
+    sheetState: SheetState,
     tags: List<String>,
     newTagInput: String,
     availableSuggestions: List<String>,
@@ -216,10 +220,20 @@ internal fun TemplateTagsSheet(
     onSuggestionSelected: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val coroutineScope = rememberCoroutineScope()
+    val dismissSheet: () -> Unit = {
+        coroutineScope.launch {
+            sheetState.hide()
+            if (!sheetState.isVisible) {
+                onDismiss()
+            }
+        }
+    }
+
+    BackHandler(onBack = dismissSheet)
 
     ModalBottomSheet(
-        onDismissRequest = onDismiss,
+        onDismissRequest = dismissSheet,
         sheetState = sheetState,
         containerColor = MaterialTheme.colorScheme.surface
     ) {
@@ -242,10 +256,10 @@ internal fun TemplateTagsSheet(
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.secondary
                 )
-                IconButton(onClick = onDismiss) {
+                IconButton(onClick = dismissSheet) {
                     Icon(
                         imageVector = Icons.Default.Close,
-                        contentDescription = stringResource(R.string.action_done)
+                        contentDescription = stringResource(R.string.content_desc_close_tags)
                     )
                 }
             }
