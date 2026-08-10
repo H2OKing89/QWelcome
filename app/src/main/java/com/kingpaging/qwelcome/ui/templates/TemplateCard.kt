@@ -157,7 +157,6 @@ internal fun TemplateCard(
     }
 }
 
-
 @Suppress("FunctionNaming", "LongParameterList")
 @Composable
 private fun TemplateCardHeader(

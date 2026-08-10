@@ -7,7 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-No unreleased changes.
+### Added
+
+- **Tap-First Template Library** - Added whole-card template selection, long-press previews, compact overflow actions, tag filtering, search, Rename, and a clear active-template indicator for faster field use.
+- **Template Selection Test Coverage** - Added persistence and Compose coverage for recency ordering, Undo, invalid templates, tags, Rename, IME focus, and lifecycle event ownership.
+
+### Changed
+
+- **Focused Template Editor** - Reworked the template editor into a dedicated message workspace with placeholder insertion, keyboard-safe controls, tag management, validation feedback, and unsaved-change protection.
+- **Template Recency and Undo** - Persist template last-used timestamps and provide a transaction-safe Undo action after changing the active template.
+
+### Fixed
+
+- **Import Template Restore** - Restore an imported active template without incorrectly recording it as a local template use.
 
 ## [2.7.3] - 2026-04-18
 

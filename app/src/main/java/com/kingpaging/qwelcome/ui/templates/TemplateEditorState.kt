@@ -36,6 +36,7 @@ import com.kingpaging.qwelcome.ui.components.CyberpunkBackdrop
 import com.kingpaging.qwelcome.ui.components.NeonDiscardDialog
 import com.kingpaging.qwelcome.util.rememberHapticFeedback
 import com.kingpaging.qwelcome.viewmodel.templates.TemplateEditorUiState
+import com.kingpaging.qwelcome.viewmodel.templates.MAX_TEMPLATE_NAME_LENGTH
 import kotlinx.coroutines.flow.distinctUntilChanged
 
 private const val TAG_MAX_LENGTH = 32
@@ -315,7 +316,7 @@ internal fun TemplateEditorContent(
                         name = editorUiState.name,
                         nameError = editorUiState.nameError,
                         onNameChange = {
-                            if (it.length <= 50) {
+                            if (it.length <= MAX_TEMPLATE_NAME_LENGTH) {
                                 onNameChange(it)
                                 onNameErrorChange(null)
                             }

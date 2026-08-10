@@ -154,7 +154,7 @@
     <string name="error_name_required">Name is required</string>
     <string name="title_delete_template">Delete Template?</string>
     <string name="text_delete_template_confirm">Are you sure you want to delete \&quot;%1$s\&quot;? This action cannot be undone.</string>
-    <string name="text_delete_active_template_confirm">"%1$s" is currently active. Deleting it will switch Q Welcome to the built-in Default template.</string>
+    <string name="text_delete_active_template_confirm">\&quot;%1$s\&quot; is currently active. Deleting it will switch Q Welcome to the built-in Default template.</string>
 
     <!-- Import screen -->
     <string name="title_import">Import</string>
