@@ -88,6 +88,8 @@
     <string name="label_search_templates">Search templates</string>
     <string name="label_all_tags">All</string>
     <string name="label_tags">Tags</string>
+    <string name="title_template_details">Details</string>
+    <string name="title_template_organize">Organize</string>
     <string name="hint_add_tag">Add tag</string>
     <string name="content_desc_remove_tag">Remove tag: %1$s</string>
     <string name="content_desc_filter_by_tag">Filter by tag: %1$s</string>
@@ -102,6 +104,11 @@
     <string name="content_desc_builtin_template">Built-in (duplicate to customize)</string>
     <string name="content_desc_template_actions">Template actions</string>
     <string name="action_customize_copy">Customize a copy</string>
+    <string name="action_add_tag">Add tag</string>
+    <string name="action_clear_filters">Clear filters</string>
+    <string name="action_edit_message">Edit message</string>
+    <string name="action_new_template">New template</string>
+    <string name="action_use_template">Use template</string>
     <string name="action_edit_template">Edit template</string>
     <string name="action_duplicate_template">Duplicate template</string>
     <string name="action_delete_template">Delete template</string>

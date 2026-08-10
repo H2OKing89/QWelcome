@@ -2,6 +2,7 @@ package com.kingpaging.qwelcome.ui.templates
 
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,12 +17,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -36,14 +39,15 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -54,7 +58,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -183,19 +186,21 @@ fun TemplateListScreen(
                 )
             },
             floatingActionButton = {
-                FloatingActionButton(
+                ExtendedFloatingActionButton(
                     onClick = {
                         haptic()
                         vm.startEditing(Template(id = NEW_TEMPLATE_ID, name = "", content = ""))
                     },
                     containerColor = MaterialTheme.colorScheme.secondary,
-                    contentColor = MaterialTheme.colorScheme.onSecondary
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = stringResource(R.string.content_desc_create_template)
-                    )
-                }
+                    contentColor = MaterialTheme.colorScheme.onSecondary,
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = stringResource(R.string.content_desc_create_template)
+                        )
+                    },
+                    text = { Text(stringResource(R.string.action_new_template)) }
+                )
             }
         ) { padding ->
             if (uiState.isLoading) {
@@ -219,23 +224,22 @@ fun TemplateListScreen(
                             tag.trim().lowercase() in normalizedSelectedTags
                         }
                     }
+                    val matchesQuery: (Template) -> Boolean = { template ->
+                        query.isEmpty() ||
+                            template.name.contains(query, ignoreCase = true) ||
+                            template.content.contains(query, ignoreCase = true) ||
+                            template.tags.any { it.contains(query, ignoreCase = true) }
+                    }
                     val defaultTemplate = uiState.templates
                         .find { it.id == DEFAULT_TEMPLATE_ID }
                         ?.takeIf(matchesTag)
-                        ?.takeIf { query.isEmpty() || it.name.lowercase().contains(query) }
+                        ?.takeIf(matchesQuery)
+                    val userTemplates = uiState.templates
+                        .filter { it.id != DEFAULT_TEMPLATE_ID }
+                        .filter(matchesTag)
+                        .filter(matchesQuery)
 
-                    if (query.isEmpty()) {
-                        val userTemplates = uiState.templates
-                            .filter { it.id != DEFAULT_TEMPLATE_ID }
-                            .filter(matchesTag)
-                        listOfNotNull(defaultTemplate) + userTemplates
-                    } else {
-                        val userTemplates = uiState.templates
-                            .filter { it.id != DEFAULT_TEMPLATE_ID }
-                            .filter(matchesTag)
-                            .filter { it.name.lowercase().contains(query) }
-                        listOfNotNull(defaultTemplate) + userTemplates
-                    }
+                    listOfNotNull(defaultTemplate) + userTemplates
                 }
 
                 LazyColumn(
@@ -255,7 +259,7 @@ fun TemplateListScreen(
                                 if (uiState.searchQuery.isNotEmpty()) {
                                     IconButton(onClick = { haptic(); vm.updateSearchQuery("") }) {
                                         Icon(
-                                            imageVector = Icons.Default.Search,
+                                            imageVector = Icons.Default.Close,
                                             contentDescription = stringResource(R.string.content_desc_clear_search),
                                             tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                                         )
@@ -274,18 +278,19 @@ fun TemplateListScreen(
 
                     if (uiState.allTags.isNotEmpty()) {
                         item(key = "tag_filters") {
-                            FlowRow(
+                            LazyRow(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp),
                                 modifier = Modifier.padding(bottom = 4.dp)
                             ) {
-                                FilterChip(
-                                    selected = uiState.selectedTags.isEmpty(),
-                                    onClick = { haptic(); vm.clearTagFilter() },
-                                    label = { Text(stringResource(R.string.label_all_tags)) }
-                                )
+                                item(key = "all_tags") {
+                                    FilterChip(
+                                        selected = uiState.selectedTags.isEmpty(),
+                                        onClick = { haptic(); vm.clearTagFilter() },
+                                        label = { Text(stringResource(R.string.label_all_tags)) }
+                                    )
+                                }
 
-                                uiState.allTags.sorted().forEach { tag ->
+                                items(items = uiState.allTags.sorted(), key = { it }) { tag ->
                                     val isSelected = tag in uiState.selectedTags
                                     FilterChip(
                                         selected = isSelected,
@@ -312,15 +317,6 @@ fun TemplateListScreen(
                                 }
                             }
                         }
-                    }
-
-                    item(key = "header") {
-                        Text(
-                            text = stringResource(R.string.text_template_actions_help),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                            modifier = Modifier.padding(vertical = 4.dp)
-                        )
                     }
 
                     if (uiState.showTemplateLimitWarning && !uiState.warningDismissed) {
@@ -351,23 +347,48 @@ fun TemplateListScreen(
                                 }
                             },
                             onDuplicate = { haptic(); vm.duplicateTemplate(template) },
-                            onDelete = { haptic(); vm.showDeleteConfirmation(template) }
+                            onDelete = { haptic(); vm.showDeleteConfirmation(template) },
+                            onTagClick = { tag -> haptic(); vm.updateTagFilter(tag) }
                         )
                     }
 
                     val shouldShowNoResults = filteredTemplates.isEmpty()
                     if (shouldShowNoResults) {
                         item(key = "no_results") {
-                            Text(
-                                text = if (uiState.searchQuery.isNotEmpty()) {
-                                    stringResource(R.string.text_no_templates_match, uiState.searchQuery)
-                                } else {
-                                    stringResource(R.string.text_no_templates_for_filters)
-                                },
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                                modifier = Modifier.padding(vertical = 16.dp)
-                            )
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 32.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Search,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                                    modifier = Modifier.size(32.dp)
+                                )
+                                Text(
+                                    text = if (uiState.searchQuery.isNotEmpty()) {
+                                        stringResource(R.string.text_no_templates_match, uiState.searchQuery)
+                                    } else {
+                                        stringResource(R.string.text_no_templates_for_filters)
+                                    },
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                )
+                                NeonButton(
+                                    onClick = {
+                                        haptic()
+                                        vm.updateSearchQuery("")
+                                        vm.clearTagFilter()
+                                    },
+                                    glowColor = MaterialTheme.colorScheme.secondary,
+                                    style = NeonButtonStyle.TERTIARY
+                                ) {
+                                    Text(stringResource(R.string.action_clear_filters))
+                                }
+                            }
                         }
                     }
 
@@ -389,15 +410,15 @@ private fun TemplateCard(
     onSelect: () -> Unit,
     onEdit: () -> Unit,
     onDuplicate: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onTagClick: (String) -> Unit
 ) {
     val isDark = LocalDarkTheme.current
     val haptic = rememberHapticFeedback()
     var actionsExpanded by remember { mutableStateOf(false) }
 
     Card(
-        onClick = onSelect,
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (isActive) {
                 MaterialTheme.colorScheme.primary.copy(alpha = if (isDark) 0.15f else 0.12f)
@@ -406,18 +427,12 @@ private fun TemplateCard(
             }
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        border = if (!isDark) {
-            androidx.compose.foundation.BorderStroke(
-                0.5.dp,
-                if (isActive) MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
-                else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-            )
-        } else {
-            null
-        },
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
+        border = BorderStroke(
+            if (isActive) 1.dp else 0.5.dp,
+            if (isActive) MaterialTheme.colorScheme.primary.copy(alpha = 0.65f)
+            else MaterialTheme.colorScheme.outlineVariant.copy(alpha = if (isDark) 0.35f else 0.5f)
+        ),
+        modifier = Modifier.fillMaxWidth()
     ) {
         Column(
             modifier = Modifier
@@ -441,14 +456,6 @@ private fun TemplateCard(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
-                    if (isActive) {
-                        Icon(
-                            imageVector = Icons.Default.Check,
-                            contentDescription = stringResource(R.string.label_active),
-                            tint = MaterialTheme.colorScheme.secondary,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
                     if (isDefault) {
                         Icon(
                             imageVector = Icons.Default.Lock,
@@ -459,48 +466,27 @@ private fun TemplateCard(
                     }
                 }
 
-                Box {
-                    IconButton(
-                        onClick = {
-                            haptic()
-                            actionsExpanded = true
-                        },
-                        modifier = Modifier.size(48.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.MoreVert,
-                            contentDescription = stringResource(R.string.content_desc_template_actions),
-                            tint = MaterialTheme.colorScheme.secondary,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-
-                    DropdownMenu(
-                        expanded = actionsExpanded,
-                        onDismissRequest = { actionsExpanded = false }
-                    ) {
-                        DropdownMenuItem(
-                            text = {
-                                Text(
-                                    stringResource(
-                                        if (isDefault) R.string.action_customize_copy
-                                        else R.string.action_edit_template
-                                    )
-                                )
-                            },
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = if (isDefault) Icons.Default.ContentCopy else Icons.Default.Edit,
-                                    contentDescription = null
-                                )
-                            },
+                if (!isDefault) {
+                    Box {
+                        IconButton(
                             onClick = {
-                                actionsExpanded = false
-                                onEdit()
-                            }
-                        )
+                                haptic()
+                                actionsExpanded = true
+                            },
+                            modifier = Modifier.size(48.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = stringResource(R.string.content_desc_template_actions),
+                                tint = MaterialTheme.colorScheme.secondary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
 
-                        if (!isDefault) {
+                        DropdownMenu(
+                            expanded = actionsExpanded,
+                            onDismissRequest = { actionsExpanded = false }
+                        ) {
                             DropdownMenuItem(
                                 text = { Text(stringResource(R.string.action_duplicate_template)) },
                                 leadingIcon = {
@@ -548,6 +534,52 @@ private fun TemplateCard(
                 modifier = Modifier.padding(top = 6.dp)
             )
 
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                FilterChip(
+                    selected = isActive,
+                    onClick = { if (!isActive) onSelect() },
+                    label = {
+                        Text(
+                            text = stringResource(
+                                if (isActive) R.string.label_active else R.string.action_use_template
+                            )
+                        )
+                    },
+                    leadingIcon = if (isActive) {
+                        {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = null,
+                                modifier = Modifier.size(FilterChipDefaults.IconSize)
+                            )
+                        }
+                    } else {
+                        null
+                    }
+                )
+
+                TextButton(onClick = onEdit) {
+                    Icon(
+                        imageVector = if (isDefault) Icons.Default.ContentCopy else Icons.Default.Edit,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = stringResource(
+                            if (isDefault) R.string.action_customize_copy
+                            else R.string.action_edit_template
+                        )
+                    )
+                }
+            }
+
             if (template.tags.isNotEmpty()) {
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -555,14 +587,21 @@ private fun TemplateCard(
                     modifier = Modifier.padding(top = 8.dp)
                 ) {
                     template.tags.forEach { tag ->
+                        val tagFilterDescription = stringResource(
+                            R.string.content_desc_filter_by_tag,
+                            tag
+                        )
                         AssistChip(
-                            onClick = {},
+                            onClick = { onTagClick(tag) },
                             label = {
                                 Text(
                                     text = tag,
                                     fontSize = 12.sp,
                                     maxLines = 1
                                 )
+                            },
+                            modifier = Modifier.semantics {
+                                contentDescription = tagFilterDescription
                             }
                         )
                     }

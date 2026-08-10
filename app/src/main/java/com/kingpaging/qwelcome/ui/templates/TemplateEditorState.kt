@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.input.TextFieldState
@@ -15,15 +16,14 @@ import androidx.compose.foundation.text.input.delete
 import androidx.compose.foundation.text.input.insert
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -36,6 +36,7 @@ import com.kingpaging.qwelcome.data.NEW_TEMPLATE_ID
 import com.kingpaging.qwelcome.data.Template
 import com.kingpaging.qwelcome.ui.components.CyberpunkBackdrop
 import com.kingpaging.qwelcome.ui.components.NeonDiscardDialog
+import com.kingpaging.qwelcome.ui.components.NeonPanel
 import com.kingpaging.qwelcome.util.rememberHapticFeedback
 import com.kingpaging.qwelcome.viewmodel.templates.TemplateEditorUiState
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -64,15 +65,8 @@ internal fun mergeDraftTag(existingTags: List<String>, draftTagInput: String): L
 
 private class TemplateEditorState(
     val contentFieldState: TextFieldState,
-    private val pendingPlaceholderState: MutableState<String?>,
     private val showContentEditorDialogState: MutableState<Boolean>
 ) {
-    var pendingPlaceholder: String?
-        get() = pendingPlaceholderState.value
-        private set(value) {
-            pendingPlaceholderState.value = value
-        }
-
     var showContentEditorDialog: Boolean
         get() = showContentEditorDialogState.value
         private set(value) {
@@ -151,30 +145,6 @@ private class TemplateEditorState(
         onContentChange(contentFieldState.text.toString())
         contentFocusRequester.requestFocus()
     }
-
-    fun requestPlaceholderInsert(
-        placeholder: String,
-        onContentChange: (String) -> Unit,
-        contentFocusRequester: FocusRequester
-    ) {
-        if (showContentEditorDialog) {
-            insertPlaceholder(placeholder, onContentChange, contentFocusRequester)
-        } else {
-            pendingPlaceholder = placeholder
-            showContentEditorDialog = true
-        }
-    }
-
-    fun consumePendingPlaceholder(
-        onContentChange: (String) -> Unit,
-        contentFocusRequester: FocusRequester
-    ) {
-        val placeholder = pendingPlaceholder
-        if (showContentEditorDialog && placeholder != null) {
-            insertPlaceholder(placeholder, onContentChange, contentFocusRequester)
-            pendingPlaceholder = null
-        }
-    }
 }
 
 @Composable
@@ -182,10 +152,9 @@ private fun rememberTemplateEditorState(
     initialContentText: String
 ): TemplateEditorState {
     val contentFieldState = rememberTextFieldState(initialText = initialContentText)
-    val pendingPlaceholderState = rememberSaveable { mutableStateOf<String?>(null) }
     val showContentEditorDialogState = rememberSaveable { mutableStateOf(false) }
     return remember {
-        TemplateEditorState(contentFieldState, pendingPlaceholderState, showContentEditorDialogState)
+        TemplateEditorState(contentFieldState, showContentEditorDialogState)
     }
 }
 
@@ -316,62 +285,74 @@ internal fun TemplateEditorContent(
                     .fillMaxSize()
                     .padding(innerPadding)
                     .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
                 contentPadding = PaddingValues(top = 12.dp, bottom = 12.dp)
             ) {
-                item(key = "template_name") {
-                    TemplateNameField(
-                        name = editorUiState.name,
-                        nameError = editorUiState.nameError,
-                        onNameChange = {
-                            if (it.length <= 50) {
-                                onNameChange(it)
-                                onNameErrorChange(null)
-                            }
-                        },
-                        onNext = { editorState.openContentEditor() }
-                    )
-                }
-
-                item(key = "tags_section") {
-                    TagsSection(
-                        tags = editorUiState.tags,
-                        newTagInput = editorUiState.newTagInput,
-                        availableSuggestions = availableSuggestions,
-                        onNewTagInputChange = onNewTagInputChange,
-                        onAddTag = addTag,
-                        onRemoveTag = { tag ->
-                            onTagsChange(
-                                editorUiState.tags.filterNot {
-                                    it.equals(tag, ignoreCase = true)
+                item(key = "details_panel") {
+                    NeonPanel(
+                        modifier = Modifier.fillMaxWidth(),
+                        accentColor = MaterialTheme.colorScheme.primary
+                    ) {
+                        TemplateEditorSectionHeader(
+                            title = stringResource(R.string.title_template_details)
+                        )
+                        TemplateNameField(
+                            name = editorUiState.name,
+                            nameError = editorUiState.nameError,
+                            onNameChange = {
+                                if (it.length <= 50) {
+                                    onNameChange(it)
+                                    onNameErrorChange(null)
                                 }
-                            )
-                        },
-                        onSuggestionSelected = addTag
-                    )
+                            },
+                            onNext = { editorState.openContentEditor() }
+                        )
+                    }
                 }
 
-                item(key = "placeholder_chips") {
-                    PlaceholderChipsSection(
-                        onInsertPlaceholder = { placeholder ->
-                            editorState.requestPlaceholderInsert(
-                                placeholder = placeholder,
-                                onContentChange = onContentChange,
-                                contentFocusRequester = contentFocusRequester
-                            )
-                        }
-                    )
+                item(key = "message_panel") {
+                    NeonPanel(
+                        modifier = Modifier.fillMaxWidth(),
+                        accentColor = MaterialTheme.colorScheme.secondary
+                    ) {
+                        TemplateEditorSectionHeader(
+                            title = stringResource(R.string.label_message)
+                        )
+                        MessageContentLauncher(
+                            contentText = editorUiState.contentText,
+                            contentError = editorUiState.contentError,
+                            onOpenEditor = {
+                                haptic()
+                                editorState.openContentEditor()
+                            }
+                        )
+                    }
                 }
 
-                item(key = "message_launcher") {
-                    MessageContentLauncher(
-                        contentText = editorUiState.contentText,
-                        contentError = editorUiState.contentError,
-                        onOpenEditor = {
-                            haptic()
-                            editorState.openContentEditor()
-                        }
-                    )
+                item(key = "organize_panel") {
+                    NeonPanel(
+                        modifier = Modifier.fillMaxWidth(),
+                        accentColor = MaterialTheme.colorScheme.tertiary
+                    ) {
+                        TemplateEditorSectionHeader(
+                            title = stringResource(R.string.title_template_organize)
+                        )
+                        TagsSection(
+                            tags = editorUiState.tags,
+                            newTagInput = editorUiState.newTagInput,
+                            availableSuggestions = availableSuggestions,
+                            onNewTagInputChange = onNewTagInputChange,
+                            onAddTag = addTag,
+                            onRemoveTag = { tag ->
+                                onTagsChange(
+                                    editorUiState.tags.filterNot {
+                                        it.equals(tag, ignoreCase = true)
+                                    }
+                                )
+                            },
+                            onSuggestionSelected = addTag
+                        )
+                    }
                 }
             }
         }
@@ -382,10 +363,6 @@ internal fun TemplateEditorContent(
                 contentFocusRequester = contentFocusRequester,
                 contentInteractionSource = contentInteractionSource,
                 contentError = editorUiState.contentError,
-                pendingPlaceholder = editorState.pendingPlaceholder,
-                onConsumePendingPlaceholder = {
-                    editorState.consumePendingPlaceholder(onContentChange, contentFocusRequester)
-                },
                 onDismissRequest = editorState::closeContentEditor,
                 onInsertPlaceholder = { placeholder ->
                     editorState.insertPlaceholder(

@@ -2,17 +2,22 @@
 
 package com.kingpaging.qwelcome.ui.templates
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -27,7 +32,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -36,6 +43,18 @@ import com.kingpaging.qwelcome.data.MessageTemplate
 import com.kingpaging.qwelcome.data.Template
 import com.kingpaging.qwelcome.ui.components.InteractivePlaceholderChip
 import com.kingpaging.qwelcome.ui.components.NeonOutlinedField
+
+internal const val TEMPLATE_VARIABLE_TOOLBAR_TEST_TAG = "template_variable_toolbar"
+
+@Suppress("FunctionNaming")
+@Composable
+internal fun TemplateEditorSectionHeader(title: String) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+        color = MaterialTheme.colorScheme.onSurface
+    )
+}
 
 @Composable
 internal fun TemplateNameField(
@@ -116,6 +135,17 @@ internal fun TagsSection(
         singleLine = true,
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         keyboardActions = KeyboardActions(onDone = { onAddTag(newTagInput) }),
+        trailingIcon = {
+            IconButton(
+                onClick = { onAddTag(newTagInput) },
+                enabled = newTagInput.isNotBlank()
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = stringResource(R.string.action_add_tag)
+                )
+            }
+        },
         modifier = Modifier.padding(top = 8.dp)
     )
 
@@ -135,38 +165,31 @@ internal fun TagsSection(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
+@Suppress("FunctionNaming")
 @Composable
-internal fun PlaceholderChipsSection(
+internal fun PlaceholderToolbar(
     onInsertPlaceholder: (String) -> Unit
 ) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    LazyRow(
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag(TEMPLATE_VARIABLE_TOOLBAR_TEST_TAG),
+        contentPadding = PaddingValues(end = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            text = stringResource(R.string.label_insert),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-        )
-        Text(
-            text = "·",
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
-        )
-        Text(
-            text = stringResource(R.string.hint_template_required_placeholders),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.7f)
-        )
-    }
+        item(key = "insert_label") {
+            Text(
+                text = stringResource(R.string.label_insert),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            )
+        }
 
-    FlowRow(
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
-        modifier = Modifier.padding(top = 8.dp)
-    ) {
-        MessageTemplate.PLACEHOLDERS.forEach { (placeholder, _) ->
+        items(
+            items = MessageTemplate.PLACEHOLDERS,
+            key = { it.first }
+        ) { (placeholder, _) ->
             InteractivePlaceholderChip(
                 placeholder = placeholder,
                 onClick = { onInsertPlaceholder(placeholder) },
@@ -183,9 +206,17 @@ internal fun MessageContentLauncher(
     onOpenEditor: () -> Unit
 ) {
     Surface(
+        onClick = onOpenEditor,
         color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
-        tonalElevation = 2.dp,
-        shape = MaterialTheme.shapes.medium,
+        shape = MaterialTheme.shapes.small,
+        border = BorderStroke(
+            width = 1.dp,
+            color = if (contentError == null) {
+                MaterialTheme.colorScheme.outlineVariant
+            } else {
+                MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
+            }
+        ),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(
@@ -194,34 +225,17 @@ internal fun MessageContentLauncher(
                 .padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = stringResource(R.string.label_message),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                IconButton(onClick = onOpenEditor) {
-                    Icon(
-                        imageVector = Icons.Default.Edit,
-                        contentDescription = stringResource(R.string.action_edit),
-                        tint = MaterialTheme.colorScheme.secondary
-                    )
-                }
-            }
+            MessageEditLabel()
 
             Text(
                 text = contentText.ifBlank { stringResource(R.string.hint_template_empty_content) },
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodyMedium,
                 color = if (contentText.isBlank()) {
                     MaterialTheme.colorScheme.onSurfaceVariant
                 } else {
                     MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f)
                 },
-                maxLines = 4,
+                maxLines = 6,
                 overflow = TextOverflow.Ellipsis
             )
 
@@ -236,5 +250,29 @@ internal fun MessageContentLauncher(
                 )
             }
         }
+    }
+}
+
+@Suppress("FunctionNaming")
+@Composable
+private fun MessageEditLabel() {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.End,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = stringResource(R.string.action_edit_message),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.secondary
+        )
+        Icon(
+            imageVector = Icons.Default.Edit,
+            contentDescription = stringResource(R.string.action_edit),
+            tint = MaterialTheme.colorScheme.secondary,
+            modifier = Modifier
+                .padding(start = 8.dp)
+                .size(18.dp)
+        )
     }
 }

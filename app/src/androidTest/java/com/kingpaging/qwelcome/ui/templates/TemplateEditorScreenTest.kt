@@ -144,8 +144,6 @@ class TemplateEditorScreenTest {
             .assertIsDisplayed()
         composeRule.onNodeWithText(appContext.getString(R.string.label_message))
             .assertIsDisplayed()
-        composeRule.onNodeWithText(appContext.getString(R.string.label_insert))
-            .assertIsDisplayed()
     }
 
     @Test
@@ -204,26 +202,29 @@ class TemplateEditorScreenTest {
         composeRule.onNodeWithText("VIP").assertIsDisplayed()
     }
 
-    // ── Placeholder chips ────────────────────────────────────────────
+    // ── Variable toolbar ─────────────────────────────────────────────
 
     @Test
-    fun placeholderChips_areDisplayed() {
+    fun variableToolbar_isOnlyShownInMessageWorkspace() {
         setScreenContentNewTemplate()
 
-        composeRule.onNodeWithText("customer_name").assertIsDisplayed()
-        composeRule.onNodeWithText("ssid").assertIsDisplayed()
-        composeRule.onNodeWithText("password").assertIsDisplayed()
-        composeRule.onNodeWithText("account_number").assertIsDisplayed()
-        composeRule.onNodeWithText("tech_signature").assertIsDisplayed()
+        composeRule.onNodeWithText("Customer").assertDoesNotExist()
+
+        openMessageWorkspace()
+
+        composeRule.onNodeWithText("Customer").assertIsDisplayed()
+        composeRule.onNodeWithText("SSID").assertIsDisplayed()
     }
 
     @Test
-    fun requiredPlaceholderHint_isDisplayed() {
+    fun variableToolbar_scrollsToLastVariable() {
         setScreenContentNewTemplate()
+        openMessageWorkspace()
 
-        composeRule.onNodeWithText(
-            appContext.getString(R.string.hint_template_required_placeholders)
-        ).assertIsDisplayed()
+        composeRule.onNodeWithTag(TEMPLATE_VARIABLE_TOOLBAR_TEST_TAG)
+            .performScrollToIndex(5)
+
+        composeRule.onNodeWithText("Signature").assertIsDisplayed()
     }
 
     // ── Message content ──────────────────────────────────────────────
@@ -237,14 +238,10 @@ class TemplateEditorScreenTest {
     }
 
     @Test
-    fun clickingEditButton_opensContentEditorDialog() {
+    fun clickingEditButton_opensMessageWorkspace() {
         setScreenContentNewTemplate()
+        openMessageWorkspace()
 
-        composeRule.onNodeWithContentDescription(appContext.getString(R.string.action_edit))
-            .performClick()
-        composeRule.waitForIdle()
-
-        // The content editor dialog shows a "Done" button
         composeRule.onNodeWithText(appContext.getString(R.string.action_done))
             .assertIsDisplayed()
     }
@@ -430,15 +427,12 @@ class TemplateEditorScreenTest {
         composeRule.onNodeWithText(expected).assertIsDisplayed()
     }
 
-    // ── Content editor dialog ────────────────────────────────────────
+    // ── Message workspace ───────────────────────────────────────────
 
     @Test
-    fun contentEditorDialog_showsMessageLabelAndDoneButton() {
+    fun messageWorkspace_showsMessageLabelAndDoneButton() {
         setScreenContentNewTemplate()
-
-        composeRule.onNodeWithContentDescription(appContext.getString(R.string.action_edit))
-            .performClick()
-        composeRule.waitForIdle()
+        openMessageWorkspace()
 
         composeRule.onNodeWithText(appContext.getString(R.string.label_message))
             .assertIsDisplayed()
@@ -447,39 +441,60 @@ class TemplateEditorScreenTest {
     }
 
     @Test
-    fun contentEditorDialog_showsPlaceholderChips() {
+    fun messageWorkspace_doesNotFocusEditorUntilTapped() {
         setScreenContentNewTemplate()
+        openMessageWorkspace()
+        val messageField = composeRule.onNode(
+            editableFieldWithLabel(appContext.getString(R.string.label_message)),
+            useUnmergedTree = true
+        )
 
-        composeRule.onNodeWithContentDescription(appContext.getString(R.string.action_edit))
-            .performClick()
-        composeRule.waitForIdle()
-
-        // Placeholder chips should be visible inside the dialog too
-        composeRule.onNodeWithText("customer_name").assertIsDisplayed()
-        composeRule.onNodeWithText("ssid").assertIsDisplayed()
+        messageField.assertIsNotFocused()
+        messageField.performClick()
+        messageField.assertIsFocused()
     }
 
     @Test
-    fun contentEditorDialog_doneButton_closesDialog() {
+    fun messageWorkspace_variableTapInsertsCanonicalToken() {
         setScreenContentNewTemplate()
+        openMessageWorkspace()
+        val messageField = composeRule.onNode(
+            editableFieldWithLabel(appContext.getString(R.string.label_message)),
+            useUnmergedTree = true
+        )
 
-        composeRule.onNodeWithContentDescription(appContext.getString(R.string.action_edit))
-            .performClick()
+        messageField.performTextReplacement("Hello ")
+        composeRule.onNodeWithText("Customer").performClick()
         composeRule.waitForIdle()
+
+        messageField.assertTextContains("Hello {{ customer_name }}")
+    }
+
+    @Test
+    fun messageWorkspace_doneButtonReturnsToTemplateForm() {
+        setScreenContentNewTemplate()
+        openMessageWorkspace()
 
         composeRule.onNodeWithText(appContext.getString(R.string.action_done))
             .performClick()
         composeRule.waitForIdle()
 
-        // Dialog should be dismissed — "Done" button no longer visible
         composeRule.onNodeWithText(appContext.getString(R.string.action_done))
             .assertDoesNotExist()
+        composeRule.onNodeWithText(appContext.getString(R.string.title_create_template))
+            .assertIsDisplayed()
     }
 
     // ── Helpers ──────────────────────────────────────────────────────
 
     private fun editableFieldWithLabel(label: String): SemanticsMatcher {
         return hasSetTextAction() and hasText(label)
+    }
+
+    private fun openMessageWorkspace() {
+        composeRule.onNodeWithContentDescription(appContext.getString(R.string.action_edit))
+            .performClick()
+        composeRule.waitForIdle()
     }
 
     private fun setScreenContentNewTemplate() {
