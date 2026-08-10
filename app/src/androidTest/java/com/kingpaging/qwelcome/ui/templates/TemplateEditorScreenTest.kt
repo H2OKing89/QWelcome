@@ -18,6 +18,7 @@ import com.kingpaging.qwelcome.di.LocalTemplateListViewModel
 import com.kingpaging.qwelcome.testutil.FakeNavigator
 import com.kingpaging.qwelcome.testutil.FakeSoundPlayer
 import com.kingpaging.qwelcome.ui.theme.CyberpunkTheme
+import com.kingpaging.qwelcome.util.AndroidResourceProvider
 import com.kingpaging.qwelcome.viewmodel.factory.AppViewModelProvider
 import com.kingpaging.qwelcome.viewmodel.templates.TemplateListViewModel
 import java.util.concurrent.atomic.AtomicBoolean
@@ -48,7 +49,10 @@ class TemplateEditorScreenTest {
 
         appContext = ApplicationProvider.getApplicationContext()
         val settingsStore = SettingsStore(appContext)
-        templateListViewModel = TemplateListViewModel(settingsStore)
+        templateListViewModel = TemplateListViewModel(
+            settingsStore,
+            AndroidResourceProvider(appContext)
+        )
 
         navigator = FakeNavigator()
         soundPlayer = FakeSoundPlayer()

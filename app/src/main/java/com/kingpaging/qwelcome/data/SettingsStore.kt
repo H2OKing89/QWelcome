@@ -17,6 +17,29 @@ private const val MAX_RECENT_SHARE_TARGETS = 3
  */
 const val DEFAULT_TEMPLATE_ID = "default"
 
+data class TemplateSelectionChange(
+    val selectedTemplateId: String,
+    val selectedLastUsedAt: Long,
+    val previousActiveTemplateId: String,
+    val previousSelectedLastUsedAt: Long?
+)
+
+sealed interface TemplateSelectionResult {
+    data class Selected(
+        val template: Template,
+        val change: TemplateSelectionChange
+    ) : TemplateSelectionResult
+
+    data class AlreadyActive(val template: Template) : TemplateSelectionResult
+
+    data class Blocked(
+        val template: Template,
+        val missingPlaceholders: List<String>
+    ) : TemplateSelectionResult
+
+    data class NotFound(val templateId: String) : TemplateSelectionResult
+}
+
 /**
  * Catches [IOException] on a [Flow] of [UserPreferences], logging the error and emitting a default instance.
  * Other exceptions are rethrown. Reduces duplication across DataStore flows.
@@ -51,7 +74,10 @@ internal fun Flow<UserPreferences>.readPrivacySettings(): Flow<PrivacySettings> 
 /**
  * Manages app settings and template storage using Proto DataStore.
  */
-class SettingsStore(private val context: Context) {
+class SettingsStore(
+    private val context: Context,
+    private val currentTimeMillis: () -> Long = System::currentTimeMillis
+) {
 
     /** The default template that ships with the app */
     private val builtInDefaultTemplate: Template by lazy {
@@ -119,6 +145,10 @@ class SettingsStore(private val context: Context) {
         .catchIoException("Error reading active template ID.")
         .map { prefs -> prefs.activeTemplateId.ifEmpty { DEFAULT_TEMPLATE_ID } }
 
+    val templateLastUsedFlow: Flow<Map<String, Long>> = dataStore.data
+        .catchIoException("Error reading template usage history.")
+        .map { prefs -> prefs.templateLastUsedEpochMillisMap }
+
     val activeTemplateFlow: Flow<Template> = dataStore.data
         .catchIoException("Error reading active template.")
         .map { prefs ->
@@ -147,12 +177,92 @@ class SettingsStore(private val context: Context) {
 
     suspend fun getActiveTemplate(): Template = activeTemplateFlow.first()
 
-    suspend fun setActiveTemplate(templateId: String) {
-        dataStore.updateData {
-            it.toBuilder()
-                .setActiveTemplateId(templateId)
+    suspend fun setActiveTemplate(templateId: String): TemplateSelectionResult {
+        var selectionResult: TemplateSelectionResult? = null
+        var selectedAt: Long? = null
+        dataStore.updateData { preferences ->
+            val template = preferences.findTemplate(templateId)
+            val missingPlaceholders = template?.let {
+                Template.findMissingPlaceholders(it.content)
+            }.orEmpty()
+            selectionResult = when {
+                template == null -> TemplateSelectionResult.NotFound(templateId)
+                missingPlaceholders.isNotEmpty() -> {
+                    TemplateSelectionResult.Blocked(
+                        template = template,
+                        missingPlaceholders = missingPlaceholders
+                    )
+                }
+                preferences.activeTemplateId.ifEmpty { DEFAULT_TEMPLATE_ID } == templateId -> {
+                    TemplateSelectionResult.AlreadyActive(template)
+                }
+                else -> {
+                    val previousTimestamp = preferences.templateLastUsedEpochMillisMap[templateId]
+                    selectedAt = nextTemplateUseTimestamp(
+                        now = currentTimeMillis(),
+                        existingTimestamps = preferences.templateLastUsedEpochMillisMap.values
+                    )
+                    val change = TemplateSelectionChange(
+                        selectedTemplateId = templateId,
+                        selectedLastUsedAt = checkNotNull(selectedAt),
+                        previousActiveTemplateId = preferences.activeTemplateId.ifEmpty {
+                            DEFAULT_TEMPLATE_ID
+                        },
+                        previousSelectedLastUsedAt = previousTimestamp
+                    )
+                    TemplateSelectionResult.Selected(template, change)
+                }
+            }
+
+            val selected = selectionResult as? TemplateSelectionResult.Selected
+                ?: return@updateData preferences
+            preferences.toBuilder()
+                .setActiveTemplateId(selected.template.id)
+                .putTemplateLastUsedEpochMillis(selected.template.id, checkNotNull(selectedAt))
                 .build()
         }
+        return checkNotNull(selectionResult)
+    }
+
+    suspend fun undoTemplateSelection(change: TemplateSelectionChange): Boolean {
+        var undone = false
+        dataStore.updateData { preferences ->
+            val activeTemplateId = preferences.activeTemplateId.ifEmpty { DEFAULT_TEMPLATE_ID }
+            val selectedLastUsedAt = preferences.templateLastUsedEpochMillisMap[change.selectedTemplateId]
+            if (activeTemplateId != change.selectedTemplateId ||
+                selectedLastUsedAt != change.selectedLastUsedAt
+            ) {
+                return@updateData preferences
+            }
+
+            undone = true
+            val restoredActiveTemplateId = preferences.resolveValidTemplateId(
+                change.previousActiveTemplateId
+            )
+            preferences.toBuilder()
+                .setActiveTemplateId(restoredActiveTemplateId)
+                .apply {
+                    val previousTimestamp = change.previousSelectedLastUsedAt
+                    if (previousTimestamp == null) {
+                        removeTemplateLastUsedEpochMillis(change.selectedTemplateId)
+                    } else {
+                        putTemplateLastUsedEpochMillis(change.selectedTemplateId, previousTimestamp)
+                    }
+                }
+                .build()
+        }
+        return undone
+    }
+
+    suspend fun restoreActiveTemplate(templateId: String): String {
+        var restoredTemplateId = DEFAULT_TEMPLATE_ID
+        dataStore.updateData { preferences ->
+            restoredTemplateId = preferences.resolveValidTemplateId(templateId)
+            preferences.toBuilder()
+                .setActiveTemplateId(restoredTemplateId)
+                .build()
+        }
+        return restoredTemplateId
     }
 
     suspend fun saveTemplate(template: Template) {
@@ -188,6 +298,7 @@ class SettingsStore(private val context: Context) {
             val builder = prefs.toBuilder()
             val newTemplates = prefs.templatesList.filterNot { it.id == templateId }
             builder.clearTemplates().addAllTemplates(newTemplates)
+            builder.removeTemplateLastUsedEpochMillis(templateId)
             if (builder.activeTemplateId == templateId) {
                 builder.activeTemplateId = DEFAULT_TEMPLATE_ID
             }
@@ -211,8 +322,32 @@ class SettingsStore(private val context: Context) {
         dataStore.updateData { prefs ->
             prefs.toBuilder()
                 .clearTemplates()
+                .clearTemplateLastUsedEpochMillis()
                 .setActiveTemplateId(DEFAULT_TEMPLATE_ID)
                 .build()
         }
+    }
+
+    private fun UserPreferences.findTemplate(templateId: String): Template? = when (templateId) {
+        DEFAULT_TEMPLATE_ID -> builtInDefaultTemplate
+        else -> templatesList.firstOrNull { it.id == templateId }?.let { Template.fromProto(it) }
+    }
+
+    private fun UserPreferences.resolveValidTemplateId(templateId: String): String =
+        findTemplate(templateId)
+            ?.takeIf { Template.hasRequiredPlaceholders(it.content) }
+            ?.id
+            ?: DEFAULT_TEMPLATE_ID
+}
+
+internal fun nextTemplateUseTimestamp(
+    now: Long,
+    existingTimestamps: Collection<Long>
+): Long {
+    val latestTimestamp = existingTimestamps.maxOrNull() ?: 0L
+    return if (latestTimestamp == Long.MAX_VALUE) {
+        Long.MAX_VALUE
+    } else {
+        maxOf(now, latestTimestamp + 1L)
     }
 }

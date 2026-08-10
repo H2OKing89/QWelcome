@@ -140,7 +140,10 @@ class AppViewModelProvider(private val context: Context) : ViewModelProvider.Fac
                 ) as T
             }
             modelClass.isAssignableFrom(TemplateListViewModel::class.java) -> {
-                TemplateListViewModel(getSettingsStore(context)) as T
+                TemplateListViewModel(
+                    getSettingsStore(context),
+                    getResourceProvider(context)
+                ) as T
             }
             else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
         }

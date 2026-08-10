@@ -66,7 +66,10 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.flowWithLifecycle
 import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.di.LocalCustomerIntakeViewModel
 import com.kingpaging.qwelcome.di.LocalNavigator
@@ -82,11 +85,14 @@ import com.kingpaging.qwelcome.ui.components.NeonTopAppBar
 import com.kingpaging.qwelcome.ui.components.QrCodeBottomSheet
 import com.kingpaging.qwelcome.ui.components.QWelcomeHeader
 import com.kingpaging.qwelcome.ui.theme.LocalCyberColors
+import com.kingpaging.qwelcome.ui.templates.toTemplateErrorMessage
 import com.kingpaging.qwelcome.util.rememberHapticFeedback
 import com.kingpaging.qwelcome.di.LocalSoundPlayer
 import com.kingpaging.qwelcome.util.WifiQrGenerator
 import com.kingpaging.qwelcome.viewmodel.UiEvent
+import com.kingpaging.qwelcome.viewmodel.templates.TemplateListEventOwner
 import com.kingpaging.qwelcome.viewmodel.templates.TemplateListUiState
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 private class FormFieldFocusTarget {
@@ -136,6 +142,7 @@ fun CustomerIntakeScreen(
     // Copy success feedback - brief visual confirmation (ChatGPT feedback: animate meaning)
     var copySuccess by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
@@ -173,6 +180,16 @@ fun CustomerIntakeScreen(
                 }
             }
         }
+    }
+
+    LaunchedEffect(templateListViewModel, lifecycleOwner) {
+        templateListViewModel.eventsFor(TemplateListEventOwner.INTAKE)
+            .flowWithLifecycle(lifecycleOwner.lifecycle, Lifecycle.State.STARTED)
+            .collectLatest { event ->
+                val message = event.toTemplateErrorMessage(context) ?: return@collectLatest
+                soundPlayer.playBeep()
+                snackbarHostState.showSnackbar(message)
+            }
     }
 
     // QR Code Bottom Sheet — showQrSheet and qrEnabled live in the ViewModel
@@ -240,7 +257,10 @@ fun CustomerIntakeScreen(
                     onExpandedChange = { templateDropdownExpanded = it },
                     onTemplateSelected = {
                         hapticFeedback()
-                        templateListViewModel.setActiveTemplate(it)
+                        templateListViewModel.setActiveTemplate(
+                            it,
+                            TemplateListEventOwner.INTAKE
+                        )
                         templateDropdownExpanded = false
                     },
                     onManageTemplates = {

@@ -71,7 +71,10 @@ class CustomerIntakeScreenTest {
             settingsStore = settingsStore,
             resourceProvider = AndroidResourceProvider(appContext)
         )
-        templateListViewModel = TemplateListViewModel(settingsStore)
+        templateListViewModel = TemplateListViewModel(
+            settingsStore,
+            AndroidResourceProvider(appContext)
+        )
 
         navigator = FakeNavigator()
         soundPlayer = FakeSoundPlayer()

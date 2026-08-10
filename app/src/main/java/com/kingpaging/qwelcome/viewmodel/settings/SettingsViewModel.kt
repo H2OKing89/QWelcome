@@ -14,6 +14,7 @@ import com.kingpaging.qwelcome.data.PrivacySettings
 import com.kingpaging.qwelcome.data.SettingsStore
 import com.kingpaging.qwelcome.data.TechProfile
 import com.kingpaging.qwelcome.data.Template
+import com.kingpaging.qwelcome.data.TemplateSelectionResult
 import com.kingpaging.qwelcome.data.UpdateCheckResult
 import com.kingpaging.qwelcome.data.VerificationResult
 import com.kingpaging.qwelcome.util.ResourceProvider
@@ -134,7 +135,28 @@ class SettingsViewModel(
     fun setActiveTemplate(templateId: String) {
         viewModelScope.launch {
             try {
-                store.setActiveTemplate(templateId)
+                when (val result = store.setActiveTemplate(templateId)) {
+                    is TemplateSelectionResult.Blocked -> {
+                        _settingsEvents.emit(
+                            SettingsEvent.ShowToastError(
+                                resourceProvider.getString(
+                                    R.string.error_template_cannot_use,
+                                    result.template.name,
+                                    result.missingPlaceholders.joinToString(", ")
+                                )
+                            )
+                        )
+                    }
+                    is TemplateSelectionResult.NotFound -> {
+                        _settingsEvents.emit(
+                            SettingsEvent.ShowToastError(
+                                resourceProvider.getString(R.string.error_template_not_found)
+                            )
+                        )
+                    }
+                    is TemplateSelectionResult.Selected,
+                    is TemplateSelectionResult.AlreadyActive -> Unit
+                }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
