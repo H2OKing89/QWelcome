@@ -12,7 +12,6 @@ import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onAllNodes
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -71,7 +70,10 @@ class CustomerIntakeScreenTest {
             settingsStore = settingsStore,
             resourceProvider = AndroidResourceProvider(appContext)
         )
-        templateListViewModel = TemplateListViewModel(settingsStore)
+        templateListViewModel = TemplateListViewModel(
+            settingsStore,
+            AndroidResourceProvider(appContext)
+        )
 
         navigator = FakeNavigator()
         soundPlayer = FakeSoundPlayer()
@@ -142,12 +144,12 @@ class CustomerIntakeScreenTest {
 
         composeRule.waitUntil(timeoutMillis = 5_000) {
             composeRule
-                .onAllNodes(
+                .onNode(
                     editableFieldWithLabel(context.getString(R.string.label_customer_name)),
                     useUnmergedTree = true
                 )
-                .fetchSemanticsNodes()
-                .any { it.config.getOrNull(SemanticsProperties.Focused) == true }
+                .fetchSemanticsNode()
+                .config[SemanticsProperties.Focused]
         }
 
         composeRule.onNode(

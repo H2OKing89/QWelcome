@@ -5,9 +5,9 @@ package com.kingpaging.qwelcome.ui.templates
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.input.TextFieldState
@@ -16,14 +16,14 @@ import androidx.compose.foundation.text.input.insert
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SheetState
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -38,6 +38,7 @@ import com.kingpaging.qwelcome.ui.components.CyberpunkBackdrop
 import com.kingpaging.qwelcome.ui.components.NeonDiscardDialog
 import com.kingpaging.qwelcome.util.rememberHapticFeedback
 import com.kingpaging.qwelcome.viewmodel.templates.TemplateEditorUiState
+import com.kingpaging.qwelcome.viewmodel.templates.MAX_TEMPLATE_NAME_LENGTH
 import kotlinx.coroutines.flow.distinctUntilChanged
 
 private const val TAG_MAX_LENGTH = 32
@@ -64,15 +65,8 @@ internal fun mergeDraftTag(existingTags: List<String>, draftTagInput: String): L
 
 private class TemplateEditorState(
     val contentFieldState: TextFieldState,
-    private val pendingPlaceholderState: MutableState<String?>,
     private val showContentEditorDialogState: MutableState<Boolean>
 ) {
-    var pendingPlaceholder: String?
-        get() = pendingPlaceholderState.value
-        private set(value) {
-            pendingPlaceholderState.value = value
-        }
-
     var showContentEditorDialog: Boolean
         get() = showContentEditorDialogState.value
         private set(value) {
@@ -151,30 +145,6 @@ private class TemplateEditorState(
         onContentChange(contentFieldState.text.toString())
         contentFocusRequester.requestFocus()
     }
-
-    fun requestPlaceholderInsert(
-        placeholder: String,
-        onContentChange: (String) -> Unit,
-        contentFocusRequester: FocusRequester
-    ) {
-        if (showContentEditorDialog) {
-            insertPlaceholder(placeholder, onContentChange, contentFocusRequester)
-        } else {
-            pendingPlaceholder = placeholder
-            showContentEditorDialog = true
-        }
-    }
-
-    fun consumePendingPlaceholder(
-        onContentChange: (String) -> Unit,
-        contentFocusRequester: FocusRequester
-    ) {
-        val placeholder = pendingPlaceholder
-        if (showContentEditorDialog && placeholder != null) {
-            insertPlaceholder(placeholder, onContentChange, contentFocusRequester)
-            pendingPlaceholder = null
-        }
-    }
 }
 
 @Composable
@@ -182,10 +152,9 @@ private fun rememberTemplateEditorState(
     initialContentText: String
 ): TemplateEditorState {
     val contentFieldState = rememberTextFieldState(initialText = initialContentText)
-    val pendingPlaceholderState = rememberSaveable { mutableStateOf<String?>(null) }
     val showContentEditorDialogState = rememberSaveable { mutableStateOf(false) }
     return remember {
-        TemplateEditorState(contentFieldState, pendingPlaceholderState, showContentEditorDialogState)
+        TemplateEditorState(contentFieldState, showContentEditorDialogState)
     }
 }
 
@@ -205,7 +174,40 @@ private fun BindTemplateEditorState(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
+@Suppress("FunctionNaming")
+@Composable
+private fun TemplateTagsSheetHost(
+    visible: Boolean,
+    editorUiState: TemplateEditorUiState,
+    availableSuggestions: List<String>,
+    onNewTagInputChange: (String) -> Unit,
+    onTagsChange: (List<String>) -> Unit,
+    addTag: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    if (!visible && !sheetState.isVisible) return
+
+    TemplateTagsSheet(
+        sheetState = sheetState,
+        tags = editorUiState.tags,
+        newTagInput = editorUiState.newTagInput,
+        availableSuggestions = availableSuggestions,
+        onNewTagInputChange = onNewTagInputChange,
+        onAddTag = addTag,
+        onRemoveTag = { tag ->
+            onTagsChange(
+                editorUiState.tags.filterNot {
+                    it.equals(tag, ignoreCase = true)
+                }
+            )
+        },
+        onSuggestionSelected = addTag,
+        onDismiss = onDismiss
+    )
+}
+
+@Suppress("FunctionNaming", "LongMethod")
 @Composable
 internal fun TemplateEditorContent(
     template: Template,
@@ -229,6 +231,7 @@ internal fun TemplateEditorContent(
     val editorState = rememberTemplateEditorState(editorUiState.contentText)
     val contentFocusRequester = remember { FocusRequester() }
     val contentInteractionSource = remember { MutableInteractionSource() }
+    val showTagsSheet = rememberSaveable { mutableStateOf(false) }
     val haptic = rememberHapticFeedback()
 
     BindTemplateEditorState(
@@ -241,7 +244,8 @@ internal fun TemplateEditorContent(
         editorUiState.contentText != originalContent ||
         editorUiState.tags != originalTags ||
         editorUiState.newTagInput.isNotBlank()
-    val canSave = editorUiState.name.isNotBlank() && editorUiState.contentError == null
+    val isValid = editorUiState.name.isNotBlank() && editorUiState.contentError == null
+    val saveEnabled = isValid && isDirty
     val suggestedTags = listOf(
         stringResource(R.string.tag_residential),
         stringResource(R.string.tag_business),
@@ -262,7 +266,7 @@ internal fun TemplateEditorContent(
     }
 
     BackHandler(enabled = editorState.showContentEditorDialog) { editorState.closeContentEditor() }
-    BackHandler(enabled = !editorState.showContentEditorDialog) {
+    BackHandler(enabled = !editorState.showContentEditorDialog && !showTagsSheet.value) {
         editorState.dismiss(isDirty, onToggleDiscardDialog, onCancelEditing)
     }
 
@@ -283,17 +287,8 @@ internal fun TemplateEditorContent(
             topBar = {
                 TemplateEditorTopBar(
                     isNew = isNew,
+                    canSave = saveEnabled,
                     onBack = {
-                        haptic()
-                        editorState.dismiss(isDirty, onToggleDiscardDialog, onCancelEditing)
-                    }
-                )
-            },
-            bottomBar = {
-                TemplateEditorBottomBar(
-                    isNew = isNew,
-                    canSave = canSave,
-                    onCancel = {
                         haptic()
                         editorState.dismiss(isDirty, onToggleDiscardDialog, onCancelEditing)
                     },
@@ -316,54 +311,22 @@ internal fun TemplateEditorContent(
                     .fillMaxSize()
                     .padding(innerPadding)
                     .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-                contentPadding = PaddingValues(top = 12.dp, bottom = 12.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                contentPadding = PaddingValues(top = 8.dp, bottom = 24.dp)
             ) {
                 item(key = "template_name") {
                     TemplateNameField(
                         name = editorUiState.name,
                         nameError = editorUiState.nameError,
                         onNameChange = {
-                            if (it.length <= 50) {
-                                onNameChange(it)
-                                onNameErrorChange(null)
-                            }
+                            onNameChange(it.take(MAX_TEMPLATE_NAME_LENGTH))
+                            onNameErrorChange(null)
                         },
                         onNext = { editorState.openContentEditor() }
                     )
                 }
 
-                item(key = "tags_section") {
-                    TagsSection(
-                        tags = editorUiState.tags,
-                        newTagInput = editorUiState.newTagInput,
-                        availableSuggestions = availableSuggestions,
-                        onNewTagInputChange = onNewTagInputChange,
-                        onAddTag = addTag,
-                        onRemoveTag = { tag ->
-                            onTagsChange(
-                                editorUiState.tags.filterNot {
-                                    it.equals(tag, ignoreCase = true)
-                                }
-                            )
-                        },
-                        onSuggestionSelected = addTag
-                    )
-                }
-
-                item(key = "placeholder_chips") {
-                    PlaceholderChipsSection(
-                        onInsertPlaceholder = { placeholder ->
-                            editorState.requestPlaceholderInsert(
-                                placeholder = placeholder,
-                                onContentChange = onContentChange,
-                                contentFocusRequester = contentFocusRequester
-                            )
-                        }
-                    )
-                }
-
-                item(key = "message_launcher") {
+                item(key = "message_preview") {
                     MessageContentLauncher(
                         contentText = editorUiState.contentText,
                         contentError = editorUiState.contentError,
@@ -373,8 +336,28 @@ internal fun TemplateEditorContent(
                         }
                     )
                 }
+
+                item(key = "tags_summary") {
+                    TemplateTagsSummary(
+                        tags = editorUiState.tags,
+                        onOpen = {
+                            haptic()
+                            showTagsSheet.value = true
+                        }
+                    )
+                }
             }
         }
+
+        TemplateTagsSheetHost(
+            visible = showTagsSheet.value,
+            editorUiState = editorUiState,
+            availableSuggestions = availableSuggestions,
+            onNewTagInputChange = onNewTagInputChange,
+            onTagsChange = onTagsChange,
+            addTag = addTag,
+            onDismiss = { showTagsSheet.value = false }
+        )
 
         if (editorState.showContentEditorDialog) {
             ContentEditorDialog(
@@ -382,10 +365,6 @@ internal fun TemplateEditorContent(
                 contentFocusRequester = contentFocusRequester,
                 contentInteractionSource = contentInteractionSource,
                 contentError = editorUiState.contentError,
-                pendingPlaceholder = editorState.pendingPlaceholder,
-                onConsumePendingPlaceholder = {
-                    editorState.consumePendingPlaceholder(onContentChange, contentFocusRequester)
-                },
                 onDismissRequest = editorState::closeContentEditor,
                 onInsertPlaceholder = { placeholder ->
                     editorState.insertPlaceholder(

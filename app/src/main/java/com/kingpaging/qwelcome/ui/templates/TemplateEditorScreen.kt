@@ -19,6 +19,7 @@ import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.di.LocalSoundPlayer
 import com.kingpaging.qwelcome.di.LocalTemplateListViewModel
 import com.kingpaging.qwelcome.viewmodel.templates.TemplateListEvent
+import com.kingpaging.qwelcome.viewmodel.templates.TemplateListEventOwner
 
 @Suppress("LocalContextGetResourceValueCall")
 @Composable
@@ -48,8 +49,8 @@ fun TemplateEditorScreen(
         return
     }
 
-    LaunchedEffect(lifecycleOwner, vm.events) {
-        vm.events
+    LaunchedEffect(vm, lifecycleOwner) {
+        vm.eventsFor(TemplateListEventOwner.EDITOR)
             .flowWithLifecycle(lifecycleOwner.lifecycle, Lifecycle.State.STARTED)
             .collect { event ->
                 when (event) {
@@ -73,12 +74,18 @@ fun TemplateEditorScreen(
 
                     is TemplateListEvent.Error -> {
                         soundPlayer.playBeep()
-                        Toast.makeText(context, event.message, Toast.LENGTH_LONG).show()
+                        Toast.makeText(
+                            context,
+                            checkNotNull(event.toTemplateErrorMessage(context)),
+                            Toast.LENGTH_LONG
+                        ).show()
                     }
 
                     is TemplateListEvent.TemplateDeleted,
                     is TemplateListEvent.TemplateDuplicated,
-                    is TemplateListEvent.ActiveTemplateChanged -> Unit
+                    is TemplateListEvent.ActiveTemplateChanged,
+                    is TemplateListEvent.TemplateSelectionBlocked,
+                    is TemplateListEvent.TemplateRenamed -> Unit
                 }
             }
     }

@@ -69,7 +69,7 @@ internal class ImportApplyService(
                 val requestedDefaultId = backup.getEffectiveDefaultTemplateId() ?: DEFAULT_TEMPLATE_ID
                 val resolvedDefaultId = resolved.idMap[requestedDefaultId] ?: requestedDefaultId
                 if (resolvedDefaultId == DEFAULT_TEMPLATE_ID || resolvedDefaultId in availableTemplateIds) {
-                    settingsStore.setActiveTemplate(resolvedDefaultId)
+                    settingsStore.restoreActiveTemplate(resolvedDefaultId)
                 }
             }
 

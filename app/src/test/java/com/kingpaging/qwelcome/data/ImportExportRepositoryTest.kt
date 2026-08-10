@@ -151,6 +151,8 @@ class ImportExportRepositoryTest {
 
         assertTrue(applyResult is ImportApplyResult.Success)
         coVerify { settingsStore.saveTemplates(any()) }
+        coVerify { settingsStore.restoreActiveTemplate("template-1") }
+        coVerify(exactly = 0) { settingsStore.setActiveTemplate(any()) }
     }
 }
 
