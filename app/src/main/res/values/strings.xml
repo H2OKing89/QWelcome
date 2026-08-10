@@ -88,8 +88,8 @@
     <string name="label_search_templates">Search templates</string>
     <string name="label_all_tags">All</string>
     <string name="label_tags">Tags</string>
-    <string name="title_template_details">Details</string>
-    <string name="title_template_organize">Organize</string>
+    <string name="text_no_tags">No tags</string>
+    <string name="action_manage_tags">Manage tags</string>
     <string name="hint_add_tag">Add tag</string>
     <string name="content_desc_remove_tag">Remove tag: %1$s</string>
     <string name="content_desc_filter_by_tag">Filter by tag: %1$s</string>

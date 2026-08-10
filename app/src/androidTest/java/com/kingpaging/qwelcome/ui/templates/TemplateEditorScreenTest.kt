@@ -70,7 +70,7 @@ class TemplateEditorScreenTest {
 
         composeRule.onNodeWithText(appContext.getString(R.string.title_create_template))
             .assertIsDisplayed()
-        composeRule.onNodeWithText(appContext.getString(R.string.action_create))
+        composeRule.onNodeWithContentDescription(appContext.getString(R.string.action_create))
             .assertIsDisplayed()
     }
 
@@ -88,7 +88,7 @@ class TemplateEditorScreenTest {
     fun newTemplate_createButtonDisabledWhenNameBlank() {
         setScreenContentNewTemplate()
 
-        composeRule.onNodeWithText(appContext.getString(R.string.action_create))
+        composeRule.onNodeWithContentDescription(appContext.getString(R.string.action_create))
             .assertIsNotEnabled()
     }
 
@@ -101,7 +101,7 @@ class TemplateEditorScreenTest {
 
         composeRule.waitForIdle()
 
-        composeRule.onNodeWithText(appContext.getString(R.string.action_create))
+        composeRule.onNodeWithContentDescription(appContext.getString(R.string.action_create))
             .assertIsEnabled()
     }
 
@@ -113,7 +113,7 @@ class TemplateEditorScreenTest {
 
         composeRule.onNodeWithText(appContext.getString(R.string.title_edit_template))
             .assertIsDisplayed()
-        composeRule.onNodeWithText(appContext.getString(R.string.action_save))
+        composeRule.onNodeWithContentDescription(appContext.getString(R.string.action_save))
             .assertIsDisplayed()
     }
 
@@ -125,10 +125,17 @@ class TemplateEditorScreenTest {
     }
 
     @Test
-    fun editTemplate_saveButtonEnabledWithValidState() {
+    fun editTemplate_saveButtonDisabledUntilDraftChanges() {
         setScreenContentExistingTemplate()
 
-        composeRule.onNodeWithText(appContext.getString(R.string.action_save))
+        composeRule.onNodeWithContentDescription(appContext.getString(R.string.action_save))
+            .assertIsNotEnabled()
+
+        composeRule.onNode(editableFieldWithLabel(appContext.getString(R.string.label_name)))
+            .performTextInput(" Updated")
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithContentDescription(appContext.getString(R.string.action_save))
             .assertIsEnabled()
     }
 
@@ -155,11 +162,11 @@ class TemplateEditorScreenTest {
     }
 
     @Test
-    fun cancelButton_isDisplayed() {
+    fun cancelButton_isNotDisplayed() {
         setScreenContentNewTemplate()
 
         composeRule.onNodeWithText(appContext.getString(R.string.action_cancel))
-            .assertIsDisplayed()
+            .assertDoesNotExist()
     }
 
     // ── Tags ─────────────────────────────────────────────────────────
@@ -167,6 +174,7 @@ class TemplateEditorScreenTest {
     @Test
     fun tagSuggestions_areDisplayed() {
         setScreenContentNewTemplate()
+        openTagsSheet()
 
         composeRule.onNodeWithText(appContext.getString(R.string.tag_residential))
             .assertIsDisplayed()
@@ -185,6 +193,7 @@ class TemplateEditorScreenTest {
         setScreenContentNewTemplate()
         val residentialTag = appContext.getString(R.string.tag_residential)
 
+        openTagsSheet()
         composeRule.onNodeWithText(residentialTag).performClick()
         composeRule.waitForIdle()
 
@@ -198,8 +207,7 @@ class TemplateEditorScreenTest {
     fun editTemplate_prefillsTags() {
         setScreenContentExistingTemplate(tags = listOf("Custom", "VIP"))
 
-        composeRule.onNodeWithText("Custom").assertIsDisplayed()
-        composeRule.onNodeWithText("VIP").assertIsDisplayed()
+        composeRule.onNodeWithText("Custom, VIP").assertIsDisplayed()
     }
 
     // ── Variable toolbar ─────────────────────────────────────────────
@@ -233,7 +241,7 @@ class TemplateEditorScreenTest {
     fun editButton_isDisplayed() {
         setScreenContentNewTemplate()
 
-        composeRule.onNodeWithContentDescription(appContext.getString(R.string.action_edit))
+        composeRule.onNodeWithText(appContext.getString(R.string.action_edit_message))
             .assertIsDisplayed()
     }
 
@@ -259,7 +267,7 @@ class TemplateEditorScreenTest {
             .performTextInput("Test Template")
         composeRule.waitForIdle()
 
-        composeRule.onNodeWithText(appContext.getString(R.string.action_create))
+        composeRule.onNodeWithContentDescription(appContext.getString(R.string.action_create))
             .assertIsEnabled()
     }
 
@@ -279,7 +287,7 @@ class TemplateEditorScreenTest {
     fun editTemplate_missingPlaceholders_disablesSaveButton() {
         setScreenContentExistingTemplate(content = "Hello, no placeholders here")
 
-        composeRule.onNodeWithText(appContext.getString(R.string.action_save))
+        composeRule.onNodeWithContentDescription(appContext.getString(R.string.action_save))
             .assertIsNotEnabled()
     }
 
@@ -295,7 +303,7 @@ class TemplateEditorScreenTest {
             .performTextInput("Temporary Name")
         composeRule.waitForIdle()
 
-        composeRule.onNodeWithText(appContext.getString(R.string.action_create))
+        composeRule.onNodeWithContentDescription(appContext.getString(R.string.action_create))
             .assertIsEnabled()
 
         // Clear the name — button becomes disabled again
@@ -303,7 +311,7 @@ class TemplateEditorScreenTest {
             .performTextClearance()
         composeRule.waitForIdle()
 
-        composeRule.onNodeWithText(appContext.getString(R.string.action_create))
+        composeRule.onNodeWithContentDescription(appContext.getString(R.string.action_create))
             .assertIsNotEnabled()
     }
 
@@ -313,7 +321,7 @@ class TemplateEditorScreenTest {
         val nameLabel = appContext.getString(R.string.label_name)
 
         // Start with blank name — button disabled
-        composeRule.onNodeWithText(appContext.getString(R.string.action_create))
+        composeRule.onNodeWithContentDescription(appContext.getString(R.string.action_create))
             .assertIsNotEnabled()
 
         // Type a name — button enabled
@@ -321,7 +329,7 @@ class TemplateEditorScreenTest {
             .performTextInput("First Name")
         composeRule.waitForIdle()
 
-        composeRule.onNodeWithText(appContext.getString(R.string.action_create))
+        composeRule.onNodeWithContentDescription(appContext.getString(R.string.action_create))
             .assertIsEnabled()
 
         // Clear it — button disabled
@@ -329,7 +337,7 @@ class TemplateEditorScreenTest {
             .performTextClearance()
         composeRule.waitForIdle()
 
-        composeRule.onNodeWithText(appContext.getString(R.string.action_create))
+        composeRule.onNodeWithContentDescription(appContext.getString(R.string.action_create))
             .assertIsNotEnabled()
 
         // Re-enter a name — button re-enabled
@@ -337,14 +345,14 @@ class TemplateEditorScreenTest {
             .performTextInput("Second Name")
         composeRule.waitForIdle()
 
-        composeRule.onNodeWithText(appContext.getString(R.string.action_create))
+        composeRule.onNodeWithContentDescription(appContext.getString(R.string.action_create))
             .assertIsEnabled()
     }
 
     // ── Discard dialog ───────────────────────────────────────────────
 
     @Test
-    fun cancelWithChanges_showsDiscardDialog() {
+    fun backWithChanges_showsDiscardDialog() {
         setScreenContentExistingTemplate()
 
         // Make a change
@@ -354,8 +362,7 @@ class TemplateEditorScreenTest {
         ).performTextInput(" Modified")
         composeRule.waitForIdle()
 
-        // Press cancel
-        composeRule.onNodeWithText(appContext.getString(R.string.action_cancel))
+        composeRule.onNodeWithContentDescription(appContext.getString(R.string.content_desc_back))
             .performClick()
         composeRule.waitForIdle()
 
@@ -371,14 +378,14 @@ class TemplateEditorScreenTest {
     fun discardDialog_keepEditing_dismissesDialog() {
         setScreenContentExistingTemplate()
 
-        // Make a change then cancel
+        // Make a change then go back
         composeRule.onNode(
             editableFieldWithLabel(appContext.getString(R.string.label_name)),
             useUnmergedTree = true
         ).performTextInput(" Modified")
         composeRule.waitForIdle()
 
-        composeRule.onNodeWithText(appContext.getString(R.string.action_cancel))
+        composeRule.onNodeWithContentDescription(appContext.getString(R.string.content_desc_back))
             .performClick()
         composeRule.waitForIdle()
 
@@ -395,11 +402,10 @@ class TemplateEditorScreenTest {
     }
 
     @Test
-    fun cancelWithNoChanges_doesNotShowDiscardDialog() {
+    fun backWithNoChanges_doesNotShowDiscardDialog() {
         setScreenContentExistingTemplate()
 
-        // Press cancel without making changes
-        composeRule.onNodeWithText(appContext.getString(R.string.action_cancel))
+        composeRule.onNodeWithContentDescription(appContext.getString(R.string.content_desc_back))
             .performClick()
         composeRule.waitForIdle()
 
@@ -492,7 +498,13 @@ class TemplateEditorScreenTest {
     }
 
     private fun openMessageWorkspace() {
-        composeRule.onNodeWithContentDescription(appContext.getString(R.string.action_edit))
+        composeRule.onNodeWithText(appContext.getString(R.string.action_edit_message))
+            .performClick()
+        composeRule.waitForIdle()
+    }
+
+    private fun openTagsSheet() {
+        composeRule.onNodeWithContentDescription(appContext.getString(R.string.action_manage_tags))
             .performClick()
         composeRule.waitForIdle()
     }

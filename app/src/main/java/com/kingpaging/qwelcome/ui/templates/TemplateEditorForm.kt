@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
@@ -25,16 +27,17 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.InputChip
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -45,16 +48,6 @@ import com.kingpaging.qwelcome.ui.components.InteractivePlaceholderChip
 import com.kingpaging.qwelcome.ui.components.NeonOutlinedField
 
 internal const val TEMPLATE_VARIABLE_TOOLBAR_TEST_TAG = "template_variable_toolbar"
-
-@Suppress("FunctionNaming")
-@Composable
-internal fun TemplateEditorSectionHeader(title: String) {
-    Text(
-        text = title,
-        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-        color = MaterialTheme.colorScheme.onSurface
-    )
-}
 
 @Composable
 internal fun TemplateNameField(
@@ -78,8 +71,9 @@ internal fun TemplateNameField(
 }
 
 @OptIn(ExperimentalLayoutApi::class)
+@Suppress("FunctionNaming", "LongMethod")
 @Composable
-internal fun TagsSection(
+private fun TagsEditor(
     tags: List<String>,
     newTagInput: String,
     availableSuggestions: List<String>,
@@ -88,17 +82,10 @@ internal fun TagsSection(
     onRemoveTag: (String) -> Unit,
     onSuggestionSelected: (String) -> Unit
 ) {
-    Text(
-        text = stringResource(R.string.label_tags),
-        style = MaterialTheme.typography.labelMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant
-    )
-
     if (tags.isNotEmpty()) {
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.padding(top = 8.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             tags.forEach { tag ->
                 key(tag) {
@@ -146,7 +133,7 @@ internal fun TagsSection(
                 )
             }
         },
-        modifier = Modifier.padding(top = 8.dp)
+        modifier = Modifier.fillMaxWidth()
     )
 
     if (availableSuggestions.isNotEmpty()) {
@@ -161,6 +148,117 @@ internal fun TagsSection(
                     label = { Text(suggestion) }
                 )
             }
+        }
+    }
+}
+
+@Suppress("FunctionNaming")
+@Composable
+internal fun TemplateTagsSummary(
+    tags: List<String>,
+    onOpen: () -> Unit
+) {
+    Surface(
+        onClick = onOpen,
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.small,
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.label_tags),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = if (tags.isEmpty()) {
+                        stringResource(R.string.text_no_tags)
+                    } else {
+                        tags.joinToString(", ")
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            Icon(
+                imageVector = Icons.Default.Edit,
+                contentDescription = stringResource(R.string.action_manage_tags),
+                tint = MaterialTheme.colorScheme.secondary,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Suppress("FunctionNaming")
+@Composable
+internal fun TemplateTagsSheet(
+    tags: List<String>,
+    newTagInput: String,
+    availableSuggestions: List<String>,
+    onNewTagInputChange: (String) -> Unit,
+    onAddTag: (String) -> Unit,
+    onRemoveTag: (String) -> Unit,
+    onSuggestionSelected: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surface
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .imePadding()
+                .padding(horizontal = 20.dp)
+                .padding(bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(R.string.label_tags),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.secondary
+                )
+                IconButton(onClick = onDismiss) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = stringResource(R.string.action_done)
+                    )
+                }
+            }
+
+            TagsEditor(
+                tags = tags,
+                newTagInput = newTagInput,
+                availableSuggestions = availableSuggestions,
+                onNewTagInputChange = onNewTagInputChange,
+                onAddTag = onAddTag,
+                onRemoveTag = onRemoveTag,
+                onSuggestionSelected = onSuggestionSelected
+            )
         }
     }
 }
@@ -225,7 +323,7 @@ internal fun MessageContentLauncher(
                 .padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            MessageEditLabel()
+            MessagePreviewHeader()
 
             Text(
                 text = contentText.ifBlank { stringResource(R.string.hint_template_empty_content) },
@@ -235,7 +333,7 @@ internal fun MessageContentLauncher(
                 } else {
                     MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f)
                 },
-                maxLines = 6,
+                maxLines = 4,
                 overflow = TextOverflow.Ellipsis
             )
 
@@ -255,24 +353,32 @@ internal fun MessageContentLauncher(
 
 @Suppress("FunctionNaming")
 @Composable
-private fun MessageEditLabel() {
+private fun MessagePreviewHeader() {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.End,
+        horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = stringResource(R.string.action_edit_message),
+            text = stringResource(R.string.label_message),
             style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.secondary
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        Icon(
-            imageVector = Icons.Default.Edit,
-            contentDescription = stringResource(R.string.action_edit),
-            tint = MaterialTheme.colorScheme.secondary,
-            modifier = Modifier
-                .padding(start = 8.dp)
-                .size(18.dp)
-        )
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = stringResource(R.string.action_edit_message),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.secondary
+            )
+            Icon(
+                imageVector = Icons.Default.Edit,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.secondary,
+                modifier = Modifier.size(18.dp)
+            )
+        }
     }
 }

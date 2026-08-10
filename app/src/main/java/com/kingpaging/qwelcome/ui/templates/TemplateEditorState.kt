@@ -5,7 +5,6 @@ package com.kingpaging.qwelcome.ui.templates
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,7 +15,6 @@ import androidx.compose.foundation.text.input.delete
 import androidx.compose.foundation.text.input.insert
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -36,7 +34,6 @@ import com.kingpaging.qwelcome.data.NEW_TEMPLATE_ID
 import com.kingpaging.qwelcome.data.Template
 import com.kingpaging.qwelcome.ui.components.CyberpunkBackdrop
 import com.kingpaging.qwelcome.ui.components.NeonDiscardDialog
-import com.kingpaging.qwelcome.ui.components.NeonPanel
 import com.kingpaging.qwelcome.util.rememberHapticFeedback
 import com.kingpaging.qwelcome.viewmodel.templates.TemplateEditorUiState
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -174,7 +171,38 @@ private fun BindTemplateEditorState(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
+@Suppress("FunctionNaming")
+@Composable
+private fun TemplateTagsSheetHost(
+    visible: Boolean,
+    editorUiState: TemplateEditorUiState,
+    availableSuggestions: List<String>,
+    onNewTagInputChange: (String) -> Unit,
+    onTagsChange: (List<String>) -> Unit,
+    addTag: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    if (!visible) return
+
+    TemplateTagsSheet(
+        tags = editorUiState.tags,
+        newTagInput = editorUiState.newTagInput,
+        availableSuggestions = availableSuggestions,
+        onNewTagInputChange = onNewTagInputChange,
+        onAddTag = addTag,
+        onRemoveTag = { tag ->
+            onTagsChange(
+                editorUiState.tags.filterNot {
+                    it.equals(tag, ignoreCase = true)
+                }
+            )
+        },
+        onSuggestionSelected = addTag,
+        onDismiss = onDismiss
+    )
+}
+
+@Suppress("FunctionNaming", "LongMethod")
 @Composable
 internal fun TemplateEditorContent(
     template: Template,
@@ -198,6 +226,7 @@ internal fun TemplateEditorContent(
     val editorState = rememberTemplateEditorState(editorUiState.contentText)
     val contentFocusRequester = remember { FocusRequester() }
     val contentInteractionSource = remember { MutableInteractionSource() }
+    val showTagsSheet = rememberSaveable { mutableStateOf(false) }
     val haptic = rememberHapticFeedback()
 
     BindTemplateEditorState(
@@ -211,6 +240,7 @@ internal fun TemplateEditorContent(
         editorUiState.tags != originalTags ||
         editorUiState.newTagInput.isNotBlank()
     val canSave = editorUiState.name.isNotBlank() && editorUiState.contentError == null
+    val saveEnabled = canSave && isDirty
     val suggestedTags = listOf(
         stringResource(R.string.tag_residential),
         stringResource(R.string.tag_business),
@@ -231,7 +261,8 @@ internal fun TemplateEditorContent(
     }
 
     BackHandler(enabled = editorState.showContentEditorDialog) { editorState.closeContentEditor() }
-    BackHandler(enabled = !editorState.showContentEditorDialog) {
+    BackHandler(enabled = showTagsSheet.value) { showTagsSheet.value = false }
+    BackHandler(enabled = !editorState.showContentEditorDialog && !showTagsSheet.value) {
         editorState.dismiss(isDirty, onToggleDiscardDialog, onCancelEditing)
     }
 
@@ -252,17 +283,8 @@ internal fun TemplateEditorContent(
             topBar = {
                 TemplateEditorTopBar(
                     isNew = isNew,
+                    canSave = saveEnabled,
                     onBack = {
-                        haptic()
-                        editorState.dismiss(isDirty, onToggleDiscardDialog, onCancelEditing)
-                    }
-                )
-            },
-            bottomBar = {
-                TemplateEditorBottomBar(
-                    isNew = isNew,
-                    canSave = canSave,
-                    onCancel = {
                         haptic()
                         editorState.dismiss(isDirty, onToggleDiscardDialog, onCancelEditing)
                     },
@@ -285,77 +307,55 @@ internal fun TemplateEditorContent(
                     .fillMaxSize()
                     .padding(innerPadding)
                     .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                contentPadding = PaddingValues(top = 12.dp, bottom = 12.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                contentPadding = PaddingValues(top = 8.dp, bottom = 24.dp)
             ) {
-                item(key = "details_panel") {
-                    NeonPanel(
-                        modifier = Modifier.fillMaxWidth(),
-                        accentColor = MaterialTheme.colorScheme.primary
-                    ) {
-                        TemplateEditorSectionHeader(
-                            title = stringResource(R.string.title_template_details)
-                        )
-                        TemplateNameField(
-                            name = editorUiState.name,
-                            nameError = editorUiState.nameError,
-                            onNameChange = {
-                                if (it.length <= 50) {
-                                    onNameChange(it)
-                                    onNameErrorChange(null)
-                                }
-                            },
-                            onNext = { editorState.openContentEditor() }
-                        )
-                    }
-                }
-
-                item(key = "message_panel") {
-                    NeonPanel(
-                        modifier = Modifier.fillMaxWidth(),
-                        accentColor = MaterialTheme.colorScheme.secondary
-                    ) {
-                        TemplateEditorSectionHeader(
-                            title = stringResource(R.string.label_message)
-                        )
-                        MessageContentLauncher(
-                            contentText = editorUiState.contentText,
-                            contentError = editorUiState.contentError,
-                            onOpenEditor = {
-                                haptic()
-                                editorState.openContentEditor()
+                item(key = "template_name") {
+                    TemplateNameField(
+                        name = editorUiState.name,
+                        nameError = editorUiState.nameError,
+                        onNameChange = {
+                            if (it.length <= 50) {
+                                onNameChange(it)
+                                onNameErrorChange(null)
                             }
-                        )
-                    }
+                        },
+                        onNext = { editorState.openContentEditor() }
+                    )
                 }
 
-                item(key = "organize_panel") {
-                    NeonPanel(
-                        modifier = Modifier.fillMaxWidth(),
-                        accentColor = MaterialTheme.colorScheme.tertiary
-                    ) {
-                        TemplateEditorSectionHeader(
-                            title = stringResource(R.string.title_template_organize)
-                        )
-                        TagsSection(
-                            tags = editorUiState.tags,
-                            newTagInput = editorUiState.newTagInput,
-                            availableSuggestions = availableSuggestions,
-                            onNewTagInputChange = onNewTagInputChange,
-                            onAddTag = addTag,
-                            onRemoveTag = { tag ->
-                                onTagsChange(
-                                    editorUiState.tags.filterNot {
-                                        it.equals(tag, ignoreCase = true)
-                                    }
-                                )
-                            },
-                            onSuggestionSelected = addTag
-                        )
-                    }
+                item(key = "message_preview") {
+                    MessageContentLauncher(
+                        contentText = editorUiState.contentText,
+                        contentError = editorUiState.contentError,
+                        onOpenEditor = {
+                            haptic()
+                            editorState.openContentEditor()
+                        }
+                    )
+                }
+
+                item(key = "tags_summary") {
+                    TemplateTagsSummary(
+                        tags = editorUiState.tags,
+                        onOpen = {
+                            haptic()
+                            showTagsSheet.value = true
+                        }
+                    )
                 }
             }
         }
+
+        TemplateTagsSheetHost(
+            visible = showTagsSheet.value,
+            editorUiState = editorUiState,
+            availableSuggestions = availableSuggestions,
+            onNewTagInputChange = onNewTagInputChange,
+            onTagsChange = onTagsChange,
+            addTag = addTag,
+            onDismiss = { showTagsSheet.value = false }
+        )
 
         if (editorState.showContentEditorDialog) {
             ContentEditorDialog(
