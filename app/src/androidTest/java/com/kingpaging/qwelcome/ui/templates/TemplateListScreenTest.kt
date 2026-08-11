@@ -1,6 +1,7 @@
 package com.kingpaging.qwelcome.ui.templates
 
 import android.content.Context
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -20,6 +21,7 @@ import com.kingpaging.qwelcome.ui.theme.CyberpunkTheme
 import com.kingpaging.qwelcome.util.AndroidResourceProvider
 import com.kingpaging.qwelcome.viewmodel.factory.AppViewModelProvider
 import com.kingpaging.qwelcome.viewmodel.templates.MAX_TEMPLATE_NAME_LENGTH
+import com.kingpaging.qwelcome.viewmodel.templates.TemplateListUiState
 import com.kingpaging.qwelcome.viewmodel.templates.TemplateListViewModel
 import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.runBlocking
@@ -85,6 +87,37 @@ class TemplateListScreenTest {
 
         composeRule.waitUntil { openedTemplateId.get() != null }
         assertEquals(NEW_TEMPLATE_ID, openedTemplateId.get())
+    }
+
+    @Test
+    fun screen_rendersSuppliedStateWithoutViewModel() {
+        composeRule.setContent {
+            CyberpunkTheme {
+                TemplateListScreen(
+                    uiState = TemplateListUiState(
+                        templates = listOf(englishTemplate),
+                        activeTemplateId = englishTemplate.id,
+                        isLoading = false
+                    ),
+                    snackbarHostState = SnackbarHostState(),
+                    onBack = {},
+                    onOpenEditor = {},
+                    onDeleteTemplate = {},
+                    onDismissDeleteConfirmation = {},
+                    onUpdateTagFilter = {},
+                    onClearTagFilter = {},
+                    onRenameTemplate = { _, _ -> },
+                    onUpdateSearchQuery = {},
+                    onDismissTemplateLimitWarning = {},
+                    onSetActiveTemplate = {},
+                    onDuplicateAndEdit = {},
+                    onDuplicateTemplate = {},
+                    onShowDeleteConfirmation = {}
+                )
+            }
+        }
+
+        composeRule.onNodeWithText(englishTemplate.name).assertIsDisplayed()
     }
 
     @Test
@@ -470,7 +503,7 @@ class TemplateListScreenTest {
                     LocalTemplateListViewModel provides viewModel,
                     LocalSoundPlayer provides soundPlayer
                 ) {
-                    TemplateListScreen(
+                    TemplateListRoute(
                         onBack = {},
                         onOpenEditor = { openedTemplateId.set(it) }
                     )

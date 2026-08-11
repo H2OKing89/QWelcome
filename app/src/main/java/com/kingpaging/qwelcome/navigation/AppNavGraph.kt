@@ -8,11 +8,11 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.kingpaging.qwelcome.ui.CustomerIntakeScreen
-import com.kingpaging.qwelcome.ui.export.ExportScreen
-import com.kingpaging.qwelcome.ui.import_pkg.ImportScreen
-import com.kingpaging.qwelcome.ui.settings.SettingsScreen
-import com.kingpaging.qwelcome.ui.templates.TemplateEditorScreen
-import com.kingpaging.qwelcome.ui.templates.TemplateListScreen
+import com.kingpaging.qwelcome.ui.export.ExportRoute
+import com.kingpaging.qwelcome.ui.import_pkg.ImportRoute
+import com.kingpaging.qwelcome.ui.settings.SettingsRoute
+import com.kingpaging.qwelcome.ui.templates.TemplateEditorRoute
+import com.kingpaging.qwelcome.ui.templates.TemplateListRoute
 import com.kingpaging.qwelcome.viewmodel.factory.AppViewModelProvider
 import com.kingpaging.qwelcome.viewmodel.templates.TemplateEditorViewModel
 
@@ -39,7 +39,7 @@ fun AppNavGraph(navController: NavHostController) {
         }
 
         composable<Routes.Settings> {
-            SettingsScreen(
+            SettingsRoute(
                 onBack = { navController.popBackStack() },
                 onOpenExport = { navController.navigate(Routes.Export) },
                 onOpenImport = { navController.navigate(Routes.Import) },
@@ -50,20 +50,20 @@ fun AppNavGraph(navController: NavHostController) {
         }
 
         composable<Routes.Export> {
-            ExportScreen(
+            ExportRoute(
                 onBack = { navController.popBackStack() }
             )
         }
 
         composable<Routes.Import> {
-            ImportScreen(
+            ImportRoute(
                 onBack = { navController.popBackStack() },
                 onImportComplete = { navController.popBackStack() }
             )
         }
 
         composable<Routes.TemplateList> {
-            TemplateListScreen(
+            TemplateListRoute(
                 onBack = {
                     // Navigate back to the origin screen
                     navController.popBackStack()
@@ -82,7 +82,7 @@ fun AppNavGraph(navController: NavHostController) {
                 AppViewModelProvider(context.applicationContext)
             }
             val editorViewModel: TemplateEditorViewModel = viewModel(factory = factory)
-            TemplateEditorScreen(
+            TemplateEditorRoute(
                 viewModel = editorViewModel,
                 onBack = { navController.popBackStack() }
             )

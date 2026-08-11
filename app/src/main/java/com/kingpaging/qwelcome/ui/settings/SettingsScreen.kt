@@ -1,10 +1,6 @@
 package com.kingpaging.qwelcome.ui.settings
 
-import android.content.ActivityNotFoundException
-import android.content.Intent
-import android.widget.Toast
 import androidx.activity.compose.BackHandler
-import androidx.core.net.toUri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -45,20 +41,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.repeatOnLifecycle
 import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.data.TechProfile
-import com.kingpaging.qwelcome.di.LocalSettingsViewModel
-import com.kingpaging.qwelcome.di.LocalSoundPlayer
 import com.kingpaging.qwelcome.ui.components.CyberpunkBackdrop
 import com.kingpaging.qwelcome.ui.components.NeonButton
 import com.kingpaging.qwelcome.ui.components.NeonButtonStyle
@@ -68,28 +57,33 @@ import com.kingpaging.qwelcome.ui.components.NeonOutlinedField
 import com.kingpaging.qwelcome.ui.components.NeonPanel
 import com.kingpaging.qwelcome.ui.components.NeonTopAppBar
 import com.kingpaging.qwelcome.util.rememberHapticFeedback
-import com.kingpaging.qwelcome.viewmodel.settings.SettingsEvent
 import com.kingpaging.qwelcome.viewmodel.settings.UpdateState
 import kotlin.math.roundToInt
 
+@Suppress("CyclomaticComplexMethod", "FunctionNaming", "LongMethod", "LongParameterList")
 @Composable
 fun SettingsScreen(
+    uiState: SettingsUiState,
     onBack: () -> Unit,
     onOpenExport: () -> Unit = {},
     onOpenImport: () -> Unit = {},
-    onOpenTemplates: () -> Unit = {}
+    onOpenTemplates: () -> Unit = {},
+    onSaveProfile: (TechProfile) -> Unit,
+    onSetCrashReportingEnabled: (Boolean) -> Unit,
+    onSetScreenCaptureProtectionEnabled: (Boolean) -> Unit,
+    onDismissDownloadConfirmation: () -> Unit,
+    onConfirmDownload: () -> Unit,
+    onRequestDownloadConfirmation: () -> Unit,
+    onDismissUpdate: () -> Unit,
+    onRetryInstall: () -> Unit,
+    onOpenInstallSettings: () -> Unit,
+    onCheckForUpdate: () -> Unit,
+    onOpenProjectPage: () -> Unit
 ) {
-    // Get ViewModel from CompositionLocal (provided at Activity level)
-    val vm = LocalSettingsViewModel.current
-    val soundPlayer = LocalSoundPlayer.current
-
-    // Discard confirmation dialog state
     var showDiscardDialog by rememberSaveable { mutableStateOf(false) }
-
-    val currentProfile by vm.techProfile.collectAsStateWithLifecycle()
-    val privacySettings by vm.privacySettings.collectAsStateWithLifecycle()
-    val activeTemplate by vm.activeTemplate.collectAsStateWithLifecycle()
-    val updateState by vm.updateState.collectAsStateWithLifecycle()
+    val currentProfile = uiState.profile
+    val privacySettings = uiState.privacySettings
+    val updateState = uiState.updateState
 
     // Tech profile state - use rememberSaveable so rotation does not lose edits
     var name by rememberSaveable(currentProfile) { mutableStateOf(currentProfile.name) }
@@ -112,43 +106,8 @@ fun SettingsScreen(
         }
     }
 
-    val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
     val haptic = rememberHapticFeedback()
-
-    val showDownloadConfirmDialog by vm.showDownloadConfirmDialog.collectAsStateWithLifecycle()
     val availableUpdate = updateState as? UpdateState.Available
-
-    val launchIntentFailedMessage = stringResource(R.string.error_update_install_unavailable)
-
-    // Collect one-shot settings events with lifecycle awareness
-    LaunchedEffect(lifecycleOwner, vm.settingsEvents) {
-        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
-            vm.settingsEvents.collect { event ->
-                when (event) {
-                    SettingsEvent.ProfileSaved -> onBack()
-                    is SettingsEvent.ShowToast -> {
-                        Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
-                    }
-                    is SettingsEvent.ShowToastError -> {
-                        soundPlayer.playBeep()
-                        Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
-                    }
-                    is SettingsEvent.LaunchIntent -> {
-                        try {
-                            context.startActivity(event.intent)
-                        } catch (_: ActivityNotFoundException) {
-                            Toast.makeText(
-                                context,
-                                launchIntentFailedMessage,
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                    }
-                }
-            }
-        }
-    }
 
     // Discard changes confirmation dialog
     if (showDiscardDialog) {
@@ -162,9 +121,9 @@ fun SettingsScreen(
         )
     }
 
-    if (showDownloadConfirmDialog && availableUpdate != null) {
+    if (uiState.showDownloadConfirmDialog && availableUpdate != null) {
         AlertDialog(
-            onDismissRequest = { vm.dismissDownloadConfirmation() },
+            onDismissRequest = onDismissDownloadConfirmation,
             title = { Text(stringResource(R.string.title_update_available)) },
             text = {
                 Text(
@@ -177,7 +136,7 @@ fun SettingsScreen(
             },
             confirmButton = {
                 NeonButton(
-                    onClick = { vm.confirmDownloadFromDialog() },
+                    onClick = onConfirmDownload,
                     style = NeonButtonStyle.PRIMARY
                 ) {
                     Text(stringResource(R.string.action_download_update))
@@ -185,7 +144,7 @@ fun SettingsScreen(
             },
             dismissButton = {
                 NeonButton(
-                    onClick = { vm.dismissDownloadConfirmation() },
+                    onClick = onDismissDownloadConfirmation,
                     style = NeonButtonStyle.TERTIARY
                 ) {
                     Text(stringResource(R.string.action_cancel))
@@ -268,7 +227,7 @@ fun SettingsScreen(
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        stringResource(R.string.text_currently_using_template, activeTemplate.name),
+                        stringResource(R.string.text_currently_using_template, uiState.activeTemplate.name),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.secondary,
                         maxLines = 1,
@@ -289,7 +248,7 @@ fun SettingsScreen(
                 // === SAVE PROFILE BUTTON ===
                 NeonMagentaButton(
                     onClick = {
-                        vm.save(TechProfile(name, title, dept))
+                        onSaveProfile(TechProfile(name, title, dept))
                     },
                     modifier = Modifier.fillMaxWidth(),
                     enabled = hasUnsavedChanges,
@@ -320,7 +279,7 @@ fun SettingsScreen(
                         enabled = privacySettings != null,
                         onCheckedChange = {
                             haptic()
-                            vm.setCrashReportingEnabled(it)
+                            onSetCrashReportingEnabled(it)
                         }
                     )
                     Spacer(Modifier.height(16.dp))
@@ -331,7 +290,7 @@ fun SettingsScreen(
                         enabled = privacySettings != null,
                         onCheckedChange = {
                             haptic()
-                            vm.setScreenCaptureProtectionEnabled(it)
+                            onSetScreenCaptureProtectionEnabled(it)
                         }
                     )
                 }
@@ -395,8 +354,6 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.primary
                 )
 
-                val noBrowserMessage = stringResource(R.string.toast_no_browser)
-
                 NeonPanel {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -412,7 +369,7 @@ fun SettingsScreen(
                             )
                             Spacer(Modifier.width(8.dp))
                             Text(
-                                stringResource(R.string.label_version_format, vm.currentVersion),
+                                stringResource(R.string.label_version_format, uiState.currentVersion),
                                 style = MaterialTheme.typography.bodyMedium
                             )
                         }
@@ -456,7 +413,7 @@ fun SettingsScreen(
                                 NeonButton(
                                     onClick = {
                                         haptic()
-                                        vm.requestDownloadConfirmation()
+                                        onRequestDownloadConfirmation()
                                     },
                                     style = NeonButtonStyle.SECONDARY
                                 ) {
@@ -469,7 +426,7 @@ fun SettingsScreen(
                                     Text(stringResource(R.string.status_update_available, state.version))
                                 }
                                 IconButton(
-                                    onClick = { haptic(); vm.dismissUpdate() },
+                                    onClick = { haptic(); onDismissUpdate() },
                                     modifier = Modifier.size(24.dp)
                                 ) {
                                     Icon(
@@ -507,7 +464,7 @@ fun SettingsScreen(
                             )
                             Spacer(Modifier.height(8.dp))
                             NeonButton(
-                                onClick = { haptic(); vm.retryInstallAfterPermission() },
+                                onClick = { haptic(); onRetryInstall() },
                                 modifier = Modifier.fillMaxWidth(),
                                 style = NeonButtonStyle.SECONDARY
                             ) {
@@ -528,11 +485,7 @@ fun SettingsScreen(
                                 NeonButton(
                                     onClick = {
                                         haptic()
-                                        try {
-                                            context.startActivity(vm.openUnknownSourcesSettingsIntent())
-                                        } catch (_: ActivityNotFoundException) {
-                                            Toast.makeText(context, noBrowserMessage, Toast.LENGTH_SHORT).show()
-                                        }
+                                        onOpenInstallSettings()
                                     },
                                     modifier = Modifier.weight(1f),
                                     style = NeonButtonStyle.SECONDARY
@@ -540,7 +493,7 @@ fun SettingsScreen(
                                     Text(stringResource(R.string.action_open_install_settings))
                                 }
                                 NeonButton(
-                                    onClick = { haptic(); vm.retryInstallAfterPermission() },
+                                    onClick = { haptic(); onRetryInstall() },
                                     modifier = Modifier.weight(1f),
                                     style = NeonButtonStyle.SECONDARY
                                 ) {
@@ -567,7 +520,7 @@ fun SettingsScreen(
                     Spacer(Modifier.height(12.dp))
 
                     NeonButton(
-                        onClick = { haptic(); vm.checkForUpdate() },
+                        onClick = { haptic(); onCheckForUpdate() },
                         modifier = Modifier.fillMaxWidth(),
                         enabled = !isUpdateFlowBusy(updateState),
                         style = NeonButtonStyle.SECONDARY
@@ -589,16 +542,7 @@ fun SettingsScreen(
                     Spacer(Modifier.height(8.dp))
 
                     TextButton(
-                        onClick = {
-                            val uri = "https://github.com/H2OKing89/QWelcome".toUri()
-                            val intent = Intent(Intent.ACTION_VIEW, uri)
-                                .addCategory(Intent.CATEGORY_BROWSABLE)
-                            try {
-                                context.startActivity(intent)
-                            } catch (_: ActivityNotFoundException) {
-                                Toast.makeText(context, noBrowserMessage, Toast.LENGTH_SHORT).show()
-                            }
-                        },
+                        onClick = onOpenProjectPage,
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Icon(

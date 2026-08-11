@@ -2,12 +2,7 @@
 
 package com.kingpaging.qwelcome.ui.export
 
-import android.content.ClipData
-import android.content.Context
-import android.widget.Toast
 import androidx.activity.compose.BackHandler
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -57,17 +52,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.ClipEntry
-import androidx.compose.ui.platform.LocalClipboard
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -78,8 +66,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.data.Template
-import com.kingpaging.qwelcome.di.LocalExportViewModel
-import com.kingpaging.qwelcome.di.LocalNavigator
 import com.kingpaging.qwelcome.ui.components.CyberpunkBackdrop
 import com.kingpaging.qwelcome.ui.components.NeonButton
 import com.kingpaging.qwelcome.ui.components.NeonButtonStyle
@@ -87,126 +73,28 @@ import com.kingpaging.qwelcome.ui.components.NeonMagentaButton
 import com.kingpaging.qwelcome.ui.components.NeonPanel
 import com.kingpaging.qwelcome.ui.theme.LocalDarkTheme
 import com.kingpaging.qwelcome.util.rememberHapticFeedback
-import com.kingpaging.qwelcome.di.LocalSoundPlayer
-import com.kingpaging.qwelcome.viewmodel.export.ExportEvent
+import com.kingpaging.qwelcome.viewmodel.export.ExportUiState
 import com.kingpaging.qwelcome.viewmodel.export.ExportType
-import java.io.IOException
-import kotlinx.coroutines.launch
 
-@Suppress("LocalContextGetResourceValueCall")
+@Suppress("FunctionNaming", "LongMethod", "LongParameterList")
 @Composable
 fun ExportScreen(
-    onBack: () -> Unit
+    uiState: ExportUiState,
+    onBack: () -> Unit,
+    onTemplatePackRequested: () -> Unit,
+    onFullBackupRequested: () -> Unit,
+    onShareToPackageRequested: (String) -> Unit,
+    onCopy: () -> Unit,
+    onShareRequested: () -> Unit,
+    onSaveToFileRequested: () -> Unit,
+    onToggleTemplateSelection: (String) -> Unit,
+    onToggleSelectAll: () -> Unit,
+    onDismissTemplateSelection: () -> Unit,
+    onExportSelectedTemplates: () -> Unit
 ) {
-    val vm = LocalExportViewModel.current
-    val soundPlayer = LocalSoundPlayer.current
-    val context = LocalContext.current
-    val navigator = LocalNavigator.current
-    val clipboardManager = LocalClipboard.current
-    val scope = rememberCoroutineScope()
-    val uiState by vm.uiState.collectAsStateWithLifecycle()
     val haptic = rememberHapticFeedback()
 
-    // Reset ViewModel state when entering the screen to clear any stale events
-    LaunchedEffect(Unit) {
-        vm.reset()
-    }
-
-    // File picker launcher for saving
-    val saveFileLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("application/json")
-    ) { uri ->
-        if (uri != null) {
-            // Write JSON to the selected file
-            val json = vm.getPendingFileExportContent()
-            if (json != null) {
-                try {
-                    val outputStream = context.contentResolver.openOutputStream(uri)
-                        ?: throw IOException("Could not open output stream")
-                    outputStream.use { stream ->
-                        stream.write(json.toByteArray(Charsets.UTF_8))
-                    }
-                    vm.onFileSaveComplete()
-                } catch (e: SecurityException) {
-                    soundPlayer.playBeep()
-                    Toast.makeText(context, context.getString(R.string.toast_failed_save_file, e.message), Toast.LENGTH_LONG).show()
-                    vm.onFileSaveCancelled()
-                } catch (e: IOException) {
-                    soundPlayer.playBeep()
-                    Toast.makeText(context, context.getString(R.string.toast_failed_save_file, e.message), Toast.LENGTH_LONG).show()
-                    vm.onFileSaveCancelled()
-                }
-            }
-        } else {
-            vm.onFileSaveCancelled()
-        }
-    }
-
-    // Handle system back button
     BackHandler { onBack() }
-
-    // Handle one-shot events
-    LaunchedEffect(Unit) {
-        vm.events.collect { event ->
-            when (event) {
-                is ExportEvent.ExportSuccess -> {
-                    // Success is shown in UI state
-                }
-                is ExportEvent.ExportError -> {
-                    soundPlayer.playBeep()
-                    Toast.makeText(context, event.message, Toast.LENGTH_LONG).show()
-                }
-                is ExportEvent.CopiedToClipboard -> {
-                    val typeName = context.getString(
-                        when (event.type) {
-                            ExportType.TEMPLATE_PACK -> R.string.export_type_template_pack
-                            ExportType.FULL_BACKUP -> R.string.export_type_full_backup
-                        }
-                    )
-                    Toast.makeText(context, context.getString(R.string.toast_type_copied, typeName), Toast.LENGTH_SHORT).show()
-                }
-                is ExportEvent.ShareReady -> {
-                    val typeName = context.getString(
-                        when (event.type) {
-                            ExportType.TEMPLATE_PACK -> R.string.export_type_template_pack
-                            ExportType.FULL_BACKUP -> R.string.export_type_full_backup
-                        }
-                    )
-                    navigator.shareText(
-                        message = event.json,
-                        chooserTitle = context.getString(R.string.chooser_share_type, typeName),
-                        subject = context.getString(R.string.subject_qwelcome_export, typeName)
-                    )
-                }
-                is ExportEvent.ShareToAppReady -> {
-                    val typeName = context.getString(
-                        when (event.type) {
-                            ExportType.TEMPLATE_PACK -> R.string.export_type_template_pack
-                            ExportType.FULL_BACKUP -> R.string.export_type_full_backup
-                        }
-                    )
-                    navigator.shareToApp(
-                        packageName = event.packageName,
-                        message = event.json,
-                        subject = context.getString(R.string.subject_qwelcome_export, typeName),
-                        chooserTitle = context.getString(R.string.chooser_share_type, typeName)
-                    )
-                }
-                is ExportEvent.RequestFileSave -> {
-                    saveFileLauncher.launch(event.suggestedName)
-                }
-                is ExportEvent.FileSaved -> {
-                    val typeName = context.getString(
-                        when (event.type) {
-                            ExportType.TEMPLATE_PACK -> R.string.export_type_template_pack
-                            ExportType.FULL_BACKUP -> R.string.export_type_full_backup
-                        }
-                    )
-                    Toast.makeText(context, context.getString(R.string.toast_type_saved, typeName), Toast.LENGTH_SHORT).show()
-                }
-            }
-        }
-    }
 
     CyberpunkBackdrop {
         Scaffold(
@@ -260,7 +148,7 @@ fun ExportScreen(
                     icon = Icons.Default.Description,
                     iconTint = MaterialTheme.colorScheme.secondary,
                     isLoading = uiState.isExporting && uiState.currentlyExportingType == ExportType.TEMPLATE_PACK,
-                    onClick = { vm.onTemplatePackRequested() }
+                    onClick = onTemplatePackRequested
                 )
 
                 // Full Backup Card
@@ -270,7 +158,7 @@ fun ExportScreen(
                     icon = Icons.Default.Backup,
                     iconTint = MaterialTheme.colorScheme.tertiary,
                     isLoading = uiState.isExporting && uiState.currentlyExportingType == ExportType.FULL_BACKUP,
-                    onClick = { vm.exportFullBackup() }
+                    onClick = onFullBackupRequested
                 )
 
                 // Show export result if available
@@ -319,7 +207,7 @@ fun ExportScreen(
                             ) {
                                 uiState.recentShareTargets.forEach { target ->
                                     NeonButton(
-                                        onClick = { vm.onShareToPackageRequested(target.packageName) },
+                                        onClick = { onShareToPackageRequested(target.packageName) },
                                         glowColor = MaterialTheme.colorScheme.tertiary,
                                         style = NeonButtonStyle.TERTIARY,
                                         modifier = Modifier
@@ -361,14 +249,7 @@ fun ExportScreen(
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             NeonMagentaButton(
-                                onClick = {
-                                    uiState.lastExportedJson?.let { json ->
-                                        scope.launch {
-                                            clipboardManager.setClipEntry(ClipEntry(ClipData.newPlainText(context.getString(R.string.title_export), json)))
-                                            vm.onCopiedToClipboard()
-                                        }
-                                    }
-                                },
+                                onClick = onCopy,
                                 modifier = Modifier.weight(1f)
                             ) {
                                 Icon(
@@ -381,7 +262,7 @@ fun ExportScreen(
                             }
 
                             NeonButton(
-                                onClick = { vm.onShareRequested() },
+                                onClick = onShareRequested,
                                 glowColor = MaterialTheme.colorScheme.tertiary,
                                 style = NeonButtonStyle.SECONDARY,
                                 modifier = Modifier.weight(1f)
@@ -398,7 +279,7 @@ fun ExportScreen(
 
                         // Save to File button
                         NeonButton(
-                            onClick = { vm.onSaveToFileRequested() },
+                            onClick = onSaveToFileRequested,
                             glowColor = MaterialTheme.colorScheme.secondary,
                             style = NeonButtonStyle.SECONDARY,
                             modifier = Modifier.fillMaxWidth()
@@ -450,10 +331,10 @@ fun ExportScreen(
             TemplateSelectionDialog(
                 templates = uiState.availableTemplates,
                 selectedIds = uiState.selectedTemplateIds,
-                onToggleTemplate = { vm.toggleTemplateSelection(it) },
-                onToggleSelectAll = { vm.toggleSelectAll() },
-                onDismiss = { vm.dismissTemplateSelection() },
-                onExport = { vm.exportSelectedTemplates() }
+                onToggleTemplate = onToggleTemplateSelection,
+                onToggleSelectAll = onToggleSelectAll,
+                onDismiss = onDismissTemplateSelection,
+                onExport = onExportSelectedTemplates
             )
         }
     }

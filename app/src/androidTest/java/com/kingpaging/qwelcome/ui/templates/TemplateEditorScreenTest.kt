@@ -24,6 +24,7 @@ import com.kingpaging.qwelcome.ui.theme.CyberpunkTheme
 import com.kingpaging.qwelcome.util.AndroidResourceProvider
 import com.kingpaging.qwelcome.viewmodel.factory.AppViewModelProvider
 import com.kingpaging.qwelcome.viewmodel.templates.MAX_TEMPLATE_NAME_LENGTH
+import com.kingpaging.qwelcome.viewmodel.templates.TemplateEditorUiState
 import com.kingpaging.qwelcome.viewmodel.templates.TemplateEditorViewModel
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.runBlocking
@@ -78,6 +79,38 @@ class TemplateEditorScreenTest {
         composeRule.onNodeWithText(appContext.getString(R.string.title_create_template))
             .assertIsDisplayed()
         composeRule.onNodeWithContentDescription(appContext.getString(R.string.action_create))
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun screen_rendersSuppliedStateWithoutViewModel() {
+        val template = Template(
+            id = NEW_TEMPLATE_ID,
+            name = "",
+            content = "Hello {{ customer_name }}, your SSID is {{ ssid }}"
+        )
+        composeRule.setContent {
+            CyberpunkTheme {
+                TemplateEditorScreen(
+                    editorUiState = TemplateEditorUiState(
+                        template = template,
+                        isLoading = false,
+                        contentText = template.content
+                    ),
+                    onCreate = { _, _, _ -> },
+                    onUpdate = { _, _, _ -> },
+                    onCancelEditing = {},
+                    onNameChange = {},
+                    onTagsChange = {},
+                    onNewTagInputChange = {},
+                    onContentChange = {},
+                    onNameErrorChange = {},
+                    onToggleDiscardDialog = {}
+                )
+            }
+        }
+
+        composeRule.onNodeWithText(appContext.getString(R.string.title_create_template))
             .assertIsDisplayed()
     }
 
@@ -599,7 +632,7 @@ class TemplateEditorScreenTest {
                     LocalNavigator provides navigator,
                     LocalSoundPlayer provides soundPlayer
                 ) {
-                    TemplateEditorScreen(
+                    TemplateEditorRoute(
                         viewModel = templateEditorViewModel,
                         onBack = { backInvoked.set(true) }
                     )

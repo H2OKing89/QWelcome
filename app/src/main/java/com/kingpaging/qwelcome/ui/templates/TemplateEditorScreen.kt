@@ -1,102 +1,39 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
-
 package com.kingpaging.qwelcome.ui.templates
 
-import android.widget.Toast
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.flowWithLifecycle
-import com.kingpaging.qwelcome.R
-import com.kingpaging.qwelcome.di.LocalSoundPlayer
-import com.kingpaging.qwelcome.viewmodel.templates.TemplateEditorEvent
-import com.kingpaging.qwelcome.viewmodel.templates.TemplateEditorViewModel
+import com.kingpaging.qwelcome.viewmodel.templates.TemplateEditorUiState
 
-@Suppress("LocalContextGetResourceValueCall")
+@Suppress("FunctionNaming", "LongParameterList")
 @Composable
 fun TemplateEditorScreen(
-    viewModel: TemplateEditorViewModel,
-    onBack: () -> Unit
+    editorUiState: TemplateEditorUiState,
+    onCreate: (name: String, content: String, tags: List<String>) -> Unit,
+    onUpdate: (name: String, content: String, tags: List<String>) -> Unit,
+    onCancelEditing: () -> Unit,
+    onNameChange: (String) -> Unit,
+    onTagsChange: (List<String>) -> Unit,
+    onNewTagInputChange: (String) -> Unit,
+    onContentChange: (String) -> Unit,
+    onNameErrorChange: (Int?) -> Unit,
+    onToggleDiscardDialog: (Boolean) -> Unit
 ) {
-    val soundPlayer = LocalSoundPlayer.current
-    val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
-    val editorUiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val template = editorUiState.template
-
-    val hasNavigatedBack = remember { mutableStateOf(false) }
-    val safeNavigate: () -> Unit = remember(onBack) {
-        {
-            if (!hasNavigatedBack.value) {
-                hasNavigatedBack.value = true
-                onBack()
-            }
-        }
-    }
-
-    if (!editorUiState.isLoading && template == null) {
-        LaunchedEffect(Unit) { safeNavigate() }
-        return
-    }
-    if (template == null) return
-
-    LaunchedEffect(viewModel, lifecycleOwner) {
-        viewModel.events
-            .flowWithLifecycle(lifecycleOwner.lifecycle, Lifecycle.State.STARTED)
-            .collect { event ->
-                when (event) {
-                    is TemplateEditorEvent.TemplateCreated -> {
-                        Toast.makeText(
-                            context,
-                            context.getString(R.string.toast_template_created, event.template.name),
-                            Toast.LENGTH_SHORT
-                        ).show()
-                        safeNavigate()
-                    }
-
-                    is TemplateEditorEvent.TemplateUpdated -> {
-                        Toast.makeText(
-                            context,
-                            context.getString(R.string.toast_template_updated, event.template.name),
-                            Toast.LENGTH_SHORT
-                        ).show()
-                        safeNavigate()
-                    }
-
-                    is TemplateEditorEvent.Error -> {
-                        soundPlayer.playBeep()
-                        Toast.makeText(
-                            context,
-                            event.message,
-                            Toast.LENGTH_LONG
-                        ).show()
-                    }
-                }
-            }
-    }
-
+    val template = editorUiState.template ?: return
     key(template.id) {
         TemplateEditorContent(
             template = template,
             defaultContent = template.content,
             editorUiState = editorUiState,
-            onCreate = viewModel::createTemplate,
-            onUpdate = viewModel::updateTemplate,
-            onCancelEditing = safeNavigate,
-            onNameChange = viewModel::updateName,
-            onTagsChange = viewModel::updateTags,
-            onNewTagInputChange = viewModel::updateNewTagInput,
-            onContentChange = viewModel::updateContent,
-            onNameErrorChange = viewModel::setNameError,
-            onToggleDiscardDialog = viewModel::toggleDiscardDialog
+            onCreate = onCreate,
+            onUpdate = onUpdate,
+            onCancelEditing = onCancelEditing,
+            onNameChange = onNameChange,
+            onTagsChange = onTagsChange,
+            onNewTagInputChange = onNewTagInputChange,
+            onContentChange = onContentChange,
+            onNameErrorChange = onNameErrorChange,
+            onToggleDiscardDialog = onToggleDiscardDialog
         )
     }
 }

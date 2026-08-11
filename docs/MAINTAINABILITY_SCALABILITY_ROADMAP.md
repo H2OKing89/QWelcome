@@ -126,9 +126,11 @@ Before the 2026-08-10 cleanup, template management had moved to the template lib
 
 #### 5. Introduce explicit Route/Screen boundaries
 
-**Status:** Not started
+**Status:** In progress; Template Library, Editor, Settings, Import, and Export completed 2026-08-10
 
-Top-level composables currently retrieve ViewModels through global CompositionLocals and also contain state collection, effects, and rendering. This hides dependencies and makes previews/component tests harder.
+The remaining Customer Intake top-level composable retrieves ViewModels through global CompositionLocals and also contains state collection, effects, and rendering. This hides its dependencies and makes previews/component tests harder.
+
+Template Library, Editor, Settings, Import, and Export now use dedicated route files for ViewModel access, lifecycle-aware state collection, one-shot effects, and activity-result handling. Their screen composables accept plain UI state and callbacks, with instrumentation coverage that renders each screen without a ViewModel.
 
 **Plan:**
 
@@ -387,9 +389,9 @@ Document safe dependency updates, common Gradle/Proto issues, device installatio
 
 ### Milestone 3: Route/Screen boundaries
 
-- [ ] Convert Template Library and Editor first.
-- [ ] Convert Settings.
-- [ ] Convert Import and Export.
+- [x] Convert Template Library and Editor first.
+- [x] Convert Settings.
+- [x] Convert Import and Export.
 - [ ] Convert Customer Intake last because it coordinates two feature states.
 
 ### Milestone 4: UI decomposition
@@ -438,3 +440,6 @@ Run device tests when an emulator or device is available:
 - 2026-08-10: Removed obsolete template-management APIs and uncollected errors from Settings.
 - 2026-08-10: Made full-backup persistence atomic and added option-contract tests.
 - 2026-08-10: Made template editor routes restorable and moved editor ownership into a destination-scoped ViewModel.
+- 2026-08-10: Started Milestone 3 by splitting Template Library and Editor into explicit Route/Screen boundaries.
+- 2026-08-10: Split Settings into an explicit Route/Screen boundary and verified it on a wireless debug device.
+- 2026-08-10: Split Import and Export into explicit Route/Screen boundaries, keeping file and clipboard I/O in routes.

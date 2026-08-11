@@ -11,7 +11,10 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.kingpaging.qwelcome.R
+import com.kingpaging.qwelcome.data.PrivacySettings
 import com.kingpaging.qwelcome.data.SettingsStore
+import com.kingpaging.qwelcome.data.TechProfile
+import com.kingpaging.qwelcome.data.Template
 import com.kingpaging.qwelcome.data.UpdateCheckResult
 import com.kingpaging.qwelcome.di.LocalSettingsViewModel
 import com.kingpaging.qwelcome.di.LocalSoundPlayer
@@ -21,6 +24,7 @@ import com.kingpaging.qwelcome.ui.theme.CyberpunkTheme
 import com.kingpaging.qwelcome.util.AndroidResourceProvider
 import com.kingpaging.qwelcome.viewmodel.factory.AppViewModelProvider
 import com.kingpaging.qwelcome.viewmodel.settings.SettingsViewModel
+import com.kingpaging.qwelcome.viewmodel.settings.UpdateState
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
@@ -95,6 +99,39 @@ class SettingsScreenUpdateDialogTest {
         ).assertIsDisplayed()
     }
 
+    @Test
+    fun screen_rendersSuppliedStateWithoutViewModel() {
+        composeRule.setContent {
+            CyberpunkTheme {
+                SettingsScreen(
+                    uiState = SettingsUiState(
+                        profile = TechProfile(name = "Route-free Tech"),
+                        privacySettings = PrivacySettings(),
+                        activeTemplate = Template(name = "Plain State", content = "Message"),
+                        updateState = UpdateState.Idle,
+                        showDownloadConfirmDialog = false,
+                        currentVersion = "1.0.0"
+                    ),
+                    onBack = {},
+                    onSaveProfile = {},
+                    onSetCrashReportingEnabled = {},
+                    onSetScreenCaptureProtectionEnabled = {},
+                    onDismissDownloadConfirmation = {},
+                    onConfirmDownload = {},
+                    onRequestDownloadConfirmation = {},
+                    onDismissUpdate = {},
+                    onRetryInstall = {},
+                    onOpenInstallSettings = {},
+                    onCheckForUpdate = {},
+                    onOpenProjectPage = {}
+                )
+            }
+        }
+
+        composeRule.onNodeWithText(appContext.getString(R.string.title_settings)).assertIsDisplayed()
+        composeRule.onNodeWithText("Route-free Tech").assertIsDisplayed()
+    }
+
     private fun setScreenContent() {
         composeRule.setContent {
             CyberpunkTheme {
@@ -102,7 +139,7 @@ class SettingsScreenUpdateDialogTest {
                     LocalSettingsViewModel provides vm,
                     LocalSoundPlayer provides FakeSoundPlayer()
                 ) {
-                    SettingsScreen(onBack = {})
+                    SettingsRoute(onBack = {})
                 }
             }
         }
