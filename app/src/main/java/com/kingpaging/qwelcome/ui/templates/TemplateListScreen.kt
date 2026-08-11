@@ -72,7 +72,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun TemplateListScreen(
     onBack: () -> Unit,
-    onOpenEditor: () -> Unit
+    onOpenEditor: (String) -> Unit
 ) {
     val vm = LocalTemplateListViewModel.current
     val soundPlayer = LocalSoundPlayer.current
@@ -162,7 +162,7 @@ fun TemplateListScreen(
                     actions = {
                         IconButton(onClick = {
                             haptic()
-                            vm.startEditing(Template(id = NEW_TEMPLATE_ID, name = "", content = ""))
+                            onOpenEditor(NEW_TEMPLATE_ID)
                         }) {
                             Icon(
                                 imageVector = Icons.Default.Add,
@@ -257,7 +257,7 @@ fun TemplateListScreen(
                                     if (template.id == DEFAULT_TEMPLATE_ID) {
                                         vm.duplicateAndEdit(template)
                                     } else {
-                                        vm.startEditing(template)
+                                        onOpenEditor(template.id)
                                     }
                                 },
                                 onRename = {
@@ -335,7 +335,7 @@ private fun CollectTemplateListEffects(
     viewModel: TemplateListViewModel,
     soundPlayer: SoundPlayer,
     snackbarHostState: SnackbarHostState,
-    onOpenEditor: () -> Unit
+    onOpenEditor: (String) -> Unit
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -344,10 +344,10 @@ private fun CollectTemplateListEffects(
     LaunchedEffect(viewModel, lifecycleOwner, soundPlayer, snackbarHostState) {
         lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
             launch {
-                viewModel.navigateToEditor.collect { currentOnOpenEditor() }
-            }
-            launch {
                 viewModel.eventsFor(TemplateListEventOwner.LIBRARY).collectLatest { event ->
+                    if (event is TemplateListEvent.TemplateDuplicated && event.openEditor) {
+                        currentOnOpenEditor(event.template.id)
+                    }
                     val snackbar = event.toSnackbar(context) ?: return@collectLatest
                     if (event.shouldBeep()) {
                         soundPlayer.playBeep()
@@ -358,7 +358,7 @@ private fun CollectTemplateListEffects(
                         duration = snackbar.duration
                     )
                     if (result == SnackbarResult.ActionPerformed) {
-                        event.performSnackbarAction(viewModel)
+                        event.performSnackbarAction(viewModel, currentOnOpenEditor)
                     }
                 }
             }
@@ -398,17 +398,18 @@ private fun TemplateListEvent.toSnackbar(
     is TemplateListEvent.TemplateRenamed -> TemplateSnackbar(
         context.getString(R.string.toast_template_renamed, template.name)
     )
-    is TemplateListEvent.TemplateCreated,
-    is TemplateListEvent.TemplateUpdated -> null
 }
 
 private fun TemplateListEvent.shouldBeep(): Boolean =
     this is TemplateListEvent.Error || this is TemplateListEvent.TemplateSelectionBlocked
 
-private fun TemplateListEvent.performSnackbarAction(viewModel: TemplateListViewModel) {
+private fun TemplateListEvent.performSnackbarAction(
+    viewModel: TemplateListViewModel,
+    onOpenEditor: (String) -> Unit
+) {
     when (this) {
         is TemplateListEvent.ActiveTemplateChanged -> viewModel.undoTemplateSelection(change)
-        is TemplateListEvent.TemplateSelectionBlocked -> viewModel.startEditing(template)
+        is TemplateListEvent.TemplateSelectionBlocked -> onOpenEditor(template.id)
         else -> Unit
     }
 }

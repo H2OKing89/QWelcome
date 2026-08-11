@@ -17,6 +17,7 @@ import com.kingpaging.qwelcome.viewmodel.CustomerIntakeViewModel
 import com.kingpaging.qwelcome.viewmodel.export.ExportViewModel
 import com.kingpaging.qwelcome.viewmodel.import_pkg.ImportViewModel
 import com.kingpaging.qwelcome.viewmodel.settings.SettingsViewModel
+import com.kingpaging.qwelcome.viewmodel.templates.TemplateEditorViewModel
 import com.kingpaging.qwelcome.viewmodel.templates.TemplateListViewModel
 
 /**
@@ -143,6 +144,13 @@ class AppViewModelProvider(private val context: Context) : ViewModelProvider.Fac
                 TemplateListViewModel(
                     getSettingsStore(context),
                     getResourceProvider(context)
+                ) as T
+            }
+            modelClass.isAssignableFrom(TemplateEditorViewModel::class.java) -> {
+                TemplateEditorViewModel(
+                    savedStateHandle = extras.createSavedStateHandle(),
+                    settingsStore = getSettingsStore(context),
+                    resourceProvider = getResourceProvider(context)
                 ) as T
             }
             else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")

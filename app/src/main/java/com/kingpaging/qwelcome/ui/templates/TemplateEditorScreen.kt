@@ -17,22 +17,20 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.flowWithLifecycle
 import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.di.LocalSoundPlayer
-import com.kingpaging.qwelcome.di.LocalTemplateListViewModel
-import com.kingpaging.qwelcome.viewmodel.templates.TemplateListEvent
-import com.kingpaging.qwelcome.viewmodel.templates.TemplateListEventOwner
+import com.kingpaging.qwelcome.viewmodel.templates.TemplateEditorEvent
+import com.kingpaging.qwelcome.viewmodel.templates.TemplateEditorViewModel
 
 @Suppress("LocalContextGetResourceValueCall")
 @Composable
 fun TemplateEditorScreen(
+    viewModel: TemplateEditorViewModel,
     onBack: () -> Unit
 ) {
-    val vm = LocalTemplateListViewModel.current
     val soundPlayer = LocalSoundPlayer.current
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
-    val uiState by vm.uiState.collectAsStateWithLifecycle()
-    val editorUiState by vm.templateEditorUiState.collectAsStateWithLifecycle()
-    val template = uiState.editingTemplate
+    val editorUiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val template = editorUiState.template
 
     val hasNavigatedBack = remember { mutableStateOf(false) }
     val safeNavigate: () -> Unit = remember(onBack) {
@@ -44,17 +42,18 @@ fun TemplateEditorScreen(
         }
     }
 
-    if (template == null) {
+    if (!editorUiState.isLoading && template == null) {
         LaunchedEffect(Unit) { safeNavigate() }
         return
     }
+    if (template == null) return
 
-    LaunchedEffect(vm, lifecycleOwner) {
-        vm.eventsFor(TemplateListEventOwner.EDITOR)
+    LaunchedEffect(viewModel, lifecycleOwner) {
+        viewModel.events
             .flowWithLifecycle(lifecycleOwner.lifecycle, Lifecycle.State.STARTED)
             .collect { event ->
                 when (event) {
-                    is TemplateListEvent.TemplateCreated -> {
+                    is TemplateEditorEvent.TemplateCreated -> {
                         Toast.makeText(
                             context,
                             context.getString(R.string.toast_template_created, event.template.name),
@@ -63,7 +62,7 @@ fun TemplateEditorScreen(
                         safeNavigate()
                     }
 
-                    is TemplateListEvent.TemplateUpdated -> {
+                    is TemplateEditorEvent.TemplateUpdated -> {
                         Toast.makeText(
                             context,
                             context.getString(R.string.toast_template_updated, event.template.name),
@@ -72,20 +71,14 @@ fun TemplateEditorScreen(
                         safeNavigate()
                     }
 
-                    is TemplateListEvent.Error -> {
+                    is TemplateEditorEvent.Error -> {
                         soundPlayer.playBeep()
                         Toast.makeText(
                             context,
-                            checkNotNull(event.toTemplateErrorMessage(context)),
+                            event.message,
                             Toast.LENGTH_LONG
                         ).show()
                     }
-
-                    is TemplateListEvent.TemplateDeleted,
-                    is TemplateListEvent.TemplateDuplicated,
-                    is TemplateListEvent.ActiveTemplateChanged,
-                    is TemplateListEvent.TemplateSelectionBlocked,
-                    is TemplateListEvent.TemplateRenamed -> Unit
                 }
             }
     }
@@ -93,20 +86,17 @@ fun TemplateEditorScreen(
     key(template.id) {
         TemplateEditorContent(
             template = template,
-            defaultContent = vm.getDefaultTemplateContent(),
+            defaultContent = template.content,
             editorUiState = editorUiState,
-            onCreate = vm::createTemplate,
-            onUpdate = vm::updateTemplate,
-            onCancelEditing = {
-                vm.cancelEditing()
-                safeNavigate()
-            },
-            onNameChange = vm::updateName,
-            onTagsChange = vm::updateTags,
-            onNewTagInputChange = vm::updateNewTagInput,
-            onContentChange = vm::updateContent,
-            onNameErrorChange = vm::setNameError,
-            onToggleDiscardDialog = vm::toggleDiscardDialog
+            onCreate = viewModel::createTemplate,
+            onUpdate = viewModel::updateTemplate,
+            onCancelEditing = safeNavigate,
+            onNameChange = viewModel::updateName,
+            onTagsChange = viewModel::updateTags,
+            onNewTagInputChange = viewModel::updateNewTagInput,
+            onContentChange = viewModel::updateContent,
+            onNameErrorChange = viewModel::setNameError,
+            onToggleDiscardDialog = viewModel::toggleDiscardDialog
         )
     }
 }

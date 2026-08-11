@@ -5,7 +5,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.data.DEFAULT_TEMPLATE_ID
-import com.kingpaging.qwelcome.data.NEW_TEMPLATE_ID
 import com.kingpaging.qwelcome.data.SettingsStore
 import com.kingpaging.qwelcome.data.Template
 import com.kingpaging.qwelcome.data.TemplateSelectionChange
@@ -15,20 +14,16 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.time.Instant
 
 private const val TAG = "TemplateListViewModel"
 private const val TEMPLATE_SOFT_LIMIT = 20
-private const val MAX_TAG_LENGTH = 32
 internal const val MAX_TEMPLATE_NAME_LENGTH = 50
 
 internal fun filterAndOrderTemplates(
@@ -69,28 +64,13 @@ data class TemplateListUiState(
     val templates: List<Template> = emptyList(),
     val activeTemplateId: String = DEFAULT_TEMPLATE_ID,
     val isLoading: Boolean = true,
-    val editingTemplate: Template? = null,
     val showDeleteConfirmation: Template? = null,
     val searchQuery: String = "",
     val selectedTags: Set<String> = emptySet(),
     val allTags: Set<String> = emptySet(),
     val templateLastUsedAt: Map<String, Long> = emptyMap(),
     val showTemplateLimitWarning: Boolean = false,
-    val warningDismissed: Boolean = false,
-    val validationError: String? = null // For required placeholder errors
-)
-
-/**
- * UI state for the template editor.
- */
-data class TemplateEditorUiState(
-    val name: String = "",
-    val tags: List<String> = emptyList(),
-    val newTagInput: String = "",
-    val contentText: String = "",
-    val nameError: Int? = null,
-    val contentError: String? = null,
-    val showDiscardDialog: Boolean = false
+    val warningDismissed: Boolean = false
 )
 
 /**
@@ -98,10 +78,11 @@ data class TemplateEditorUiState(
  */
 sealed class TemplateListEvent {
     data class Error(val message: String) : TemplateListEvent()
-    data class TemplateCreated(val template: Template) : TemplateListEvent()
-    data class TemplateUpdated(val template: Template) : TemplateListEvent()
     data class TemplateDeleted(val name: String) : TemplateListEvent()
-    data class TemplateDuplicated(val template: Template) : TemplateListEvent()
+    data class TemplateDuplicated(
+        val template: Template,
+        val openEditor: Boolean = false
+    ) : TemplateListEvent()
     data class ActiveTemplateChanged(
         val template: Template,
         val change: TemplateSelectionChange
@@ -115,8 +96,7 @@ sealed class TemplateListEvent {
 
 enum class TemplateListEventOwner {
     INTAKE,
-    LIBRARY,
-    EDITOR
+    LIBRARY
 }
 
 private data class OwnedTemplateListEvent(
@@ -136,17 +116,11 @@ class TemplateListViewModel(
     private val _uiState = MutableStateFlow(TemplateListUiState())
     val uiState: StateFlow<TemplateListUiState> = _uiState.asStateFlow()
 
-    private val _templateEditorUiState = MutableStateFlow(TemplateEditorUiState())
-    val templateEditorUiState: StateFlow<TemplateEditorUiState> = _templateEditorUiState.asStateFlow()
-
     private val _events = MutableSharedFlow<OwnedTemplateListEvent>(replay = 0, extraBufferCapacity = 1)
 
     fun eventsFor(owner: TemplateListEventOwner): Flow<TemplateListEvent> = _events
         .filter { it.owner == owner }
         .map { it.event }
-
-    private val _navigateToEditor = MutableSharedFlow<Unit>(replay = 0, extraBufferCapacity = 1)
-    val navigateToEditor: SharedFlow<Unit> = _navigateToEditor.asSharedFlow()
 
     init {
         // Combine templates and active template ID into UI state
@@ -184,11 +158,6 @@ class TemplateListViewModel(
             }
         }
     }
-
-    /**
-     * Get the default template content for creating new templates.
-     */
-    fun getDefaultTemplateContent(): String = settingsStore.defaultTemplateContent
 
     /**
      * Set the active template.
@@ -274,150 +243,6 @@ class TemplateListViewModel(
     }
 
     /**
-     * Start editing a template (for creating or updating).
-     */
-    fun startEditing(template: Template?) {
-        _uiState.update { it.copy(editingTemplate = template) }
-        if (template != null) {
-            initializeTemplateEditorState(template)
-            viewModelScope.launch {
-                _navigateToEditor.emit(Unit)
-            }
-        } else {
-            resetTemplateEditorState()
-        }
-    }
-
-    /**
-     * Cancel editing without saving.
-     */
-    fun cancelEditing() {
-        _uiState.update { it.copy(editingTemplate = null) }
-        resetTemplateEditorState()
-    }
-
-    fun updateName(name: String) {
-        _templateEditorUiState.update { current ->
-            current.copy(
-                name = name.take(MAX_TEMPLATE_NAME_LENGTH),
-                nameError = null
-            )
-        }
-    }
-
-    fun updateTags(tags: List<String>) {
-        _templateEditorUiState.update { it.copy(tags = sanitizeTags(tags)) }
-    }
-
-    fun updateNewTagInput(newTagInput: String) {
-        _templateEditorUiState.update { it.copy(newTagInput = newTagInput.take(MAX_TAG_LENGTH)) }
-    }
-
-    fun updateContent(content: String) {
-        _templateEditorUiState.update { current ->
-            current.copy(
-                contentText = content,
-                contentError = missingPlaceholdersError(content)
-            )
-        }
-    }
-
-    fun setNameError(nameError: Int?) {
-        _templateEditorUiState.update { it.copy(nameError = nameError) }
-    }
-
-    fun setContentError(contentError: String?) {
-        _templateEditorUiState.update { it.copy(contentError = contentError) }
-    }
-
-    fun toggleDiscardDialog(show: Boolean = !_templateEditorUiState.value.showDiscardDialog) {
-        _templateEditorUiState.update { it.copy(showDiscardDialog = show) }
-    }
-
-    /**
-     * Create a new template.
-     * Validates that required placeholders are present before saving.
-     */
-    fun createTemplate(name: String, content: String, tags: List<String>) {
-        // Validate required placeholders (belt + suspenders with UI layer)
-        val missingPlaceholders = Template.findMissingPlaceholders(content)
-        if (missingPlaceholders.isNotEmpty()) {
-            val errorMsg = resourceProvider.getString(
-                R.string.error_template_required_placeholders_missing,
-                missingPlaceholders.joinToString(", ")
-            )
-            _uiState.update { it.copy(validationError = errorMsg) }
-            setContentError(missingPlaceholdersError(content))
-            viewModelScope.launch {
-                emitEvent(TemplateListEventOwner.EDITOR, TemplateListEvent.Error(errorMsg))
-            }
-            return
-        }
-        
-        viewModelScope.launch {
-            try {
-                val template = Template.create(
-                    name.trim().take(MAX_TEMPLATE_NAME_LENGTH),
-                    content
-                ).copy(tags = sanitizeTags(tags))
-                settingsStore.saveTemplate(template)
-                _uiState.update { it.copy(editingTemplate = null, validationError = null) }
-                resetTemplateEditorState()
-                emitEvent(TemplateListEventOwner.EDITOR, TemplateListEvent.TemplateCreated(template))
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to create template", e)
-                emitError(TemplateListEventOwner.EDITOR, R.string.error_template_create_failed)
-            }
-        }
-    }
-
-    /**
-     * Update an existing template.
-     * Validates that required placeholders are present before saving.
-     */
-    fun updateTemplate(templateId: String, name: String, content: String, tags: List<String>) {
-        // Validate required placeholders (belt + suspenders with UI layer)
-        val missingPlaceholders = Template.findMissingPlaceholders(content)
-        if (missingPlaceholders.isNotEmpty()) {
-            val errorMsg = resourceProvider.getString(
-                R.string.error_template_required_placeholders_missing,
-                missingPlaceholders.joinToString(", ")
-            )
-            _uiState.update { it.copy(validationError = errorMsg) }
-            setContentError(missingPlaceholdersError(content))
-            viewModelScope.launch {
-                emitEvent(TemplateListEventOwner.EDITOR, TemplateListEvent.Error(errorMsg))
-            }
-            return
-        }
-        
-        viewModelScope.launch {
-            try {
-                val existing = settingsStore.getTemplate(templateId)
-                if (existing != null) {
-                    val updated = existing.copy(
-                        name = name.trim().take(MAX_TEMPLATE_NAME_LENGTH),
-                        content = Template.normalizeContent(content),
-                        tags = sanitizeTags(tags),
-                        modifiedAt = Instant.now().toString()
-                    )
-                    settingsStore.saveTemplate(updated)
-                    _uiState.update { it.copy(editingTemplate = null, validationError = null) }
-                    resetTemplateEditorState()
-                    emitEvent(TemplateListEventOwner.EDITOR, TemplateListEvent.TemplateUpdated(updated))
-                }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to update template", e)
-                emitError(TemplateListEventOwner.EDITOR, R.string.error_template_update_failed)
-            }
-        }
-    }
-
-    /**
      * Show delete confirmation dialog for a template.
      */
     fun showDeleteConfirmation(template: Template) {
@@ -485,12 +310,8 @@ class TemplateListViewModel(
                 settingsStore.saveTemplate(duplicate)
                 emitEvent(
                     TemplateListEventOwner.LIBRARY,
-                    TemplateListEvent.TemplateDuplicated(duplicate)
+                    TemplateListEvent.TemplateDuplicated(duplicate, openEditor = true)
                 )
-                // Immediately open the duplicate for editing, clear any stale validation error
-                _uiState.update { it.copy(editingTemplate = duplicate, validationError = null) }
-                initializeTemplateEditorState(duplicate)
-                _navigateToEditor.emit(Unit)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -526,56 +347,6 @@ class TemplateListViewModel(
         _uiState.update { it.copy(warningDismissed = true) }
     }
     
-    /**
-     * Clear any validation errors (e.g., when user starts typing in editor).
-     */
-    fun clearValidationError() {
-        _uiState.update { it.copy(validationError = null) }
-    }
-
-    private fun initializeTemplateEditorState(template: Template) {
-        val isNewTemplate = template.id == NEW_TEMPLATE_ID
-        val initialName = if (isNewTemplate) "" else template.name
-        val initialContent = if (isNewTemplate) {
-            settingsStore.defaultTemplateContent
-        } else {
-            template.content
-        }
-
-        _templateEditorUiState.value = TemplateEditorUiState(
-            name = initialName,
-            tags = sanitizeTags(template.tags),
-            newTagInput = "",
-            contentText = initialContent,
-            nameError = null,
-            contentError = missingPlaceholdersError(initialContent),
-            showDiscardDialog = false
-        )
-    }
-
-    private fun resetTemplateEditorState() {
-        _templateEditorUiState.value = TemplateEditorUiState()
-    }
-
-    private fun missingPlaceholdersError(content: String): String? {
-        val missing = Template.findMissingPlaceholders(content)
-        return if (missing.isNotEmpty()) {
-            missing.joinToString(", ") {
-                it.removePrefix("{{ ").removeSuffix(" }}")
-            }
-        } else {
-            null
-        }
-    }
-
-    private fun sanitizeTags(tags: List<String>): List<String> {
-        val seen = mutableSetOf<String>()
-        return tags.map { it.trim() }
-            .filter { it.isNotBlank() }
-            .map { it.take(MAX_TAG_LENGTH) }
-            .filter { seen.add(it.lowercase()) }
-    }
-
     private suspend fun emitEvent(owner: TemplateListEventOwner, event: TemplateListEvent) {
         _events.emit(OwnedTemplateListEvent(owner, event))
     }

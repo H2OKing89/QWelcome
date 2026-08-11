@@ -21,7 +21,7 @@ import com.kingpaging.qwelcome.util.AndroidResourceProvider
 import com.kingpaging.qwelcome.viewmodel.factory.AppViewModelProvider
 import com.kingpaging.qwelcome.viewmodel.templates.MAX_TEMPLATE_NAME_LENGTH
 import com.kingpaging.qwelcome.viewmodel.templates.TemplateListViewModel
-import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -41,7 +41,7 @@ class TemplateListScreenTest {
     @get:Rule
     val composeRule = createComposeRule()
 
-    private val editorOpened = AtomicBoolean(false)
+    private val openedTemplateId = AtomicReference<String?>(null)
     private lateinit var appContext: Context
     private lateinit var viewModel: TemplateListViewModel
     private lateinit var soundPlayer: FakeSoundPlayer
@@ -62,7 +62,7 @@ class TemplateListScreenTest {
     @Before
     fun setup() {
         AppViewModelProvider.resetForTesting()
-        editorOpened.set(false)
+        openedTemplateId.set(null)
         appContext = ApplicationProvider.getApplicationContext()
         soundPlayer = FakeSoundPlayer()
     }
@@ -83,8 +83,8 @@ class TemplateListScreenTest {
             .assertIsDisplayed()
             .performClick()
 
-        composeRule.waitUntil { editorOpened.get() }
-        assertEquals(NEW_TEMPLATE_ID, viewModel.uiState.value.editingTemplate?.id)
+        composeRule.waitUntil { openedTemplateId.get() != null }
+        assertEquals(NEW_TEMPLATE_ID, openedTemplateId.get())
     }
 
     @Test
@@ -125,9 +125,8 @@ class TemplateListScreenTest {
             appContext.getString(R.string.content_desc_template_actions_named, englishTemplate.name)
         ).performClick()
         composeRule.onNodeWithText(appContext.getString(R.string.action_edit_template)).performClick()
-        composeRule.waitUntil { editorOpened.get() }
-
-        assertEquals(englishTemplate.id, viewModel.uiState.value.editingTemplate?.id)
+        composeRule.waitUntil { openedTemplateId.get() != null }
+        assertEquals(englishTemplate.id, openedTemplateId.get())
     }
 
     @Test
@@ -373,25 +372,6 @@ class TemplateListScreenTest {
     }
 
     @Test
-    fun editorError_duringTransition_isNotConsumedByLibrary() {
-        setScreenContent()
-        val invalidContent = "Missing required variables"
-        val expectedMessage = appContext.getString(
-            R.string.error_template_required_placeholders_missing,
-            Template.findMissingPlaceholders(invalidContent).joinToString(", ")
-        )
-
-        composeRule.runOnIdle {
-            viewModel.createTemplate("Invalid", invalidContent, emptyList())
-        }
-        composeRule.waitUntil { viewModel.uiState.value.validationError == expectedMessage }
-        composeRule.waitForIdle()
-
-        composeRule.onNodeWithText(expectedMessage).assertDoesNotExist()
-        assertEquals(0, soundPlayer.beepCount)
-    }
-
-    @Test
     fun invalidCard_isBlockedAndFixOpensEditor() {
         val invalidTemplate = Template(
             id = "invalid-template",
@@ -409,8 +389,8 @@ class TemplateListScreenTest {
         assertEquals(1, soundPlayer.beepCount)
         composeRule.onNodeWithText(appContext.getString(R.string.action_fix)).performClick()
 
-        composeRule.waitUntil { editorOpened.get() }
-        assertEquals(invalidTemplate.id, viewModel.uiState.value.editingTemplate?.id)
+        composeRule.waitUntil { openedTemplateId.get() != null }
+        assertEquals(invalidTemplate.id, openedTemplateId.get())
         assertEquals(DEFAULT_TEMPLATE_ID, viewModel.uiState.value.activeTemplateId)
         assertTrue(invalidTemplate.id !in viewModel.uiState.value.templateLastUsedAt)
     }
@@ -492,7 +472,7 @@ class TemplateListScreenTest {
                 ) {
                     TemplateListScreen(
                         onBack = {},
-                        onOpenEditor = { editorOpened.set(true) }
+                        onOpenEditor = { openedTemplateId.set(it) }
                     )
                 }
             }

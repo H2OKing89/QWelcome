@@ -64,9 +64,9 @@ Before the 2026-08-10 change, `ImportApplyService.applyFullBackup()` saved templ
 
 #### 2. Make template-editor navigation restorable
 
-**Status:** Not started
+**Status:** Complete
 
-`Routes.TemplateEditor` carries no template ID. Editor identity currently lives in `TemplateListViewModel.uiState.editingTemplate`, which is in memory. If Android recreates the process while restoring the editor destination, the template context is missing and the screen exits.
+`Routes.TemplateEditor` carries the template ID, including the `NEW_TEMPLATE_ID` sentinel for creation. The destination-scoped `TemplateEditorViewModel` reloads the persisted template and restores draft fields through `SavedStateHandle`, so editor identity no longer lives in `TemplateListViewModel.uiState`.
 
 **Plan:**
 
@@ -74,8 +74,8 @@ Before the 2026-08-10 change, `ImportApplyService.applyFullBackup()` saved templ
 - Create a destination-scoped `TemplateEditorViewModel` using `SavedStateHandle`.
 - Load the template from persistence by route ID.
 - Move editor fields, validation, save/update, and discard state out of `TemplateListViewModel`.
-- Replace the `navigateToEditor` SharedFlow with direct typed navigation.
-- Remove `TemplateListEventOwner.EDITOR` after editor effects have their own owner.
+- Replace the `navigateToEditor` SharedFlow with the existing library effect stream carrying the duplicate ID.
+- Move editor effects to `TemplateEditorViewModel`; `TemplateListEventOwner.EDITOR` has been removed.
 
 **Acceptance criteria:**
 
@@ -107,13 +107,13 @@ Before the 2026-08-10 cleanup, template management had moved to the template lib
 
 #### 4. Split the template list and editor responsibilities
 
-**Status:** Not started; coupled to item 2
+**Status:** Complete
 
-`TemplateListViewModel` currently owns list loading, search, tag filters, selection, rename, duplicate, delete, editor state, editor validation, and editor navigation. It routes events to Intake, Library, and Editor through an owner enum.
+`TemplateListViewModel` now owns list loading, search, tag filters, selection, rename, duplicate, and delete. Editor state, validation, persistence, and effects live in the destination-scoped `TemplateEditorViewModel`.
 
 **Plan:**
 
-- Complete the editor extraction described in item 2.
+- Completed the editor extraction described in item 2.
 - Keep template selection rules in the data/domain boundary.
 - Keep library-specific rename, duplicate, delete, search, and filtering in `TemplateListViewModel`.
 - Reassess whether Intake needs a small template-selection collaborator instead of sharing the entire list ViewModel.
@@ -375,15 +375,15 @@ Document safe dependency updates, common Gradle/Proto issues, device installatio
 - [x] Remove obsolete Settings template APIs and tests.
 - [x] Implement atomic full-backup persistence.
 - [x] Add focused tests.
-- [ ] Run unit, lint, Ktlint, Detekt, and instrumentation compilation.
+- [x] Run unit, lint, Ktlint, Detekt, and instrumentation compilation.
 
 ### Milestone 2: Restorable template editor
 
-- [ ] Add route template ID.
-- [ ] Add `TemplateEditorViewModel` with `SavedStateHandle`.
-- [ ] Move editor state/actions/events.
-- [ ] Remove list-to-editor event routing.
-- [ ] Add recreation and navigation tests.
+- [x] Add route template ID.
+- [x] Add `TemplateEditorViewModel` with `SavedStateHandle`.
+- [x] Move editor state/actions/events.
+- [x] Remove list-to-editor event routing.
+- [x] Add recreation and navigation tests.
 
 ### Milestone 3: Route/Screen boundaries
 
@@ -437,3 +437,4 @@ Run device tests when an emulator or device is available:
 - 2026-08-10: Existing intake IME inset fix retained on the overhaul branch.
 - 2026-08-10: Removed obsolete template-management APIs and uncollected errors from Settings.
 - 2026-08-10: Made full-backup persistence atomic and added option-contract tests.
+- 2026-08-10: Made template editor routes restorable and moved editor ownership into a destination-scoped ViewModel.

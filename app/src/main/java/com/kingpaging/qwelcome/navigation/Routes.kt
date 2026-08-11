@@ -28,7 +28,7 @@ object Routes {
     @Serializable
     object TemplateList
 
-    /** Full-screen template editor */
+    /** Full-screen template editor for an existing template or [NEW_TEMPLATE_ID]. */
     @Serializable
-    object TemplateEditor
+    data class TemplateEditor(val templateId: String)
 }

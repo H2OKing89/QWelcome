@@ -1,6 +1,9 @@
 package com.kingpaging.qwelcome.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -10,6 +13,8 @@ import com.kingpaging.qwelcome.ui.import_pkg.ImportScreen
 import com.kingpaging.qwelcome.ui.settings.SettingsScreen
 import com.kingpaging.qwelcome.ui.templates.TemplateEditorScreen
 import com.kingpaging.qwelcome.ui.templates.TemplateListScreen
+import com.kingpaging.qwelcome.viewmodel.factory.AppViewModelProvider
+import com.kingpaging.qwelcome.viewmodel.templates.TemplateEditorViewModel
 
 /**
  * Main navigation graph for the app using Jetpack Navigation Compose.
@@ -63,12 +68,22 @@ fun AppNavGraph(navController: NavHostController) {
                     // Navigate back to the origin screen
                     navController.popBackStack()
                 },
-                onOpenEditor = { navController.navigate(Routes.TemplateEditor) }
+                onOpenEditor = { templateId ->
+                    navController.navigate(Routes.TemplateEditor(templateId))
+                }
             )
         }
 
         composable<Routes.TemplateEditor> {
+            val context = LocalContext.current
+            // Required because the editor needs the NavBackStackEntry-scoped SavedStateHandle,
+            // which the process-wide CompositionLocal cannot provide.
+            val factory = remember(context) {
+                AppViewModelProvider(context.applicationContext)
+            }
+            val editorViewModel: TemplateEditorViewModel = viewModel(factory = factory)
             TemplateEditorScreen(
+                viewModel = editorViewModel,
                 onBack = { navController.popBackStack() }
             )
         }

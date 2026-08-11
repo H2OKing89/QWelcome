@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.lifecycle.SavedStateHandle
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.espresso.Espresso.pressBack
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -16,7 +17,6 @@ import com.kingpaging.qwelcome.data.UserPreferences
 import com.kingpaging.qwelcome.data.protoDataStore
 import com.kingpaging.qwelcome.di.LocalNavigator
 import com.kingpaging.qwelcome.di.LocalSoundPlayer
-import com.kingpaging.qwelcome.di.LocalTemplateListViewModel
 import com.kingpaging.qwelcome.testutil.FakeNavigator
 import com.kingpaging.qwelcome.testutil.FakeSoundPlayer
 import com.kingpaging.qwelcome.ui.components.PlaceholderLabels
@@ -24,7 +24,7 @@ import com.kingpaging.qwelcome.ui.theme.CyberpunkTheme
 import com.kingpaging.qwelcome.util.AndroidResourceProvider
 import com.kingpaging.qwelcome.viewmodel.factory.AppViewModelProvider
 import com.kingpaging.qwelcome.viewmodel.templates.MAX_TEMPLATE_NAME_LENGTH
-import com.kingpaging.qwelcome.viewmodel.templates.TemplateListViewModel
+import com.kingpaging.qwelcome.viewmodel.templates.TemplateEditorViewModel
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -42,7 +42,8 @@ class TemplateEditorScreenTest {
 
     private val backInvoked = AtomicBoolean(false)
     private lateinit var appContext: Context
-    private lateinit var templateListViewModel: TemplateListViewModel
+    private lateinit var settingsStore: SettingsStore
+    private lateinit var templateEditorViewModel: TemplateEditorViewModel
     private lateinit var navigator: FakeNavigator
     private lateinit var soundPlayer: FakeSoundPlayer
 
@@ -52,15 +53,10 @@ class TemplateEditorScreenTest {
         backInvoked.set(false)
 
         appContext = ApplicationProvider.getApplicationContext()
-        val settingsStore = SettingsStore(appContext)
+        settingsStore = SettingsStore(appContext)
         runBlocking {
             appContext.protoDataStore.updateData { UserPreferences.getDefaultInstance() }
         }
-        templateListViewModel = TemplateListViewModel(
-            settingsStore,
-            AndroidResourceProvider(appContext)
-        )
-
         navigator = FakeNavigator()
         soundPlayer = FakeSoundPlayer()
     }
@@ -569,7 +565,7 @@ class TemplateEditorScreenTest {
         val newTemplate = Template(
             id = NEW_TEMPLATE_ID,
             name = "",
-            content = templateListViewModel.getDefaultTemplateContent()
+            content = settingsStore.defaultTemplateContent
         )
         setScreenContent(newTemplate)
     }
@@ -589,15 +585,22 @@ class TemplateEditorScreenTest {
     }
 
     private fun setScreenContent(template: Template) {
-        templateListViewModel.startEditing(template)
+        if (template.id != NEW_TEMPLATE_ID) {
+            runBlocking { settingsStore.saveTemplate(template) }
+        }
+        templateEditorViewModel = TemplateEditorViewModel(
+            SavedStateHandle(mapOf("templateId" to template.id)),
+            settingsStore,
+            AndroidResourceProvider(appContext)
+        )
         composeRule.setContent {
             CyberpunkTheme {
                 CompositionLocalProvider(
-                    LocalTemplateListViewModel provides templateListViewModel,
                     LocalNavigator provides navigator,
                     LocalSoundPlayer provides soundPlayer
                 ) {
                     TemplateEditorScreen(
+                        viewModel = templateEditorViewModel,
                         onBack = { backInvoked.set(true) }
                     )
                 }
