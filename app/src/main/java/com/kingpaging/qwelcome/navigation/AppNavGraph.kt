@@ -7,7 +7,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.kingpaging.qwelcome.ui.CustomerIntakeScreen
+import com.kingpaging.qwelcome.ui.CustomerIntakeRoute
 import com.kingpaging.qwelcome.ui.export.ExportRoute
 import com.kingpaging.qwelcome.ui.import_pkg.ImportRoute
 import com.kingpaging.qwelcome.ui.settings.SettingsRoute
@@ -30,7 +30,7 @@ fun AppNavGraph(navController: NavHostController) {
         startDestination = Routes.Main
     ) {
         composable<Routes.Main> {
-            CustomerIntakeScreen(
+            CustomerIntakeRoute(
                 onOpenSettings = { navController.navigate(Routes.Settings) },
                 onOpenTemplates = {
                     navController.navigate(Routes.TemplateList)

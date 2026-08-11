@@ -1,7 +1,9 @@
 package com.kingpaging.qwelcome.ui
 
 import android.content.Context
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertCountEquals
@@ -33,8 +35,10 @@ import com.kingpaging.qwelcome.testutil.FakeNavigator
 import com.kingpaging.qwelcome.testutil.FakeSoundPlayer
 import com.kingpaging.qwelcome.ui.theme.CyberpunkTheme
 import com.kingpaging.qwelcome.util.AndroidResourceProvider
+import com.kingpaging.qwelcome.util.WifiQrGenerator
 import com.kingpaging.qwelcome.viewmodel.CustomerIntakeViewModel
 import com.kingpaging.qwelcome.viewmodel.factory.AppViewModelProvider
+import com.kingpaging.qwelcome.viewmodel.templates.TemplateListUiState
 import com.kingpaging.qwelcome.viewmodel.templates.TemplateListViewModel
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.runBlocking
@@ -102,6 +106,26 @@ class CustomerIntakeScreenTest {
     }
 
     @Test
+    fun screen_rendersSuppliedStateWithoutViewModels() {
+        composeRule.setContent {
+            CyberpunkTheme {
+                CustomerIntakeScreen(
+                    uiState = CustomerIntakeUiState(customerName = "Supplied customer"),
+                    templateUiState = TemplateListUiState(isLoading = false),
+                    snackbarHostState = remember { SnackbarHostState() },
+                    formFocusTargets = remember { CustomerFormFocusTargets() },
+                    copySuccess = false,
+                    actions = noOpCustomerIntakeActions(),
+                    onOpenSettings = {},
+                    onOpenTemplates = {}
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("Supplied customer").assertIsDisplayed()
+    }
+
+    @Test
     fun showQr_becomes_enabled_when_valid_wifi_credentials_entered() {
         setScreenContent()
         val context = appContext
@@ -144,18 +168,14 @@ class CustomerIntakeScreenTest {
 
         composeRule.waitUntil(timeoutMillis = 5_000) {
             composeRule
-                .onNode(
-                    editableFieldWithLabel(context.getString(R.string.label_customer_name)),
-                    useUnmergedTree = true
-                )
-                .fetchSemanticsNode()
-                .config[SemanticsProperties.Focused]
+                .onAllNodes(hasSetTextAction(), useUnmergedTree = true)
+                .fetchSemanticsNodes()
+                .firstOrNull()
+                ?.config
+                ?.getOrElse(SemanticsProperties.Focused) { false } == true
         }
 
-        composeRule.onNode(
-            editableFieldWithLabel(context.getString(R.string.label_customer_name)),
-            useUnmergedTree = true
-        ).assertIsFocused()
+        composeRule.onAllNodes(hasSetTextAction(), useUnmergedTree = true)[0].assertIsFocused()
     }
 
     @Test
@@ -182,7 +202,7 @@ class CustomerIntakeScreenTest {
                     LocalNavigator provides navigator,
                     LocalSoundPlayer provides soundPlayer
                 ) {
-                    CustomerIntakeScreen(
+                    CustomerIntakeRoute(
                         onOpenSettings = { settingsOpened.set(true) },
                         onOpenTemplates = {}
                     )
@@ -191,4 +211,22 @@ class CustomerIntakeScreenTest {
         }
         composeRule.waitForIdle()
     }
+
+    private fun noOpCustomerIntakeActions() = CustomerIntakeActions(
+        onDismissQr = {},
+        onClearForm = {},
+        onTemplateSelected = {},
+        onCustomerNameChanged = {},
+        onCustomerPhoneChanged = {},
+        onSsidChanged = {},
+        onSecurityTypeChanged = { _: WifiQrGenerator.SecurityType -> },
+        onHiddenNetworkChanged = {},
+        onOpenNetworkChanged = {},
+        onPasswordChanged = {},
+        onAccountNumberChanged = {},
+        onSmsClick = {},
+        onShareClick = {},
+        onCopyClick = {},
+        onShowQr = {}
+    )
 }

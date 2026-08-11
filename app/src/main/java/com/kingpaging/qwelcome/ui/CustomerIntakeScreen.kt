@@ -1,6 +1,5 @@
 package com.kingpaging.qwelcome.ui
 
-import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -39,15 +38,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -55,7 +51,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
@@ -66,14 +61,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.flowWithLifecycle
 import com.kingpaging.qwelcome.R
-import com.kingpaging.qwelcome.di.LocalCustomerIntakeViewModel
-import com.kingpaging.qwelcome.di.LocalNavigator
-import com.kingpaging.qwelcome.di.LocalTemplateListViewModel
 import com.kingpaging.qwelcome.ui.components.CyberpunkBackdrop
 import com.kingpaging.qwelcome.ui.components.NeonButton
 import com.kingpaging.qwelcome.ui.components.NeonButtonStyle
@@ -85,22 +73,16 @@ import com.kingpaging.qwelcome.ui.components.NeonTopAppBar
 import com.kingpaging.qwelcome.ui.components.QrCodeBottomSheet
 import com.kingpaging.qwelcome.ui.components.QWelcomeHeader
 import com.kingpaging.qwelcome.ui.theme.LocalCyberColors
-import com.kingpaging.qwelcome.ui.templates.toTemplateErrorMessage
-import com.kingpaging.qwelcome.util.rememberHapticFeedback
-import com.kingpaging.qwelcome.di.LocalSoundPlayer
 import com.kingpaging.qwelcome.util.WifiQrGenerator
-import com.kingpaging.qwelcome.viewmodel.UiEvent
-import com.kingpaging.qwelcome.viewmodel.templates.TemplateListEventOwner
+import com.kingpaging.qwelcome.util.rememberHapticFeedback
 import com.kingpaging.qwelcome.viewmodel.templates.TemplateListUiState
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
 
-private class FormFieldFocusTarget {
+internal class FormFieldFocusTarget {
     val focusRequester = FocusRequester()
     val bringIntoViewRequester = BringIntoViewRequester()
 }
 
-private class CustomerFormFocusTargets {
+internal class CustomerFormFocusTargets {
     val customerName = FormFieldFocusTarget()
     val customerPhone = FormFieldFocusTarget()
     val ssid = FormFieldFocusTarget()
@@ -117,83 +99,42 @@ private class CustomerFormFocusTargets {
     }
 }
 
-@Suppress("LocalContextGetResourceValueCall")
+internal data class CustomerIntakeActions(
+    val onDismissQr: () -> Unit,
+    val onClearForm: () -> Unit,
+    val onTemplateSelected: (String) -> Unit,
+    val onCustomerNameChanged: (String) -> Unit,
+    val onCustomerPhoneChanged: (String) -> Unit,
+    val onSsidChanged: (String) -> Unit,
+    val onSecurityTypeChanged: (WifiQrGenerator.SecurityType) -> Unit,
+    val onHiddenNetworkChanged: (Boolean) -> Unit,
+    val onOpenNetworkChanged: (Boolean) -> Unit,
+    val onPasswordChanged: (String) -> Unit,
+    val onAccountNumberChanged: (String) -> Unit,
+    val onSmsClick: () -> Unit,
+    val onShareClick: () -> Unit,
+    val onCopyClick: () -> Unit,
+    val onShowQr: () -> Unit
+)
+
+@Suppress("FunctionNaming", "LongMethod", "LongParameterList")
 @Composable
-fun CustomerIntakeScreen(
+internal fun CustomerIntakeScreen(
+    uiState: CustomerIntakeUiState,
+    templateUiState: TemplateListUiState,
+    snackbarHostState: SnackbarHostState,
+    formFocusTargets: CustomerFormFocusTargets,
+    copySuccess: Boolean,
+    actions: CustomerIntakeActions,
     onOpenSettings: () -> Unit,
     onOpenTemplates: () -> Unit = {}
 ) {
-    // Get ViewModel and Navigator from CompositionLocals (provided at Activity level)
-    val customerIntakeViewModel = LocalCustomerIntakeViewModel.current
-    val templateListViewModel = LocalTemplateListViewModel.current
-    val navigator = LocalNavigator.current
-    val soundPlayer = LocalSoundPlayer.current
     val hapticFeedback = rememberHapticFeedback()
-    val formFocusTargets = remember { CustomerFormFocusTargets() }
-
-    val uiState by customerIntakeViewModel.uiState.collectAsStateWithLifecycle()
-    val templateUiState by templateListViewModel.uiState.collectAsStateWithLifecycle()
-    // Use rememberSaveable so rotation/process death doesn't reset these
     var passwordVisible by rememberSaveable { mutableStateOf(false) }
     var advancedWifiOptionsExpanded by rememberSaveable { mutableStateOf(false) }
     var securityDropdownExpanded by remember { mutableStateOf(false) }
-    // Dropdown state is transient - use remember so it collapses on rotation
     var templateDropdownExpanded by remember { mutableStateOf(false) }
-    // Copy success feedback - brief visual confirmation (ChatGPT feedback: animate meaning)
-    var copySuccess by remember { mutableStateOf(false) }
-    val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
-    val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
 
-    // Note: Lifecycle observer for auto-clear is registered in MainActivity
-    // to ensure single registration and proper cleanup.
-
-    // Collect UI events (Toasts, rate limit warnings, copy success feedback)
-    LaunchedEffect(Unit) {
-        customerIntakeViewModel.uiEvent.collect { event ->
-            when (event) {
-                is UiEvent.CopySuccess -> {
-                    // Typed event for copy feedback - non-blocking reset
-                    copySuccess = true
-                    launch {
-                        kotlinx.coroutines.delay(1500L)
-                        copySuccess = false
-                    }
-                }
-                is UiEvent.ShowToast -> {
-                    Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
-                }
-                is UiEvent.ValidationFailed -> {
-                    soundPlayer.playBeep()
-                    formFocusTargets.firstInvalid(customerIntakeViewModel.uiState.value)?.let { target ->
-                        target.focusRequester.requestFocus()
-                        target.bringIntoViewRequester.bringIntoView()
-                    }
-                }
-                is UiEvent.ActionFailed -> {
-                    soundPlayer.playBeep()
-                }
-                is UiEvent.RateLimitExceeded -> {
-                    soundPlayer.playBeep()
-                    Toast.makeText(context, context.getString(R.string.toast_rate_limit), Toast.LENGTH_LONG).show()
-                }
-            }
-        }
-    }
-
-    LaunchedEffect(templateListViewModel, lifecycleOwner) {
-        templateListViewModel.eventsFor(TemplateListEventOwner.INTAKE)
-            .flowWithLifecycle(lifecycleOwner.lifecycle, Lifecycle.State.STARTED)
-            .collectLatest { event ->
-                val message = event.toTemplateErrorMessage(context) ?: return@collectLatest
-                soundPlayer.playBeep()
-                snackbarHostState.showSnackbar(message)
-            }
-    }
-
-    // QR Code Bottom Sheet — showQrSheet and qrEnabled live in the ViewModel
-    // so the auto-reset (qrEnabled → false clears the sheet) is testable.
     if (uiState.showQrSheet) {
         QrCodeBottomSheet(
             ssid = uiState.ssid,
@@ -201,7 +142,7 @@ fun CustomerIntakeScreen(
             isOpenNetwork = uiState.isOpenNetwork,
             securityType = uiState.securityType,
             isHiddenNetwork = uiState.isHiddenNetwork,
-            onDismiss = { customerIntakeViewModel.setShowQrSheet(false) }
+            onDismiss = actions.onDismissQr
         )
     }
 
@@ -216,18 +157,7 @@ fun CustomerIntakeScreen(
                     actions = {
                         IconButton(onClick = {
                             hapticFeedback()
-                            val undoToken = customerIntakeViewModel.clearFormWithUndo()
-                            scope.launch {
-                                val result = snackbarHostState.showSnackbar(
-                                    message = context.getString(R.string.toast_form_cleared),
-                                    actionLabel = context.getString(R.string.action_undo)
-                                )
-                                if (result == SnackbarResult.ActionPerformed) {
-                                    customerIntakeViewModel.undoClearForm(undoToken)
-                                } else {
-                                    customerIntakeViewModel.discardClearFormUndo(undoToken)
-                                }
-                            }
+                            actions.onClearForm()
                         }) {
                             Icon(Icons.Filled.PersonAdd, contentDescription = stringResource(R.string.content_desc_new_customer))
                         }
@@ -257,10 +187,7 @@ fun CustomerIntakeScreen(
                     onExpandedChange = { templateDropdownExpanded = it },
                     onTemplateSelected = {
                         hapticFeedback()
-                        templateListViewModel.setActiveTemplate(
-                            it,
-                            TemplateListEventOwner.INTAKE
-                        )
+                        actions.onTemplateSelected(it)
                         templateDropdownExpanded = false
                     },
                     onManageTemplates = {
@@ -274,9 +201,9 @@ fun CustomerIntakeScreen(
                     uiState = uiState,
                     focusTargets = formFocusTargets,
                     passwordVisible = passwordVisible,
-                    onCustomerNameChanged = customerIntakeViewModel::onCustomerNameChanged,
-                    onCustomerPhoneChanged = customerIntakeViewModel::onCustomerPhoneChanged,
-                    onSsidChanged = customerIntakeViewModel::onSsidChanged,
+                    onCustomerNameChanged = actions.onCustomerNameChanged,
+                    onCustomerPhoneChanged = actions.onCustomerPhoneChanged,
+                    onSsidChanged = actions.onSsidChanged,
                     advancedWifiOptionsExpanded = advancedWifiOptionsExpanded,
                     onAdvancedWifiOptionsExpandedChange = { expanded ->
                         hapticFeedback()
@@ -288,38 +215,38 @@ fun CustomerIntakeScreen(
                     onSecurityDropdownExpandedChange = { securityDropdownExpanded = it },
                     onSecurityTypeChanged = {
                         hapticFeedback()
-                        customerIntakeViewModel.onSecurityTypeChanged(it)
+                        actions.onSecurityTypeChanged(it)
                     },
                     isHiddenNetwork = uiState.isHiddenNetwork,
                     onHiddenNetworkChanged = {
                         hapticFeedback()
-                        customerIntakeViewModel.onHiddenNetworkChanged(it)
+                        actions.onHiddenNetworkChanged(it)
                     },
                     onOpenNetworkChanged = {
                         hapticFeedback()
-                        customerIntakeViewModel.onOpenNetworkChanged(it)
+                        actions.onOpenNetworkChanged(it)
                     },
-                    onPasswordChanged = customerIntakeViewModel::onPasswordChanged,
+                    onPasswordChanged = actions.onPasswordChanged,
                     onPasswordVisibilityToggle = {
                         hapticFeedback()
                         passwordVisible = !passwordVisible
                     },
-                    onAccountNumberChanged = customerIntakeViewModel::onAccountNumberChanged
+                    onAccountNumberChanged = actions.onAccountNumberChanged
                 )
 
                 ActionButtonRow(
                     copySuccess = copySuccess,
                     onSmsClick = {
                         hapticFeedback()
-                        customerIntakeViewModel.onSmsClicked(navigator)
+                        actions.onSmsClick()
                     },
                     onShareClick = {
                         hapticFeedback()
-                        customerIntakeViewModel.onShareClicked(navigator)
+                        actions.onShareClick()
                     },
                     onCopyClick = {
                         hapticFeedback()
-                        customerIntakeViewModel.onCopyClicked(navigator)
+                        actions.onCopyClick()
                     }
                 )
 
@@ -328,7 +255,7 @@ fun CustomerIntakeScreen(
                     enabled = uiState.qrEnabled,
                     onShowQrClick = {
                         hapticFeedback()
-                        customerIntakeViewModel.setShowQrSheet(true)
+                        actions.onShowQr()
                     }
                 )
             }
