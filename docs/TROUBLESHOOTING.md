@@ -54,7 +54,7 @@ adb devices
 ./gradlew :app:connectedDebugAndroidTest
 ```
 
-CI runs a focused emulator smoke suite on pull requests and pushes, while scheduled or manually dispatched runs execute the full suite. Test reports are uploaded as workflow artifacts when a CI test job fails.
+CI runs a focused emulator smoke suite on pull requests and pushes, while scheduled or manually dispatched runs execute the full suite. Test reports are uploaded as workflow artifacts after every CI test job.
 
 If an individual Compose test is unstable on a physical device, run its class in a fresh instrumentation process before treating it as a code regression. The Gradle task supports test filtering:
 

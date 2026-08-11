@@ -106,6 +106,9 @@ class SettingsScreenUpdateDialogTest {
                         currentVersion = "1.0.0"
                     ),
                     onBack = {},
+                    onOpenExport = {},
+                    onOpenImport = {},
+                    onOpenTemplates = {},
                     onSaveProfile = {},
                     onSetCrashReportingEnabled = {},
                     onSetScreenCaptureProtectionEnabled = {},

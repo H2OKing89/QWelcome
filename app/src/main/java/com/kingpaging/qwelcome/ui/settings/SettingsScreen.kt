@@ -43,9 +43,9 @@ import com.kingpaging.qwelcome.viewmodel.settings.UpdateState
 fun SettingsScreen(
     uiState: SettingsUiState,
     onBack: () -> Unit,
-    onOpenExport: () -> Unit = {},
-    onOpenImport: () -> Unit = {},
-    onOpenTemplates: () -> Unit = {},
+    onOpenExport: () -> Unit,
+    onOpenImport: () -> Unit,
+    onOpenTemplates: () -> Unit,
     onSaveProfile: (TechProfile) -> Unit,
     onSetCrashReportingEnabled: (Boolean) -> Unit,
     onSetScreenCaptureProtectionEnabled: (Boolean) -> Unit,

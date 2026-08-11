@@ -53,7 +53,7 @@ internal fun CustomerIntakeActionButtonRow(
         ) {
             Icon(
                 Icons.AutoMirrored.Filled.Send,
-                contentDescription = stringResource(R.string.content_desc_send_sms),
+                contentDescription = null,
                 modifier = Modifier.size(16.dp)
             )
             Spacer(Modifier.width(6.dp))
@@ -66,7 +66,7 @@ internal fun CustomerIntakeActionButtonRow(
         ) {
             Icon(
                 Icons.Filled.Share,
-                contentDescription = stringResource(R.string.action_share),
+                contentDescription = null,
                 modifier = Modifier.size(16.dp)
             )
             Spacer(Modifier.width(4.dp))
@@ -81,7 +81,7 @@ internal fun CustomerIntakeActionButtonRow(
         ) {
             Icon(
                 if (copySuccess) Icons.Filled.Check else Icons.Filled.ContentCopy,
-                contentDescription = stringResource(R.string.content_desc_copy_clipboard),
+                contentDescription = null,
                 modifier = Modifier.size(16.dp)
             )
             Spacer(Modifier.width(4.dp))

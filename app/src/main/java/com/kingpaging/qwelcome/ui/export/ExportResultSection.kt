@@ -208,7 +208,7 @@ private fun ExportCopyShareActions(onCopy: () -> Unit, onShareRequested: () -> U
         ) {
             Icon(
                 Icons.Default.Share,
-                contentDescription = stringResource(R.string.action_share),
+                contentDescription = null,
                 modifier = Modifier.size(18.dp)
             )
             Spacer(Modifier.width(8.dp))

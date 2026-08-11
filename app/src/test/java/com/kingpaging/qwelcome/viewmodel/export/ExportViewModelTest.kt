@@ -1,5 +1,7 @@
 package com.kingpaging.qwelcome.viewmodel.export
 
+import android.content.ContentResolver
+import android.net.Uri
 import app.cash.turbine.test
 import com.kingpaging.qwelcome.data.ExportResult
 import com.kingpaging.qwelcome.data.ImportExportRepository
@@ -13,6 +15,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import java.io.ByteArrayOutputStream
 import java.io.IOException
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -31,6 +34,7 @@ class ExportViewModelTest {
 
     private val mockRepo = mockk<ImportExportRepository>(relaxed = true)
     private val mockStore = mockk<SettingsStore>(relaxed = true)
+    private val mockContentResolver = mockk<ContentResolver>(relaxed = true)
     private lateinit var vm: ExportViewModel
 
     private val testTemplates = listOf(
@@ -42,7 +46,7 @@ class ExportViewModelTest {
     fun setup() {
         coEvery { mockStore.getUserTemplates() } returns testTemplates
         every { mockStore.recentSharePackagesFlow } returns flowOf(emptyList())
-        vm = ExportViewModel(mockRepo, mockStore)
+        vm = ExportViewModel(mockRepo, mockStore, contentResolver = mockContentResolver)
     }
 
     @Test
@@ -274,21 +278,28 @@ class ExportViewModelTest {
     }
 
     @Test
-    fun `getPendingFileExportContent returns and clears content`() = runTest {
+    fun `savePendingFileExport writes content and emits FileSaved`() = runTest {
         coEvery { mockRepo.exportFullBackup() } returns
                 ExportResult.Success(json = "{\"test\":1}", templateCount = 1)
+        val uri = mockk<Uri>()
+        val output = ByteArrayOutputStream()
+        every { mockContentResolver.openOutputStream(uri) } returns output
 
-        vm.exportFullBackup()
-        advanceUntilIdle()
+        vm.events.test {
+            vm.exportFullBackup()
+            advanceUntilIdle()
+            awaitItem()
 
-        vm.onSaveToFileRequested()
-        advanceUntilIdle()
+            vm.onSaveToFileRequested()
+            advanceUntilIdle()
+            awaitItem()
 
-        val content = vm.getPendingFileExportContent()
-        assertEquals("{\"test\":1}", content)
+            vm.savePendingFileExport(uri)
+            advanceUntilIdle()
 
-        // Second call should return null (already consumed)
-        assertNull(vm.getPendingFileExportContent())
+            assertTrue(awaitItem() is ExportEvent.FileSaved)
+            assertEquals("{\"test\":1}", output.toString(Charsets.UTF_8.name()))
+        }
     }
 
     @Test

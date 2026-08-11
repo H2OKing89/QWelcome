@@ -55,7 +55,6 @@ fun TemplateEditorRoute(
                             context.getString(R.string.toast_template_created, event.template.name),
                             Toast.LENGTH_SHORT
                         ).show()
-                        safeNavigate()
                     }
 
                     is TemplateEditorEvent.TemplateUpdated -> {
@@ -64,7 +63,6 @@ fun TemplateEditorRoute(
                             context.getString(R.string.toast_template_updated, event.template.name),
                             Toast.LENGTH_SHORT
                         ).show()
-                        safeNavigate()
                     }
 
                     is TemplateEditorEvent.Error -> {
@@ -78,6 +76,12 @@ fun TemplateEditorRoute(
                 }
             }
     }
+
+        LaunchedEffect(editorUiState.isSaveCompleted) {
+            if (editorUiState.isSaveCompleted) {
+                safeNavigate()
+            }
+        }
 
     TemplateEditorScreen(
         editorUiState = editorUiState,

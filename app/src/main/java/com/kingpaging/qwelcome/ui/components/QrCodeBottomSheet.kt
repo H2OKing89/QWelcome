@@ -195,8 +195,11 @@ fun QrCodeBottomSheet(
                     onShare = {
                         scope.launch {
                             isSharing = true
-                            shareQrCode(context, wifiString, ssid)
-                            isSharing = false
+                            try {
+                                shareQrCode(context, wifiString, ssid)
+                            } finally {
+                                isSharing = false
+                            }
                         }
                     }
                 )
@@ -379,7 +382,7 @@ private suspend fun shareQrCode(
             val bmp = generateHighResQrBitmap(wifiString)
             val cacheDir = File(context.cacheDir, "qr_codes")
             if (!cacheDir.exists() && !cacheDir.mkdirs()) {
-                throw Exception("Failed to create cache directory")
+                throw IOException("Failed to create cache directory")
             }
             val file = File(cacheDir, "WiFi_QR_${sanitizeFileName(ssid)}.png")
             FileOutputStream(file).use { stream ->

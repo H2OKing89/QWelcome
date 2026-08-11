@@ -21,6 +21,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -132,22 +136,25 @@ private fun ImportSourceButtons(onOpenFile: () -> Unit, onPaste: () -> Unit) {
 
 @Composable
 private fun ImportIdleError(error: String?) {
+    var retainedErrorMessage by remember { mutableStateOf(error) }
+    if (error != null) {
+        retainedErrorMessage = error
+    }
+
     AnimatedVisibility(visible = error != null) {
-        error?.let { errorMessage ->
-            NeonPanel(modifier = Modifier.padding(top = 24.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Default.Info,
-                        contentDescription = stringResource(R.string.content_desc_error),
-                        tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.padding(end = 8.dp)
-                    )
-                    Text(
-                        text = errorMessage,
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
+        NeonPanel(modifier = Modifier.padding(top = 24.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    Icons.Default.Info,
+                    contentDescription = stringResource(R.string.content_desc_error),
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(end = 8.dp)
+                )
+                Text(
+                    text = retainedErrorMessage.orEmpty(),
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium
+                )
             }
         }
     }

@@ -6,6 +6,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.kingpaging.qwelcome.ui.theme.LocalDarkTheme
 import kotlin.math.max
@@ -13,13 +14,13 @@ import kotlin.math.max
 @Composable
 fun Modifier.cyberGrid(
     gridColor: Color = MaterialTheme.colorScheme.primary,
-    cellSize: Float = 24f
+    cellSize: Dp = 24.dp
 ): Modifier {
     val isDark = LocalDarkTheme.current
     val alpha = if (isDark) 0.06f else 0.03f
 
     return this.drawBehind {
-        val gridSpacing = max(1f, cellSize.dp.toPx())
+        val gridSpacing = max(1f, cellSize.toPx())
 
         var x = 0f
         while (x < size.width) {
@@ -48,13 +49,13 @@ fun Modifier.cyberGrid(
 @Composable
 fun Modifier.cyberScanlines(
     lineColor: Color = MaterialTheme.colorScheme.primary,
-    lineSpacing: Float = 4f
+    lineSpacing: Dp = 4.dp
 ): Modifier {
     val isDark = LocalDarkTheme.current
     val alpha = if (isDark) 0.04f else 0.02f
 
     return this.drawBehind {
-        val spacing = max(1f, lineSpacing.dp.toPx())
+        val spacing = max(1f, lineSpacing.toPx())
         var y = 0f
         while (y < size.height) {
             drawLine(

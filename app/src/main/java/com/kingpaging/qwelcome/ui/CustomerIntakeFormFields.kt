@@ -2,6 +2,7 @@
 
 package com.kingpaging.qwelcome.ui
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -287,7 +288,7 @@ private fun AdvancedWifiOptionsSection(
 private fun NetworkOptionToggle(
     value: Boolean,
     onValueChange: (Boolean) -> Unit,
-    labelResource: Int
+    @StringRes labelResource: Int
 ) {
     Row(
         modifier = Modifier

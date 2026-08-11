@@ -1,6 +1,7 @@
 package com.kingpaging.qwelcome.di
 
 import android.content.Context
+import android.content.ContentResolver
 import android.content.pm.PackageManager
 import com.kingpaging.qwelcome.data.AppUpdater
 import com.kingpaging.qwelcome.data.GitHubAppUpdater
@@ -30,4 +31,7 @@ class AppContainer(context: Context) {
 
     val packageManager: PackageManager
         get() = applicationContext.packageManager
+
+    val contentResolver: ContentResolver
+        get() = applicationContext.contentResolver
 }

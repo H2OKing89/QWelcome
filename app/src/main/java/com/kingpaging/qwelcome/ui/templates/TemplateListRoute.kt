@@ -75,12 +75,13 @@ private fun CollectTemplateListEffects(
 
     LaunchedEffect(viewModel, lifecycleOwner, soundPlayer, snackbarHostState) {
         lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
-            launch {
-                viewModel.eventsFor(TemplateListEventOwner.LIBRARY).collect { event ->
-                    if (event is TemplateListEvent.TemplateDuplicated && event.openEditor) {
-                        currentOnOpenEditor(event.template.id)
-                    }
-                    val snackbar = event.toSnackbar(context) ?: return@collect
+            viewModel.eventsFor(TemplateListEventOwner.LIBRARY).collect { event ->
+                if (event is TemplateListEvent.TemplateDuplicated && event.openEditor) {
+                    currentOnOpenEditor(event.template.id)
+                    return@collect
+                }
+                val snackbar = event.toSnackbar(context) ?: return@collect
+                launch {
                     if (event.shouldBeep()) {
                         soundPlayer.playBeep()
                     }

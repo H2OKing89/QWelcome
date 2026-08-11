@@ -34,17 +34,7 @@ class ExportScreenTest {
             CyberpunkTheme {
                 ExportScreen(
                     uiState = ExportUiState(),
-                    onBack = {},
-                    onTemplatePackRequested = {},
-                    onFullBackupRequested = {},
-                    onShareToPackageRequested = {},
-                    onCopy = {},
-                    onShareRequested = {},
-                    onSaveToFileRequested = {},
-                    onToggleTemplateSelection = {},
-                    onToggleSelectAll = {},
-                    onDismissTemplateSelection = {},
-                    onExportSelectedTemplates = {}
+                    actions = exportActions()
                 )
             }
         }
@@ -60,17 +50,9 @@ class ExportScreenTest {
             CyberpunkTheme {
                 ExportScreen(
                     uiState = ExportUiState(),
-                    onBack = {},
-                    onTemplatePackRequested = { callbackInvoked.set(true) },
-                    onFullBackupRequested = {},
-                    onShareToPackageRequested = {},
-                    onCopy = {},
-                    onShareRequested = {},
-                    onSaveToFileRequested = {},
-                    onToggleTemplateSelection = {},
-                    onToggleSelectAll = {},
-                    onDismissTemplateSelection = {},
-                    onExportSelectedTemplates = {}
+                    actions = exportActions(
+                        onTemplatePackRequested = { callbackInvoked.set(true) }
+                    )
                 )
             }
         }
@@ -153,4 +135,20 @@ class ExportScreenTest {
 
         assertTrue(copyInvoked.get())
     }
+
+    private fun exportActions(
+        onTemplatePackRequested: () -> Unit = {}
+    ) = ExportActions(
+        onBack = {},
+        onTemplatePackRequested = onTemplatePackRequested,
+        onFullBackupRequested = {},
+        onShareToPackageRequested = {},
+        onCopy = {},
+        onShareRequested = {},
+        onSaveToFileRequested = {},
+        onToggleTemplateSelection = {},
+        onToggleSelectAll = {},
+        onDismissTemplateSelection = {},
+        onExportSelectedTemplates = {}
+    )
 }

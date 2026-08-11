@@ -5,7 +5,7 @@ package com.kingpaging.qwelcome.ui.components
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -66,7 +66,7 @@ fun NeonButton(
         border = neonButtonBorder(glowColor, visuals.borderWidth, visuals.borderAlpha),
         elevation = neonButtonElevation(style, isDark),
         modifier = modifier
-            .height(48.dp)
+            .heightIn(min = 48.dp)
             .neonPrimaryGlow(enabled, isDark, style, glowColor, glowAlpha),
         contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
         content = content

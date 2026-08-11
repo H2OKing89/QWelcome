@@ -42,7 +42,8 @@ class AppViewModelProvider(private val container: AppContainer) : ViewModelProvi
                 ExportViewModel(
                     repository = container.importExportRepository,
                     settingsStore = container.settingsStore,
-                    packageManager = container.packageManager
+                    packageManager = container.packageManager,
+                    contentResolver = container.contentResolver
                 ) as T
             }
             modelClass.isAssignableFrom(ImportViewModel::class.java) -> {

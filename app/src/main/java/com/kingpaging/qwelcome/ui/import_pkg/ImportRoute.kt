@@ -95,7 +95,6 @@ fun ImportRoute(
     }
 
     LaunchedEffect(viewModel) {
-        viewModel.reset()
         viewModel.events.collect { event ->
             when (event) {
                 is ImportEvent.ImportSuccess -> {
@@ -130,8 +129,9 @@ fun ImportRoute(
         onPaste = {
             scope.launch {
                 try {
-                    val text = clipboardManager.getClipEntry()
-                        ?.clipData
+                    val clipData = clipboardManager.getClipEntry()?.clipData
+                    val text = clipData
+                        ?.takeIf { it.itemCount > 0 }
                         ?.getItemAt(0)
                         ?.coerceToText(context)
                         ?.toString()
@@ -186,7 +186,8 @@ private fun readUtf8TextWithLimit(inputStream: java.io.InputStream, maxBytes: In
 
 private fun exceedsImportLimit(text: CharSequence, maxBytes: Int): Boolean {
     return text.length > maxBytes ||
-        (text.length > maxBytes / 2 && text.toString().toByteArray(Charsets.UTF_8).size > maxBytes)
+        (text.length > maxBytes / MAX_UTF8_BYTES_PER_CHAR &&
+            text.toString().toByteArray(Charsets.UTF_8).size > maxBytes)
 }
 
 private fun showToast(context: android.content.Context, message: String) {
@@ -198,3 +199,4 @@ private fun showToast(context: android.content.Context, messageRes: Int) {
 }
 
 private const val TAG = "ImportRoute"
+private const val MAX_UTF8_BYTES_PER_CHAR = 3

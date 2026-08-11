@@ -32,7 +32,6 @@ import com.kingpaging.qwelcome.ui.components.NeonButton
 import com.kingpaging.qwelcome.ui.components.NeonButtonStyle
 import com.kingpaging.qwelcome.ui.components.NeonPanel
 import com.kingpaging.qwelcome.viewmodel.settings.UpdateState
-import java.util.Locale
 import kotlin.math.roundToInt
 
 internal data class UpdateDownloadActions(
@@ -123,7 +122,7 @@ private fun UpdateUpToDateIndicator() {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Icon(
             Icons.Filled.CheckCircle,
-            contentDescription = stringResource(R.string.status_up_to_date),
+            contentDescription = null,
             modifier = Modifier.size(16.dp),
             tint = MaterialTheme.colorScheme.primary
         )
@@ -196,11 +195,7 @@ private fun downloadingStatusText(state: UpdateState.Downloading): String {
 internal fun formatBytes(bytes: Long): String {
     val bytesUnit = stringResource(R.string.unit_bytes)
     if (bytes <= 0L) {
-        return String.format(
-            Locale.getDefault(),
-            stringResource(R.string.format_file_size_zero),
-            bytesUnit
-        )
+        return stringResource(R.string.format_file_size_zero, bytesUnit)
     }
 
     var value = bytes.toDouble()
@@ -215,10 +210,5 @@ internal fun formatBytes(bytes: Long): String {
         2 -> stringResource(R.string.unit_megabytes)
         else -> stringResource(R.string.unit_gigabytes)
     }
-    return String.format(
-        Locale.getDefault(),
-        stringResource(R.string.format_file_size),
-        value,
-        unit
-    )
+    return stringResource(R.string.format_file_size, value, unit)
 }

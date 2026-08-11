@@ -61,25 +61,15 @@ import com.kingpaging.qwelcome.util.rememberHapticFeedback
 import com.kingpaging.qwelcome.viewmodel.export.ExportUiState
 import com.kingpaging.qwelcome.viewmodel.export.ExportType
 
-@Suppress("FunctionNaming", "LongMethod", "LongParameterList")
+@Suppress("FunctionNaming", "LongMethod")
 @Composable
 fun ExportScreen(
     uiState: ExportUiState,
-    onBack: () -> Unit,
-    onTemplatePackRequested: () -> Unit,
-    onFullBackupRequested: () -> Unit,
-    onShareToPackageRequested: (String) -> Unit,
-    onCopy: () -> Unit,
-    onShareRequested: () -> Unit,
-    onSaveToFileRequested: () -> Unit,
-    onToggleTemplateSelection: (String) -> Unit,
-    onToggleSelectAll: () -> Unit,
-    onDismissTemplateSelection: () -> Unit,
-    onExportSelectedTemplates: () -> Unit
+    actions: ExportActions
 ) {
     val haptic = rememberHapticFeedback()
 
-    BackHandler { onBack() }
+    BackHandler { actions.onBack() }
 
     CyberpunkBackdrop {
         Scaffold(
@@ -88,7 +78,7 @@ fun ExportScreen(
                 TopAppBar(
                     title = { Text(stringResource(R.string.title_export), color = MaterialTheme.colorScheme.primary) },
                     navigationIcon = {
-                        IconButton(onClick = { haptic(); onBack() }) {
+                        IconButton(onClick = { haptic(); actions.onBack() }) {
                             Icon(
                                 Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = stringResource(R.string.content_desc_back),
@@ -133,7 +123,7 @@ fun ExportScreen(
                     icon = Icons.Default.Description,
                     iconTint = MaterialTheme.colorScheme.secondary,
                     isLoading = uiState.isExporting && uiState.currentlyExportingType == ExportType.TEMPLATE_PACK,
-                    onClick = onTemplatePackRequested
+                    onClick = actions.onTemplatePackRequested
                 )
 
                 // Full Backup Card
@@ -143,7 +133,7 @@ fun ExportScreen(
                     icon = Icons.Default.Backup,
                     iconTint = MaterialTheme.colorScheme.tertiary,
                     isLoading = uiState.isExporting && uiState.currentlyExportingType == ExportType.FULL_BACKUP,
-                    onClick = onFullBackupRequested
+                    onClick = actions.onFullBackupRequested
                 )
 
                 ExportResultSection(
@@ -151,10 +141,10 @@ fun ExportScreen(
                     exportType = uiState.lastExportType,
                     templateCount = uiState.templateCount,
                     recentShareTargets = uiState.recentShareTargets,
-                    onShareToPackageRequested = onShareToPackageRequested,
-                    onCopy = onCopy,
-                    onShareRequested = onShareRequested,
-                    onSaveToFileRequested = onSaveToFileRequested
+                    onShareToPackageRequested = actions.onShareToPackageRequested,
+                    onCopy = actions.onCopy,
+                    onShareRequested = actions.onShareRequested,
+                    onSaveToFileRequested = actions.onSaveToFileRequested
                 )
 
                 Spacer(Modifier.height(32.dp))
@@ -166,10 +156,10 @@ fun ExportScreen(
             ExportTemplateSelectionDialog(
                 templates = uiState.availableTemplates,
                 selectedIds = uiState.selectedTemplateIds,
-                onToggleTemplate = onToggleTemplateSelection,
-                onToggleSelectAll = onToggleSelectAll,
-                onDismiss = onDismissTemplateSelection,
-                onExport = onExportSelectedTemplates
+                onToggleTemplate = actions.onToggleTemplateSelection,
+                onToggleSelectAll = actions.onToggleSelectAll,
+                onDismiss = actions.onDismissTemplateSelection,
+                onExport = actions.onExportSelectedTemplates
             )
         }
     }

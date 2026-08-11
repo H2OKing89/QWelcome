@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.ui.components.NeonButton
@@ -47,10 +48,14 @@ internal fun CustomerIntakeQrCodeSection(
 
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(modifier = Modifier.semantics(mergeDescendants = true) {}) {
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .semantics(mergeDescendants = true) {}
+        ) {
             Text(
                 stringResource(R.string.header_wifi_qr),
                 style = MaterialTheme.typography.labelMedium,
@@ -64,7 +69,9 @@ internal fun CustomerIntakeQrCodeSection(
                     MaterialTheme.colorScheme.tertiary
                 } else {
                     MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                }
+                },
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
             )
         }
         NeonButton(
@@ -75,7 +82,7 @@ internal fun CustomerIntakeQrCodeSection(
         ) {
             Icon(
                 Icons.Filled.QrCode2,
-                contentDescription = stringResource(R.string.content_desc_show_qr),
+                contentDescription = null,
                 modifier = Modifier.size(18.dp)
             )
             Spacer(Modifier.width(6.dp))

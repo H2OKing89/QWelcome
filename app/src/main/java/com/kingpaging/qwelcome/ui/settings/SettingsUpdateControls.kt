@@ -46,16 +46,13 @@ internal fun UpdateAvailableControls(
         ) {
             Icon(
                 Icons.Filled.Download,
-                contentDescription = stringResource(R.string.content_desc_download_update),
+                contentDescription = null,
                 modifier = Modifier.size(16.dp)
             )
             Spacer(Modifier.width(4.dp))
             Text(stringResource(R.string.status_update_available, version))
         }
-        IconButton(
-            onClick = onDismissUpdate,
-            modifier = Modifier.size(24.dp)
-        ) {
+        IconButton(onClick = onDismissUpdate) {
             Icon(
                 Icons.Filled.Close,
                 contentDescription = stringResource(R.string.content_desc_dismiss_update),
@@ -141,7 +138,7 @@ internal fun UpdateCheckForUpdateAction(
     ) {
         Icon(
             Icons.Filled.Refresh,
-            contentDescription = stringResource(R.string.content_desc_check_updates),
+            contentDescription = null,
             modifier = Modifier.size(18.dp)
         )
         Spacer(Modifier.width(8.dp))
@@ -162,7 +159,7 @@ internal fun ProjectPageAction(onOpenProjectPage: () -> Unit) {
     ) {
         Icon(
             Icons.Filled.Code,
-            contentDescription = stringResource(R.string.content_desc_view_github),
+            contentDescription = null,
             modifier = Modifier.size(18.dp)
         )
         Spacer(Modifier.width(8.dp))

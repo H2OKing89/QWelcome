@@ -26,7 +26,6 @@ import com.kingpaging.qwelcome.viewmodel.UiEvent
 import com.kingpaging.qwelcome.viewmodel.templates.TemplateListEventOwner
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 @Suppress("FunctionNaming", "LongMethod")
@@ -48,9 +47,9 @@ fun CustomerIntakeRoute(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     var copySuccess by remember { mutableStateOf(false) }
-    var copySuccessResetJob by remember { mutableStateOf<Job?>(null) }
 
-    LaunchedEffect(lifecycleOwner) {
+    LaunchedEffect(customerIntakeViewModel, lifecycleOwner) {
+        var copySuccessResetJob: Job? = null
         customerIntakeViewModel.uiEvent
             .flowWithLifecycle(lifecycleOwner.lifecycle, Lifecycle.State.STARTED)
             .collect { event ->
@@ -89,8 +88,8 @@ fun CustomerIntakeRoute(
     LaunchedEffect(templateListViewModel, lifecycleOwner) {
         templateListViewModel.eventsFor(TemplateListEventOwner.INTAKE)
             .flowWithLifecycle(lifecycleOwner.lifecycle, Lifecycle.State.STARTED)
-            .collectLatest { event ->
-                val message = event.toTemplateErrorMessage(context) ?: return@collectLatest
+            .collect { event ->
+                val message = event.toTemplateErrorMessage(context) ?: return@collect
                 soundPlayer.playBeep()
                 snackbarHostState.showSnackbar(message)
             }
@@ -107,14 +106,19 @@ fun CustomerIntakeRoute(
             onClearForm = {
                 val undoToken = customerIntakeViewModel.clearFormWithUndo()
                 scope.launch {
-                    val result = snackbarHostState.showSnackbar(
-                        message = resources.getString(R.string.toast_form_cleared),
-                        actionLabel = resources.getString(R.string.action_undo)
-                    )
-                    if (result == SnackbarResult.ActionPerformed) {
-                        customerIntakeViewModel.undoClearForm(undoToken)
-                    } else {
-                        customerIntakeViewModel.discardClearFormUndo(undoToken)
+                    var undoRestored = false
+                    try {
+                        val result = snackbarHostState.showSnackbar(
+                            message = resources.getString(R.string.toast_form_cleared),
+                            actionLabel = resources.getString(R.string.action_undo)
+                        )
+                        if (result == SnackbarResult.ActionPerformed) {
+                            undoRestored = customerIntakeViewModel.undoClearForm(undoToken)
+                        }
+                    } finally {
+                        if (!undoRestored) {
+                            customerIntakeViewModel.discardClearFormUndo(undoToken)
+                        }
                     }
                 }
             },

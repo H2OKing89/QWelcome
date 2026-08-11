@@ -29,6 +29,7 @@ private const val KEY_TAGS = "editorTags"
 private const val KEY_NEW_TAG_INPUT = "editorNewTagInput"
 private const val KEY_CONTENT = "editorContent"
 private const val KEY_SHOW_DISCARD_DIALOG = "editorShowDiscardDialog"
+private const val KEY_SAVE_COMPLETED = "editorSaveCompleted"
 
 data class TemplateEditorUiState(
     val template: Template? = null,
@@ -39,7 +40,8 @@ data class TemplateEditorUiState(
     val contentText: String = "",
     val nameError: Int? = null,
     val contentError: String? = null,
-    val showDiscardDialog: Boolean = false
+    val showDiscardDialog: Boolean = false,
+    val isSaveCompleted: Boolean = false
 )
 
 sealed class TemplateEditorEvent {
@@ -83,7 +85,8 @@ class TemplateEditorViewModel(
                 newTagInput = savedStateHandle[KEY_NEW_TAG_INPUT] ?: "",
                 contentText = initialContent,
                 contentError = missingPlaceholdersError(Template.findMissingPlaceholders(initialContent)),
-                showDiscardDialog = savedStateHandle[KEY_SHOW_DISCARD_DIALOG] ?: false
+                showDiscardDialog = savedStateHandle[KEY_SHOW_DISCARD_DIALOG] ?: false,
+                isSaveCompleted = savedStateHandle[KEY_SAVE_COMPLETED] ?: false
             )
         }
     }
@@ -136,6 +139,7 @@ class TemplateEditorViewModel(
                 ).copy(tags = sanitizeTags(tags))
                 settingsStore.saveTemplate(template)
                 _events.emit(TemplateEditorEvent.TemplateCreated(template))
+                markSaveCompleted()
             } catch (exception: CancellationException) {
                 throw exception
             } catch (exception: Exception) {
@@ -162,6 +166,7 @@ class TemplateEditorViewModel(
                 )
                 settingsStore.saveTemplate(updated)
                 _events.emit(TemplateEditorEvent.TemplateUpdated(updated))
+                markSaveCompleted()
             } catch (exception: CancellationException) {
                 throw exception
             } catch (exception: Exception) {
@@ -188,6 +193,11 @@ class TemplateEditorViewModel(
         return missingPlaceholders.takeIf { it.isNotEmpty() }?.joinToString(", ") {
             it.removePrefix("{{ ").removeSuffix(" }}")
         }
+    }
+
+    private fun markSaveCompleted() {
+        savedStateHandle[KEY_SAVE_COMPLETED] = true
+        _uiState.update { it.copy(isSaveCompleted = true) }
     }
 
     private fun sanitizeTags(tags: List<String>): List<String> {

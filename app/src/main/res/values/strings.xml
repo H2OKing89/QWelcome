@@ -153,6 +153,11 @@
     <string name="label_insert">Insert</string>
     <string name="hint_template_required_placeholders">Customer, SSID required</string>
     <string name="hint_template_empty_content">No message content yet — tap edit to add your message</string>
+    <string name="label_placeholder_customer">Customer</string>
+    <string name="label_placeholder_ssid">SSID</string>
+    <string name="label_placeholder_password">Password</string>
+    <string name="label_placeholder_account_number">Account #</string>
+    <string name="label_placeholder_signature">Signature</string>
     <string name="label_message">Message</string>
     <string name="error_name_required">Name is required</string>
     <string name="title_delete_template">Delete Template?</string>

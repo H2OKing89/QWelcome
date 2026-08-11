@@ -1,7 +1,9 @@
 package com.kingpaging.qwelcome.ui.components
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.ColorPainter
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -28,20 +30,22 @@ class QrCodeSheetContentTest {
 
         composeRule.setContent {
             CyberpunkTheme {
-                QrCodeSheetContent(
-                    qrPainter = ColorPainter(Color.Black),
-                    network = QrCodeNetworkDetails(
-                        ssid = "Technician WiFi",
-                        isOpenNetwork = false,
-                        securityType = WifiQrGenerator.SecurityType.WPA2_PSK
-                    ),
-                    isSaving = false,
-                    isSharing = false,
-                    actions = QrCodeSheetActions(
-                        onRequestSave = { saveRequested.set(true) },
-                        onShare = {}
+                Column {
+                    QrCodeSheetContent(
+                        qrPainter = ColorPainter(Color.Black),
+                        network = QrCodeNetworkDetails(
+                            ssid = "Technician WiFi",
+                            isOpenNetwork = false,
+                            securityType = WifiQrGenerator.SecurityType.WPA2_PSK
+                        ),
+                        isSaving = false,
+                        isSharing = false,
+                        actions = QrCodeSheetActions(
+                            onRequestSave = { saveRequested.set(true) },
+                            onShare = {}
+                        )
                     )
-                )
+                }
             }
         }
 
@@ -55,26 +59,28 @@ class QrCodeSheetContentTest {
     fun protectedWpa3Network_displaysSecurityAndMasksPassword() {
         composeRule.setContent {
             CyberpunkTheme {
-                QrCodeSheetContent(
-                    qrPainter = ColorPainter(Color.Black),
-                    network = QrCodeNetworkDetails(
-                        ssid = "Technician WiFi",
-                        isOpenNetwork = false,
-                        securityType = WifiQrGenerator.SecurityType.WPA3_SAE
-                    ),
-                    isSaving = false,
-                    isSharing = false,
-                    actions = QrCodeSheetActions(
-                        onRequestSave = {},
-                        onShare = {}
+                Column {
+                    QrCodeSheetContent(
+                        qrPainter = ColorPainter(Color.Black),
+                        network = QrCodeNetworkDetails(
+                            ssid = "Technician WiFi",
+                            isOpenNetwork = false,
+                            securityType = WifiQrGenerator.SecurityType.WPA3_SAE
+                        ),
+                        isSaving = false,
+                        isSharing = false,
+                        actions = QrCodeSheetActions(
+                            onRequestSave = {},
+                            onShare = {}
+                        )
                     )
-                )
+                }
             }
         }
 
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
-        composeRule.onNodeWithText(context.getString(R.string.security_wpa3_sae)).assertExists()
-        composeRule.onNodeWithText(context.getString(R.string.label_wifi_password)).assertExists()
-        composeRule.onNodeWithText("********").assertExists()
+        composeRule.onNodeWithText(context.getString(R.string.security_wpa3_sae)).assertIsDisplayed()
+        composeRule.onNodeWithText(context.getString(R.string.label_wifi_password)).assertIsDisplayed()
+        composeRule.onNodeWithText("********").assertIsDisplayed()
     }
 }

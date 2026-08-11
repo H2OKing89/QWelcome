@@ -197,7 +197,7 @@ AppNavGraph (uses AppContainer)
 
 Several files contain multiple independently meaningful UI sections. File extraction should follow ownership, not an arbitrary line limit.
 
-Customer Intake now keeps route wiring and screen-level presentation state in `CustomerIntakeScreen.kt`; its template selector, form and advanced Wi-Fi controls, send actions, and QR action live in focused feature files. A dedicated QR action test covers the extracted component boundary.
+Customer Intake now keeps route wiring in `CustomerIntakeRoute.kt`, while `CustomerIntakeScreen.kt` owns screen presentation and callbacks; its template selector, form and advanced Wi-Fi controls, send actions, and QR action live in focused feature files. A dedicated QR action test covers the extracted component boundary.
 
 **Initial candidates:**
 
@@ -292,7 +292,7 @@ The intake inactivity timer is coordinated by Activity lifecycle callbacks and V
 
 **Status:** Complete 2026-08-10
 
-`android.yml` now runs a four-class emulator smoke suite for pull requests and default-branch pushes. Scheduled and manually dispatched workflow runs execute the complete instrumentation suite. Both jobs upload connected-test reports on failure.
+`android.yml` now runs a four-class emulator smoke suite for pull requests and default-branch pushes. Scheduled and manually dispatched workflow runs execute the complete instrumentation suite. Both jobs upload connected-test reports after every workflow run.
 
 **Plan:**
 

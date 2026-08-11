@@ -47,7 +47,7 @@ internal fun ExportTemplateSelectionDialog(
     onExport: () -> Unit
 ) {
     val isDark = LocalDarkTheme.current
-    val allSelected = templates.isNotEmpty() && selectedIds.size == templates.size
+    val allSelected = templates.isNotEmpty() && templates.all { it.id in selectedIds }
     val selectedCount = selectedIds.size
 
     Dialog(onDismissRequest = onDismiss) {

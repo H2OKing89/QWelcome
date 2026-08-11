@@ -1,7 +1,9 @@
 package com.kingpaging.qwelcome.viewmodel.export
 
+import android.content.ContentResolver
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.compose.ui.graphics.ImageBitmap
@@ -23,6 +25,8 @@ import kotlinx.coroutines.flow.getAndUpdate
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.io.IOException
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -57,12 +61,14 @@ sealed class ExportEvent {
     data class ShareToAppReady(val packageName: String, val json: String, val type: ExportType) : ExportEvent()
     data class RequestFileSave(val suggestedName: String) : ExportEvent()
     data class FileSaved(val type: ExportType) : ExportEvent()
+    data class FileSaveFailed(val message: String?) : ExportEvent()
 }
 
 class ExportViewModel(
     private val repository: ImportExportRepository,
     private val settingsStore: SettingsStore,
-    private val packageManager: PackageManager? = null
+    private val packageManager: PackageManager? = null,
+    private val contentResolver: ContentResolver
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ExportUiState())
@@ -264,15 +270,36 @@ class ExportViewModel(
         }
     }
 
-    /**
-     * Atomically retrieves and clears the pending export content.
-     * Thread-safe implementation using StateFlow.
-     */
-    fun getPendingFileExportContent(): String? {
-        return _pendingFileExportContent.getAndUpdate { null }
+    fun savePendingFileExport(uri: Uri) {
+        viewModelScope.launch {
+            writePendingFileExport(uri)
+        }
     }
 
-    fun onFileSaveComplete() = viewModelScope.launch {
+    private suspend fun writePendingFileExport(uri: Uri) {
+        val content = _pendingFileExportContent.getAndUpdate { null } ?: run {
+            onFileSaveCancelled()
+            return
+        }
+
+        try {
+            withContext(Dispatchers.IO) {
+                val outputStream = contentResolver.openOutputStream(uri)
+                    ?: throw IOException("Could not open output stream")
+                outputStream.use { it.write(content.toByteArray(Charsets.UTF_8)) }
+            }
+            emitFileSaved()
+        } catch (exception: kotlin.coroutines.cancellation.CancellationException) {
+            onFileSaveCancelled()
+            throw exception
+        } catch (exception: SecurityException) {
+            emitFileSaveFailed(exception)
+        } catch (exception: IOException) {
+            emitFileSaveFailed(exception)
+        }
+    }
+
+    private suspend fun emitFileSaved() {
         // Use stored pending type first, then fall back to UI state
         val exportType = _pendingFileExportType.getAndUpdate { null }
             ?: _uiState.value.lastExportType
@@ -282,7 +309,11 @@ class ExportViewModel(
         } else {
             Log.w(TAG, "onFileSaveComplete called but no export type available")
         }
-        // Content already cleared by getPendingFileExportContent()
+    }
+
+    private suspend fun emitFileSaveFailed(exception: Exception) {
+        onFileSaveCancelled()
+        _events.emit(ExportEvent.FileSaveFailed(exception.message))
     }
 
     fun onFileSaveCancelled() {

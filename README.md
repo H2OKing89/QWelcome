@@ -28,7 +28,7 @@ A modern Android app for fiber internet technicians to quickly send professional
 ### Option A: Download APK
 
 1. Go to [Releases](https://github.com/H2OKing89/QWelcome/releases)
-2. Download the latest `app-release.apk`
+2. Download the latest `QWelcome-v<version>.apk`
 3. Enable "Install from unknown sources" if prompted
 4. Install and enjoy!
 

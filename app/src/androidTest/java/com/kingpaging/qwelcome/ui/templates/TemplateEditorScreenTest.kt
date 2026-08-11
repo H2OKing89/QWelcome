@@ -18,7 +18,6 @@ import com.kingpaging.qwelcome.di.LocalNavigator
 import com.kingpaging.qwelcome.di.LocalSoundPlayer
 import com.kingpaging.qwelcome.testutil.FakeNavigator
 import com.kingpaging.qwelcome.testutil.FakeSoundPlayer
-import com.kingpaging.qwelcome.ui.components.PlaceholderLabels
 import com.kingpaging.qwelcome.ui.theme.CyberpunkTheme
 import com.kingpaging.qwelcome.util.AndroidResourceProvider
 import com.kingpaging.qwelcome.viewmodel.templates.MAX_TEMPLATE_NAME_LENGTH
@@ -252,13 +251,14 @@ class TemplateEditorScreenTest {
     @Test
     fun variableToolbar_isOnlyShownInMessageWorkspace() {
         setScreenContentNewTemplate()
+        val customerLabel = appContext.getString(R.string.label_placeholder_customer)
 
-        composeRule.onNodeWithText("Customer").assertDoesNotExist()
+        composeRule.onNodeWithText(customerLabel).assertDoesNotExist()
 
         openMessageWorkspace()
 
-        composeRule.onNodeWithText("Customer").assertIsDisplayed()
-        composeRule.onNodeWithText("SSID").assertIsDisplayed()
+        composeRule.onNodeWithText(customerLabel).assertIsDisplayed()
+        composeRule.onNodeWithText(appContext.getString(R.string.label_placeholder_ssid)).assertIsDisplayed()
     }
 
     @Test
@@ -266,11 +266,12 @@ class TemplateEditorScreenTest {
         setScreenContentNewTemplate()
         openMessageWorkspace()
         val lastPlaceholder = MessageTemplate.PLACEHOLDERS.last().first
+        val signatureLabel = appContext.getString(R.string.label_placeholder_signature)
 
         composeRule.onNodeWithTag(TEMPLATE_VARIABLE_TOOLBAR_TEST_TAG)
             .performScrollToIndex(MessageTemplate.PLACEHOLDERS.size)
 
-        composeRule.onNodeWithText(PlaceholderLabels.getShortLabel(lastPlaceholder))
+        composeRule.onNodeWithText(signatureLabel)
             .assertIsDisplayed()
     }
 

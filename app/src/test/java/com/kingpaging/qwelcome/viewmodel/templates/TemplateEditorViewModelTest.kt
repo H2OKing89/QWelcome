@@ -138,6 +138,7 @@ class TemplateEditorViewModelTest {
             val event = awaitItem() as TemplateEditorEvent.TemplateCreated
             assertEquals("New template", event.template.name)
             assertEquals(listOf("Install", "Repair"), event.template.tags)
+            assertTrue(viewModel.uiState.value.isSaveCompleted)
             coVerify { settingsStore.saveTemplate(event.template) }
         }
     }
@@ -158,6 +159,7 @@ class TemplateEditorViewModelTest {
             val event = awaitItem() as TemplateEditorEvent.TemplateUpdated
             assertEquals("Updated", event.template.name)
             assertEquals("Hi {{ customer_name }}, SSID: {{ ssid }}", event.template.content)
+            assertTrue(viewModel.uiState.value.isSaveCompleted)
             coVerify { settingsStore.saveTemplate(event.template) }
         }
     }

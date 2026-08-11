@@ -52,6 +52,10 @@ class ImportViewModel(
     // Track in-flight import jobs for cancellation on reset
     private var importJob: Job? = null
 
+    init {
+        reset()
+    }
+
     fun onOpenFileRequest() = viewModelScope.launch {
         _events.emit(ImportEvent.RequestFileOpen)
     }

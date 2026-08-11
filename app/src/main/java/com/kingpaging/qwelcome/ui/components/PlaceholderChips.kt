@@ -23,8 +23,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -88,16 +88,23 @@ fun PlaceholderChipsRow(
 }
 
 object PlaceholderLabels {
-    private val shortLabels = mapOf(
-        "{{ customer_name }}" to "Customer",
-        "{{ ssid }}" to "SSID",
-        "{{ password }}" to "Password",
-        "{{ account_number }}" to "Account #",
-        "{{ tech_signature }}" to "Signature"
+    private val shortLabelResources = mapOf(
+        "{{ customer_name }}" to R.string.label_placeholder_customer,
+        "{{ ssid }}" to R.string.label_placeholder_ssid,
+        "{{ password }}" to R.string.label_placeholder_password,
+        "{{ account_number }}" to R.string.label_placeholder_account_number,
+        "{{ tech_signature }}" to R.string.label_placeholder_signature
     )
 
-    fun getShortLabel(placeholder: String): String =
-        shortLabels[placeholder] ?: placeholder.removePrefix("{{ ").removeSuffix(" }}")
+    @Composable
+    fun getShortLabel(placeholder: String): String {
+        val labelResource = shortLabelResources[placeholder]
+        return if (labelResource != null) {
+            stringResource(labelResource)
+        } else {
+            placeholder.removePrefix("{{ ").removeSuffix(" }}")
+        }
+    }
 }
 
 @Composable
@@ -142,7 +149,6 @@ fun InteractivePlaceholderChip(
     }
 }
 
-@Suppress("DEPRECATION")
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun CollapsiblePlaceholderChips(
@@ -152,7 +158,9 @@ fun CollapsiblePlaceholderChips(
     collapsedMaxRows: Int = 2,
     showOverflowToggle: Boolean = true
 ) {
-    var isExpanded by remember { mutableStateOf(false) }
+    // Preserve the user's expanded placeholder list across configuration changes.
+    var isExpanded by rememberSaveable { mutableStateOf(false) }
+    @Suppress("DEPRECATION")
     val overflow = if (showOverflowToggle && !isExpanded && collapsedMaxRows > 0) {
         FlowRowOverflow.expandIndicator {
             PlaceholderOverflowToggle(
@@ -165,6 +173,7 @@ fun CollapsiblePlaceholderChips(
     }
 
     Column(modifier = modifier) {
+        @Suppress("DEPRECATION")
         FlowRow(
             modifier = Modifier
                 .fillMaxWidth()

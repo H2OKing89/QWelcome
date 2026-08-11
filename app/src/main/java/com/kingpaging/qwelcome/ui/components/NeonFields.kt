@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.ColorScheme
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -20,13 +19,12 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.VisualTransformation
 import com.kingpaging.qwelcome.ui.theme.LocalDarkTheme
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NeonOutlinedField(
     value: String,
     onValueChange: (String) -> Unit,
     label: @Composable (() -> Unit),
-    modifier: Modifier = Modifier,
+    modifier: Modifier = Modifier.fillMaxWidth(),
     accentColor: Color = MaterialTheme.colorScheme.primary,
     enabled: Boolean = true,
     singleLine: Boolean = true,
@@ -62,7 +60,7 @@ fun NeonOutlinedField(
         visualTransformation = visualTransformation,
         keyboardOptions = keyboardOptions,
         keyboardActions = keyboardActions,
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier,
         colors = neonOutlinedFieldColors(isDark, accentColor, colorScheme)
     )
 }
