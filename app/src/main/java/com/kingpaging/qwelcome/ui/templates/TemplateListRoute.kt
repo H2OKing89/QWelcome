@@ -8,20 +8,19 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.repeatOnLifecycle
 import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.di.LocalSoundPlayer
 import com.kingpaging.qwelcome.di.LocalTemplateListViewModel
+import com.kingpaging.qwelcome.ui.EventEmission
 import com.kingpaging.qwelcome.util.SoundPlayer
 import com.kingpaging.qwelcome.viewmodel.templates.TemplateListEvent
 import com.kingpaging.qwelcome.viewmodel.templates.TemplateListEventOwner
 import com.kingpaging.qwelcome.viewmodel.templates.TemplateListViewModel
-import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 @Suppress("FunctionNaming")
@@ -70,30 +69,30 @@ private fun CollectTemplateListEffects(
     onOpenEditor: (String) -> Unit
 ) {
     val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
     val currentOnOpenEditor by rememberUpdatedState(onOpenEditor)
+    val scope = rememberCoroutineScope()
+    val eventEmission by remember(viewModel) {
+        viewModel.eventsFor(TemplateListEventOwner.LIBRARY).map(::EventEmission)
+    }.collectAsStateWithLifecycle(initialValue = null)
 
-    LaunchedEffect(viewModel, lifecycleOwner, soundPlayer, snackbarHostState) {
-        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
-            viewModel.eventsFor(TemplateListEventOwner.LIBRARY).collect { event ->
-                if (event is TemplateListEvent.TemplateDuplicated && event.openEditor) {
-                    currentOnOpenEditor(event.template.id)
-                    return@collect
-                }
-                val snackbar = event.toSnackbar(context) ?: return@collect
-                launch {
-                    if (event.shouldBeep()) {
-                        soundPlayer.playBeep()
-                    }
-                    val result = snackbarHostState.showSnackbar(
-                        message = snackbar.message,
-                        actionLabel = snackbar.actionLabel,
-                        duration = snackbar.duration
-                    )
-                    if (result == SnackbarResult.ActionPerformed) {
-                        event.performSnackbarAction(viewModel, currentOnOpenEditor)
-                    }
-                }
+    LaunchedEffect(eventEmission) {
+        val event = eventEmission?.event ?: return@LaunchedEffect
+        if (event is TemplateListEvent.TemplateDuplicated && event.openEditor) {
+            currentOnOpenEditor(event.template.id)
+            return@LaunchedEffect
+        }
+        val snackbar = event.toSnackbar(context) ?: return@LaunchedEffect
+        scope.launch {
+            if (event.shouldBeep()) {
+                soundPlayer.playBeep()
+            }
+            val result = snackbarHostState.showSnackbar(
+                message = snackbar.message,
+                actionLabel = snackbar.actionLabel,
+                duration = snackbar.duration
+            )
+            if (result == SnackbarResult.ActionPerformed) {
+                event.performSnackbarAction(viewModel, currentOnOpenEditor)
             }
         }
     }

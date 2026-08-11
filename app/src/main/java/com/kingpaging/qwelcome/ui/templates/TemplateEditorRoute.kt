@@ -7,14 +7,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.flowWithLifecycle
 import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.di.LocalSoundPlayer
+import com.kingpaging.qwelcome.ui.EventEmission
 import com.kingpaging.qwelcome.viewmodel.templates.TemplateEditorEvent
 import com.kingpaging.qwelcome.viewmodel.templates.TemplateEditorViewModel
+import kotlinx.coroutines.flow.map
 
 @Suppress("FunctionNaming", "LocalContextGetResourceValueCall", "LongMethod")
 @Composable
@@ -24,8 +23,10 @@ fun TemplateEditorRoute(
 ) {
     val soundPlayer = LocalSoundPlayer.current
     val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
     val editorUiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val eventEmission by remember(viewModel) {
+        viewModel.events.map(::EventEmission)
+    }.collectAsStateWithLifecycle(initialValue = null)
     val template = editorUiState.template
 
     val hasNavigatedBack = remember { mutableStateOf(false) }
@@ -44,11 +45,9 @@ fun TemplateEditorRoute(
     }
     if (template == null) return
 
-    LaunchedEffect(viewModel, lifecycleOwner) {
-        viewModel.events
-            .flowWithLifecycle(lifecycleOwner.lifecycle, Lifecycle.State.STARTED)
-            .collect { event ->
-                when (event) {
+    LaunchedEffect(eventEmission) {
+        eventEmission?.event?.let { event ->
+            when (event) {
                     is TemplateEditorEvent.TemplateCreated -> {
                         Toast.makeText(
                             context,
@@ -73,15 +72,15 @@ fun TemplateEditorRoute(
                             Toast.LENGTH_LONG
                         ).show()
                     }
-                }
-            }
-    }
-
-        LaunchedEffect(editorUiState.isSaveCompleted) {
-            if (editorUiState.isSaveCompleted) {
-                safeNavigate()
             }
         }
+    }
+
+    LaunchedEffect(editorUiState.isSaveCompleted) {
+        if (editorUiState.isSaveCompleted) {
+            safeNavigate()
+        }
+    }
 
     TemplateEditorScreen(
         editorUiState = editorUiState,

@@ -53,6 +53,11 @@ data class ExportUiState(
     val recentShareTargets: List<RecentShareTargetUi> = emptyList()
 )
 
+private data class PendingFileExport(
+    val content: String,
+    val type: ExportType
+)
+
 sealed class ExportEvent {
     data class ExportSuccess(val type: ExportType, val json: String) : ExportEvent()
     data class ExportError(val message: String) : ExportEvent()
@@ -77,10 +82,7 @@ class ExportViewModel(
     private val _events = MutableSharedFlow<ExportEvent>(replay = 1)
     val events: SharedFlow<ExportEvent> = _events.asSharedFlow()
 
-    // Thread-safe storage for pending file export content and type.
-    // Uses StateFlow to avoid race conditions when exporting twice rapidly.
-    private val _pendingFileExportContent = MutableStateFlow<String?>(null)
-    private val _pendingFileExportType = MutableStateFlow<ExportType?>(null)
+    private val _pendingFileExport = MutableStateFlow<PendingFileExport?>(null)
     private val recentShareTargetCache = mutableMapOf<String, RecentShareTargetUi>()
 
     companion object {
@@ -251,8 +253,14 @@ class ExportViewModel(
     fun onSaveToFileRequested() = viewModelScope.launch {
         val currentState = _uiState.value
         if (currentState.lastExportedJson != null && currentState.lastExportType != null) {
-            _pendingFileExportContent.value = currentState.lastExportedJson
-            _pendingFileExportType.value = currentState.lastExportType
+            val pendingExport = PendingFileExport(
+                content = currentState.lastExportedJson,
+                type = currentState.lastExportType
+            )
+            if (!_pendingFileExport.compareAndSet(expect = null, update = pendingExport)) {
+                _events.emit(ExportEvent.FileSaveFailed("Another file save is already pending"))
+                return@launch
+            }
             val filename = generateFileNameForExport(currentState.lastExportType)
             _events.emit(ExportEvent.RequestFileSave(filename))
         }
@@ -277,8 +285,8 @@ class ExportViewModel(
     }
 
     private suspend fun writePendingFileExport(uri: Uri) {
-        val content = _pendingFileExportContent.getAndUpdate { null } ?: run {
-            onFileSaveCancelled()
+        val pendingExport = _pendingFileExport.getAndUpdate { null } ?: run {
+            _events.emit(ExportEvent.FileSaveFailed("No file export is pending"))
             return
         }
 
@@ -286,11 +294,10 @@ class ExportViewModel(
             withContext(Dispatchers.IO) {
                 val outputStream = contentResolver.openOutputStream(uri)
                     ?: throw IOException("Could not open output stream")
-                outputStream.use { it.write(content.toByteArray(Charsets.UTF_8)) }
+                outputStream.use { it.write(pendingExport.content.toByteArray(Charsets.UTF_8)) }
             }
-            emitFileSaved()
+            _events.emit(ExportEvent.FileSaved(pendingExport.type))
         } catch (exception: kotlin.coroutines.cancellation.CancellationException) {
-            onFileSaveCancelled()
             throw exception
         } catch (exception: SecurityException) {
             emitFileSaveFailed(exception)
@@ -299,26 +306,17 @@ class ExportViewModel(
         }
     }
 
-    private suspend fun emitFileSaved() {
-        // Use stored pending type first, then fall back to UI state
-        val exportType = _pendingFileExportType.getAndUpdate { null }
-            ?: _uiState.value.lastExportType
-
-        if (exportType != null) {
-            _events.emit(ExportEvent.FileSaved(exportType))
-        } else {
-            Log.w(TAG, "onFileSaveComplete called but no export type available")
-        }
-    }
-
     private suspend fun emitFileSaveFailed(exception: Exception) {
-        onFileSaveCancelled()
         _events.emit(ExportEvent.FileSaveFailed(exception.message))
     }
 
     fun onFileSaveCancelled() {
-        _pendingFileExportContent.value = null
-        _pendingFileExportType.value = null
+        _pendingFileExport.value = null
+    }
+
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    fun clearReplayedEvent() {
+        _events.resetReplayCache()
     }
 
     /**
@@ -329,9 +327,8 @@ class ExportViewModel(
     fun reset() {
         val recentTargets = _uiState.value.recentShareTargets
         _uiState.value = ExportUiState(recentShareTargets = recentTargets)
-        _pendingFileExportContent.value = null
-        _pendingFileExportType.value = null
-        _events.resetReplayCache()
+        _pendingFileExport.value = null
+        clearReplayedEvent()
     }
 
     private fun observeRecentShareTargets() {

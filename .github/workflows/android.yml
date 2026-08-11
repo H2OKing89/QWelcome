@@ -123,6 +123,7 @@ jobs:
         disable-animations: true
         emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
         script: |
+          trap 'adb logcat -d > "$GITHUB_WORKSPACE/instrumentation-smoke-logcat.txt" 2>&1 || true' EXIT
           for test_class in \
             com.kingpaging.qwelcome.ui.CustomerIntakeScreenTest \
             com.kingpaging.qwelcome.ui.templates.TemplateListScreenTest \
@@ -141,6 +142,7 @@ jobs:
         path: |
           app/build/reports/androidTests/connected/
           app/build/outputs/androidTest-results/connected/
+          instrumentation-smoke-logcat.txt
         if-no-files-found: warn
         retention-days: 14
 
@@ -181,7 +183,9 @@ jobs:
         arch: x86_64
         disable-animations: true
         emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-        script: ./gradlew :app:connectedDebugAndroidTest
+        script: |
+          trap 'adb logcat -d > "$GITHUB_WORKSPACE/instrumentation-full-logcat.txt" 2>&1 || true' EXIT
+          ./gradlew :app:connectedDebugAndroidTest
 
     - name: Upload full instrumentation reports
       uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -191,5 +195,6 @@ jobs:
         path: |
           app/build/reports/androidTests/connected/
           app/build/outputs/androidTest-results/connected/
+          instrumentation-full-logcat.txt
         if-no-files-found: warn
         retention-days: 14

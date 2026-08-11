@@ -24,7 +24,7 @@ fun NeonOutlinedField(
     value: String,
     onValueChange: (String) -> Unit,
     label: @Composable (() -> Unit),
-    modifier: Modifier = Modifier.fillMaxWidth(),
+    modifier: Modifier = Modifier,
     accentColor: Color = MaterialTheme.colorScheme.primary,
     enabled: Boolean = true,
     singleLine: Boolean = true,
@@ -60,7 +60,7 @@ fun NeonOutlinedField(
         visualTransformation = visualTransformation,
         keyboardOptions = keyboardOptions,
         keyboardActions = keyboardActions,
-        modifier = modifier,
+        modifier = modifier.fillMaxWidth(),
         colors = neonOutlinedFieldColors(isDark, accentColor, colorScheme)
     )
 }

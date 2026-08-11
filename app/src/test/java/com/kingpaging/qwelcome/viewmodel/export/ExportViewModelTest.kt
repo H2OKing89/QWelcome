@@ -303,6 +303,44 @@ class ExportViewModelTest {
     }
 
     @Test
+    fun `overlapping save request is rejected without replacing pending export`() = runTest {
+        coEvery { mockRepo.exportFullBackup() } returns
+            ExportResult.Success(json = "{\"backup\":true}", templateCount = 1)
+        coEvery { mockRepo.exportTemplatePack(any()) } returns
+            ExportResult.Success(json = "{\"templates\":[]}", templateCount = 2)
+        val uri = mockk<Uri>()
+        val output = ByteArrayOutputStream()
+        every { mockContentResolver.openOutputStream(uri) } returns output
+
+        vm.events.test {
+            vm.exportFullBackup()
+            advanceUntilIdle()
+            awaitItem()
+            vm.onSaveToFileRequested()
+            advanceUntilIdle()
+            awaitItem()
+
+            vm.onTemplatePackRequested()
+            advanceUntilIdle()
+            vm.exportSelectedTemplates()
+            advanceUntilIdle()
+            awaitItem()
+            vm.onSaveToFileRequested()
+            advanceUntilIdle()
+
+            assertTrue(awaitItem() is ExportEvent.FileSaveFailed)
+
+            vm.savePendingFileExport(uri)
+            advanceUntilIdle()
+
+            val savedEvent = awaitItem()
+            assertTrue(savedEvent is ExportEvent.FileSaved)
+            assertEquals(ExportType.FULL_BACKUP, (savedEvent as ExportEvent.FileSaved).type)
+            assertEquals("{\"backup\":true}", output.toString(Charsets.UTF_8.name()))
+        }
+    }
+
+    @Test
     fun `reset clears all state`() = runTest {
         coEvery { mockRepo.exportFullBackup() } returns
                 ExportResult.Success(json = "{}", templateCount = 1)

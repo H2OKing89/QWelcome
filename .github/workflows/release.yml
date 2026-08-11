@@ -49,7 +49,7 @@ jobs:
         fi
 
         BODY=$(awk -v ver="$VERSION" '
-          $0 ~ "^## \\[" ver "\\]" { found=1; next }
+          index($0, "## [" ver "]") == 1 { found=1; next }
           found && /^## \[/ { exit }
           found { print }
         ' CHANGELOG.md | sed '/./,$!d' | sed -e :a -e '/^[[:space:]]*$/{$d;N;ba}')
@@ -58,11 +58,12 @@ jobs:
           exit 1
         fi
 
+        DELIMITER="CHANGELOG_EOF_$(openssl rand -hex 16)"
         {
           printf 'version=%s\n' "$VERSION"
-          echo 'changelog<<CHANGELOG_EOF'
+          printf 'changelog<<%s\n' "$DELIMITER"
           printf '%s\n' "$BODY"
-          echo 'CHANGELOG_EOF'
+          printf '%s\n' "$DELIMITER"
         } >> "$GITHUB_OUTPUT"
 
     - name: Decode production Google Services configuration

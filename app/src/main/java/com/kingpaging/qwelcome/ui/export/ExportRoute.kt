@@ -7,21 +7,21 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.repeatOnLifecycle
 import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.di.LocalExportViewModel
 import com.kingpaging.qwelcome.di.LocalNavigator
 import com.kingpaging.qwelcome.di.LocalSoundPlayer
+import com.kingpaging.qwelcome.ui.EventEmission
 import com.kingpaging.qwelcome.viewmodel.export.ExportEvent
 import com.kingpaging.qwelcome.viewmodel.export.ExportType
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 @Suppress("CyclomaticComplexMethod", "FunctionNaming", "LongMethod")
@@ -32,10 +32,12 @@ fun ExportRoute(onBack: () -> Unit) {
     val context = LocalContext.current
     val resources = LocalResources.current
     val navigator = LocalNavigator.current
-    val lifecycleOwner = LocalLifecycleOwner.current
     val clipboardManager = LocalClipboard.current
     val scope = rememberCoroutineScope()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val eventEmission by remember(viewModel) {
+        viewModel.events.map(::EventEmission)
+    }.collectAsStateWithLifecycle(initialValue = null)
 
     val saveFileLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/json")
@@ -47,11 +49,10 @@ fun ExportRoute(onBack: () -> Unit) {
         }
     }
 
-    LaunchedEffect(viewModel, lifecycleOwner) {
-        viewModel.reset()
-        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
-            viewModel.events.collect { event ->
-                when (event) {
+    LaunchedEffect(eventEmission) {
+        val event = eventEmission?.event ?: return@LaunchedEffect
+        try {
+            when (event) {
                     is ExportEvent.ExportSuccess -> Unit
                     is ExportEvent.ExportError -> {
                         soundPlayer.playBeep()
@@ -95,8 +96,9 @@ fun ExportRoute(onBack: () -> Unit) {
                         soundPlayer.playBeep()
                         showSaveError(context, event.message)
                     }
-                }
             }
+        } finally {
+            viewModel.clearReplayedEvent()
         }
     }
 

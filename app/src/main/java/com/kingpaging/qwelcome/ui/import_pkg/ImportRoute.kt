@@ -20,10 +20,12 @@ import com.kingpaging.qwelcome.data.MAX_IMPORT_SIZE_BYTES
 import com.kingpaging.qwelcome.data.formatBytesAsMb
 import com.kingpaging.qwelcome.di.LocalImportViewModel
 import com.kingpaging.qwelcome.di.LocalSoundPlayer
+import com.kingpaging.qwelcome.ui.EventEmission
 import com.kingpaging.qwelcome.viewmodel.import_pkg.ImportEvent
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -41,6 +43,9 @@ fun ImportRoute(
     val scope = rememberCoroutineScope()
     val maxImportSizeLabel = remember { formatBytesAsMb(MAX_IMPORT_SIZE_BYTES.toLong()) }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val eventEmission by remember(viewModel) {
+        viewModel.events.map(::EventEmission)
+    }.collectAsStateWithLifecycle(initialValue = null)
 
     val filePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -94,8 +99,9 @@ fun ImportRoute(
         }
     }
 
-    LaunchedEffect(viewModel) {
-        viewModel.events.collect { event ->
+    LaunchedEffect(eventEmission) {
+        val event = eventEmission?.event ?: return@LaunchedEffect
+        try {
             when (event) {
                 is ImportEvent.ImportSuccess -> {
                     val message = buildString {
@@ -118,6 +124,8 @@ fun ImportRoute(
                 }
                 is ImportEvent.RequestFileOpen -> filePickerLauncher.launch("application/json")
             }
+        } finally {
+            viewModel.clearReplayedEvent()
         }
     }
 
