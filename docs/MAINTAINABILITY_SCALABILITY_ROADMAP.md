@@ -167,10 +167,13 @@ QWelcomeApplication
   ├── ResourceProvider
   ├── AppUpdater
   ├── ImportExportRepository
-  ├── PackageManager
-  └── AppViewModelProvider
-    ├── Activity-scoped feature ViewModels
-    └── Destination-scoped TemplateEditorViewModel
+  └── PackageManager
+MainActivity
+└── AppViewModelProvider (uses AppContainer)
+  └── Activity-scoped feature ViewModels
+AppNavGraph (uses AppContainer)
+└── AppViewModelProvider
+  └── Destination-scoped TemplateEditorViewModel
 ```
 
 **Plan:**
@@ -287,9 +290,9 @@ The intake inactivity timer is coordinated by Activity lifecycle callbacks and V
 
 #### 13. Run instrumentation tests in automation
 
-**Status:** Not started
+**Status:** Complete 2026-08-10
 
-The repository has 73 instrumentation test methods, and the suite compiles, but `android.yml` does not execute it.
+`android.yml` now runs a four-class emulator smoke suite for pull requests and default-branch pushes. Scheduled and manually dispatched workflow runs execute the complete instrumentation suite. Both jobs upload connected-test reports on failure.
 
 **Plan:**
 
@@ -325,9 +328,9 @@ Add a coverage report for critical business logic. Do not require every composab
 
 #### 16. Configure and prune Detekt
 
-**Status:** Not started
+**Status:** Complete 2026-08-10
 
-The baseline contains approximately 195 findings, including normal Compose PascalCase function names and stale declaration references. This hides useful signals.
+`app/detekt.yml` now accepts PascalCase `@Composable` functions and the repository's `import_pkg` package convention. Regenerating the baseline removed those convention-only entries and reduced it from 195 to 72 findings, leaving complexity and other active debt visible.
 
 **Plan:**
 
@@ -344,15 +347,15 @@ The Protobuf plugin resolves `protoc` using deprecated multi-string dependency n
 
 #### 18. Add dependency update automation
 
-**Status:** Not started
+**Status:** Complete 2026-08-10
 
-Add weekly Dependabot updates for Gradle and GitHub Actions. Do not auto-merge initially. Group compatible patch updates after observing CI reliability.
+`.github/dependabot.yml` opens weekly grouped update pull requests for Gradle dependencies and GitHub Actions. It does not enable auto-merge; each update remains subject to normal review and CI.
 
 #### 19. Harden release verification
 
-**Status:** Not started
+**Status:** Complete 2026-08-10
 
-The release workflow derives the release version from a `v*` tag but does not verify it against `version.properties`, and it does not rerun the complete verification suite before publishing.
+The release workflow now verifies that a `vX.Y.Z` tag matches `VERSION_NAME`, requires a non-empty changelog section for that version, and runs unit tests, Ktlint, Detekt, and debug lint before decoding the release keystore.
 
 **Plan:**
 
@@ -365,9 +368,9 @@ The release workflow derives the release version from a `v*` tag but does not ve
 
 #### 20. Add an architecture document
 
-**Status:** Not started
+**Status:** Complete 2026-08-10
 
-Create `docs/ARCHITECTURE.md` after the template editor and route boundaries stabilize. Include:
+`docs/ARCHITECTURE.md` documents the stabilized dependency lifetimes, Route/Screen and event flow, Proto persistence, type-safe navigation, atomic import behavior, and feature-addition rules. It includes:
 
 - Dependency graph.
 - State and event flow.
@@ -378,9 +381,9 @@ Create `docs/ARCHITECTURE.md` after the template editor and route boundaries sta
 
 #### 21. Add dependency and troubleshooting guides
 
-**Status:** Not started
+**Status:** Complete 2026-08-10
 
-Document safe dependency updates, common Gradle/Proto issues, device installation signature mismatches, release signing prerequisites, and debugging commands.
+`docs/DEPENDENCY_UPDATE_GUIDE.md` and `docs/TROUBLESHOOTING.md` document safe update review, Gradle and Proto diagnostics, device signature mismatches, release signing prerequisites, CI behavior, and focused debugging commands.
 
 ## Decisions: What Not to Overhaul Now
 
@@ -431,13 +434,13 @@ Document safe dependency updates, common Gradle/Proto issues, device installatio
 - [x] Remove static provider state and global test resets.
 - [x] Reassess whether Hilt is justified.
 
-### Milestone 6: Automation and documentation
+### Milestone 6: Automation and documentation (Complete)
 
-- [ ] Add emulator CI.
-- [ ] Configure Detekt and prune baseline.
-- [ ] Add Dependabot.
-- [ ] Harden release version verification.
-- [ ] Add architecture, dependency-update, and troubleshooting guides.
+- [x] Add emulator CI.
+- [x] Configure Detekt and prune baseline.
+- [x] Add Dependabot.
+- [x] Harden release version verification.
+- [x] Add architecture, dependency-update, and troubleshooting guides.
 
 ## Verification Commands
 
@@ -472,3 +475,4 @@ Run device tests when an emulator or device is available:
 - 2026-08-10: Started Milestone 4 by extracting Customer Intake's template, form, send-action, and QR presentation sections into focused files.
 - 2026-08-10: Completed Milestone 4 by splitting reusable component families and Settings, Export, Import, and QR-sheet presentation into focused UI components with Compose coverage.
 - 2026-08-10: Completed Milestone 5 by introducing an application-owned `AppContainer`, removing static provider state and test resets, and retaining manual dependency construction after reassessing Hilt.
+- 2026-08-10: Completed Milestone 6 with emulator smoke and full-suite automation, focused Detekt conventions and baseline pruning, weekly Dependabot updates, fail-fast release metadata checks, and contributor architecture, dependency, and troubleshooting guides.
