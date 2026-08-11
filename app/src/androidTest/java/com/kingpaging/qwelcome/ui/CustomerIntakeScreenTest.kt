@@ -37,7 +37,6 @@ import com.kingpaging.qwelcome.ui.theme.CyberpunkTheme
 import com.kingpaging.qwelcome.util.AndroidResourceProvider
 import com.kingpaging.qwelcome.util.WifiQrGenerator
 import com.kingpaging.qwelcome.viewmodel.CustomerIntakeViewModel
-import com.kingpaging.qwelcome.viewmodel.factory.AppViewModelProvider
 import com.kingpaging.qwelcome.viewmodel.templates.TemplateListUiState
 import com.kingpaging.qwelcome.viewmodel.templates.TemplateListViewModel
 import java.util.concurrent.atomic.AtomicBoolean
@@ -64,7 +63,6 @@ class CustomerIntakeScreenTest {
 
     @Before
     fun setup() {
-        AppViewModelProvider.resetForTesting()
         settingsOpened.set(false)
 
         appContext = ApplicationProvider.getApplicationContext()
@@ -85,10 +83,10 @@ class CustomerIntakeScreenTest {
 
     @After
     fun tearDown() = runBlocking {
-        AppViewModelProvider.resetForTesting()
         if (::appContext.isInitialized) {
             appContext.protoDataStore.updateData { UserPreferences.getDefaultInstance() }
         }
+        Unit
     }
 
     @Test

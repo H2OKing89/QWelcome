@@ -15,11 +15,9 @@ import com.kingpaging.qwelcome.data.Template
 import com.kingpaging.qwelcome.ui.theme.CyberpunkTheme
 import com.kingpaging.qwelcome.viewmodel.export.ExportUiState
 import com.kingpaging.qwelcome.viewmodel.export.ExportType
-import com.kingpaging.qwelcome.viewmodel.factory.AppViewModelProvider
 import java.util.concurrent.atomic.AtomicBoolean
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
-import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -29,11 +27,6 @@ class ExportScreenTest {
 
     @get:Rule
     val composeRule = createComposeRule()
-
-    @Before
-    fun setup() {
-        AppViewModelProvider.resetForTesting()
-    }
 
     @Test
     fun screen_rendersSuppliedStateWithoutViewModel() {

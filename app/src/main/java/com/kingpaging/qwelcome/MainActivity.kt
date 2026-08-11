@@ -18,6 +18,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
 import com.kingpaging.qwelcome.di.LocalCustomerIntakeViewModel
+import com.kingpaging.qwelcome.di.AppContainer
 import com.kingpaging.qwelcome.di.LocalExportViewModel
 import com.kingpaging.qwelcome.di.LocalImportViewModel
 import com.kingpaging.qwelcome.di.LocalNavigator
@@ -39,6 +40,8 @@ import com.kingpaging.qwelcome.util.SoundManager
 class MainActivity : ComponentActivity() {
 
     private lateinit var navigator: Navigator
+    private val appContainer: AppContainer
+        get() = (application as QWelcomeApplication).appContainer
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // Install splash screen before super.onCreate()
@@ -54,7 +57,7 @@ class MainActivity : ComponentActivity() {
             WindowManager.LayoutParams.FLAG_SECURE
         )
         setContent {
-            val appViewModelFactory = remember { AppViewModelProvider(applicationContext) }
+            val appViewModelFactory = remember(appContainer) { AppViewModelProvider(appContainer) }
 
             // Create ViewModels at Activity level for proper scoping
             val customerIntakeViewModel: CustomerIntakeViewModel = viewModel(
@@ -114,7 +117,10 @@ class MainActivity : ComponentActivity() {
                     }
 
                     // Use Jetpack Navigation Compose for screen management
-                    AppNavGraph(navController = navController)
+                    AppNavGraph(
+                        navController = navController,
+                        appContainer = appContainer
+                    )
                 }
             }
         }

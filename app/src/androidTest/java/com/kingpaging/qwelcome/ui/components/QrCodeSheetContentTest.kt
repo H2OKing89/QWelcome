@@ -10,10 +10,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.ui.theme.CyberpunkTheme
 import com.kingpaging.qwelcome.util.WifiQrGenerator
-import com.kingpaging.qwelcome.viewmodel.factory.AppViewModelProvider
 import java.util.concurrent.atomic.AtomicBoolean
 import org.junit.Assert.assertTrue
-import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -23,11 +21,6 @@ class QrCodeSheetContentTest {
 
     @get:Rule
     val composeRule = createComposeRule()
-
-    @Before
-    fun setup() {
-        AppViewModelProvider.resetForTesting()
-    }
 
     @Test
     fun saveAction_invokesCallback() {

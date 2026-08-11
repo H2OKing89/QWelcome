@@ -9,7 +9,6 @@ import com.kingpaging.qwelcome.data.TemplateSelectionChange
 import com.kingpaging.qwelcome.data.TemplateSelectionResult
 import com.kingpaging.qwelcome.testutil.FakeResourceProvider
 import com.kingpaging.qwelcome.testutil.MainDispatcherRule
-import com.kingpaging.qwelcome.viewmodel.factory.AppViewModelProvider
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -20,7 +19,6 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -71,11 +69,6 @@ class TemplateListViewModelTest {
             )
         }
         vm = TemplateListViewModel(mockStore, resourceProvider)
-    }
-
-    @After
-    fun tearDown() {
-        AppViewModelProvider.resetForTesting()
     }
 
     @Test

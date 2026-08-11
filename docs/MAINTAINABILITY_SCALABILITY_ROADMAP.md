@@ -148,9 +148,30 @@ Template Library, Editor, Settings, Import, Export, and Customer Intake use dedi
 
 #### 6. Simplify dependency construction
 
-**Status:** Not started
+**Status:** Complete 2026-08-10
 
-`AppViewModelProvider` stores process-wide static dependencies and requires `resetForTesting()` throughout tests. This works at the current scale but spreads global reset knowledge into unrelated tests.
+`QWelcomeApplication` now owns one lazy `AppContainer`, which documents and constructs the process-lifetime dependency graph. `AppViewModelProvider` is a stateless ViewModel factory over that container, and the template editor receives the same container while retaining its destination-scoped `SavedStateHandle`.
+
+The container owns application-context-backed `SettingsStore`, `ResourceProvider`, `AppUpdater`, `ImportExportRepository`, and `PackageManager` access. `QWelcomeApplication` also uses the container's `SettingsStore` for Crashlytics preference collection, so production no longer creates a parallel store wrapper during startup.
+
+All static mutable provider fields and `resetForTesting()` calls were removed. Tests continue to construct focused stores, repositories, fakes, and ViewModels directly. Focused container tests verify application ownership, within-container memoization, and independence between separately constructed containers.
+
+Hilt is not justified at the current scale: the explicit container has one production owner, two factory call sites, and no generated wiring requirement. Reassess only if constructor/factory wiring grows enough to create demonstrated maintenance cost.
+
+**Dependency graph:**
+
+```text
+QWelcomeApplication
+└── AppContainer
+  ├── SettingsStore
+  ├── ResourceProvider
+  ├── AppUpdater
+  ├── ImportExportRepository
+  ├── PackageManager
+  └── AppViewModelProvider
+    ├── Activity-scoped feature ViewModels
+    └── Destination-scoped TemplateEditorViewModel
+```
 
 **Plan:**
 
@@ -406,9 +427,9 @@ Document safe dependency updates, common Gradle/Proto issues, device installatio
 
 ### Milestone 5: Dependency construction
 
-- [ ] Introduce `AppContainer`.
-- [ ] Remove static provider state and global test resets.
-- [ ] Reassess whether Hilt is justified.
+- [x] Introduce `AppContainer`.
+- [x] Remove static provider state and global test resets.
+- [x] Reassess whether Hilt is justified.
 
 ### Milestone 6: Automation and documentation
 
@@ -450,3 +471,4 @@ Run device tests when an emulator or device is available:
 - 2026-08-10: Completed Milestone 3 by splitting Customer Intake into an explicit Route/Screen boundary while preserving its validated IME behavior.
 - 2026-08-10: Started Milestone 4 by extracting Customer Intake's template, form, send-action, and QR presentation sections into focused files.
 - 2026-08-10: Completed Milestone 4 by splitting reusable component families and Settings, Export, Import, and QR-sheet presentation into focused UI components with Compose coverage.
+- 2026-08-10: Completed Milestone 5 by introducing an application-owned `AppContainer`, removing static provider state and test resets, and retaining manual dependency construction after reassessing Hilt.

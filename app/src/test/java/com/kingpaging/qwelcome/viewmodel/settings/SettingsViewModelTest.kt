@@ -13,7 +13,6 @@ import com.kingpaging.qwelcome.data.VerificationResult
 import com.kingpaging.qwelcome.testutil.FakeAppUpdater
 import com.kingpaging.qwelcome.testutil.FakeResourceProvider
 import com.kingpaging.qwelcome.testutil.MainDispatcherRule
-import com.kingpaging.qwelcome.viewmodel.factory.AppViewModelProvider
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -22,7 +21,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -46,7 +44,6 @@ class SettingsViewModelTest {
 
     @Before
     fun setup() {
-        AppViewModelProvider.resetForTesting()
         every { mockStore.techProfileFlow } returns flowOf(testProfile)
         every { mockStore.privacySettingsFlow } returns flowOf(PrivacySettings())
         every { mockStore.activeTemplateFlow } returns flowOf(testTemplate)
@@ -54,11 +51,6 @@ class SettingsViewModelTest {
 
         fakeAppUpdater = FakeAppUpdater()
         vm = SettingsViewModel(mockStore, fakeResourceProvider, fakeAppUpdater)
-    }
-
-    @After
-    fun teardown() {
-        AppViewModelProvider.resetForTesting()
     }
 
     @Test

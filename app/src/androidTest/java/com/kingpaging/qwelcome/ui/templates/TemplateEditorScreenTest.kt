@@ -21,7 +21,6 @@ import com.kingpaging.qwelcome.testutil.FakeSoundPlayer
 import com.kingpaging.qwelcome.ui.components.PlaceholderLabels
 import com.kingpaging.qwelcome.ui.theme.CyberpunkTheme
 import com.kingpaging.qwelcome.util.AndroidResourceProvider
-import com.kingpaging.qwelcome.viewmodel.factory.AppViewModelProvider
 import com.kingpaging.qwelcome.viewmodel.templates.MAX_TEMPLATE_NAME_LENGTH
 import com.kingpaging.qwelcome.viewmodel.templates.TemplateEditorUiState
 import com.kingpaging.qwelcome.viewmodel.templates.TemplateEditorViewModel
@@ -49,7 +48,6 @@ class TemplateEditorScreenTest {
 
     @Before
     fun setup() {
-        AppViewModelProvider.resetForTesting()
         backInvoked.set(false)
 
         appContext = ApplicationProvider.getApplicationContext()
@@ -63,10 +61,10 @@ class TemplateEditorScreenTest {
 
     @After
     fun tearDown() = runBlocking {
-        AppViewModelProvider.resetForTesting()
         if (::appContext.isInitialized) {
             appContext.protoDataStore.updateData { UserPreferences.getDefaultInstance() }
         }
+        Unit
     }
 
     // ── New template mode ────────────────────────────────────────────

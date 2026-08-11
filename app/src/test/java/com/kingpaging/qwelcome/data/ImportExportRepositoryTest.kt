@@ -2,17 +2,14 @@ package com.kingpaging.qwelcome.data
 
 import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.testutil.FakeResourceProvider
-import com.kingpaging.qwelcome.viewmodel.factory.AppViewModelProvider
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.coroutines.test.runTest
-import org.junit.After
 import org.junit.Assert.assertTrue
 import org.junit.Assert.assertEquals
-import org.junit.Before
 import org.junit.Test
 
 class ImportExportRepositoryTest {
@@ -24,16 +21,6 @@ class ImportExportRepositoryTest {
         settingsStore = settingsStore,
         resourceProvider = FakeResourceProvider()
     )
-
-    @Before
-    fun setup() {
-        AppViewModelProvider.resetForTesting()
-    }
-
-    @After
-    fun tearDown() {
-        AppViewModelProvider.resetForTesting()
-    }
 
     @Test
     fun `validateImport returns invalid when payload exceeds hard limit by length`() = runTest {

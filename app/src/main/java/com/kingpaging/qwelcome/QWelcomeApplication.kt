@@ -6,7 +6,7 @@ import android.util.Log
 import androidx.compose.ui.ComposeUiFlags
 import androidx.compose.ui.ExperimentalComposeUiApi
 import com.google.firebase.crashlytics.FirebaseCrashlytics
-import com.kingpaging.qwelcome.data.SettingsStore
+import com.kingpaging.qwelcome.di.AppContainer
 import com.kingpaging.qwelcome.util.SoundManager
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
@@ -24,6 +24,8 @@ import kotlinx.coroutines.launch
  * - Firebase Crashlytics configuration
  */
 class QWelcomeApplication : Application() {
+
+    val appContainer: AppContainer by lazy { AppContainer(this) }
 
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -70,7 +72,7 @@ class QWelcomeApplication : Application() {
         crashlytics.setCustomKey("app_version", BuildConfig.VERSION_NAME)
         crashlytics.setCustomKey("build_type", BuildConfig.BUILD_TYPE)
         applicationScope.launch {
-            SettingsStore(applicationContext).privacySettingsFlow.collect { settings ->
+            appContainer.settingsStore.privacySettingsFlow.collect { settings ->
                 crashlytics.isCrashlyticsCollectionEnabled =
                     !BuildConfig.DEBUG && settings.crashReportingEnabled
             }

@@ -14,9 +14,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.data.TechProfile
 import com.kingpaging.qwelcome.ui.theme.CyberpunkTheme
-import com.kingpaging.qwelcome.viewmodel.factory.AppViewModelProvider
 import org.junit.Assert.assertEquals
-import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -28,11 +26,6 @@ class SettingsProfileSectionTest {
     val composeRule = createComposeRule()
 
     private val appContext: Context = ApplicationProvider.getApplicationContext()
-
-    @Before
-    fun setup() {
-        AppViewModelProvider.resetForTesting()
-    }
 
     @Test
     fun saveAction_usesEditedProfileValues() {

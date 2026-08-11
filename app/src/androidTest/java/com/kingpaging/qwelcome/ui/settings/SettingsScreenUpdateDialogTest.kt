@@ -23,10 +23,8 @@ import com.kingpaging.qwelcome.testutil.FakeAppUpdater
 import com.kingpaging.qwelcome.testutil.FakeSoundPlayer
 import com.kingpaging.qwelcome.ui.theme.CyberpunkTheme
 import com.kingpaging.qwelcome.util.AndroidResourceProvider
-import com.kingpaging.qwelcome.viewmodel.factory.AppViewModelProvider
 import com.kingpaging.qwelcome.viewmodel.settings.SettingsViewModel
 import com.kingpaging.qwelcome.viewmodel.settings.UpdateState
-import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -44,7 +42,6 @@ class SettingsScreenUpdateDialogTest {
 
     @Before
     fun setup() {
-        AppViewModelProvider.resetForTesting()
         appContext = ApplicationProvider.getApplicationContext()
         val settingsStore = SettingsStore(appContext)
         fakeAppUpdater = FakeAppUpdater().apply {
@@ -62,11 +59,6 @@ class SettingsScreenUpdateDialogTest {
             resourceProvider = AndroidResourceProvider(appContext),
             appUpdater = fakeAppUpdater
         )
-    }
-
-    @After
-    fun tearDown() {
-        AppViewModelProvider.resetForTesting()
     }
 
     @Test

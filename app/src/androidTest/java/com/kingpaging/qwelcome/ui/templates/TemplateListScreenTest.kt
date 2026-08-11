@@ -19,7 +19,6 @@ import com.kingpaging.qwelcome.di.LocalTemplateListViewModel
 import com.kingpaging.qwelcome.testutil.FakeSoundPlayer
 import com.kingpaging.qwelcome.ui.theme.CyberpunkTheme
 import com.kingpaging.qwelcome.util.AndroidResourceProvider
-import com.kingpaging.qwelcome.viewmodel.factory.AppViewModelProvider
 import com.kingpaging.qwelcome.viewmodel.templates.MAX_TEMPLATE_NAME_LENGTH
 import com.kingpaging.qwelcome.viewmodel.templates.TemplateListUiState
 import com.kingpaging.qwelcome.viewmodel.templates.TemplateListViewModel
@@ -63,7 +62,6 @@ class TemplateListScreenTest {
 
     @Before
     fun setup() {
-        AppViewModelProvider.resetForTesting()
         openedTemplateId.set(null)
         appContext = ApplicationProvider.getApplicationContext()
         soundPlayer = FakeSoundPlayer()
@@ -71,10 +69,10 @@ class TemplateListScreenTest {
 
     @After
     fun tearDown() = runBlocking {
-        AppViewModelProvider.resetForTesting()
         if (::appContext.isInitialized) {
             appContext.protoDataStore.updateData { UserPreferences.getDefaultInstance() }
         }
+        Unit
     }
 
     @Test
