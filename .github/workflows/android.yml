@@ -122,16 +122,16 @@ jobs:
         arch: x86_64
         disable-animations: true
         emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-        script: |
-          trap 'adb logcat -d > "$GITHUB_WORKSPACE/instrumentation-smoke-logcat.txt" 2>&1 || true' EXIT
-          for test_class in \
-            com.kingpaging.qwelcome.ui.CustomerIntakeScreenTest \
-            com.kingpaging.qwelcome.ui.templates.TemplateListScreenTest \
-            com.kingpaging.qwelcome.ui.templates.TemplateEditorScreenTest \
-            com.kingpaging.qwelcome.data.PreferencesToProtoMigrationTest
-          do
-            ./gradlew :app:connectedDebugAndroidTest \
-              "-Pandroid.testInstrumentationRunnerArguments.class=$test_class"
+        script: >-
+          set -e;
+          trap 'adb logcat -d > "$GITHUB_WORKSPACE/instrumentation-smoke-logcat.txt" 2>&1 || true' EXIT;
+          for test_class in
+          com.kingpaging.qwelcome.ui.CustomerIntakeScreenTest
+          com.kingpaging.qwelcome.ui.templates.TemplateListScreenTest
+          com.kingpaging.qwelcome.ui.templates.TemplateEditorScreenTest
+          com.kingpaging.qwelcome.data.PreferencesToProtoMigrationTest;
+          do ./gradlew :app:connectedDebugAndroidTest
+          "-Pandroid.testInstrumentationRunnerArguments.class=$test_class";
           done
 
     - name: Upload instrumentation smoke reports
@@ -183,8 +183,9 @@ jobs:
         arch: x86_64
         disable-animations: true
         emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-        script: |
-          trap 'adb logcat -d > "$GITHUB_WORKSPACE/instrumentation-full-logcat.txt" 2>&1 || true' EXIT
+        script: >-
+          set -e;
+          trap 'adb logcat -d > "$GITHUB_WORKSPACE/instrumentation-full-logcat.txt" 2>&1 || true' EXIT;
           ./gradlew :app:connectedDebugAndroidTest
 
     - name: Upload full instrumentation reports
