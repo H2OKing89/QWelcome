@@ -43,6 +43,36 @@ class SettingsStoreSelectionTest {
     }
 
     @Test
+    fun saveTemplates_replacesMatchingIdAndAppendsNewTemplate() = runBlocking {
+        val updatedFirst = firstTemplate.copy(name = "Updated First")
+        val thirdTemplate = validTemplate("third")
+
+        store.saveTemplates(listOf(updatedFirst, thirdTemplate))
+
+        assertEquals(
+            listOf(updatedFirst, secondTemplate, thirdTemplate),
+            store.getUserTemplates()
+        )
+    }
+
+    @Test
+    fun restoreFullBackup_replacesMatchingIdAndAppendsNewTemplate() = runBlocking {
+        val updatedFirst = firstTemplate.copy(name = "Updated First")
+        val thirdTemplate = validTemplate("third")
+
+        store.restoreFullBackup(
+            templates = listOf(updatedFirst, thirdTemplate),
+            techProfile = null,
+            activeTemplateId = null
+        )
+
+        assertEquals(
+            listOf(updatedFirst, secondTemplate, thirdTemplate),
+            store.getUserTemplates()
+        )
+    }
+
+    @Test
     fun selection_atomicallyUpdatesActiveIdAndUsageTimestamp() = runBlocking {
         val result = store.setActiveTemplate(firstTemplate.id)
 

@@ -55,6 +55,22 @@ private fun Flow<UserPreferences>.catchIoException(
     }
 }
 
+private fun mergeTemplates(
+    existingTemplates: List<TemplateProto>,
+    templates: List<Template>
+): List<TemplateProto> {
+    val mergedTemplates = existingTemplates.toMutableList()
+    for (template in templates) {
+        val existingIndex = mergedTemplates.indexOfFirst { it.id == template.id }
+        if (existingIndex >= 0) {
+            mergedTemplates[existingIndex] = template.toProto()
+        } else {
+            mergedTemplates.add(template.toProto())
+        }
+    }
+    return mergedTemplates
+}
+
 internal fun Flow<UserPreferences>.readPrivacySettings(): Flow<PrivacySettings> = map { preferences ->
     PrivacySettings.fromProto(preferences.privacySettings)
 }.catch { exception ->
@@ -281,17 +297,46 @@ class SettingsStore(
         if (validTemplates.isEmpty()) return
 
         dataStore.updateData { prefs ->
-            // Preserve order by starting from existing list and updating/appending
-            val existingList = prefs.templatesList.toMutableList()
-            for (newTemplate in validTemplates) {
-                val existingIndex = existingList.indexOfFirst { it.id == newTemplate.id }
-                if (existingIndex >= 0) {
-                    existingList[existingIndex] = newTemplate.toProto()
-                } else {
-                    existingList.add(newTemplate.toProto())
+            prefs.toBuilder()
+                .clearTemplates()
+                .addAllTemplates(mergeTemplates(prefs.templatesList, validTemplates))
+                .build()
+        }
+    }
+
+    /**
+     * Applies all selected full-backup values in one DataStore transaction.
+     * A null profile or active template ID leaves the corresponding stored value unchanged.
+     */
+    suspend fun restoreFullBackup(
+        templates: List<Template>,
+        techProfile: TechProfile?,
+        activeTemplateId: String?
+    ) {
+        val validTemplates = templates.filter { it.id != DEFAULT_TEMPLATE_ID }
+        dataStore.updateData { preferences ->
+            val builder = preferences.toBuilder()
+
+            if (validTemplates.isNotEmpty()) {
+                builder.clearTemplates().addAllTemplates(
+                    mergeTemplates(preferences.templatesList, validTemplates)
+                )
+            }
+
+            if (techProfile != null) {
+                builder.techProfile = techProfile.toProto()
+            }
+
+            if (activeTemplateId != null) {
+                val updatedPreferences = builder.build()
+                val requestedTemplateExists = activeTemplateId == DEFAULT_TEMPLATE_ID ||
+                    updatedPreferences.templatesList.any { it.id == activeTemplateId }
+                if (requestedTemplateExists) {
+                    builder.activeTemplateId = updatedPreferences.resolveValidTemplateId(activeTemplateId)
                 }
             }
-            prefs.toBuilder().clearTemplates().addAllTemplates(existingList).build()
+
+            builder.build()
         }
     }
 

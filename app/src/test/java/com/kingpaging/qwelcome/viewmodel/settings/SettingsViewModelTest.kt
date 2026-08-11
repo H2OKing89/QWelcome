@@ -8,7 +8,6 @@ import com.kingpaging.qwelcome.data.PrivacySettings
 import com.kingpaging.qwelcome.data.SettingsStore
 import com.kingpaging.qwelcome.data.TechProfile
 import com.kingpaging.qwelcome.data.Template
-import com.kingpaging.qwelcome.data.TemplateSelectionResult
 import com.kingpaging.qwelcome.data.UpdateCheckResult
 import com.kingpaging.qwelcome.data.VerificationResult
 import com.kingpaging.qwelcome.testutil.FakeAppUpdater
@@ -50,11 +49,8 @@ class SettingsViewModelTest {
         AppViewModelProvider.resetForTesting()
         every { mockStore.techProfileFlow } returns flowOf(testProfile)
         every { mockStore.privacySettingsFlow } returns flowOf(PrivacySettings())
-        every { mockStore.allTemplatesFlow } returns flowOf(listOf(testTemplate))
         every { mockStore.activeTemplateFlow } returns flowOf(testTemplate)
         every { mockStore.defaultTemplateContent } returns "Default content"
-        coEvery { mockStore.setActiveTemplate(any()) } returns
-            TemplateSelectionResult.AlreadyActive(testTemplate)
 
         fakeAppUpdater = FakeAppUpdater()
         vm = SettingsViewModel(mockStore, fakeResourceProvider, fakeAppUpdater)
@@ -73,19 +69,6 @@ class SettingsViewModelTest {
                 assertEquals(testProfile, awaitItem())
             } else {
                 assertEquals(testProfile, item)
-            }
-            cancelAndIgnoreRemainingEvents()
-        }
-    }
-
-    @Test
-    fun `allTemplates flow reflects store data`() = runTest {
-        vm.allTemplates.test {
-            val item = awaitItem()
-            if (item.isEmpty()) {
-                assertEquals(listOf(testTemplate), awaitItem())
-            } else {
-                assertEquals(listOf(testTemplate), item)
             }
             cancelAndIgnoreRemainingEvents()
         }
@@ -188,83 +171,6 @@ class SettingsViewModelTest {
                 (event as SettingsEvent.ShowToastError).message
             )
         }
-    }
-
-    @Test
-    fun `saveTemplate calls store saveTemplate`() = runTest {
-        vm.saveTemplate(testTemplate)
-        advanceUntilIdle()
-
-        coVerify { mockStore.saveTemplate(testTemplate) }
-    }
-
-    @Test
-    fun `setActiveTemplate calls store`() = runTest {
-        vm.setActiveTemplate("t1")
-        advanceUntilIdle()
-
-        coVerify { mockStore.setActiveTemplate("t1") }
-    }
-
-    @Test
-    fun `setActiveTemplate surfaces blocked selection`() = runTest {
-        coEvery { mockStore.setActiveTemplate("t1") } returns TemplateSelectionResult.Blocked(
-            template = testTemplate,
-            missingPlaceholders = listOf("{{ ssid }}")
-        )
-
-        vm.settingsEvents.test {
-            vm.setActiveTemplate("t1")
-
-            val event = awaitItem()
-            assertTrue(event is SettingsEvent.ShowToastError)
-            assertEquals(
-                fakeResourceProvider.getString(
-                    R.string.error_template_cannot_use,
-                    testTemplate.name,
-                    "{{ ssid }}"
-                ),
-                (event as SettingsEvent.ShowToastError).message
-            )
-        }
-    }
-
-    @Test
-    fun `setActiveTemplate surfaces template not found`() = runTest {
-        coEvery { mockStore.setActiveTemplate("missing") } returns
-            TemplateSelectionResult.NotFound("missing")
-
-        vm.settingsEvents.test {
-            vm.setActiveTemplate("missing")
-
-            val event = awaitItem()
-            assertTrue(event is SettingsEvent.ShowToastError)
-            assertEquals(
-                fakeResourceProvider.getString(R.string.error_template_not_found),
-                (event as SettingsEvent.ShowToastError).message
-            )
-        }
-    }
-
-    @Test
-    fun `deleteTemplate calls store`() = runTest {
-        vm.deleteTemplate("t1")
-        advanceUntilIdle()
-
-        coVerify { mockStore.deleteTemplate("t1") }
-    }
-
-    @Test
-    fun `resetTemplate calls store resetToDefaultTemplate`() = runTest {
-        vm.resetTemplate()
-        advanceUntilIdle()
-
-        coVerify { mockStore.resetToDefaultTemplate() }
-    }
-
-    @Test
-    fun `getDefaultTemplateContent returns store value`() {
-        assertEquals("Default content", vm.getDefaultTemplateContent())
     }
 
     @Test

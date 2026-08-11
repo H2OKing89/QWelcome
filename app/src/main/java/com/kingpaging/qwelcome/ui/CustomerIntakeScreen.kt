@@ -246,8 +246,8 @@ fun CustomerIntakeScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
-                    .imePadding()
                     .verticalScroll(rememberScrollState())
+                    .imePadding()
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp) // Top-aligned with spacing feels more like a tool
             ) {

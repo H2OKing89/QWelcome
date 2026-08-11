@@ -150,9 +150,74 @@ class ImportExportRepositoryTest {
         val applyResult = repository.applyFullBackup(backup)
 
         assertTrue(applyResult is ImportApplyResult.Success)
-        coVerify { settingsStore.saveTemplates(any()) }
-        coVerify { settingsStore.restoreActiveTemplate("template-1") }
+        coVerify {
+            settingsStore.restoreFullBackup(
+                templates = backup.templates,
+                techProfile = null,
+                activeTemplateId = "template-1"
+            )
+        }
+        coVerify(exactly = 0) { settingsStore.saveTemplates(any()) }
+        coVerify(exactly = 0) { settingsStore.saveTechProfile(any()) }
+        coVerify(exactly = 0) { settingsStore.restoreActiveTemplate(any()) }
         coVerify(exactly = 0) { settingsStore.setActiveTemplate(any()) }
+    }
+
+    @Test
+    fun `full backup restore includes selected tech profile in atomic write`() = runTest {
+        val profile = TechProfile(name = "Tech", title = "Field Tech", dept = "Network Services")
+        val backup = FullBackup.create(
+            techProfile = profile,
+            templates = listOf(
+                Template(
+                    id = "template-1",
+                    name = "Install Welcome",
+                    content = "Hello {{ customer_name }}, SSID: {{ ssid }}"
+                )
+            ),
+            appVersion = "2.7.3"
+        )
+
+        val result = repository.applyFullBackup(backup, importTechProfile = true)
+
+        assertTrue(result is ImportApplyResult.Success)
+        coVerify {
+            settingsStore.restoreFullBackup(
+                templates = backup.templates,
+                techProfile = profile,
+                activeTemplateId = any()
+            )
+        }
+    }
+
+    @Test
+    fun `full backup restore leaves optional profile and active template unchanged`() = runTest {
+        val backup = FullBackup.create(
+            techProfile = TechProfile(name = "Tech", title = "Field Tech", dept = "Network Services"),
+            templates = listOf(
+                Template(
+                    id = "template-1",
+                    name = "Install Welcome",
+                    content = "Hello {{ customer_name }}, SSID: {{ ssid }}"
+                )
+            ),
+            appVersion = "2.7.3"
+        )
+
+        val result = repository.applyFullBackup(
+            backup = backup,
+            importTechProfile = false,
+            importDefaultTemplate = false
+        )
+
+        assertTrue(result is ImportApplyResult.Success)
+        coVerify {
+            settingsStore.restoreFullBackup(
+                templates = backup.templates,
+                techProfile = null,
+                activeTemplateId = null
+            )
+        }
     }
 }
 
