@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
@@ -29,6 +30,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -36,6 +38,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.kingpaging.qwelcome.R
@@ -49,6 +52,8 @@ import com.kingpaging.qwelcome.ui.components.NeonWarningBanner
 import com.kingpaging.qwelcome.util.rememberHapticFeedback
 import com.kingpaging.qwelcome.viewmodel.templates.TemplateListUiState
 import com.kingpaging.qwelcome.viewmodel.templates.filterAndOrderTemplates
+
+internal const val TEMPLATE_LIST_TEST_TAG = "template_list"
 
 @Suppress("FunctionNaming", "LongMethod", "LongParameterList")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -71,9 +76,14 @@ fun TemplateListScreen(
     onShowDeleteConfirmation: (Template) -> Unit
 ) {
     val haptic = rememberHapticFeedback()
+    val templateListState = rememberLazyListState()
     var showTagFilters by remember { mutableStateOf(false) }
     var previewTemplate by remember { mutableStateOf<Template?>(null) }
     var renameTemplate by remember { mutableStateOf<Template?>(null) }
+
+    LaunchedEffect(uiState.activeTemplateId) {
+        templateListState.scrollToItem(0)
+    }
 
     BackHandler { onBack() }
 
@@ -210,7 +220,9 @@ fun TemplateListScreen(
                     LazyColumn(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .weight(1f),
+                            .weight(1f)
+                            .testTag(TEMPLATE_LIST_TEST_TAG),
+                        state = templateListState,
                         contentPadding = PaddingValues(top = 8.dp, bottom = 96.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {

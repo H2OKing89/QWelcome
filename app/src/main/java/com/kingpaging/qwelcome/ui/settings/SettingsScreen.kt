@@ -3,31 +3,16 @@ package com.kingpaging.qwelcome.ui.settings
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Code
-import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -42,9 +27,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.data.TechProfile
@@ -52,13 +34,9 @@ import com.kingpaging.qwelcome.ui.components.CyberpunkBackdrop
 import com.kingpaging.qwelcome.ui.components.NeonButton
 import com.kingpaging.qwelcome.ui.components.NeonButtonStyle
 import com.kingpaging.qwelcome.ui.components.NeonDiscardDialog
-import com.kingpaging.qwelcome.ui.components.NeonMagentaButton
-import com.kingpaging.qwelcome.ui.components.NeonOutlinedField
-import com.kingpaging.qwelcome.ui.components.NeonPanel
 import com.kingpaging.qwelcome.ui.components.NeonTopAppBar
 import com.kingpaging.qwelcome.util.rememberHapticFeedback
 import com.kingpaging.qwelcome.viewmodel.settings.UpdateState
-import kotlin.math.roundToInt
 
 @Suppress("CyclomaticComplexMethod", "FunctionNaming", "LongMethod", "LongParameterList")
 @Composable
@@ -187,444 +165,67 @@ fun SettingsScreen(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // === TECH PROFILE SECTION ===
-                Text(
-                    stringResource(R.string.header_tech_profile),
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.primary
+                SettingsProfileSection(
+                    activeTemplateName = uiState.activeTemplate.name,
+                    name = name,
+                    title = title,
+                    department = dept,
+                    hasUnsavedChanges = hasUnsavedChanges,
+                    onNameChange = { name = it },
+                    onTitleChange = { title = it },
+                    onDepartmentChange = { dept = it },
+                    onOpenTemplates = onOpenTemplates,
+                    onSaveProfile = { onSaveProfile(TechProfile(name, title, dept)) }
                 )
-                NeonPanel {
-                    NeonOutlinedField(
-                        value = name,
-                        onValueChange = { name = it },
-                        label = { Text(stringResource(R.string.label_tech_name)) }
-                    )
-                    NeonOutlinedField(
-                        value = title,
-                        onValueChange = { title = it },
-                        label = { Text(stringResource(R.string.label_title)) }
-                    )
-                    NeonOutlinedField(
-                        value = dept,
-                        onValueChange = { dept = it },
-                        label = { Text(stringResource(R.string.label_department_line)) }
-                    )
-                }
 
-                Spacer(Modifier.height(8.dp))
-
-                // === MESSAGE TEMPLATE SECTION ===
-                Text(
-                    stringResource(R.string.header_message_templates),
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                NeonPanel {
-                    Text(
-                        stringResource(R.string.text_manage_templates_description),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                    )
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        stringResource(R.string.text_currently_using_template, uiState.activeTemplate.name),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.secondary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    NeonButton(
-                        onClick = onOpenTemplates,
-                        modifier = Modifier.fillMaxWidth(),
-                        style = NeonButtonStyle.SECONDARY
-                    ) {
-                        Text(stringResource(R.string.action_manage_templates_plain))
-                    }
-                }
-
-                Spacer(Modifier.height(8.dp))
-
-                // === SAVE PROFILE BUTTON ===
-                NeonMagentaButton(
-                    onClick = {
-                        onSaveProfile(TechProfile(name, title, dept))
+                SettingsPrivacySection(
+                    privacySettings = privacySettings,
+                    onSetCrashReportingEnabled = {
+                        haptic()
+                        onSetCrashReportingEnabled(it)
                     },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = hasUnsavedChanges,
-                    style = NeonButtonStyle.PRIMARY
-                ) {
-                    Text(
-                        if (hasUnsavedChanges) {
-                            stringResource(R.string.action_save_profile)
-                        } else {
-                            stringResource(R.string.label_no_changes)
-                        }
-                    )
-                }
-
-                Spacer(Modifier.height(16.dp))
-
-                // === PRIVACY SECTION ===
-                Text(
-                    stringResource(R.string.header_privacy),
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.primary
+                    onSetScreenCaptureProtectionEnabled = {
+                        haptic()
+                        onSetScreenCaptureProtectionEnabled(it)
+                    }
                 )
-                NeonPanel {
-                    PrivacySettingRow(
-                        title = stringResource(R.string.label_crash_reporting),
-                        description = stringResource(R.string.text_crash_reporting_description),
-                        checked = privacySettings?.crashReportingEnabled ?: false,
-                        enabled = privacySettings != null,
-                        onCheckedChange = {
+
+                SettingsDataManagementSection(
+                    hasUnsavedChanges = hasUnsavedChanges,
+                    onOpenExport = onOpenExport,
+                    onOpenImport = onOpenImport
+                )
+
+                SettingsUpdateSection(
+                    currentVersion = uiState.currentVersion,
+                    updateState = updateState,
+                    downloadActions = UpdateDownloadActions(
+                        onRequestDownloadConfirmation = {
                             haptic()
-                            onSetCrashReportingEnabled(it)
-                        }
-                    )
-                    Spacer(Modifier.height(16.dp))
-                    PrivacySettingRow(
-                        title = stringResource(R.string.label_screen_capture_protection),
-                        description = stringResource(R.string.text_screen_capture_protection_description),
-                        checked = privacySettings?.screenCaptureProtectionEnabled ?: false,
-                        enabled = privacySettings != null,
-                        onCheckedChange = {
+                            onRequestDownloadConfirmation()
+                        },
+                        onDismissUpdate = {
                             haptic()
-                            onSetScreenCaptureProtectionEnabled(it)
+                            onDismissUpdate()
+                        },
+                        onRetryInstall = {
+                            haptic()
+                            onRetryInstall()
+                        },
+                        onOpenInstallSettings = {
+                            haptic()
+                            onOpenInstallSettings()
                         }
+                    ),
+                    navigationActions = UpdateNavigationActions(
+                        onCheckForUpdate = {
+                            haptic()
+                            onCheckForUpdate()
+                        },
+                        onOpenProjectPage = onOpenProjectPage
                     )
-                }
-
-                Spacer(Modifier.height(16.dp))
-
-                // === DATA MANAGEMENT SECTION ===
-                Text(
-                    stringResource(R.string.header_data_management),
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.primary
                 )
-                NeonPanel {
-                    Text(
-                        stringResource(R.string.text_data_management_description),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                    )
-                    if (hasUnsavedChanges) {
-                        Text(
-                            stringResource(R.string.text_export_disabled_unsaved),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.tertiary
-                        )
-                    }
-                    Spacer(Modifier.height(12.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        NeonMagentaButton(
-                            onClick = onOpenExport,
-                            modifier = Modifier.weight(1f),
-                            enabled = !hasUnsavedChanges,
-                            style = NeonButtonStyle.SECONDARY
-                        ) {
-                            Text(
-                                if (hasUnsavedChanges) {
-                                    stringResource(R.string.action_save_first)
-                                } else {
-                                    stringResource(R.string.action_export)
-                                }
-                            )
-                        }
-                        NeonButton(
-                            onClick = onOpenImport,
-                            modifier = Modifier.weight(1f),
-                            style = NeonButtonStyle.SECONDARY
-                        ) {
-                            Text(stringResource(R.string.action_import))
-                        }
-                    }
-                }
-
-                Spacer(Modifier.height(32.dp))
-
-                // === ABOUT SECTION ===
-                Text(
-                    stringResource(R.string.header_about),
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.primary
-                )
-
-                NeonPanel {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                Icons.Filled.Info,
-                                contentDescription = stringResource(R.string.content_desc_version_info),
-                                modifier = Modifier.size(20.dp),
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                            Spacer(Modifier.width(8.dp))
-                            Text(
-                                stringResource(R.string.label_version_format, uiState.currentVersion),
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                        }
-
-                        when (updateState) {
-                            is UpdateState.Checking -> {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(20.dp),
-                                    strokeWidth = 2.dp
-                                )
-                            }
-                            is UpdateState.UpToDate -> {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        Icons.Filled.CheckCircle,
-                                        contentDescription = stringResource(R.string.status_up_to_date),
-                                        modifier = Modifier.size(16.dp),
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
-                                    Spacer(Modifier.width(4.dp))
-                                    Text(
-                                        stringResource(R.string.status_up_to_date),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
-                                }
-                            }
-                            else -> Unit
-                        }
-                    }
-
-                    Spacer(Modifier.height(12.dp))
-
-                    when (val state = updateState) {
-                        is UpdateState.Available -> {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                NeonButton(
-                                    onClick = {
-                                        haptic()
-                                        onRequestDownloadConfirmation()
-                                    },
-                                    style = NeonButtonStyle.SECONDARY
-                                ) {
-                                    Icon(
-                                        Icons.Filled.Download,
-                                        contentDescription = stringResource(R.string.content_desc_download_update),
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                    Spacer(Modifier.width(4.dp))
-                                    Text(stringResource(R.string.status_update_available, state.version))
-                                }
-                                IconButton(
-                                    onClick = { haptic(); onDismissUpdate() },
-                                    modifier = Modifier.size(24.dp)
-                                ) {
-                                    Icon(
-                                        Icons.Filled.Close,
-                                        contentDescription = stringResource(R.string.content_desc_dismiss_update),
-                                        modifier = Modifier.size(16.dp),
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
-                        }
-                        is UpdateState.DownloadQueued -> {
-                            Text(
-                                stringResource(R.string.status_download_queued),
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                        }
-                        is UpdateState.Downloading -> {
-                            Text(
-                                downloadingStatusText(state),
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                        }
-                        is UpdateState.Verifying -> {
-                            Text(
-                                stringResource(R.string.status_verifying_update),
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                        }
-                        is UpdateState.ReadyToInstall -> {
-                            Text(
-                                stringResource(R.string.status_ready_to_install),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                            Spacer(Modifier.height(8.dp))
-                            NeonButton(
-                                onClick = { haptic(); onRetryInstall() },
-                                modifier = Modifier.fillMaxWidth(),
-                                style = NeonButtonStyle.SECONDARY
-                            ) {
-                                Text(stringResource(R.string.action_install_update))
-                            }
-                        }
-                        is UpdateState.PermissionRequired -> {
-                            Text(
-                                stringResource(R.string.status_permission_required),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.tertiary
-                            )
-                            Spacer(Modifier.height(8.dp))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                NeonButton(
-                                    onClick = {
-                                        haptic()
-                                        onOpenInstallSettings()
-                                    },
-                                    modifier = Modifier.weight(1f),
-                                    style = NeonButtonStyle.SECONDARY
-                                ) {
-                                    Text(stringResource(R.string.action_open_install_settings))
-                                }
-                                NeonButton(
-                                    onClick = { haptic(); onRetryInstall() },
-                                    modifier = Modifier.weight(1f),
-                                    style = NeonButtonStyle.SECONDARY
-                                ) {
-                                    Text(stringResource(R.string.action_retry_install))
-                                }
-                            }
-                        }
-                        is UpdateState.Installing -> {
-                            Text(
-                                stringResource(R.string.status_installing),
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                        }
-                        is UpdateState.Error -> {
-                            Text(
-                                state.message,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.error
-                            )
-                        }
-                        else -> Unit
-                    }
-
-                    Spacer(Modifier.height(12.dp))
-
-                    NeonButton(
-                        onClick = { haptic(); onCheckForUpdate() },
-                        modifier = Modifier.fillMaxWidth(),
-                        enabled = !isUpdateFlowBusy(updateState),
-                        style = NeonButtonStyle.SECONDARY
-                    ) {
-                        Icon(
-                            Icons.Filled.Refresh,
-                            contentDescription = stringResource(R.string.content_desc_check_updates),
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            when (updateState) {
-                                is UpdateState.Checking -> stringResource(R.string.status_checking_updates)
-                                else -> stringResource(R.string.action_check_updates)
-                            }
-                        )
-                    }
-
-                    Spacer(Modifier.height(8.dp))
-
-                    TextButton(
-                        onClick = onOpenProjectPage,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Icon(
-                            Icons.Filled.Code,
-                            contentDescription = stringResource(R.string.content_desc_view_github),
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text(stringResource(R.string.action_view_github))
-                    }
-                }
-
-                Spacer(Modifier.height(32.dp))
             }
         }
     }
-}
-
-@Composable
-private fun PrivacySettingRow(
-    title: String,
-    description: String,
-    checked: Boolean,
-    enabled: Boolean,
-    onCheckedChange: (Boolean) -> Unit
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(title, style = MaterialTheme.typography.bodyLarge)
-            Text(
-                description,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-            )
-        }
-        Switch(
-            checked = checked,
-            onCheckedChange = onCheckedChange,
-            enabled = enabled,
-            modifier = Modifier.semantics { contentDescription = title }
-        )
-    }
-}
-
-private fun isUpdateFlowBusy(state: UpdateState): Boolean {
-    return state is UpdateState.Checking ||
-        state is UpdateState.DownloadQueued ||
-        state is UpdateState.Downloading ||
-        state is UpdateState.Verifying
-}
-
-@Composable
-private fun downloadingStatusText(state: UpdateState.Downloading): String {
-    val downloaded = formatBytes(state.bytesDownloaded)
-    val total = state.totalBytes?.let(::formatBytes)
-    val percent = if (state.totalBytes != null && state.totalBytes > 0L) {
-        ((state.bytesDownloaded.toDouble() / state.totalBytes.toDouble()) * 100.0)
-            .coerceIn(0.0, 100.0)
-            .roundToInt()
-    } else {
-        null
-    }
-
-    return if (total != null && percent != null) {
-        stringResource(R.string.status_downloading_progress, downloaded, total, percent)
-    } else {
-        stringResource(R.string.status_downloading_unknown)
-    }
-}
-
-private fun formatBytes(bytes: Long): String {
-    if (bytes <= 0L) return "0 B"
-    val units = arrayOf("B", "KB", "MB", "GB")
-    var value = bytes.toDouble()
-    var unitIndex = 0
-    while (value >= 1024.0 && unitIndex < units.lastIndex) {
-        value /= 1024.0
-        unitIndex++
-    }
-    return String.format(java.util.Locale.US, "%.1f %s", value, units[unitIndex])
 }

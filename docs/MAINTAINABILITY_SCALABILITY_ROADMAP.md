@@ -169,9 +169,11 @@ Template Library, Editor, Settings, Import, Export, and Customer Intake use dedi
 
 #### 7. Split large feature files by responsibility
 
-**Status:** Not started
+**Status:** In progress; Customer Intake completed 2026-08-10
 
 Several files contain multiple independently meaningful UI sections. File extraction should follow ownership, not an arbitrary line limit.
+
+Customer Intake now keeps route wiring and screen-level presentation state in `CustomerIntakeScreen.kt`; its template selector, form and advanced Wi-Fi controls, send actions, and QR action live in focused feature files. A dedicated QR action test covers the extracted component boundary.
 
 **Initial candidates:**
 
@@ -394,11 +396,13 @@ Document safe dependency updates, common Gradle/Proto issues, device installatio
 - [x] Convert Import and Export.
 - [x] Convert Customer Intake last because it coordinates two feature states.
 
-### Milestone 4: UI decomposition
+### Milestone 4: UI decomposition (Complete)
 
-- [ ] Split feature sections while preserving behavior.
-- [ ] Add focused previews/tests.
-- [ ] Split reusable design-system controls by component family.
+- [x] Split Customer Intake feature sections while preserving behavior.
+- [x] Add focused Customer Intake QR section test.
+- [x] Split remaining feature sections while preserving behavior.
+- [x] Add focused previews/tests for remaining extractions.
+- [x] Split reusable design-system controls by component family.
 
 ### Milestone 5: Dependency construction
 
@@ -444,3 +448,5 @@ Run device tests when an emulator or device is available:
 - 2026-08-10: Split Settings into an explicit Route/Screen boundary and verified it on a wireless debug device.
 - 2026-08-10: Split Import and Export into explicit Route/Screen boundaries, keeping file and clipboard I/O in routes.
 - 2026-08-10: Completed Milestone 3 by splitting Customer Intake into an explicit Route/Screen boundary while preserving its validated IME behavior.
+- 2026-08-10: Started Milestone 4 by extracting Customer Intake's template, form, send-action, and QR presentation sections into focused files.
+- 2026-08-10: Completed Milestone 4 by splitting reusable component families and Settings, Export, Import, and QR-sheet presentation into focused UI components with Compose coverage.

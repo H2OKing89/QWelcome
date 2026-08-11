@@ -6,7 +6,6 @@ import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.lifecycle.SavedStateHandle
 import androidx.test.core.app.ApplicationProvider
-import androidx.test.espresso.Espresso.pressBack
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.data.MessageTemplate
@@ -398,10 +397,8 @@ class TemplateEditorScreenTest {
         setScreenContentExistingTemplate()
 
         // Make a change
-        composeRule.onNode(
-            editableFieldWithLabel(appContext.getString(R.string.label_name)),
-            useUnmergedTree = true
-        ).performTextInput(" Modified")
+        composeRule.onNode(editableFieldWithLabel(appContext.getString(R.string.label_name)))
+            .performTextInput(" Modified")
         composeRule.waitForIdle()
 
         composeRule.onNodeWithContentDescription(appContext.getString(R.string.content_desc_back))
@@ -421,10 +418,8 @@ class TemplateEditorScreenTest {
         setScreenContentExistingTemplate()
 
         // Make a change then go back
-        composeRule.onNode(
-            editableFieldWithLabel(appContext.getString(R.string.label_name)),
-            useUnmergedTree = true
-        ).performTextInput(" Modified")
+        composeRule.onNode(editableFieldWithLabel(appContext.getString(R.string.label_name)))
+            .performTextInput(" Modified")
         composeRule.waitForIdle()
 
         composeRule.onNodeWithContentDescription(appContext.getString(R.string.content_desc_back))
@@ -482,11 +477,8 @@ class TemplateEditorScreenTest {
         setScreenContentNewTemplate()
         openMessageWorkspace()
 
-        composeRule.onNode(
-            editableFieldWithLabel(appContext.getString(R.string.label_message)),
-            useUnmergedTree = true
-        )
-            .assertIsDisplayed()
+        composeRule.onNodeWithTag(TEMPLATE_CONTENT_LABEL_TEST_TAG).assertIsDisplayed()
+        composeRule.onNodeWithTag(TEMPLATE_CONTENT_FIELD_TEST_TAG).assertIsDisplayed()
         composeRule.onNodeWithText(appContext.getString(R.string.action_done))
             .assertIsDisplayed()
     }
@@ -495,10 +487,7 @@ class TemplateEditorScreenTest {
     fun messageWorkspace_doesNotFocusEditorUntilTapped() {
         setScreenContentNewTemplate()
         openMessageWorkspace()
-        val messageField = composeRule.onNode(
-            editableFieldWithLabel(appContext.getString(R.string.label_message)),
-            useUnmergedTree = true
-        )
+        val messageField = composeRule.onNodeWithTag(TEMPLATE_CONTENT_FIELD_TEST_TAG)
 
         messageField.assertIsNotFocused()
         messageField.performClick()
@@ -509,10 +498,7 @@ class TemplateEditorScreenTest {
     fun messageWorkspace_variableTapInsertsCanonicalToken() {
         setScreenContentNewTemplate()
         openMessageWorkspace()
-        val messageField = composeRule.onNode(
-            editableFieldWithLabel(appContext.getString(R.string.label_message)),
-            useUnmergedTree = true
-        )
+        val messageField = composeRule.onNodeWithTag(TEMPLATE_CONTENT_FIELD_TEST_TAG)
 
         messageField.performTextReplacement("Hello ")
         composeRule.onNodeWithText("Customer").performClick()
@@ -537,15 +523,13 @@ class TemplateEditorScreenTest {
     }
 
     @Test
-    fun systemBack_closesMessageWorkspaceWithoutShowingDiscardDialog() {
+    fun messageWorkspace_backButtonClosesWithoutShowingDiscardDialog() {
         setScreenContentExistingTemplate()
-        composeRule.onNode(
-            editableFieldWithLabel(appContext.getString(R.string.label_name)),
-            useUnmergedTree = true
-        ).performTextInput(" Modified")
+        composeRule.onNode(editableFieldWithLabel(appContext.getString(R.string.label_name)))
+            .performTextInput(" Modified")
         openMessageWorkspace()
 
-        pressBack()
+        composeRule.onNodeWithTag(TEMPLATE_CONTENT_BACK_BUTTON_TEST_TAG).performClick()
         composeRule.waitForIdle()
 
         composeRule.onNodeWithText(appContext.getString(R.string.action_done)).assertDoesNotExist()
@@ -556,15 +540,15 @@ class TemplateEditorScreenTest {
     }
 
     @Test
-    fun systemBack_closesTagsSheetWithoutShowingDiscardDialog() {
+    fun tagsSheet_closeButtonClosesWithoutShowingDiscardDialog() {
         setScreenContentExistingTemplate()
-        composeRule.onNode(
-            editableFieldWithLabel(appContext.getString(R.string.label_name)),
-            useUnmergedTree = true
-        ).performTextInput(" Modified")
+        composeRule.onNode(editableFieldWithLabel(appContext.getString(R.string.label_name)))
+            .performTextInput(" Modified")
         openTagsSheet()
 
-        pressBack()
+        composeRule.onNodeWithContentDescription(
+            appContext.getString(R.string.content_desc_close_tags)
+        ).performClick()
         composeRule.waitForIdle()
 
         composeRule.onNodeWithContentDescription(

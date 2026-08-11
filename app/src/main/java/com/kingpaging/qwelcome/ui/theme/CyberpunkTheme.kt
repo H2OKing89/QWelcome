@@ -168,7 +168,8 @@ data class CyberExtendedColors(
     val onWarning: Color,
     val warningContainer: Color,
     val info: Color,
-    val lime: Color
+    val lime: Color,
+    val qrCodeBackground: Color
 )
 
 private val DarkExtendedColors = CyberExtendedColors(
@@ -179,7 +180,8 @@ private val DarkExtendedColors = CyberExtendedColors(
     onWarning = Color(0xFF3D2600),
     warningContainer = Color(0xFF5C3D00),
     info = CyberCyan,
-    lime = CyberLime
+    lime = CyberLime,
+    qrCodeBackground = Color.White
 )
 
 private val LightExtendedColors = CyberExtendedColors(
@@ -190,7 +192,8 @@ private val LightExtendedColors = CyberExtendedColors(
     onWarning = Color.White,
     warningContainer = Color(0xFFFFE0B2),
     info = CyberLightCyan,
-    lime = CyberLightLime
+    lime = CyberLightLime,
+    qrCodeBackground = Color.White
 )
 
 val LocalCyberColors = compositionLocalOf<CyberExtendedColors> {

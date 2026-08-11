@@ -446,19 +446,21 @@ class TemplateListScreenTest {
             name = "Last Template",
             content = "Welcome {{ customer_name }} to {{ ssid }}."
         )
-        val templates = List(12) { index ->
+        val templates = List(11) { index ->
             englishTemplate.copy(id = "template-$index", name = "Template $index")
         } + lastTemplate
         setScreenContent(templates = templates)
 
+        composeRule.onNodeWithTag(TEMPLATE_LIST_TEST_TAG)
+            .performScrollToIndex(templates.lastIndex)
         val lastTemplateCard = composeRule.onNodeWithContentDescription(
             appContext.getString(R.string.content_desc_use_named_template, lastTemplate.name)
         )
-        lastTemplateCard.performScrollTo()
         lastTemplateCard.performClick()
         composeRule.waitUntil(timeoutMillis = PERSISTENCE_TIMEOUT_MILLIS) {
             viewModel.uiState.value.activeTemplateId == lastTemplate.id
         }
+        composeRule.waitForIdle()
 
         composeRule.onNodeWithText(
             appContext.getString(R.string.toast_template_active, lastTemplate.name)

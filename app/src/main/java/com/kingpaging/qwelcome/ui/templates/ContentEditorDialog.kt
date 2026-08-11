@@ -2,6 +2,7 @@
 
 package com.kingpaging.qwelcome.ui.templates
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -34,6 +35,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
@@ -42,6 +44,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.kingpaging.qwelcome.R
+
+internal const val TEMPLATE_CONTENT_FIELD_TEST_TAG = "template_content_field"
+internal const val TEMPLATE_CONTENT_LABEL_TEST_TAG = "template_content_label"
+internal const val TEMPLATE_CONTENT_BACK_BUTTON_TEST_TAG = "template_content_back_button"
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -68,6 +74,7 @@ internal fun ContentEditorDialog(
             decorFitsSystemWindows = false
         )
     ) {
+        BackHandler(onBack = onDismissRequest)
         val workspaceKeyboardController = LocalSoftwareKeyboardController.current
 
         Surface(
@@ -87,11 +94,15 @@ internal fun ContentEditorDialog(
                     title = {
                         Text(
                             text = stringResource(R.string.label_message),
-                            color = MaterialTheme.colorScheme.secondary
+                            color = MaterialTheme.colorScheme.secondary,
+                            modifier = Modifier.testTag(TEMPLATE_CONTENT_LABEL_TEST_TAG)
                         )
                     },
                     navigationIcon = {
-                        IconButton(onClick = onDismissRequest) {
+                        IconButton(
+                            onClick = onDismissRequest,
+                            modifier = Modifier.testTag(TEMPLATE_CONTENT_BACK_BUTTON_TEST_TAG)
+                        ) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = stringResource(R.string.content_desc_back),
@@ -196,7 +207,9 @@ internal fun ContentEditorField(
             minHeightInLines = 1,
             maxHeightInLines = Int.MAX_VALUE
         ),
-        modifier = modifier.focusRequester(contentFocusRequester),
+        modifier = modifier
+            .focusRequester(contentFocusRequester)
+            .testTag(TEMPLATE_CONTENT_FIELD_TEST_TAG),
         textStyle = MaterialTheme.typography.bodyMedium.copy(
             color = MaterialTheme.colorScheme.onSurface
         ),
@@ -210,7 +223,11 @@ internal fun ContentEditorField(
                 singleLine = false,
                 visualTransformation = androidx.compose.ui.text.input.VisualTransformation.None,
                 interactionSource = contentInteractionSource,
-                label = { Text(stringResource(R.string.label_message)) },
+                label = {
+                    Text(
+                        text = stringResource(R.string.label_message)
+                    )
+                },
                 isError = hasContentError,
                 colors = fieldColors
             )

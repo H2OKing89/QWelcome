@@ -132,9 +132,9 @@ class CustomerIntakeScreenTest {
         val ssidLabel = context.getString(R.string.label_wifi_ssid)
         val passwordLabel = context.getString(R.string.label_wifi_password)
 
-        composeRule.onNode(editableFieldWithLabel(ssidLabel), useUnmergedTree = true)
+        composeRule.onNode(editableFieldWithLabel(ssidLabel))
             .performTextInput("QWelcome-Test-Network")
-        composeRule.onNode(editableFieldWithLabel(passwordLabel), useUnmergedTree = true)
+        composeRule.onNode(editableFieldWithLabel(passwordLabel))
             .performTextInput("password123")
 
         composeRule.onNodeWithText(context.getString(R.string.action_show_qr)).assertIsEnabled()

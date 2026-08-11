@@ -15,27 +15,19 @@ import android.provider.MediaStore
 import android.util.Log
 import android.widget.Toast
 import com.kingpaging.qwelcome.R
-import androidx.compose.foundation.Image
 import androidx.core.graphics.createBitmap
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.FileProvider
@@ -60,9 +52,6 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.io.OutputStream
-
-/** Fixed-width mask so the displayed password never leaks its actual length. */
-private const val MASKED_PASSWORD_DISPLAY = "********"
 
 @Composable
 fun QrCodeBottomSheet(
@@ -192,129 +181,26 @@ fun QrCodeBottomSheet(
                 .padding(horizontal = 24.dp, vertical = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = stringResource(R.string.title_wifi_qr_code),
-                style = MaterialTheme.typography.headlineSmall,
-                color = MaterialTheme.colorScheme.primary
-            )
-            Spacer(Modifier.height(4.dp))
-            Text(
-                text = stringResource(R.string.text_scan_to_connect_automatically),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-            )
-            Spacer(Modifier.height(16.dp))
-            Box(
-                modifier = Modifier
-                    .size(240.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(Color.White)
-                    .padding(12.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Image(
-                    painter = qrPainter,
-                    contentDescription = stringResource(R.string.content_desc_wifi_qr_code),
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
-            Spacer(Modifier.height(16.dp))
-            NeonPanel(modifier = Modifier.fillMaxWidth()) {
-                Text(stringResource(R.string.label_network), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
-                Text(
-                    ssid,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Medium,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Spacer(Modifier.height(4.dp))
-                Text(stringResource(R.string.label_security), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
-                Text(
-                    text = when {
-                        isOpenNetwork -> stringResource(R.string.label_open_no_password)
-                        securityType == WifiQrGenerator.SecurityType.WPA3_SAE -> {
-                            stringResource(R.string.security_wpa3_sae)
-                        }
-                        else -> stringResource(R.string.security_wpa2)
-                    },
-                    color = MaterialTheme.colorScheme.tertiary,
-                    fontWeight = FontWeight.Medium,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-                if (!isOpenNetwork) {
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        stringResource(R.string.label_wifi_password),
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                    )
-                    Text(
-                        MASKED_PASSWORD_DISPLAY,
-                        color = MaterialTheme.colorScheme.secondary,
-                        fontWeight = FontWeight.Medium,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
-            Spacer(Modifier.height(16.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                NeonCyanButton(
-                    onClick = {
-                        showSaveWarning = true
-                    },
-                    enabled = !isSaving && !isSharing,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    if (isSaving) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(18.dp),
-                            strokeWidth = 2.dp,
-                            color = MaterialTheme.colorScheme.onPrimary
-                        )
-                    } else {
-                        Icon(
-                            Icons.Default.Download,
-                            contentDescription = stringResource(R.string.action_save),
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                    Spacer(Modifier.width(8.dp))
-                    Text(stringResource(R.string.action_save))
-                }
-                NeonMagentaButton(
-                    onClick = {
+            QrCodeSheetContent(
+                qrPainter = qrPainter,
+                network = QrCodeNetworkDetails(
+                    ssid = ssid,
+                    isOpenNetwork = isOpenNetwork,
+                    securityType = securityType
+                ),
+                isSaving = isSaving,
+                isSharing = isSharing,
+                actions = QrCodeSheetActions(
+                    onRequestSave = { showSaveWarning = true },
+                    onShare = {
                         scope.launch {
                             isSharing = true
                             shareQrCode(context, wifiString, ssid)
                             isSharing = false
                         }
-                    },
-                    enabled = !isSaving && !isSharing,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    if (isSharing) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(18.dp),
-                            strokeWidth = 2.dp,
-                            color = MaterialTheme.colorScheme.onPrimary
-                        )
-                    } else {
-                        Icon(
-                            Icons.Default.Share,
-                            contentDescription = stringResource(R.string.action_share),
-                            modifier = Modifier.size(18.dp)
-                        )
                     }
-                    Spacer(Modifier.width(8.dp))
-                    Text(stringResource(R.string.action_share))
-                }
-            }
-            Spacer(Modifier.height(24.dp))
+                )
+            )
         }
     }
 }
