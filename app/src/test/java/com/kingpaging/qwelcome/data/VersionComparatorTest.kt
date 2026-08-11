@@ -1,10 +1,7 @@
 package com.kingpaging.qwelcome.data
 
-import com.kingpaging.qwelcome.viewmodel.factory.AppViewModelProvider
-import org.junit.After
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
-import org.junit.Before
 import org.junit.Test
 
 /**
@@ -19,16 +16,6 @@ import org.junit.Test
  * - Edge cases (empty strings, different-length version parts)
  */
 class VersionComparatorTest {
-
-    @Before
-    fun setup() {
-        AppViewModelProvider.resetForTesting()
-    }
-
-    @After
-    fun teardown() {
-        AppViewModelProvider.resetForTesting()
-    }
 
     // ========== Basic version bumps ==========
 

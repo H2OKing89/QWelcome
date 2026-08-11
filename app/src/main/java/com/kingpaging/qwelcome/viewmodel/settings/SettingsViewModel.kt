@@ -14,7 +14,6 @@ import com.kingpaging.qwelcome.data.PrivacySettings
 import com.kingpaging.qwelcome.data.SettingsStore
 import com.kingpaging.qwelcome.data.TechProfile
 import com.kingpaging.qwelcome.data.Template
-import com.kingpaging.qwelcome.data.TemplateSelectionResult
 import com.kingpaging.qwelcome.data.UpdateCheckResult
 import com.kingpaging.qwelcome.data.VerificationResult
 import com.kingpaging.qwelcome.util.ResourceProvider
@@ -52,25 +51,12 @@ class SettingsViewModel(
             initialValue = null
         )
 
-    val allTemplates: StateFlow<List<Template>> =
-        store.allTemplatesFlow.stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5_000),
-            initialValue = emptyList()
-        )
-
     val activeTemplate: StateFlow<Template> =
         store.activeTemplateFlow.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
             initialValue = Template(name = "Default", content = store.defaultTemplateContent)
         )
-
-    fun getDefaultTemplateContent(): String = store.defaultTemplateContent
-
-    // Error events for UI to observe (buffered to avoid missing events)
-    private val _errorEvents = MutableSharedFlow<String>(replay = 0, extraBufferCapacity = 1)
-    val errorEvents: SharedFlow<String> = _errorEvents.asSharedFlow()
 
     // One-shot settings events (toasts + intents)
     private val _settingsEvents = MutableSharedFlow<SettingsEvent>(replay = 0, extraBufferCapacity = 1)
@@ -115,79 +101,6 @@ class SettingsViewModel(
                         resourceProvider.getString(R.string.toast_failed_save_privacy_settings)
                     )
                 )
-            }
-        }
-    }
-
-    fun saveTemplate(template: Template) {
-        viewModelScope.launch {
-            try {
-                store.saveTemplate(template)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to save template", e)
-                _errorEvents.emit("Failed to save template: ${e.message}")
-            }
-        }
-    }
-
-    fun setActiveTemplate(templateId: String) {
-        viewModelScope.launch {
-            try {
-                when (val result = store.setActiveTemplate(templateId)) {
-                    is TemplateSelectionResult.Blocked -> {
-                        _settingsEvents.emit(
-                            SettingsEvent.ShowToastError(
-                                resourceProvider.getString(
-                                    R.string.error_template_cannot_use,
-                                    result.template.name,
-                                    result.missingPlaceholders.joinToString(", ")
-                                )
-                            )
-                        )
-                    }
-                    is TemplateSelectionResult.NotFound -> {
-                        _settingsEvents.emit(
-                            SettingsEvent.ShowToastError(
-                                resourceProvider.getString(R.string.error_template_not_found)
-                            )
-                        )
-                    }
-                    is TemplateSelectionResult.Selected,
-                    is TemplateSelectionResult.AlreadyActive -> Unit
-                }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to set active template", e)
-                _errorEvents.emit("Failed to set active template: ${e.message}")
-            }
-        }
-    }
-
-    fun deleteTemplate(templateId: String) {
-        viewModelScope.launch {
-            try {
-                store.deleteTemplate(templateId)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to delete template", e)
-                _errorEvents.emit("Failed to delete template: ${e.message}")
-            }
-        }
-    }
-
-    fun resetTemplate() {
-        viewModelScope.launch {
-            try {
-                store.resetToDefaultTemplate()
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to reset template", e)
-                _errorEvents.emit("Failed to reset template: ${e.message}")
             }
         }
     }

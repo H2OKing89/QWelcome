@@ -6,7 +6,6 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.kingpaging.qwelcome.viewmodel.factory.AppViewModelProvider
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.encodeToString
@@ -28,14 +27,12 @@ class PreferencesToProtoMigrationTest {
 
     @Before
     fun setup() = runBlocking {
-        AppViewModelProvider.resetForTesting()
         clearLegacyPrefs()
     }
 
     @After
     fun tearDown() = runBlocking {
         clearLegacyPrefs()
-        AppViewModelProvider.resetForTesting()
     }
 
     @Test

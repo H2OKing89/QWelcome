@@ -1,12 +1,13 @@
 package com.kingpaging.qwelcome.viewmodel.export
 
+import android.content.ContentResolver
+import android.net.Uri
 import app.cash.turbine.test
 import com.kingpaging.qwelcome.data.ExportResult
 import com.kingpaging.qwelcome.data.ImportExportRepository
 import com.kingpaging.qwelcome.data.SettingsStore
 import com.kingpaging.qwelcome.data.Template
 import com.kingpaging.qwelcome.testutil.MainDispatcherRule
-import com.kingpaging.qwelcome.viewmodel.factory.AppViewModelProvider
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -14,8 +15,8 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import java.io.ByteArrayOutputStream
 import java.io.IOException
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -33,6 +34,7 @@ class ExportViewModelTest {
 
     private val mockRepo = mockk<ImportExportRepository>(relaxed = true)
     private val mockStore = mockk<SettingsStore>(relaxed = true)
+    private val mockContentResolver = mockk<ContentResolver>(relaxed = true)
     private lateinit var vm: ExportViewModel
 
     private val testTemplates = listOf(
@@ -44,12 +46,7 @@ class ExportViewModelTest {
     fun setup() {
         coEvery { mockStore.getUserTemplates() } returns testTemplates
         every { mockStore.recentSharePackagesFlow } returns flowOf(emptyList())
-        vm = ExportViewModel(mockRepo, mockStore)
-    }
-
-    @After
-    fun tearDown() {
-        AppViewModelProvider.resetForTesting()
+        vm = ExportViewModel(mockRepo, mockStore, contentResolver = mockContentResolver)
     }
 
     @Test
@@ -281,21 +278,66 @@ class ExportViewModelTest {
     }
 
     @Test
-    fun `getPendingFileExportContent returns and clears content`() = runTest {
+    fun `savePendingFileExport writes content and emits FileSaved`() = runTest {
         coEvery { mockRepo.exportFullBackup() } returns
                 ExportResult.Success(json = "{\"test\":1}", templateCount = 1)
+        val uri = mockk<Uri>()
+        val output = ByteArrayOutputStream()
+        every { mockContentResolver.openOutputStream(uri) } returns output
 
-        vm.exportFullBackup()
-        advanceUntilIdle()
+        vm.events.test {
+            vm.exportFullBackup()
+            advanceUntilIdle()
+            awaitItem()
 
-        vm.onSaveToFileRequested()
-        advanceUntilIdle()
+            vm.onSaveToFileRequested()
+            advanceUntilIdle()
+            awaitItem()
 
-        val content = vm.getPendingFileExportContent()
-        assertEquals("{\"test\":1}", content)
+            vm.savePendingFileExport(uri)
+            advanceUntilIdle()
 
-        // Second call should return null (already consumed)
-        assertNull(vm.getPendingFileExportContent())
+            assertTrue(awaitItem() is ExportEvent.FileSaved)
+            assertEquals("{\"test\":1}", output.toString(Charsets.UTF_8.name()))
+        }
+    }
+
+    @Test
+    fun `overlapping save request is rejected without replacing pending export`() = runTest {
+        coEvery { mockRepo.exportFullBackup() } returns
+            ExportResult.Success(json = "{\"backup\":true}", templateCount = 1)
+        coEvery { mockRepo.exportTemplatePack(any()) } returns
+            ExportResult.Success(json = "{\"templates\":[]}", templateCount = 2)
+        val uri = mockk<Uri>()
+        val output = ByteArrayOutputStream()
+        every { mockContentResolver.openOutputStream(uri) } returns output
+
+        vm.events.test {
+            vm.exportFullBackup()
+            advanceUntilIdle()
+            awaitItem()
+            vm.onSaveToFileRequested()
+            advanceUntilIdle()
+            awaitItem()
+
+            vm.onTemplatePackRequested()
+            advanceUntilIdle()
+            vm.exportSelectedTemplates()
+            advanceUntilIdle()
+            awaitItem()
+            vm.onSaveToFileRequested()
+            advanceUntilIdle()
+
+            assertTrue(awaitItem() is ExportEvent.FileSaveFailed)
+
+            vm.savePendingFileExport(uri)
+            advanceUntilIdle()
+
+            val savedEvent = awaitItem()
+            assertTrue(savedEvent is ExportEvent.FileSaved)
+            assertEquals(ExportType.FULL_BACKUP, (savedEvent as ExportEvent.FileSaved).type)
+            assertEquals("{\"backup\":true}", output.toString(Charsets.UTF_8.name()))
+        }
     }
 
     @Test

@@ -1,6 +1,5 @@
 package com.kingpaging.qwelcome.ui.templates
 
-import android.content.Context
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
@@ -23,10 +23,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -36,68 +34,65 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.lifecycle.repeatOnLifecycle
 import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.data.DEFAULT_TEMPLATE_ID
 import com.kingpaging.qwelcome.data.NEW_TEMPLATE_ID
 import com.kingpaging.qwelcome.data.Template
-import com.kingpaging.qwelcome.di.LocalSoundPlayer
-import com.kingpaging.qwelcome.di.LocalTemplateListViewModel
 import com.kingpaging.qwelcome.ui.components.CyberpunkBackdrop
 import com.kingpaging.qwelcome.ui.components.NeonButton
 import com.kingpaging.qwelcome.ui.components.NeonButtonStyle
 import com.kingpaging.qwelcome.ui.components.NeonWarningBanner
-import com.kingpaging.qwelcome.util.SoundPlayer
 import com.kingpaging.qwelcome.util.rememberHapticFeedback
-import com.kingpaging.qwelcome.viewmodel.templates.TemplateListEvent
-import com.kingpaging.qwelcome.viewmodel.templates.TemplateListEventOwner
-import com.kingpaging.qwelcome.viewmodel.templates.TemplateListViewModel
+import com.kingpaging.qwelcome.viewmodel.templates.TemplateListUiState
 import com.kingpaging.qwelcome.viewmodel.templates.filterAndOrderTemplates
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
 
-@Suppress("FunctionNaming", "LongMethod")
+internal const val TEMPLATE_LIST_TEST_TAG = "template_list"
+
+@Suppress("FunctionNaming", "LongMethod", "LongParameterList")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TemplateListScreen(
+    uiState: TemplateListUiState,
+    snackbarHostState: SnackbarHostState,
     onBack: () -> Unit,
-    onOpenEditor: () -> Unit
+    onOpenEditor: (String) -> Unit,
+    onDeleteTemplate: (String) -> Unit,
+    onDismissDeleteConfirmation: () -> Unit,
+    onUpdateTagFilter: (String) -> Unit,
+    onClearTagFilter: () -> Unit,
+    onRenameTemplate: (String, String) -> Unit,
+    onUpdateSearchQuery: (String) -> Unit,
+    onDismissTemplateLimitWarning: () -> Unit,
+    onSetActiveTemplate: (String) -> Unit,
+    onDuplicateAndEdit: (Template) -> Unit,
+    onDuplicateTemplate: (Template) -> Unit,
+    onShowDeleteConfirmation: (Template) -> Unit
 ) {
-    val vm = LocalTemplateListViewModel.current
-    val soundPlayer = LocalSoundPlayer.current
-    val uiState by vm.uiState.collectAsStateWithLifecycle()
     val haptic = rememberHapticFeedback()
-    val snackbarHostState = remember { SnackbarHostState() }
+    val templateListState = rememberLazyListState()
     var showTagFilters by remember { mutableStateOf(false) }
     var previewTemplate by remember { mutableStateOf<Template?>(null) }
     var renameTemplate by remember { mutableStateOf<Template?>(null) }
 
-    BackHandler { onBack() }
+    LaunchedEffect(uiState.activeTemplateId) {
+        templateListState.scrollToItem(0)
+    }
 
-    CollectTemplateListEffects(
-        viewModel = vm,
-        soundPlayer = soundPlayer,
-        snackbarHostState = snackbarHostState,
-        onOpenEditor = onOpenEditor
-    )
+    BackHandler { onBack() }
 
     uiState.showDeleteConfirmation?.let { template ->
         DeleteConfirmationDialog(
             templateName = template.name,
             isActive = template.id == uiState.activeTemplateId,
-            onConfirm = { vm.deleteTemplate(template.id) },
-            onDismiss = { vm.dismissDeleteConfirmation() }
+            onConfirm = { onDeleteTemplate(template.id) },
+            onDismiss = onDismissDeleteConfirmation
         )
     }
 
@@ -107,11 +102,11 @@ fun TemplateListScreen(
             selectedTags = uiState.selectedTags,
             onToggle = {
                 haptic()
-                vm.updateTagFilter(it)
+                onUpdateTagFilter(it)
             },
             onClear = {
                 haptic()
-                vm.clearTagFilter()
+                onClearTagFilter()
             },
             onDismiss = { showTagFilters = false }
         )
@@ -128,7 +123,7 @@ fun TemplateListScreen(
         RenameTemplateDialog(
             template = template,
             onRename = { name ->
-                vm.renameTemplate(template.id, name)
+                onRenameTemplate(template.id, name)
                 renameTemplate = null
             },
             onDismiss = { renameTemplate = null }
@@ -162,7 +157,7 @@ fun TemplateListScreen(
                     actions = {
                         IconButton(onClick = {
                             haptic()
-                            vm.startEditing(Template(id = NEW_TEMPLATE_ID, name = "", content = ""))
+                            onOpenEditor(NEW_TEMPLATE_ID)
                         }) {
                             Icon(
                                 imageVector = Icons.Default.Add,
@@ -211,10 +206,10 @@ fun TemplateListScreen(
                         query = uiState.searchQuery,
                         selectedTagCount = uiState.selectedTags.size,
                         hasTags = uiState.allTags.isNotEmpty(),
-                        onQueryChange = vm::updateSearchQuery,
+                        onQueryChange = onUpdateSearchQuery,
                         onClearSearch = {
                             haptic()
-                            vm.updateSearchQuery("")
+                            onUpdateSearchQuery("")
                         },
                         onOpenTags = {
                             haptic()
@@ -225,7 +220,9 @@ fun TemplateListScreen(
                     LazyColumn(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .weight(1f),
+                            .weight(1f)
+                            .testTag(TEMPLATE_LIST_TEST_TAG),
+                        state = templateListState,
                         contentPadding = PaddingValues(top = 8.dp, bottom = 96.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
@@ -237,7 +234,7 @@ fun TemplateListScreen(
                                         uiState.templates.size,
                                         uiState.templates.size
                                     ),
-                                    onDismiss = { haptic(); vm.dismissTemplateLimitWarning() }
+                                    onDismiss = { haptic(); onDismissTemplateLimitWarning() }
                                 )
                             }
                         }
@@ -247,7 +244,7 @@ fun TemplateListScreen(
                                 template = template,
                                 isActive = template.id == uiState.activeTemplateId,
                                 isDefault = template.id == DEFAULT_TEMPLATE_ID,
-                                onSelect = { haptic(); vm.setActiveTemplate(template.id) },
+                                onSelect = { haptic(); onSetActiveTemplate(template.id) },
                                 onPreview = {
                                     haptic()
                                     previewTemplate = template
@@ -255,17 +252,17 @@ fun TemplateListScreen(
                                 onEdit = {
                                     haptic()
                                     if (template.id == DEFAULT_TEMPLATE_ID) {
-                                        vm.duplicateAndEdit(template)
+                                        onDuplicateAndEdit(template)
                                     } else {
-                                        vm.startEditing(template)
+                                        onOpenEditor(template.id)
                                     }
                                 },
                                 onRename = {
                                     haptic()
                                     renameTemplate = template
                                 },
-                                onDuplicate = { haptic(); vm.duplicateTemplate(template) },
-                                onDelete = { haptic(); vm.showDeleteConfirmation(template) },
+                                onDuplicate = { haptic(); onDuplicateTemplate(template) },
+                                onDelete = { haptic(); onShowDeleteConfirmation(template) },
                                 modifier = Modifier.animateItem()
                             )
                         }
@@ -311,8 +308,8 @@ fun TemplateListScreen(
                                     NeonButton(
                                         onClick = {
                                             haptic()
-                                            vm.updateSearchQuery("")
-                                            vm.clearTagFilter()
+                                            onUpdateSearchQuery("")
+                                            onClearTagFilter()
                                         },
                                         glowColor = MaterialTheme.colorScheme.secondary,
                                         style = NeonButtonStyle.TERTIARY
@@ -326,90 +323,6 @@ fun TemplateListScreen(
                 }
             }
         }
-    }
-}
-
-@Suppress("FunctionNaming", "LocalContextGetResourceValueCall")
-@Composable
-private fun CollectTemplateListEffects(
-    viewModel: TemplateListViewModel,
-    soundPlayer: SoundPlayer,
-    snackbarHostState: SnackbarHostState,
-    onOpenEditor: () -> Unit
-) {
-    val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
-    val currentOnOpenEditor by rememberUpdatedState(onOpenEditor)
-
-    LaunchedEffect(viewModel, lifecycleOwner, soundPlayer, snackbarHostState) {
-        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
-            launch {
-                viewModel.navigateToEditor.collect { currentOnOpenEditor() }
-            }
-            launch {
-                viewModel.eventsFor(TemplateListEventOwner.LIBRARY).collectLatest { event ->
-                    val snackbar = event.toSnackbar(context) ?: return@collectLatest
-                    if (event.shouldBeep()) {
-                        soundPlayer.playBeep()
-                    }
-                    val result = snackbarHostState.showSnackbar(
-                        message = snackbar.message,
-                        actionLabel = snackbar.actionLabel,
-                        duration = snackbar.duration
-                    )
-                    if (result == SnackbarResult.ActionPerformed) {
-                        event.performSnackbarAction(viewModel)
-                    }
-                }
-            }
-        }
-    }
-}
-
-private data class TemplateSnackbar(
-    val message: String,
-    val actionLabel: String? = null,
-    val duration: SnackbarDuration = SnackbarDuration.Short
-)
-
-private fun TemplateListEvent.toSnackbar(
-    context: Context
-): TemplateSnackbar? = when (this) {
-    is TemplateListEvent.Error -> TemplateSnackbar(
-        message = checkNotNull(toTemplateErrorMessage(context)),
-        duration = SnackbarDuration.Long
-    )
-    is TemplateListEvent.TemplateDeleted -> TemplateSnackbar(
-        context.getString(R.string.toast_template_deleted, name)
-    )
-    is TemplateListEvent.TemplateDuplicated -> TemplateSnackbar(
-        context.getString(R.string.toast_template_duplicated, template.name)
-    )
-    is TemplateListEvent.ActiveTemplateChanged -> TemplateSnackbar(
-        message = context.getString(R.string.toast_template_active, template.name),
-        actionLabel = context.getString(R.string.action_undo),
-        duration = SnackbarDuration.Long
-    )
-    is TemplateListEvent.TemplateSelectionBlocked -> TemplateSnackbar(
-        message = checkNotNull(toTemplateErrorMessage(context)),
-        actionLabel = context.getString(R.string.action_fix),
-        duration = SnackbarDuration.Long
-    )
-    is TemplateListEvent.TemplateRenamed -> TemplateSnackbar(
-        context.getString(R.string.toast_template_renamed, template.name)
-    )
-    is TemplateListEvent.TemplateCreated,
-    is TemplateListEvent.TemplateUpdated -> null
-}
-
-private fun TemplateListEvent.shouldBeep(): Boolean =
-    this is TemplateListEvent.Error || this is TemplateListEvent.TemplateSelectionBlocked
-
-private fun TemplateListEvent.performSnackbarAction(viewModel: TemplateListViewModel) {
-    when (this) {
-        is TemplateListEvent.ActiveTemplateChanged -> viewModel.undoTemplateSelection(change)
-        is TemplateListEvent.TemplateSelectionBlocked -> viewModel.startEditing(template)
-        else -> Unit
     }
 }
 

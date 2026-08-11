@@ -87,6 +87,7 @@ tasks.withType<KotlinJvmCompile>().configureEach {
 
 extensions.configure<DetektExtension> {
     buildUponDefaultConfig.set(true)
+    config.setFrom(file("detekt.yml"))
     baseline.set(file("detekt-baseline.xml"))
 }
 

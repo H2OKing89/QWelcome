@@ -1,6 +1,7 @@
 package com.kingpaging.qwelcome.ui.templates
 
 import android.content.Context
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -18,10 +19,10 @@ import com.kingpaging.qwelcome.di.LocalTemplateListViewModel
 import com.kingpaging.qwelcome.testutil.FakeSoundPlayer
 import com.kingpaging.qwelcome.ui.theme.CyberpunkTheme
 import com.kingpaging.qwelcome.util.AndroidResourceProvider
-import com.kingpaging.qwelcome.viewmodel.factory.AppViewModelProvider
 import com.kingpaging.qwelcome.viewmodel.templates.MAX_TEMPLATE_NAME_LENGTH
+import com.kingpaging.qwelcome.viewmodel.templates.TemplateListUiState
 import com.kingpaging.qwelcome.viewmodel.templates.TemplateListViewModel
-import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -41,7 +42,7 @@ class TemplateListScreenTest {
     @get:Rule
     val composeRule = createComposeRule()
 
-    private val editorOpened = AtomicBoolean(false)
+    private val openedTemplateId = AtomicReference<String?>(null)
     private lateinit var appContext: Context
     private lateinit var viewModel: TemplateListViewModel
     private lateinit var soundPlayer: FakeSoundPlayer
@@ -61,18 +62,17 @@ class TemplateListScreenTest {
 
     @Before
     fun setup() {
-        AppViewModelProvider.resetForTesting()
-        editorOpened.set(false)
+        openedTemplateId.set(null)
         appContext = ApplicationProvider.getApplicationContext()
         soundPlayer = FakeSoundPlayer()
     }
 
     @After
     fun tearDown() = runBlocking {
-        AppViewModelProvider.resetForTesting()
         if (::appContext.isInitialized) {
             appContext.protoDataStore.updateData { UserPreferences.getDefaultInstance() }
         }
+        Unit
     }
 
     @Test
@@ -83,8 +83,39 @@ class TemplateListScreenTest {
             .assertIsDisplayed()
             .performClick()
 
-        composeRule.waitUntil { editorOpened.get() }
-        assertEquals(NEW_TEMPLATE_ID, viewModel.uiState.value.editingTemplate?.id)
+        composeRule.waitUntil { openedTemplateId.get() != null }
+        assertEquals(NEW_TEMPLATE_ID, openedTemplateId.get())
+    }
+
+    @Test
+    fun screen_rendersSuppliedStateWithoutViewModel() {
+        composeRule.setContent {
+            CyberpunkTheme {
+                TemplateListScreen(
+                    uiState = TemplateListUiState(
+                        templates = listOf(englishTemplate),
+                        activeTemplateId = englishTemplate.id,
+                        isLoading = false
+                    ),
+                    snackbarHostState = SnackbarHostState(),
+                    onBack = {},
+                    onOpenEditor = {},
+                    onDeleteTemplate = {},
+                    onDismissDeleteConfirmation = {},
+                    onUpdateTagFilter = {},
+                    onClearTagFilter = {},
+                    onRenameTemplate = { _, _ -> },
+                    onUpdateSearchQuery = {},
+                    onDismissTemplateLimitWarning = {},
+                    onSetActiveTemplate = {},
+                    onDuplicateAndEdit = {},
+                    onDuplicateTemplate = {},
+                    onShowDeleteConfirmation = {}
+                )
+            }
+        }
+
+        composeRule.onNodeWithText(englishTemplate.name).assertIsDisplayed()
     }
 
     @Test
@@ -125,9 +156,8 @@ class TemplateListScreenTest {
             appContext.getString(R.string.content_desc_template_actions_named, englishTemplate.name)
         ).performClick()
         composeRule.onNodeWithText(appContext.getString(R.string.action_edit_template)).performClick()
-        composeRule.waitUntil { editorOpened.get() }
-
-        assertEquals(englishTemplate.id, viewModel.uiState.value.editingTemplate?.id)
+        composeRule.waitUntil { openedTemplateId.get() != null }
+        assertEquals(englishTemplate.id, openedTemplateId.get())
     }
 
     @Test
@@ -373,25 +403,6 @@ class TemplateListScreenTest {
     }
 
     @Test
-    fun editorError_duringTransition_isNotConsumedByLibrary() {
-        setScreenContent()
-        val invalidContent = "Missing required variables"
-        val expectedMessage = appContext.getString(
-            R.string.error_template_required_placeholders_missing,
-            Template.findMissingPlaceholders(invalidContent).joinToString(", ")
-        )
-
-        composeRule.runOnIdle {
-            viewModel.createTemplate("Invalid", invalidContent, emptyList())
-        }
-        composeRule.waitUntil { viewModel.uiState.value.validationError == expectedMessage }
-        composeRule.waitForIdle()
-
-        composeRule.onNodeWithText(expectedMessage).assertDoesNotExist()
-        assertEquals(0, soundPlayer.beepCount)
-    }
-
-    @Test
     fun invalidCard_isBlockedAndFixOpensEditor() {
         val invalidTemplate = Template(
             id = "invalid-template",
@@ -409,8 +420,8 @@ class TemplateListScreenTest {
         assertEquals(1, soundPlayer.beepCount)
         composeRule.onNodeWithText(appContext.getString(R.string.action_fix)).performClick()
 
-        composeRule.waitUntil { editorOpened.get() }
-        assertEquals(invalidTemplate.id, viewModel.uiState.value.editingTemplate?.id)
+        composeRule.waitUntil { openedTemplateId.get() != null }
+        assertEquals(invalidTemplate.id, openedTemplateId.get())
         assertEquals(DEFAULT_TEMPLATE_ID, viewModel.uiState.value.activeTemplateId)
         assertTrue(invalidTemplate.id !in viewModel.uiState.value.templateLastUsedAt)
     }
@@ -433,19 +444,21 @@ class TemplateListScreenTest {
             name = "Last Template",
             content = "Welcome {{ customer_name }} to {{ ssid }}."
         )
-        val templates = List(12) { index ->
+        val templates = List(11) { index ->
             englishTemplate.copy(id = "template-$index", name = "Template $index")
         } + lastTemplate
         setScreenContent(templates = templates)
 
+        composeRule.onNodeWithTag(TEMPLATE_LIST_TEST_TAG)
+            .performScrollToIndex(templates.lastIndex)
         val lastTemplateCard = composeRule.onNodeWithContentDescription(
             appContext.getString(R.string.content_desc_use_named_template, lastTemplate.name)
         )
-        lastTemplateCard.performScrollTo()
         lastTemplateCard.performClick()
         composeRule.waitUntil(timeoutMillis = PERSISTENCE_TIMEOUT_MILLIS) {
             viewModel.uiState.value.activeTemplateId == lastTemplate.id
         }
+        composeRule.waitForIdle()
 
         composeRule.onNodeWithText(
             appContext.getString(R.string.toast_template_active, lastTemplate.name)
@@ -490,9 +503,9 @@ class TemplateListScreenTest {
                     LocalTemplateListViewModel provides viewModel,
                     LocalSoundPlayer provides soundPlayer
                 ) {
-                    TemplateListScreen(
+                    TemplateListRoute(
                         onBack = {},
-                        onOpenEditor = { editorOpened.set(true) }
+                        onOpenEditor = { openedTemplateId.set(it) }
                     )
                 }
             }

@@ -52,6 +52,10 @@ class ImportViewModel(
     // Track in-flight import jobs for cancellation on reset
     private var importJob: Job? = null
 
+    init {
+        reset()
+    }
+
     fun onOpenFileRequest() = viewModelScope.launch {
         _events.emit(ImportEvent.RequestFileOpen)
     }
@@ -167,11 +171,16 @@ class ImportViewModel(
     }
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    fun clearReplayedEvent() {
+        _events.resetReplayCache()
+    }
+
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     fun reset() {
         // Cancel any in-flight import operations
         importJob?.cancel()
         importJob = null
         _uiState.value = ImportUiState()
-        _events.resetReplayCache()
+        clearReplayedEvent()
     }
 }

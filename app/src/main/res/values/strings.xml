@@ -153,6 +153,11 @@
     <string name="label_insert">Insert</string>
     <string name="hint_template_required_placeholders">Customer, SSID required</string>
     <string name="hint_template_empty_content">No message content yet — tap edit to add your message</string>
+    <string name="label_placeholder_customer">Customer</string>
+    <string name="label_placeholder_ssid">SSID</string>
+    <string name="label_placeholder_password">Password</string>
+    <string name="label_placeholder_account_number">Account #</string>
+    <string name="label_placeholder_signature">Signature</string>
     <string name="label_message">Message</string>
     <string name="error_name_required">Name is required</string>
     <string name="title_delete_template">Delete Template?</string>
@@ -298,6 +303,12 @@
     <string name="status_download_queued">Download queued&#8230;</string>
     <string name="status_downloading_unknown">Downloading update&#8230;</string>
     <string name="status_downloading_progress">Downloading %1$s of %2$s (%3$d%%)</string>
+    <string name="format_file_size_zero">0 %1$s</string>
+    <string name="format_file_size">%1$.1f %2$s</string>
+    <string name="unit_bytes">B</string>
+    <string name="unit_kilobytes">KB</string>
+    <string name="unit_megabytes">MB</string>
+    <string name="unit_gigabytes">GB</string>
     <string name="status_verifying_update">Verifying update&#8230;</string>
     <string name="status_ready_to_install">Update ready to install</string>
     <string name="status_permission_required">Allow app installs for Q Welcome in system settings, then retry.</string>

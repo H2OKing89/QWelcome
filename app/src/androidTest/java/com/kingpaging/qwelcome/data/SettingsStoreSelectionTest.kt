@@ -3,7 +3,6 @@ package com.kingpaging.qwelcome.data
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.kingpaging.qwelcome.viewmodel.factory.AppViewModelProvider
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -25,7 +24,6 @@ class SettingsStoreSelectionTest {
 
     @Before
     fun setup() = runBlocking {
-        AppViewModelProvider.resetForTesting()
         context.protoDataStore.updateData { UserPreferences.getDefaultInstance() }
         store = SettingsStore(context, currentTimeMillis = { 100L })
         store.saveTemplates(listOf(firstTemplate, secondTemplate))
@@ -34,12 +32,42 @@ class SettingsStoreSelectionTest {
     @After
     fun tearDown() = runBlocking {
         context.protoDataStore.updateData { UserPreferences.getDefaultInstance() }
-        AppViewModelProvider.resetForTesting()
+        Unit
     }
 
     @Test
     fun defaultPreferences_haveEmptyUsageHistory() = runBlocking {
         assertTrue(store.templateLastUsedFlow.first().isEmpty())
+    }
+
+    @Test
+    fun saveTemplates_replacesMatchingIdAndAppendsNewTemplate() = runBlocking {
+        val updatedFirst = firstTemplate.copy(name = "Updated First")
+        val thirdTemplate = validTemplate("third")
+
+        store.saveTemplates(listOf(updatedFirst, thirdTemplate))
+
+        assertEquals(
+            listOf(updatedFirst, secondTemplate, thirdTemplate),
+            store.getUserTemplates()
+        )
+    }
+
+    @Test
+    fun restoreFullBackup_replacesMatchingIdAndAppendsNewTemplate() = runBlocking {
+        val updatedFirst = firstTemplate.copy(name = "Updated First")
+        val thirdTemplate = validTemplate("third")
+
+        store.restoreFullBackup(
+            templates = listOf(updatedFirst, thirdTemplate),
+            techProfile = null,
+            activeTemplateId = null
+        )
+
+        assertEquals(
+            listOf(updatedFirst, secondTemplate, thirdTemplate),
+            store.getUserTemplates()
+        )
     }
 
     @Test

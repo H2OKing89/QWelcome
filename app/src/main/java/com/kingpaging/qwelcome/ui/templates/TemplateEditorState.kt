@@ -95,10 +95,9 @@ private class TemplateEditorState(
 
     fun save(
         isNew: Boolean,
-        templateId: String,
         editorUiState: TemplateEditorUiState,
         onCreate: (name: String, content: String, tags: List<String>) -> Unit,
-        onUpdate: (templateId: String, name: String, content: String, tags: List<String>) -> Unit,
+        onUpdate: (name: String, content: String, tags: List<String>) -> Unit,
         onNameErrorChange: (Int?) -> Unit
     ) {
         if (editorUiState.name.isBlank()) {
@@ -116,7 +115,6 @@ private class TemplateEditorState(
             onCreate(editorUiState.name, editorUiState.contentText, tags)
         } else {
             onUpdate(
-                templateId,
                 editorUiState.name,
                 editorUiState.contentText,
                 tags
@@ -214,7 +212,7 @@ internal fun TemplateEditorContent(
     defaultContent: String,
     editorUiState: TemplateEditorUiState,
     onCreate: (name: String, content: String, tags: List<String>) -> Unit,
-    onUpdate: (templateId: String, name: String, content: String, tags: List<String>) -> Unit,
+    onUpdate: (name: String, content: String, tags: List<String>) -> Unit,
     onCancelEditing: () -> Unit,
     onNameChange: (String) -> Unit,
     onTagsChange: (List<String>) -> Unit,
@@ -296,7 +294,6 @@ internal fun TemplateEditorContent(
                         haptic()
                         editorState.save(
                             isNew = isNew,
-                            templateId = template.id,
                             editorUiState = editorUiState,
                             onCreate = onCreate,
                             onUpdate = onUpdate,

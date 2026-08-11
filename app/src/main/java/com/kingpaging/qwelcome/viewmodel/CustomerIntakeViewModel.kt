@@ -188,13 +188,14 @@ class CustomerIntakeViewModel(
         }
     }
 
-    fun undoClearForm(token: Long) {
-        if (clearedFormToken != token) return
-        val state = clearedFormState ?: return
+    fun undoClearForm(token: Long): Boolean {
+        val state = clearedFormState
+        if (clearedFormToken != token || state == null) return false
         clearedFormState = null
         clearedFormToken = null
         _uiState.value = state.copy(showQrSheet = false)
         recordUserActivity()
+        return true
     }
 
     private fun clearForm(emitToast: Boolean) {

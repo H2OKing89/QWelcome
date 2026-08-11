@@ -9,7 +9,6 @@ import com.kingpaging.qwelcome.data.TemplateSelectionChange
 import com.kingpaging.qwelcome.data.TemplateSelectionResult
 import com.kingpaging.qwelcome.testutil.FakeResourceProvider
 import com.kingpaging.qwelcome.testutil.MainDispatcherRule
-import com.kingpaging.qwelcome.viewmodel.factory.AppViewModelProvider
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -20,7 +19,6 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -73,11 +71,6 @@ class TemplateListViewModelTest {
         vm = TemplateListViewModel(mockStore, resourceProvider)
     }
 
-    @After
-    fun tearDown() {
-        AppViewModelProvider.resetForTesting()
-    }
-
     @Test
     fun `init collects templates from store`() = runTest {
         advanceUntilIdle()
@@ -100,28 +93,15 @@ class TemplateListViewModelTest {
     }
 
     @Test
-    fun `updateName keeps 50 characters and truncates 51`() {
-        val maxLengthName = "a".repeat(MAX_TEMPLATE_NAME_LENGTH)
-
-        vm.updateName(maxLengthName)
-        assertEquals(maxLengthName, vm.templateEditorUiState.value.name)
-
-        vm.updateName(maxLengthName + "b")
-        assertEquals(maxLengthName, vm.templateEditorUiState.value.name)
-    }
-
-    @Test
-    fun `create update and rename cap persisted names at shared limit`() = runTest {
+    fun `renameTemplate caps persisted names at shared limit`() = runTest {
         val cappedName = "a".repeat(MAX_TEMPLATE_NAME_LENGTH)
         val overlongName = cappedName + "b"
         coEvery { mockStore.getTemplate(userTemplate.id) } returns userTemplate
 
-        vm.createTemplate(overlongName, defaultTemplate.content, emptyList())
-        vm.updateTemplate(userTemplate.id, overlongName, userTemplate.content, emptyList())
         vm.renameTemplate(userTemplate.id, overlongName)
         advanceUntilIdle()
 
-        coVerify(exactly = 3) { mockStore.saveTemplate(match { it.name == cappedName }) }
+        coVerify(exactly = 1) { mockStore.saveTemplate(match { it.name == cappedName }) }
     }
 
     @Test
@@ -139,85 +119,6 @@ class TemplateListViewModelTest {
     }
 
     @Test
-    fun `createTemplate saves and emits TemplateCreated event`() = runTest {
-        vm.eventsFor(TemplateListEventOwner.EDITOR).test {
-            vm.createTemplate("New Template", "Hello {{ customer_name }}, SSID: {{ ssid }}", emptyList())
-            advanceUntilIdle()
-
-            coVerify { mockStore.saveTemplate(match { it.name == "New Template" }) }
-
-            val event = awaitItem()
-            assertTrue(event is TemplateListEvent.TemplateCreated)
-            assertEquals("New Template", (event as TemplateListEvent.TemplateCreated).template.name)
-        }
-    }
-
-    @Test
-    fun `createTemplate trims whitespace from name`() = runTest {
-        vm.eventsFor(TemplateListEventOwner.EDITOR).test {
-            vm.createTemplate("  Spaced Name  ", "Hello {{ customer_name }}, your SSID is {{ ssid }}", emptyList())
-            advanceUntilIdle()
-
-            coVerify { mockStore.saveTemplate(match { it.name == "Spaced Name" }) }
-
-            awaitItem() // TemplateCreated event
-        }
-    }
-
-    @Test
-    fun `updateTemplate saves and emits TemplateUpdated event`() = runTest {
-        coEvery { mockStore.getTemplate("650e8400-e29b-41d4-a716-446655440001") } returns userTemplate
-
-        vm.eventsFor(TemplateListEventOwner.EDITOR).test {
-            vm.updateTemplate(
-                "650e8400-e29b-41d4-a716-446655440001",
-                "Updated Name",
-                "Hi {{ customer_name }}, SSID: {{ ssid }}",
-                emptyList()
-            )
-            advanceUntilIdle()
-
-            coVerify { mockStore.saveTemplate(match { it.name == "Updated Name" && it.content == "Hi {{ customer_name }}, SSID: {{ ssid }}" }) }
-
-            val event = awaitItem()
-            assertTrue(event is TemplateListEvent.TemplateUpdated)
-            assertEquals("Updated Name", (event as TemplateListEvent.TemplateUpdated).template.name)
-        }
-    }
-
-    @Test
-    fun `deleteTemplate removes and emits TemplateDeleted event`() = runTest {
-        coEvery { mockStore.getTemplate("650e8400-e29b-41d4-a716-446655440001") } returns userTemplate
-
-        vm.eventsFor(TemplateListEventOwner.LIBRARY).test {
-            vm.deleteTemplate("650e8400-e29b-41d4-a716-446655440001")
-            advanceUntilIdle()
-
-            coVerify { mockStore.deleteTemplate("650e8400-e29b-41d4-a716-446655440001") }
-
-            val event = awaitItem()
-            assertTrue(event is TemplateListEvent.TemplateDeleted)
-            assertEquals("Custom Template", (event as TemplateListEvent.TemplateDeleted).name)
-        }
-    }
-
-    @Test
-    fun `delete active template delegates atomic fallback to store`() = runTest {
-        // Set up so 650e8400-e29b-41d4-a716-446655440001 is active
-        every { mockStore.activeTemplateIdFlow } returns flowOf("650e8400-e29b-41d4-a716-446655440001")
-        vm = TemplateListViewModel(mockStore, resourceProvider)
-        advanceUntilIdle()
-
-        coEvery { mockStore.getTemplate("650e8400-e29b-41d4-a716-446655440001") } returns userTemplate
-
-        vm.deleteTemplate("650e8400-e29b-41d4-a716-446655440001")
-        advanceUntilIdle()
-
-        coVerify(exactly = 0) { mockStore.setActiveTemplate(DEFAULT_TEMPLATE_ID) }
-        coVerify { mockStore.deleteTemplate("650e8400-e29b-41d4-a716-446655440001") }
-    }
-
-    @Test
     fun `duplicateTemplate saves copy and emits TemplateDuplicated event`() = runTest {
         vm.eventsFor(TemplateListEventOwner.LIBRARY).test {
             vm.duplicateTemplate(userTemplate)
@@ -231,75 +132,30 @@ class TemplateListViewModelTest {
     }
 
     @Test
-    fun `duplicateAndEdit saves copy emits event and sets editingTemplate`() = runTest {
+    fun `duplicateAndEdit emits duplicate event flagged to open editor`() = runTest {
         vm.eventsFor(TemplateListEventOwner.LIBRARY).test {
             vm.duplicateAndEdit(userTemplate)
             advanceUntilIdle()
 
             coVerify { mockStore.saveTemplate(match { it.id != userTemplate.id }) }
-
-            val event = awaitItem()
-            assertTrue(event is TemplateListEvent.TemplateDuplicated)
+            val event = awaitItem() as TemplateListEvent.TemplateDuplicated
+            assertTrue(event.openEditor)
+            assertTrue(event.template.id != userTemplate.id)
         }
-
-        val editingTemplate = vm.uiState.value.editingTemplate
-        assertNotNull(editingTemplate)
-        assertTrue(editingTemplate!!.id != userTemplate.id)
-        assertTrue(vm.uiState.value.validationError == null)
     }
 
     @Test
-    fun `duplicateAndEdit emits navigateToEditor for rapid requests`() = runTest {
-        val eventsCollector = backgroundScope.launch {
-            vm.eventsFor(TemplateListEventOwner.LIBRARY)
-                .collect { /* drain duplicate events so emit never blocks */ }
-        }
-
-        try {
-            vm.navigateToEditor.test {
-                repeat(3) {
-                    vm.duplicateAndEdit(userTemplate)
-                }
-                advanceUntilIdle()
-
-                repeat(3) {
-                    awaitItem()
-                }
+    fun `duplicateAndEdit emits editor events for rapid requests`() = runTest {
+        vm.eventsFor(TemplateListEventOwner.LIBRARY).test {
+            repeat(3) {
+                vm.duplicateAndEdit(userTemplate)
             }
-        } finally {
-            eventsCollector.cancel()
+            advanceUntilIdle()
+
+            repeat(3) {
+                assertTrue((awaitItem() as TemplateListEvent.TemplateDuplicated).openEditor)
+            }
         }
-    }
-
-    @Test
-    fun `startEditing sets editingTemplate in state`() {
-        vm.startEditing(userTemplate)
-        assertEquals(userTemplate, vm.uiState.value.editingTemplate)
-    }
-
-    @Test
-    fun `startEditing emits navigateToEditor when template is non-null`() = runTest {
-        vm.navigateToEditor.test {
-            vm.startEditing(userTemplate)
-            awaitItem()
-        }
-    }
-
-    @Test
-    fun `startEditing does not emit navigateToEditor when template is null`() = runTest {
-        vm.navigateToEditor.test {
-            vm.startEditing(null)
-            expectNoEvents()
-        }
-    }
-
-    @Test
-    fun `cancelEditing clears editingTemplate`() {
-        vm.startEditing(userTemplate)
-        assertNotNull(vm.uiState.value.editingTemplate)
-
-        vm.cancelEditing()
-        assertNull(vm.uiState.value.editingTemplate)
     }
 
     @Test
@@ -315,85 +171,6 @@ class TemplateListViewModelTest {
 
         vm.dismissDeleteConfirmation()
         assertNull(vm.uiState.value.showDeleteConfirmation)
-    }
-
-    @Test
-    fun `getDefaultTemplateContent returns store default`() {
-        assertEquals(defaultTemplate.content, vm.getDefaultTemplateContent())
-    }
-    
-    @Test
-    fun `createTemplate rejects content without required placeholders`() = runTest {
-        val content = "Content without placeholders"
-        val expectedMessage = resourceProvider.getString(
-            R.string.error_template_required_placeholders_missing,
-            Template.findMissingPlaceholders(content).joinToString(", ")
-        )
-
-        vm.eventsFor(TemplateListEventOwner.EDITOR).test {
-            vm.createTemplate("Invalid Template", content, emptyList())
-            advanceUntilIdle()
-
-            // Should emit an error event instead of creating
-            val event = awaitItem()
-            assertTrue(event is TemplateListEvent.Error)
-            assertEquals(expectedMessage, (event as TemplateListEvent.Error).message)
-            
-            // UI state should have validation error
-            assertEquals(expectedMessage, vm.uiState.value.validationError)
-            
-            // Store should NOT have been called to save
-            coVerify(exactly = 0) { mockStore.saveTemplate(any()) }
-        }
-    }
-
-    @Test
-    fun `createTemplate normalizes and deduplicates tags`() = runTest {
-        vm.eventsFor(TemplateListEventOwner.EDITOR).test {
-            vm.createTemplate(
-                "Tagged Template",
-                "Hello {{ customer_name }}, SSID: {{ ssid }}",
-                listOf(" Install ", "install", "Repair")
-            )
-            advanceUntilIdle()
-
-            coVerify {
-                mockStore.saveTemplate(
-                    match { saved ->
-                        saved.tags == listOf("Install", "Repair")
-                    }
-                )
-            }
-            awaitItem()
-        }
-    }
-    
-    @Test
-    fun `updateTemplate rejects content without required placeholders`() = runTest {
-        coEvery { mockStore.getTemplate("650e8400-e29b-41d4-a716-446655440001") } returns userTemplate
-        val content = "Missing placeholders"
-        val expectedMessage = resourceProvider.getString(
-            R.string.error_template_required_placeholders_missing,
-            Template.findMissingPlaceholders(content).joinToString(", ")
-        )
-
-        vm.eventsFor(TemplateListEventOwner.EDITOR).test {
-            vm.updateTemplate(
-                "650e8400-e29b-41d4-a716-446655440001",
-                "Updated Name",
-                content,
-                emptyList()
-            )
-            advanceUntilIdle()
-
-            // Should emit an error event instead of updating
-            val event = awaitItem()
-            assertTrue(event is TemplateListEvent.Error)
-            assertEquals(expectedMessage, (event as TemplateListEvent.Error).message)
-            
-            // Store should NOT have been called to save
-            coVerify(exactly = 0) { mockStore.saveTemplate(any()) }
-        }
     }
 
     @Test
@@ -528,20 +305,6 @@ class TemplateListViewModelTest {
             }
             val event = awaitItem()
             assertTrue(event is TemplateListEvent.TemplateRenamed)
-        }
-    }
-
-    @Test
-    fun `editor events are isolated from library collectors`() = runTest {
-        vm.eventsFor(TemplateListEventOwner.LIBRARY).test {
-            vm.eventsFor(TemplateListEventOwner.EDITOR).test {
-                vm.createTemplate("New Template", defaultTemplate.content, emptyList())
-                advanceUntilIdle()
-
-                assertTrue(awaitItem() is TemplateListEvent.TemplateCreated)
-            }
-
-            expectNoEvents()
         }
     }
 

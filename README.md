@@ -3,7 +3,7 @@
 A modern Android app for fiber internet technicians to quickly send professional WiFi welcome messages to new customers.
 
 ![Android](https://img.shields.io/badge/Android-26%2B-green?logo=android)
-![Kotlin](https://img.shields.io/badge/Kotlin-2.3.20-blue?logo=kotlin)
+![Kotlin](https://img.shields.io/badge/Kotlin-2.4.0-blue?logo=kotlin)
 ![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-Material3-purple)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
 
@@ -28,7 +28,7 @@ A modern Android app for fiber internet technicians to quickly send professional
 ### Option A: Download APK
 
 1. Go to [Releases](https://github.com/H2OKing89/QWelcome/releases)
-2. Download the latest `app-release.apk`
+2. Download the latest `QWelcome-v<version>.apk`
 3. Enable "Install from unknown sources" if prompted
 4. Install and enjoy!
 
@@ -64,7 +64,7 @@ The **CI release workflow** (`.github/workflows/release.yml`) does not read a ch
 
 ## Tech Stack
 
-- **Language:** Kotlin 2.3.20
+- **Language:** Kotlin 2.4.0
 - **UI:** Jetpack Compose with Material 3
 - **Architecture:** MVVM with StateFlow
 - **Storage:** Proto DataStore
@@ -138,6 +138,13 @@ This project follows standard Kotlin coding conventions. The codebase uses:
 - MVVM architecture
 - Unidirectional data flow with StateFlow
 - Compose for all UI
+
+### Project Guides
+
+- [Architecture](docs/ARCHITECTURE.md)
+- [Dependency updates](docs/DEPENDENCY_UPDATE_GUIDE.md)
+- [Troubleshooting](docs/TROUBLESHOOTING.md)
+- [Release and tagging](docs/RELEASE_GUIDE.md)
 
 ## Contributing
 

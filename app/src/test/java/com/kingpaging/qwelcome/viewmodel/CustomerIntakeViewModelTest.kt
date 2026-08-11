@@ -10,7 +10,6 @@ import com.kingpaging.qwelcome.testutil.FakeResourceProvider
 import com.kingpaging.qwelcome.testutil.FakeTimeProvider
 import com.kingpaging.qwelcome.testutil.MainDispatcherRule
 import com.kingpaging.qwelcome.util.WifiQrGenerator
-import com.kingpaging.qwelcome.viewmodel.factory.AppViewModelProvider
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -46,7 +45,6 @@ class CustomerIntakeViewModelTest {
 
     @Before
     fun setup() {
-        AppViewModelProvider.resetForTesting()
         every { mockStore.techProfileFlow } returns flowOf(TechProfile("Tech", "Sr Tech", "IT"))
         every { mockStore.activeTemplateFlow } returns flowOf(testTemplate)
         vm = CustomerIntakeViewModel(
@@ -61,7 +59,6 @@ class CustomerIntakeViewModelTest {
     @After
     fun tearDown() {
         vm.onPause()
-        AppViewModelProvider.resetForTesting()
     }
 
     @Test

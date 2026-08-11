@@ -4,8 +4,8 @@ import android.content.Context
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.lifecycle.SavedStateHandle
 import androidx.test.core.app.ApplicationProvider
-import androidx.test.espresso.Espresso.pressBack
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.data.MessageTemplate
@@ -16,15 +16,13 @@ import com.kingpaging.qwelcome.data.UserPreferences
 import com.kingpaging.qwelcome.data.protoDataStore
 import com.kingpaging.qwelcome.di.LocalNavigator
 import com.kingpaging.qwelcome.di.LocalSoundPlayer
-import com.kingpaging.qwelcome.di.LocalTemplateListViewModel
 import com.kingpaging.qwelcome.testutil.FakeNavigator
 import com.kingpaging.qwelcome.testutil.FakeSoundPlayer
-import com.kingpaging.qwelcome.ui.components.PlaceholderLabels
 import com.kingpaging.qwelcome.ui.theme.CyberpunkTheme
 import com.kingpaging.qwelcome.util.AndroidResourceProvider
-import com.kingpaging.qwelcome.viewmodel.factory.AppViewModelProvider
 import com.kingpaging.qwelcome.viewmodel.templates.MAX_TEMPLATE_NAME_LENGTH
-import com.kingpaging.qwelcome.viewmodel.templates.TemplateListViewModel
+import com.kingpaging.qwelcome.viewmodel.templates.TemplateEditorUiState
+import com.kingpaging.qwelcome.viewmodel.templates.TemplateEditorViewModel
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -42,35 +40,30 @@ class TemplateEditorScreenTest {
 
     private val backInvoked = AtomicBoolean(false)
     private lateinit var appContext: Context
-    private lateinit var templateListViewModel: TemplateListViewModel
+    private lateinit var settingsStore: SettingsStore
+    private lateinit var templateEditorViewModel: TemplateEditorViewModel
     private lateinit var navigator: FakeNavigator
     private lateinit var soundPlayer: FakeSoundPlayer
 
     @Before
     fun setup() {
-        AppViewModelProvider.resetForTesting()
         backInvoked.set(false)
 
         appContext = ApplicationProvider.getApplicationContext()
-        val settingsStore = SettingsStore(appContext)
+        settingsStore = SettingsStore(appContext)
         runBlocking {
             appContext.protoDataStore.updateData { UserPreferences.getDefaultInstance() }
         }
-        templateListViewModel = TemplateListViewModel(
-            settingsStore,
-            AndroidResourceProvider(appContext)
-        )
-
         navigator = FakeNavigator()
         soundPlayer = FakeSoundPlayer()
     }
 
     @After
     fun tearDown() = runBlocking {
-        AppViewModelProvider.resetForTesting()
         if (::appContext.isInitialized) {
             appContext.protoDataStore.updateData { UserPreferences.getDefaultInstance() }
         }
+        Unit
     }
 
     // ── New template mode ────────────────────────────────────────────
@@ -82,6 +75,38 @@ class TemplateEditorScreenTest {
         composeRule.onNodeWithText(appContext.getString(R.string.title_create_template))
             .assertIsDisplayed()
         composeRule.onNodeWithContentDescription(appContext.getString(R.string.action_create))
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun screen_rendersSuppliedStateWithoutViewModel() {
+        val template = Template(
+            id = NEW_TEMPLATE_ID,
+            name = "",
+            content = "Hello {{ customer_name }}, your SSID is {{ ssid }}"
+        )
+        composeRule.setContent {
+            CyberpunkTheme {
+                TemplateEditorScreen(
+                    editorUiState = TemplateEditorUiState(
+                        template = template,
+                        isLoading = false,
+                        contentText = template.content
+                    ),
+                    onCreate = { _, _, _ -> },
+                    onUpdate = { _, _, _ -> },
+                    onCancelEditing = {},
+                    onNameChange = {},
+                    onTagsChange = {},
+                    onNewTagInputChange = {},
+                    onContentChange = {},
+                    onNameErrorChange = {},
+                    onToggleDiscardDialog = {}
+                )
+            }
+        }
+
+        composeRule.onNodeWithText(appContext.getString(R.string.title_create_template))
             .assertIsDisplayed()
     }
 
@@ -226,13 +251,14 @@ class TemplateEditorScreenTest {
     @Test
     fun variableToolbar_isOnlyShownInMessageWorkspace() {
         setScreenContentNewTemplate()
+        val customerLabel = appContext.getString(R.string.label_placeholder_customer)
 
-        composeRule.onNodeWithText("Customer").assertDoesNotExist()
+        composeRule.onNodeWithText(customerLabel).assertDoesNotExist()
 
         openMessageWorkspace()
 
-        composeRule.onNodeWithText("Customer").assertIsDisplayed()
-        composeRule.onNodeWithText("SSID").assertIsDisplayed()
+        composeRule.onNodeWithText(customerLabel).assertIsDisplayed()
+        composeRule.onNodeWithText(appContext.getString(R.string.label_placeholder_ssid)).assertIsDisplayed()
     }
 
     @Test
@@ -240,11 +266,12 @@ class TemplateEditorScreenTest {
         setScreenContentNewTemplate()
         openMessageWorkspace()
         val lastPlaceholder = MessageTemplate.PLACEHOLDERS.last().first
+        val signatureLabel = appContext.getString(R.string.label_placeholder_signature)
 
         composeRule.onNodeWithTag(TEMPLATE_VARIABLE_TOOLBAR_TEST_TAG)
             .performScrollToIndex(MessageTemplate.PLACEHOLDERS.size)
 
-        composeRule.onNodeWithText(PlaceholderLabels.getShortLabel(lastPlaceholder))
+        composeRule.onNodeWithText(signatureLabel)
             .assertIsDisplayed()
     }
 
@@ -369,10 +396,8 @@ class TemplateEditorScreenTest {
         setScreenContentExistingTemplate()
 
         // Make a change
-        composeRule.onNode(
-            editableFieldWithLabel(appContext.getString(R.string.label_name)),
-            useUnmergedTree = true
-        ).performTextInput(" Modified")
+        composeRule.onNode(editableFieldWithLabel(appContext.getString(R.string.label_name)))
+            .performTextInput(" Modified")
         composeRule.waitForIdle()
 
         composeRule.onNodeWithContentDescription(appContext.getString(R.string.content_desc_back))
@@ -392,10 +417,8 @@ class TemplateEditorScreenTest {
         setScreenContentExistingTemplate()
 
         // Make a change then go back
-        composeRule.onNode(
-            editableFieldWithLabel(appContext.getString(R.string.label_name)),
-            useUnmergedTree = true
-        ).performTextInput(" Modified")
+        composeRule.onNode(editableFieldWithLabel(appContext.getString(R.string.label_name)))
+            .performTextInput(" Modified")
         composeRule.waitForIdle()
 
         composeRule.onNodeWithContentDescription(appContext.getString(R.string.content_desc_back))
@@ -453,11 +476,8 @@ class TemplateEditorScreenTest {
         setScreenContentNewTemplate()
         openMessageWorkspace()
 
-        composeRule.onNode(
-            editableFieldWithLabel(appContext.getString(R.string.label_message)),
-            useUnmergedTree = true
-        )
-            .assertIsDisplayed()
+        composeRule.onNodeWithTag(TEMPLATE_CONTENT_LABEL_TEST_TAG).assertIsDisplayed()
+        composeRule.onNodeWithTag(TEMPLATE_CONTENT_FIELD_TEST_TAG).assertIsDisplayed()
         composeRule.onNodeWithText(appContext.getString(R.string.action_done))
             .assertIsDisplayed()
     }
@@ -466,10 +486,7 @@ class TemplateEditorScreenTest {
     fun messageWorkspace_doesNotFocusEditorUntilTapped() {
         setScreenContentNewTemplate()
         openMessageWorkspace()
-        val messageField = composeRule.onNode(
-            editableFieldWithLabel(appContext.getString(R.string.label_message)),
-            useUnmergedTree = true
-        )
+        val messageField = composeRule.onNodeWithTag(TEMPLATE_CONTENT_FIELD_TEST_TAG)
 
         messageField.assertIsNotFocused()
         messageField.performClick()
@@ -480,10 +497,7 @@ class TemplateEditorScreenTest {
     fun messageWorkspace_variableTapInsertsCanonicalToken() {
         setScreenContentNewTemplate()
         openMessageWorkspace()
-        val messageField = composeRule.onNode(
-            editableFieldWithLabel(appContext.getString(R.string.label_message)),
-            useUnmergedTree = true
-        )
+        val messageField = composeRule.onNodeWithTag(TEMPLATE_CONTENT_FIELD_TEST_TAG)
 
         messageField.performTextReplacement("Hello ")
         composeRule.onNodeWithText("Customer").performClick()
@@ -508,15 +522,13 @@ class TemplateEditorScreenTest {
     }
 
     @Test
-    fun systemBack_closesMessageWorkspaceWithoutShowingDiscardDialog() {
+    fun messageWorkspace_backButtonClosesWithoutShowingDiscardDialog() {
         setScreenContentExistingTemplate()
-        composeRule.onNode(
-            editableFieldWithLabel(appContext.getString(R.string.label_name)),
-            useUnmergedTree = true
-        ).performTextInput(" Modified")
+        composeRule.onNode(editableFieldWithLabel(appContext.getString(R.string.label_name)))
+            .performTextInput(" Modified")
         openMessageWorkspace()
 
-        pressBack()
+        composeRule.onNodeWithTag(TEMPLATE_CONTENT_BACK_BUTTON_TEST_TAG).performClick()
         composeRule.waitForIdle()
 
         composeRule.onNodeWithText(appContext.getString(R.string.action_done)).assertDoesNotExist()
@@ -527,15 +539,15 @@ class TemplateEditorScreenTest {
     }
 
     @Test
-    fun systemBack_closesTagsSheetWithoutShowingDiscardDialog() {
+    fun tagsSheet_closeButtonClosesWithoutShowingDiscardDialog() {
         setScreenContentExistingTemplate()
-        composeRule.onNode(
-            editableFieldWithLabel(appContext.getString(R.string.label_name)),
-            useUnmergedTree = true
-        ).performTextInput(" Modified")
+        composeRule.onNode(editableFieldWithLabel(appContext.getString(R.string.label_name)))
+            .performTextInput(" Modified")
         openTagsSheet()
 
-        pressBack()
+        composeRule.onNodeWithContentDescription(
+            appContext.getString(R.string.content_desc_close_tags)
+        ).performClick()
         composeRule.waitForIdle()
 
         composeRule.onNodeWithContentDescription(
@@ -569,7 +581,7 @@ class TemplateEditorScreenTest {
         val newTemplate = Template(
             id = NEW_TEMPLATE_ID,
             name = "",
-            content = templateListViewModel.getDefaultTemplateContent()
+            content = settingsStore.defaultTemplateContent
         )
         setScreenContent(newTemplate)
     }
@@ -589,15 +601,22 @@ class TemplateEditorScreenTest {
     }
 
     private fun setScreenContent(template: Template) {
-        templateListViewModel.startEditing(template)
+        if (template.id != NEW_TEMPLATE_ID) {
+            runBlocking { settingsStore.saveTemplate(template) }
+        }
+        templateEditorViewModel = TemplateEditorViewModel(
+            SavedStateHandle(mapOf("templateId" to template.id)),
+            settingsStore,
+            AndroidResourceProvider(appContext)
+        )
         composeRule.setContent {
             CyberpunkTheme {
                 CompositionLocalProvider(
-                    LocalTemplateListViewModel provides templateListViewModel,
                     LocalNavigator provides navigator,
                     LocalSoundPlayer provides soundPlayer
                 ) {
-                    TemplateEditorScreen(
+                    TemplateEditorRoute(
+                        viewModel = templateEditorViewModel,
                         onBack = { backInvoked.set(true) }
                     )
                 }

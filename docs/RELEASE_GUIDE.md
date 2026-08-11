@@ -257,6 +257,8 @@ git push origin vX.Y.Z
 > history. Retagging guarantees the release is built from the code that actually shipped.
 > Pushing the `vX.Y.Z` tag triggers `.github/workflows/release.yml` which:
 >
+> - Verifies the tag version matches `VERSION_NAME` and the changelog has a non-empty entry for that version
+> - Runs unit tests, Ktlint, Detekt, and debug lint before release signing
 > - Builds a signed release APK
 > - Extracts the changelog for this version
 > - Creates a GitHub Release named `Q Welcome vX.Y.Z`

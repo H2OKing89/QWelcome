@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.database.Cursor
 import com.google.firebase.crashlytics.FirebaseCrashlytics
-import com.kingpaging.qwelcome.viewmodel.factory.AppViewModelProvider
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -38,7 +37,6 @@ class GitHubAppUpdaterTest {
     @After
     fun tearDown() {
         unmockkStatic(FirebaseCrashlytics::class)
-        AppViewModelProvider.resetForTesting()
     }
 
     @Test

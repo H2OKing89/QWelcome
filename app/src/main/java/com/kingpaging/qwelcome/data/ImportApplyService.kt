@@ -48,30 +48,29 @@ internal class ImportApplyService(
         resolutions: Map<String, ConflictResolution> = emptyMap()
     ): ImportApplyResult {
         return try {
-            val existingIds = settingsStore.getAllTemplates().map { it.id }.toSet()
             val resolved = resolveTemplates(backup.templates, resolutions)
             val templatesToSave = resolved.templates
-            settingsStore.saveTemplates(templatesToSave)
-
-            val availableTemplateIds = existingIds + templatesToSave.map { it.id }
-
-            if (importTechProfile) {
-                settingsStore.saveTechProfile(
-                    TechProfile(
-                        name = backup.techProfile.name,
-                        title = backup.techProfile.title,
-                        dept = backup.techProfile.getDepartment()
-                    )
+            val techProfile = if (importTechProfile) {
+                TechProfile(
+                    name = backup.techProfile.name,
+                    title = backup.techProfile.title,
+                    dept = backup.techProfile.getDepartment()
                 )
+            } else {
+                null
+            }
+            val activeTemplateId = if (importDefaultTemplate) {
+                val requestedDefaultId = backup.getEffectiveDefaultTemplateId() ?: DEFAULT_TEMPLATE_ID
+                resolved.idMap[requestedDefaultId] ?: requestedDefaultId
+            } else {
+                null
             }
 
-            if (importDefaultTemplate) {
-                val requestedDefaultId = backup.getEffectiveDefaultTemplateId() ?: DEFAULT_TEMPLATE_ID
-                val resolvedDefaultId = resolved.idMap[requestedDefaultId] ?: requestedDefaultId
-                if (resolvedDefaultId == DEFAULT_TEMPLATE_ID || resolvedDefaultId in availableTemplateIds) {
-                    settingsStore.restoreActiveTemplate(resolvedDefaultId)
-                }
-            }
+            settingsStore.restoreFullBackup(
+                templates = templatesToSave,
+                techProfile = techProfile,
+                activeTemplateId = activeTemplateId
+            )
 
             ImportApplyResult.Success(
                 templatesImported = templatesToSave.size,
