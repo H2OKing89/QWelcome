@@ -19,11 +19,13 @@ private const val TAG = "VersionComparator"
  *   identifiers are equal.
  */
 object VersionComparator {
-
     /**
      * Returns `true` when [remote] is a newer version than [current].
      */
-    fun isNewerVersion(remote: String, current: String): Boolean {
+    fun isNewerVersion(
+        remote: String,
+        current: String,
+    ): Boolean {
         val (remoteBase, remotePre) = splitVersion(remote)
         val (currentBase, currentPre) = splitVersion(current)
 
@@ -61,7 +63,10 @@ object VersionComparator {
      * - both null → 0
      * - both non-null → identifier-by-identifier comparison
      */
-    internal fun comparePreRelease(remotePre: String?, currentPre: String?): Int {
+    internal fun comparePreRelease(
+        remotePre: String?,
+        currentPre: String?,
+    ): Int {
         // Both stable → equal
         if (remotePre == null && currentPre == null) return 0
         // Stable beats pre-release
@@ -89,15 +94,18 @@ object VersionComparator {
      * - Both non-numeric → lexicographic (ASCII)
      * - Numeric has *lower* precedence than non-numeric
      */
-    private fun compareIdentifiers(a: String, b: String): Int {
+    private fun compareIdentifiers(
+        a: String,
+        b: String,
+    ): Int {
         val aNum = a.toLongOrNull()
         val bNum = b.toLongOrNull()
 
         return when {
             aNum != null && bNum != null -> aNum.compareTo(bNum)
-            aNum != null -> -1  // numeric < string
-            bNum != null -> 1   // string > numeric
-            else -> a.compareTo(b)  // both strings
+            aNum != null -> -1 // numeric < string
+            bNum != null -> 1 // string > numeric
+            else -> a.compareTo(b) // both strings
         }
     }
 

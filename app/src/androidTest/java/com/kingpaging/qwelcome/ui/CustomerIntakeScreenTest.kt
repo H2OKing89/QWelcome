@@ -39,7 +39,6 @@ import com.kingpaging.qwelcome.util.WifiQrGenerator
 import com.kingpaging.qwelcome.viewmodel.CustomerIntakeViewModel
 import com.kingpaging.qwelcome.viewmodel.templates.TemplateListUiState
 import com.kingpaging.qwelcome.viewmodel.templates.TemplateListViewModel
-import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertTrue
@@ -47,10 +46,10 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.util.concurrent.atomic.AtomicBoolean
 
 @RunWith(AndroidJUnit4::class)
 class CustomerIntakeScreenTest {
-
     @get:Rule
     val composeRule = createComposeRule()
 
@@ -67,27 +66,30 @@ class CustomerIntakeScreenTest {
 
         appContext = ApplicationProvider.getApplicationContext()
         val settingsStore = SettingsStore(appContext)
-        customerIntakeViewModel = CustomerIntakeViewModel(
-            savedStateHandle = SavedStateHandle(),
-            settingsStore = settingsStore,
-            resourceProvider = AndroidResourceProvider(appContext)
-        )
-        templateListViewModel = TemplateListViewModel(
-            settingsStore,
-            AndroidResourceProvider(appContext)
-        )
+        customerIntakeViewModel =
+            CustomerIntakeViewModel(
+                savedStateHandle = SavedStateHandle(),
+                settingsStore = settingsStore,
+                resourceProvider = AndroidResourceProvider(appContext),
+            )
+        templateListViewModel =
+            TemplateListViewModel(
+                settingsStore,
+                AndroidResourceProvider(appContext),
+            )
 
         navigator = FakeNavigator()
         soundPlayer = FakeSoundPlayer()
     }
 
     @After
-    fun tearDown() = runBlocking {
-        if (::appContext.isInitialized) {
-            appContext.protoDataStore.updateData { UserPreferences.getDefaultInstance() }
+    fun tearDown() =
+        runBlocking {
+            if (::appContext.isInitialized) {
+                appContext.protoDataStore.updateData { UserPreferences.getDefaultInstance() }
+            }
+            Unit
         }
-        Unit
-    }
 
     @Test
     fun customerIntake_renders_core_fields_and_qr_disabled_by_default() {
@@ -115,7 +117,7 @@ class CustomerIntakeScreenTest {
                     copySuccess = false,
                     actions = noOpCustomerIntakeActions(),
                     onOpenSettings = {},
-                    onOpenTemplates = {}
+                    onOpenTemplates = {},
                 )
             }
         }
@@ -130,9 +132,11 @@ class CustomerIntakeScreenTest {
         val ssidLabel = context.getString(R.string.label_wifi_ssid)
         val passwordLabel = context.getString(R.string.label_wifi_password)
 
-        composeRule.onNode(editableFieldWithLabel(ssidLabel))
+        composeRule
+            .onNode(editableFieldWithLabel(ssidLabel))
             .performTextInput("QWelcome-Test-Network")
-        composeRule.onNode(editableFieldWithLabel(passwordLabel))
+        composeRule
+            .onNode(editableFieldWithLabel(passwordLabel))
             .performTextInput("password123")
 
         composeRule.onNodeWithText(context.getString(R.string.action_show_qr)).assertIsEnabled()
@@ -147,7 +151,8 @@ class CustomerIntakeScreenTest {
         composeRule.onAllNodesWithText(context.getString(R.string.label_hidden_network)).assertCountEquals(0)
         composeRule.onAllNodesWithText(context.getString(R.string.label_wifi_security)).assertCountEquals(0)
 
-        composeRule.onNodeWithText(context.getString(R.string.label_advanced_wifi_options))
+        composeRule
+            .onNodeWithText(context.getString(R.string.label_advanced_wifi_options))
             .performClick()
 
         composeRule.onAllNodesWithText(context.getString(R.string.label_open_network)).assertCountEquals(1)
@@ -160,7 +165,8 @@ class CustomerIntakeScreenTest {
         setScreenContent()
         val context = appContext
 
-        composeRule.onNodeWithText(context.getString(R.string.action_sms))
+        composeRule
+            .onNodeWithText(context.getString(R.string.action_sms))
             .performScrollTo()
             .performClick()
 
@@ -181,15 +187,14 @@ class CustomerIntakeScreenTest {
         setScreenContent()
         val context = appContext
 
-        composeRule.onNodeWithContentDescription(context.getString(R.string.content_desc_settings))
+        composeRule
+            .onNodeWithContentDescription(context.getString(R.string.content_desc_settings))
             .performClick()
 
         assertTrue(settingsOpened.get())
     }
 
-    private fun editableFieldWithLabel(label: String): SemanticsMatcher {
-        return hasSetTextAction() and hasText(label)
-    }
+    private fun editableFieldWithLabel(label: String): SemanticsMatcher = hasSetTextAction() and hasText(label)
 
     private fun setScreenContent() {
         composeRule.setContent {
@@ -198,11 +203,11 @@ class CustomerIntakeScreenTest {
                     LocalCustomerIntakeViewModel provides customerIntakeViewModel,
                     LocalTemplateListViewModel provides templateListViewModel,
                     LocalNavigator provides navigator,
-                    LocalSoundPlayer provides soundPlayer
+                    LocalSoundPlayer provides soundPlayer,
                 ) {
                     CustomerIntakeRoute(
                         onOpenSettings = { settingsOpened.set(true) },
-                        onOpenTemplates = {}
+                        onOpenTemplates = {},
                     )
                 }
             }
@@ -210,21 +215,22 @@ class CustomerIntakeScreenTest {
         composeRule.waitForIdle()
     }
 
-    private fun noOpCustomerIntakeActions() = CustomerIntakeActions(
-        onDismissQr = {},
-        onClearForm = {},
-        onTemplateSelected = {},
-        onCustomerNameChanged = {},
-        onCustomerPhoneChanged = {},
-        onSsidChanged = {},
-        onSecurityTypeChanged = { _: WifiQrGenerator.SecurityType -> },
-        onHiddenNetworkChanged = {},
-        onOpenNetworkChanged = {},
-        onPasswordChanged = {},
-        onAccountNumberChanged = {},
-        onSmsClick = {},
-        onShareClick = {},
-        onCopyClick = {},
-        onShowQr = {}
-    )
+    private fun noOpCustomerIntakeActions() =
+        CustomerIntakeActions(
+            onDismissQr = {},
+            onClearForm = {},
+            onTemplateSelected = {},
+            onCustomerNameChanged = {},
+            onCustomerPhoneChanged = {},
+            onSsidChanged = {},
+            onSecurityTypeChanged = { _: WifiQrGenerator.SecurityType -> },
+            onHiddenNetworkChanged = {},
+            onOpenNetworkChanged = {},
+            onPasswordChanged = {},
+            onAccountNumberChanged = {},
+            onSmsClick = {},
+            onShareClick = {},
+            onCopyClick = {},
+            onShowQr = {},
+        )
 }

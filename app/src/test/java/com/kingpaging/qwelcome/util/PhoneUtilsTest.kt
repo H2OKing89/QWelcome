@@ -10,11 +10,10 @@ import org.junit.Test
  * - 10-digit format: NXX-NXX-XXXX (area code + exchange + subscriber)
  * - 11-digit format: 1-NXX-NXX-XXXX (country code + above)
  * - N must be 2-9 (cannot start with 0 or 1)
- * 
+ *
  * Note: Test phone numbers use valid NANP format (area code and exchange start with 2-9)
  */
 class PhoneUtilsTest {
-
     // ========== isValid() Tests ==========
 
     @Test
@@ -95,7 +94,7 @@ class PhoneUtilsTest {
         // Area codes 200-999 are valid (first digit 2-9)
         assertTrue(PhoneUtils.isValid("200-234-5678"))
         assertTrue(PhoneUtils.isValid("999-234-5678"))
-        
+
         // Area codes starting with 0 or 1 are invalid
         assertFalse(PhoneUtils.isValid("000-234-5678"))
         assertFalse(PhoneUtils.isValid("100-234-5678"))
@@ -106,7 +105,7 @@ class PhoneUtilsTest {
         // Exchanges 200-999 are valid (first digit 2-9)
         assertTrue(PhoneUtils.isValid("212-200-5678"))
         assertTrue(PhoneUtils.isValid("212-999-5678"))
-        
+
         // Exchanges starting with 0 or 1 are invalid
         assertFalse(PhoneUtils.isValid("212-000-5678"))
         assertFalse(PhoneUtils.isValid("212-100-5678"))
@@ -134,11 +133,11 @@ class PhoneUtilsTest {
 
     @Test
     fun `normalize returns null for invalid numbers`() {
-        assertNull(PhoneUtils.normalize("012-555-1234"))  // Invalid area code
-        assertNull(PhoneUtils.normalize("212-012-4567"))  // Invalid exchange
-        assertNull(PhoneUtils.normalize("22125551234"))   // Invalid country code (2 instead of 1)
-        assertNull(PhoneUtils.normalize("123456"))        // Too short
-        assertNull(PhoneUtils.normalize(""))              // Empty
+        assertNull(PhoneUtils.normalize("012-555-1234")) // Invalid area code
+        assertNull(PhoneUtils.normalize("212-012-4567")) // Invalid exchange
+        assertNull(PhoneUtils.normalize("22125551234")) // Invalid country code (2 instead of 1)
+        assertNull(PhoneUtils.normalize("123456")) // Too short
+        assertNull(PhoneUtils.normalize("")) // Empty
     }
 
     @Test
@@ -153,9 +152,9 @@ class PhoneUtilsTest {
     @Test
     fun `isValid accepts common real-world formats`() {
         // Common US phone number formats with valid area codes
-        assertTrue(PhoneUtils.isValid("(800) 234-5678"))   // Toll-free
-        assertTrue(PhoneUtils.isValid("212-234-5678"))     // NYC area code
-        assertTrue(PhoneUtils.isValid("415.234.5678"))     // SF area code with dots
+        assertTrue(PhoneUtils.isValid("(800) 234-5678")) // Toll-free
+        assertTrue(PhoneUtils.isValid("212-234-5678")) // NYC area code
+        assertTrue(PhoneUtils.isValid("415.234.5678")) // SF area code with dots
         assertTrue(PhoneUtils.isValid("1 (800) 234-5678")) // With country code
     }
 

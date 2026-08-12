@@ -21,7 +21,6 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class SettingsProfileSectionTest {
-
     @get:Rule
     val composeRule = createComposeRule()
 
@@ -47,7 +46,7 @@ class SettingsProfileSectionTest {
                     onTitleChange = { title = it },
                     onDepartmentChange = { department = it },
                     onOpenTemplates = {},
-                    onSaveProfile = { savedProfiles += TechProfile(name, title, department) }
+                    onSaveProfile = { savedProfiles += TechProfile(name, title, department) },
                 )
             }
         }
@@ -60,7 +59,7 @@ class SettingsProfileSectionTest {
         composeRule.runOnIdle {
             assertEquals(
                 listOf(TechProfile("Jordan", "Installation Specialist", "Network Services")),
-                savedProfiles
+                savedProfiles,
             )
         }
     }

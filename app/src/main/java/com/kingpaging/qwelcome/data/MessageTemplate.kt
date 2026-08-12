@@ -12,13 +12,14 @@ object MessageTemplate {
     const val KEY_TECH_SIGNATURE = "{{ tech_signature }}"
 
     /** Available placeholders for templates (key to description) */
-    val PLACEHOLDERS = listOf(
-        KEY_CUSTOMER_NAME to "Customer's name",
-        KEY_SSID to "WiFi network name",
-        KEY_PASSWORD to "WiFi password",
-        KEY_ACCOUNT_NUMBER to "Account number",
-        KEY_TECH_SIGNATURE to "Tech signature (name, title, dept)"
-    )
+    val PLACEHOLDERS =
+        listOf(
+            KEY_CUSTOMER_NAME to "Customer's name",
+            KEY_SSID to "WiFi network name",
+            KEY_PASSWORD to "WiFi password",
+            KEY_ACCOUNT_NUMBER to "Account number",
+            KEY_TECH_SIGNATURE to "Tech signature (name, title, dept)",
+        )
 
     /**
      * Generate message by applying placeholders to the template.
@@ -30,12 +31,13 @@ object MessageTemplate {
     fun generate(
         template: String,
         data: CustomerData,
-        techProfile: TechProfile? = null
-    ): String {
-        return applyPlaceholders(template, data, techProfile)
-    }
+        techProfile: TechProfile? = null,
+    ): String = applyPlaceholders(template, data, techProfile)
 
-    fun usesPlaceholder(template: String, placeholder: String): Boolean {
+    fun usesPlaceholder(
+        template: String,
+        placeholder: String,
+    ): Boolean {
         val key = Regex.escape(rawKey(placeholder))
         return Regex("""\{\{\s*$key\s*\}\}""").containsMatchIn(template)
     }
@@ -43,34 +45,35 @@ object MessageTemplate {
     private fun applyPlaceholders(
         template: String,
         data: CustomerData,
-        techProfile: TechProfile?
+        techProfile: TechProfile?,
     ): String {
-        val valueMap = mapOf(
-            rawKey(KEY_CUSTOMER_NAME) to data.customerName,
-            rawKey(KEY_SSID) to data.ssid,
-            rawKey(KEY_PASSWORD) to if (data.isOpenNetwork) OPEN_NETWORK_PASSWORD else data.password,
-            rawKey(KEY_ACCOUNT_NUMBER) to data.accountNumber,
-            rawKey(KEY_TECH_SIGNATURE) to techProfile?.let(::buildTechSignature).orEmpty()
-        )
+        val valueMap =
+            mapOf(
+                rawKey(KEY_CUSTOMER_NAME) to data.customerName,
+                rawKey(KEY_SSID) to data.ssid,
+                rawKey(KEY_PASSWORD) to if (data.isOpenNetwork) OPEN_NETWORK_PASSWORD else data.password,
+                rawKey(KEY_ACCOUNT_NUMBER) to data.accountNumber,
+                rawKey(KEY_TECH_SIGNATURE) to techProfile?.let(::buildTechSignature).orEmpty(),
+            )
 
         return template.replace(PLACEHOLDER) { match ->
             valueMap[match.groupValues[1]] ?: ""
         }
     }
 
-    private fun rawKey(placeholder: String): String = placeholder
-        .removePrefix("{{")
-        .removeSuffix("}}")
-        .trim()
+    private fun rawKey(placeholder: String): String =
+        placeholder
+            .removePrefix("{{")
+            .removeSuffix("}}")
+            .trim()
 
     /**
      * Builds a formatted tech signature from profile info.
      * Format: "Name\nTitle\nDepartment" - each non-empty field on its own line.
      */
-    private fun buildTechSignature(profile: TechProfile): String {
-        return listOf(profile.name, profile.title, profile.dept)
+    private fun buildTechSignature(profile: TechProfile): String =
+        listOf(profile.name, profile.title, profile.dept)
             .map { it.trim() }
             .filter { it.isNotBlank() }
             .joinToString("\n")
-    }
 }

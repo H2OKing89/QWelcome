@@ -13,8 +13,8 @@ import android.provider.Settings
 import android.util.Log
 import androidx.core.content.FileProvider
 import com.google.firebase.crashlytics.FirebaseCrashlytics
-import com.kingpaging.qwelcome.util.sanitizeFileName
 import com.kingpaging.qwelcome.util.UPDATE_FALLBACK_FILE_NAME
+import com.kingpaging.qwelcome.util.sanitizeFileName
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -25,16 +25,15 @@ private const val TAG = "GitHubAppUpdater"
 private const val APK_MIME_TYPE = "application/vnd.android.package-archive"
 
 class GitHubAppUpdater(
-    private val context: Context
+    private val context: Context,
 ) : AppUpdater {
     private val appContext = context.applicationContext
     private val downloadManager =
         appContext.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
     private val downloadPaths = ConcurrentHashMap<Long, String>()
 
-    override suspend fun checkForUpdate(currentVersionName: String): UpdateCheckResult {
-        return UpdateChecker.checkForUpdate(currentVersionName)
-    }
+    override suspend fun checkForUpdate(currentVersionName: String): UpdateCheckResult =
+        UpdateChecker.checkForUpdate(currentVersionName)
 
     override suspend fun enqueueDownload(update: UpdateCheckResult.UpdateAvailable): DownloadEnqueueResult =
         withContext(Dispatchers.IO) {
@@ -43,8 +42,9 @@ class GitHubAppUpdater(
                     return@withContext DownloadEnqueueResult.Failed("Blocked untrusted update link")
                 }
 
-                val downloadsDir = appContext.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
-                    ?: return@withContext DownloadEnqueueResult.Failed("Downloads directory unavailable")
+                val downloadsDir =
+                    appContext.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
+                        ?: return@withContext DownloadEnqueueResult.Failed("Downloads directory unavailable")
                 val updatesDir = File(downloadsDir, "updates")
                 if (!updatesDir.exists() && !updatesDir.mkdirs()) {
                     return@withContext DownloadEnqueueResult.Failed("Unable to create updates directory")
@@ -56,24 +56,25 @@ class GitHubAppUpdater(
                     val deleted = destinationFile.delete()
                     if (!deleted) {
                         return@withContext DownloadEnqueueResult.Failed(
-                            "Unable to replace existing update file"
+                            "Unable to replace existing update file",
                         )
                     }
                 }
 
-                val request = DownloadManager.Request(Uri.parse(update.downloadUrl)).apply {
-                    setTitle("Q Welcome Update")
-                    setDescription("Downloading ${update.assetName}")
-                    setMimeType(APK_MIME_TYPE)
-                    setAllowedOverMetered(true)
-                    setAllowedOverRoaming(false)
-                    setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                    setDestinationInExternalFilesDir(
-                        appContext,
-                        Environment.DIRECTORY_DOWNLOADS,
-                        "updates/$safeAssetName"
-                    )
-                }
+                val request =
+                    DownloadManager.Request(Uri.parse(update.downloadUrl)).apply {
+                        setTitle("Q Welcome Update")
+                        setDescription("Downloading ${update.assetName}")
+                        setMimeType(APK_MIME_TYPE)
+                        setAllowedOverMetered(true)
+                        setAllowedOverRoaming(false)
+                        setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                        setDestinationInExternalFilesDir(
+                            appContext,
+                            Environment.DIRECTORY_DOWNLOADS,
+                            "updates/$safeAssetName",
+                        )
+                    }
 
                 val downloadId = downloadManager.enqueue(request)
                 val apkPath = destinationFile.absolutePath
@@ -91,11 +92,12 @@ class GitHubAppUpdater(
     override suspend fun getDownloadStatus(downloadId: Long): DownloadStatus =
         withContext(Dispatchers.IO) {
             val query = DownloadManager.Query().setFilterById(downloadId)
-            val cursor = downloadManager.query(query)
-                ?: run {
-                    downloadPaths.remove(downloadId)
-                    return@withContext DownloadStatus.Failed("Download query failed")
-                }
+            val cursor =
+                downloadManager.query(query)
+                    ?: run {
+                        downloadPaths.remove(downloadId)
+                        return@withContext DownloadStatus.Failed("Download query failed")
+                    }
 
             cursor.use {
                 if (!it.moveToFirst()) {
@@ -110,16 +112,18 @@ class GitHubAppUpdater(
                 return@withContext when (status) {
                     DownloadManager.STATUS_PENDING,
                     DownloadManager.STATUS_RUNNING,
-                    DownloadManager.STATUS_PAUSED -> {
+                    DownloadManager.STATUS_PAUSED,
+                    -> {
                         val total = if (totalBytes >= 0) totalBytes else null
                         DownloadStatus.InProgress(downloadedBytes, total)
                     }
 
                     DownloadManager.STATUS_SUCCESSFUL -> {
-                        val localPath = downloadPaths.remove(downloadId) ?: run {
-                            val localUri = it.getStringOrNull(DownloadManager.COLUMN_LOCAL_URI)
-                            localUri?.let { uri -> Uri.parse(uri).path }
-                        }
+                        val localPath =
+                            downloadPaths.remove(downloadId) ?: run {
+                                val localUri = it.getStringOrNull(DownloadManager.COLUMN_LOCAL_URI)
+                                localUri?.let { uri -> Uri.parse(uri).path }
+                            }
                         if (localPath.isNullOrBlank()) {
                             DownloadStatus.Failed("Downloaded file path is unavailable")
                         } else {
@@ -145,80 +149,83 @@ class GitHubAppUpdater(
 
     override suspend fun verifyDownloadedApk(
         apkPath: String,
-        update: UpdateCheckResult.UpdateAvailable
-    ): VerificationResult = withContext(Dispatchers.IO) {
-        val file = File(apkPath)
-        if (!file.exists()) {
-            return@withContext VerificationResult.Failed("Downloaded file missing")
-        }
-
-        val expectedSha = update.sha256Hex.lowercase()
-        val actualSha = computeSha256(file)
-        if (!hashesMatch(expectedSha, actualSha)) {
-            file.delete()
-            logError("APK SHA-256 mismatch. expected=$expectedSha actual=$actualSha", null)
-            return@withContext VerificationResult.Failed("Integrity check failed (SHA-256 mismatch)")
-        }
-
-        val archiveInfo = getPackageArchiveInfo(file.absolutePath)
-            ?: run {
-                file.delete()
-                return@withContext VerificationResult.Failed("Unable to inspect downloaded APK")
+        update: UpdateCheckResult.UpdateAvailable,
+    ): VerificationResult =
+        withContext(Dispatchers.IO) {
+            val file = File(apkPath)
+            if (!file.exists()) {
+                return@withContext VerificationResult.Failed("Downloaded file missing")
             }
 
-        if (!packageNameMatches(appContext.packageName, archiveInfo.packageName)) {
-            file.delete()
-            return@withContext VerificationResult.Failed("Downloaded APK package does not match this app")
-        }
-
-        val installedInfo = getInstalledPackageInfo(appContext.packageName)
-            ?: run {
+            val expectedSha = update.sha256Hex.lowercase()
+            val actualSha = computeSha256(file)
+            if (!hashesMatch(expectedSha, actualSha)) {
                 file.delete()
-                return@withContext VerificationResult.Failed("Unable to inspect installed app signature")
+                logError("APK SHA-256 mismatch. expected=$expectedSha actual=$actualSha", null)
+                return@withContext VerificationResult.Failed("Integrity check failed (SHA-256 mismatch)")
             }
 
-        val installedSigners = getSignerFingerprints(installedInfo)
-        val archiveSigners = getSignerFingerprints(archiveInfo)
-        if (!signerSetsMatch(installedSigners, archiveSigners)) {
-            file.delete()
-            logError("APK signature mismatch for update ${update.assetName}", null)
-            return@withContext VerificationResult.Failed("Signature verification failed")
+            val archiveInfo =
+                getPackageArchiveInfo(file.absolutePath)
+                    ?: run {
+                        file.delete()
+                        return@withContext VerificationResult.Failed("Unable to inspect downloaded APK")
+                    }
+
+            if (!packageNameMatches(appContext.packageName, archiveInfo.packageName)) {
+                file.delete()
+                return@withContext VerificationResult.Failed("Downloaded APK package does not match this app")
+            }
+
+            val installedInfo =
+                getInstalledPackageInfo(appContext.packageName)
+                    ?: run {
+                        file.delete()
+                        return@withContext VerificationResult.Failed("Unable to inspect installed app signature")
+                    }
+
+            val installedSigners = getSignerFingerprints(installedInfo)
+            val archiveSigners = getSignerFingerprints(archiveInfo)
+            if (!signerSetsMatch(installedSigners, archiveSigners)) {
+                file.delete()
+                logError("APK signature mismatch for update ${update.assetName}", null)
+                return@withContext VerificationResult.Failed("Signature verification failed")
+            }
+
+            VerificationResult.Success(file.absolutePath)
         }
 
-        VerificationResult.Success(file.absolutePath)
-    }
-
-    override fun canRequestPackageInstalls(): Boolean {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+    override fun canRequestPackageInstalls(): Boolean =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             appContext.packageManager.canRequestPackageInstalls()
         } else {
             true
         }
-    }
 
-    override fun createUnknownSourcesSettingsIntent(): Intent {
-        return Intent(
+    override fun createUnknownSourcesSettingsIntent(): Intent =
+        Intent(
             Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
-            Uri.parse("package:${appContext.packageName}")
+            Uri.parse("package:${appContext.packageName}"),
         ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-    }
 
     override fun createInstallIntent(apkPath: String): Intent? {
         val file = File(apkPath)
         if (!file.exists()) return null
 
-        val uri = FileProvider.getUriForFile(
-            appContext,
-            "${appContext.packageName}.provider",
-            file
-        )
-        return Intent(Intent.ACTION_VIEW).apply {
-            setDataAndType(uri, APK_MIME_TYPE)
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }.takeIf { installIntent ->
-            installIntent.resolveActivity(appContext.packageManager) != null
-        }
+        val uri =
+            FileProvider.getUriForFile(
+                appContext,
+                "${appContext.packageName}.provider",
+                file,
+            )
+        return Intent(Intent.ACTION_VIEW)
+            .apply {
+                setDataAndType(uri, APK_MIME_TYPE)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }.takeIf { installIntent ->
+                installIntent.resolveActivity(appContext.packageManager) != null
+            }
     }
 
     internal fun computeSha256(file: File): String {
@@ -240,14 +247,15 @@ class GitHubAppUpdater(
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             pm.getPackageArchiveInfo(
                 apkPath,
-                PackageManager.PackageInfoFlags.of(PackageManager.GET_SIGNING_CERTIFICATES.toLong())
+                PackageManager.PackageInfoFlags.of(PackageManager.GET_SIGNING_CERTIFICATES.toLong()),
             )
         } else {
-            val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                PackageManager.GET_SIGNING_CERTIFICATES
-            } else {
-                PackageManager.GET_SIGNATURES
-            }
+            val flags =
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    PackageManager.GET_SIGNING_CERTIFICATES
+                } else {
+                    PackageManager.GET_SIGNATURES
+                }
             pm.getPackageArchiveInfo(apkPath, flags)
         }
     }
@@ -259,14 +267,15 @@ class GitHubAppUpdater(
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 pm.getPackageInfo(
                     packageName,
-                    PackageManager.PackageInfoFlags.of(PackageManager.GET_SIGNING_CERTIFICATES.toLong())
+                    PackageManager.PackageInfoFlags.of(PackageManager.GET_SIGNING_CERTIFICATES.toLong()),
                 )
             } else {
-                val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                    PackageManager.GET_SIGNING_CERTIFICATES
-                } else {
-                    PackageManager.GET_SIGNATURES
-                }
+                val flags =
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                        PackageManager.GET_SIGNING_CERTIFICATES
+                    } else {
+                        PackageManager.GET_SIGNATURES
+                    }
                 pm.getPackageInfo(packageName, flags)
             }
         } catch (_: PackageManager.NameNotFoundException) {
@@ -276,17 +285,18 @@ class GitHubAppUpdater(
 
     @Suppress("DEPRECATION")
     private fun getSignerFingerprints(packageInfo: PackageInfo): Set<String> {
-        val signatures = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            val signingInfo = packageInfo.signingInfo
-            if (signingInfo != null && !signingInfo.hasMultipleSigners()) {
-                // Include certificate history for key-rotated apps
-                signingInfo.signingCertificateHistory?.toList().orEmpty()
+        val signatures =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                val signingInfo = packageInfo.signingInfo
+                if (signingInfo != null && !signingInfo.hasMultipleSigners()) {
+                    // Include certificate history for key-rotated apps
+                    signingInfo.signingCertificateHistory?.toList().orEmpty()
+                } else {
+                    signingInfo?.apkContentsSigners?.toList().orEmpty()
+                }
             } else {
-                signingInfo?.apkContentsSigners?.toList().orEmpty()
+                packageInfo.signatures?.toList().orEmpty()
             }
-        } else {
-            packageInfo.signatures?.toList().orEmpty()
-        }
         return signatures.map(::signatureFingerprint).toSet()
     }
 
@@ -295,8 +305,8 @@ class GitHubAppUpdater(
         return digest.toHexLowercase()
     }
 
-    private fun mapDownloadFailure(reasonCode: Int): String {
-        return when (reasonCode) {
+    private fun mapDownloadFailure(reasonCode: Int): String =
+        when (reasonCode) {
             DownloadManager.ERROR_CANNOT_RESUME -> "Download cannot resume"
             DownloadManager.ERROR_DEVICE_NOT_FOUND -> "Storage device unavailable"
             DownloadManager.ERROR_FILE_ALREADY_EXISTS -> "Download file already exists"
@@ -311,9 +321,11 @@ class GitHubAppUpdater(
             DownloadManager.PAUSED_WAITING_TO_RETRY -> "Retrying download"
             else -> "Download failed"
         }
-    }
 
-    private fun logError(message: String, throwable: Throwable?) {
+    private fun logError(
+        message: String,
+        throwable: Throwable?,
+    ) {
         if (throwable != null) {
             Log.e(TAG, message, throwable)
         } else {
@@ -326,15 +338,20 @@ class GitHubAppUpdater(
         }
     }
 
-    internal fun hashesMatch(expectedSha256: String, actualSha256: String): Boolean {
-        return expectedSha256.equals(actualSha256, ignoreCase = true)
-    }
+    internal fun hashesMatch(
+        expectedSha256: String,
+        actualSha256: String,
+    ): Boolean = expectedSha256.equals(actualSha256, ignoreCase = true)
 
-    internal fun packageNameMatches(expectedPackageName: String, archivePackageName: String): Boolean {
-        return expectedPackageName == archivePackageName
-    }
+    internal fun packageNameMatches(
+        expectedPackageName: String,
+        archivePackageName: String,
+    ): Boolean = expectedPackageName == archivePackageName
 
-    internal fun signerSetsMatch(installedSigners: Set<String>, archiveSigners: Set<String>): Boolean {
+    internal fun signerSetsMatch(
+        installedSigners: Set<String>,
+        archiveSigners: Set<String>,
+    ): Boolean {
         if (installedSigners.isEmpty() || archiveSigners.isEmpty()) return false
         return installedSigners.containsAll(archiveSigners)
     }
@@ -344,13 +361,9 @@ class GitHubAppUpdater(
 
 private fun ByteArray.toHexLowercase(): String = joinToString("") { "%02x".format(it) }
 
-private fun android.database.Cursor.getInt(columnName: String): Int {
-    return getInt(getColumnIndexOrThrow(columnName))
-}
+private fun android.database.Cursor.getInt(columnName: String): Int = getInt(getColumnIndexOrThrow(columnName))
 
-private fun android.database.Cursor.getLong(columnName: String): Long {
-    return getLong(getColumnIndexOrThrow(columnName))
-}
+private fun android.database.Cursor.getLong(columnName: String): Long = getLong(getColumnIndexOrThrow(columnName))
 
 private fun android.database.Cursor.getStringOrNull(columnName: String): String? {
     val index = getColumnIndex(columnName)

@@ -7,19 +7,28 @@ import androidx.annotation.StringRes
  * This makes ViewModels more easily testable.
  */
 interface ResourceProvider {
-    fun getString(@StringRes resId: Int): String
-    fun getString(@StringRes resId: Int, vararg formatArgs: Any): String
+    fun getString(
+        @StringRes resId: Int,
+    ): String
+
+    fun getString(
+        @StringRes resId: Int,
+        vararg formatArgs: Any,
+    ): String
 }
 
 /**
  * Implementation of [ResourceProvider] that uses the Android Context.
  */
-class AndroidResourceProvider(private val context: android.content.Context) : ResourceProvider {
-    override fun getString(@StringRes resId: Int): String {
-        return context.getString(resId)
-    }
+class AndroidResourceProvider(
+    private val context: android.content.Context,
+) : ResourceProvider {
+    override fun getString(
+        @StringRes resId: Int,
+    ): String = context.getString(resId)
 
-    override fun getString(@StringRes resId: Int, vararg formatArgs: Any): String {
-        return context.getString(resId, *formatArgs)
-    }
+    override fun getString(
+        @StringRes resId: Int,
+        vararg formatArgs: Any,
+    ): String = context.getString(resId, *formatArgs)
 }

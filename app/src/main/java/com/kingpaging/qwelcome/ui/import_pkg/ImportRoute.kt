@@ -22,18 +22,18 @@ import com.kingpaging.qwelcome.di.LocalImportViewModel
 import com.kingpaging.qwelcome.di.LocalSoundPlayer
 import com.kingpaging.qwelcome.ui.EventEmission
 import com.kingpaging.qwelcome.viewmodel.import_pkg.ImportEvent
-import java.io.ByteArrayOutputStream
-import java.io.IOException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.ByteArrayOutputStream
+import java.io.IOException
 
 @Suppress("CyclomaticComplexMethod", "FunctionNaming", "LongMethod", "TooGenericExceptionCaught")
 @Composable
 fun ImportRoute(
     onBack: () -> Unit,
-    onImportComplete: () -> Unit
+    onImportComplete: () -> Unit,
 ) {
     val viewModel = LocalImportViewModel.current
     val soundPlayer = LocalSoundPlayer.current
@@ -47,75 +47,78 @@ fun ImportRoute(
         viewModel.events.map(::EventEmission)
     }.collectAsStateWithLifecycle(initialValue = null)
 
-    val filePickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri ->
-        if (uri != null) {
-            scope.launch {
-                try {
-                    val json = withContext(Dispatchers.IO) {
-                        context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                            readUtf8TextWithLimit(inputStream, MAX_IMPORT_SIZE_BYTES)
+    val filePickerLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.GetContent(),
+        ) { uri ->
+            if (uri != null) {
+                scope.launch {
+                    try {
+                        val json =
+                            withContext(Dispatchers.IO) {
+                                context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                                    readUtf8TextWithLimit(inputStream, MAX_IMPORT_SIZE_BYTES)
+                                }
+                            }
+                        withContext(Dispatchers.Main) {
+                            if (json != null) {
+                                viewModel.onJsonContentReceived(json)
+                            } else {
+                                showToast(context, R.string.toast_could_not_open_file)
+                            }
                         }
-                    }
-                    withContext(Dispatchers.Main) {
-                        if (json != null) {
-                            viewModel.onJsonContentReceived(json)
-                        } else {
-                            showToast(context, R.string.toast_could_not_open_file)
+                    } catch (exception: InputTooLargeException) {
+                        Log.w(TAG, "Import input exceeds size limit", exception)
+                        withContext(Dispatchers.Main) {
+                            soundPlayer.playBeep()
+                            showToast(
+                                context,
+                                resources.getString(R.string.toast_import_too_large, maxImportSizeLabel),
+                            )
                         }
-                    }
-                } catch (exception: InputTooLargeException) {
-                    Log.w(TAG, "Import input exceeds size limit", exception)
-                    withContext(Dispatchers.Main) {
-                        soundPlayer.playBeep()
-                        showToast(
-                            context,
-                            resources.getString(R.string.toast_import_too_large, maxImportSizeLabel)
-                        )
-                    }
-                } catch (exception: SecurityException) {
-                    Log.w(TAG, "File permission denied", exception)
-                    withContext(Dispatchers.Main) {
-                        soundPlayer.playBeep()
-                        showToast(context, R.string.toast_permission_denied_read)
-                    }
-                } catch (exception: IOException) {
-                    Log.w(TAG, "File read error", exception)
-                    val detail = exception.message ?: exception.javaClass.simpleName
-                    withContext(Dispatchers.Main) {
-                        soundPlayer.playBeep()
-                        showToast(context, resources.getString(R.string.toast_error_reading_file, detail))
-                    }
-                } catch (exception: Exception) {
-                    Log.e(TAG, "Unexpected file error", exception)
-                    val detail = exception.message ?: exception.javaClass.simpleName
-                    withContext(Dispatchers.Main) {
-                        soundPlayer.playBeep()
-                        showToast(context, resources.getString(R.string.toast_unexpected_error, detail))
+                    } catch (exception: SecurityException) {
+                        Log.w(TAG, "File permission denied", exception)
+                        withContext(Dispatchers.Main) {
+                            soundPlayer.playBeep()
+                            showToast(context, R.string.toast_permission_denied_read)
+                        }
+                    } catch (exception: IOException) {
+                        Log.w(TAG, "File read error", exception)
+                        val detail = exception.message ?: exception.javaClass.simpleName
+                        withContext(Dispatchers.Main) {
+                            soundPlayer.playBeep()
+                            showToast(context, resources.getString(R.string.toast_error_reading_file, detail))
+                        }
+                    } catch (exception: Exception) {
+                        Log.e(TAG, "Unexpected file error", exception)
+                        val detail = exception.message ?: exception.javaClass.simpleName
+                        withContext(Dispatchers.Main) {
+                            soundPlayer.playBeep()
+                            showToast(context, resources.getString(R.string.toast_unexpected_error, detail))
+                        }
                     }
                 }
             }
         }
-    }
 
     LaunchedEffect(eventEmission) {
         val event = eventEmission?.event ?: return@LaunchedEffect
         try {
             when (event) {
                 is ImportEvent.ImportSuccess -> {
-                    val message = buildString {
-                        append(
-                            resources.getQuantityString(
-                                R.plurals.import_success,
-                                event.templatesImported,
-                                event.templatesImported
+                    val message =
+                        buildString {
+                            append(
+                                resources.getQuantityString(
+                                    R.plurals.import_success,
+                                    event.templatesImported,
+                                    event.templatesImported,
+                                ),
                             )
-                        )
-                        if (event.techProfileImported) {
-                            append(resources.getString(R.string.import_success_with_profile))
+                            if (event.techProfileImported) {
+                                append(resources.getString(R.string.import_success_with_profile))
+                            }
                         }
-                    }
                     showToast(context, message)
                 }
                 is ImportEvent.ImportFailed -> {
@@ -138,11 +141,12 @@ fun ImportRoute(
             scope.launch {
                 try {
                     val clipData = clipboardManager.getClipEntry()?.clipData
-                    val text = clipData
-                        ?.takeIf { it.itemCount > 0 }
-                        ?.getItemAt(0)
-                        ?.coerceToText(context)
-                        ?.toString()
+                    val text =
+                        clipData
+                            ?.takeIf { it.itemCount > 0 }
+                            ?.getItemAt(0)
+                            ?.coerceToText(context)
+                            ?.toString()
                     when {
                         text.isNullOrBlank() -> {
                             soundPlayer.playBeep()
@@ -152,7 +156,7 @@ fun ImportRoute(
                             soundPlayer.playBeep()
                             showToast(
                                 context,
-                                resources.getString(R.string.toast_import_too_large, maxImportSizeLabel)
+                                resources.getString(R.string.toast_import_too_large, maxImportSizeLabel),
                             )
                         }
                         else -> viewModel.onPasteContent(text)
@@ -160,23 +164,28 @@ fun ImportRoute(
                 } catch (exception: SecurityException) {
                     Log.w(TAG, "Clipboard access denied", exception)
                     soundPlayer.playBeep()
-                    Toast.makeText(
-                        context,
-                        R.string.toast_cannot_access_clipboard,
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    Toast
+                        .makeText(
+                            context,
+                            R.string.toast_cannot_access_clipboard,
+                            Toast.LENGTH_SHORT,
+                        ).show()
                 }
             }
         },
         onConfirm = viewModel::onImportConfirmed,
-        onCancel = viewModel::reset
+        onCancel = viewModel::reset,
     )
 }
 
-private class InputTooLargeException(maxBytes: Int) :
-    IOException("Input exceeds ${formatBytesAsMb(maxBytes.toLong())} limit")
+private class InputTooLargeException(
+    maxBytes: Int,
+) : IOException("Input exceeds ${formatBytesAsMb(maxBytes.toLong())} limit")
 
-private fun readUtf8TextWithLimit(inputStream: java.io.InputStream, maxBytes: Int): String {
+private fun readUtf8TextWithLimit(
+    inputStream: java.io.InputStream,
+    maxBytes: Int,
+): String {
     val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
     val output = ByteArrayOutputStream(minOf(maxBytes, 1024 * 1024))
     var totalRead = 0
@@ -192,17 +201,27 @@ private fun readUtf8TextWithLimit(inputStream: java.io.InputStream, maxBytes: In
     return output.toString(Charsets.UTF_8.name())
 }
 
-private fun exceedsImportLimit(text: CharSequence, maxBytes: Int): Boolean {
-    return text.length > maxBytes ||
-        (text.length > maxBytes / MAX_UTF8_BYTES_PER_CHAR &&
-            text.toString().toByteArray(Charsets.UTF_8).size > maxBytes)
-}
+private fun exceedsImportLimit(
+    text: CharSequence,
+    maxBytes: Int,
+): Boolean =
+    text.length > maxBytes ||
+        (
+            text.length > maxBytes / MAX_UTF8_BYTES_PER_CHAR &&
+                text.toString().toByteArray(Charsets.UTF_8).size > maxBytes
+        )
 
-private fun showToast(context: android.content.Context, message: String) {
+private fun showToast(
+    context: android.content.Context,
+    message: String,
+) {
     Toast.makeText(context, message, Toast.LENGTH_LONG).show()
 }
 
-private fun showToast(context: android.content.Context, messageRes: Int) {
+private fun showToast(
+    context: android.content.Context,
+    messageRes: Int,
+) {
     Toast.makeText(context, messageRes, Toast.LENGTH_LONG).show()
 }
 

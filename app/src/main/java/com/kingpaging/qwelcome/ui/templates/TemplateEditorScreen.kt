@@ -1,6 +1,5 @@
 package com.kingpaging.qwelcome.ui.templates
 
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
 import com.kingpaging.qwelcome.viewmodel.templates.TemplateEditorUiState
@@ -17,7 +16,7 @@ fun TemplateEditorScreen(
     onNewTagInputChange: (String) -> Unit,
     onContentChange: (String) -> Unit,
     onNameErrorChange: (Int?) -> Unit,
-    onToggleDiscardDialog: (Boolean) -> Unit
+    onToggleDiscardDialog: (Boolean) -> Unit,
 ) {
     val template = editorUiState.template ?: return
     key(template.id) {
@@ -33,7 +32,7 @@ fun TemplateEditorScreen(
             onNewTagInputChange = onNewTagInputChange,
             onContentChange = onContentChange,
             onNameErrorChange = onNameErrorChange,
-            onToggleDiscardDialog = onToggleDiscardDialog
+            onToggleDiscardDialog = onToggleDiscardDialog,
         )
     }
 }

@@ -33,7 +33,7 @@ fun NeonOutlinedField(
     trailingIcon: @Composable (() -> Unit)? = null,
     visualTransformation: VisualTransformation = VisualTransformation.None,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
-    keyboardActions: KeyboardActions = KeyboardActions.Default
+    keyboardActions: KeyboardActions = KeyboardActions.Default,
 ) {
     val isDark = LocalDarkTheme.current
     val colorScheme = MaterialTheme.colorScheme
@@ -45,23 +45,27 @@ fun NeonOutlinedField(
         enabled = enabled,
         singleLine = singleLine,
         isError = isError,
-        supportingText = if (supportingText != null) {
-            {
-                Box(modifier = Modifier.semantics {
-                    liveRegion = if (isError) LiveRegionMode.Assertive else LiveRegionMode.Polite
-                }) {
-                    supportingText()
+        supportingText =
+            if (supportingText != null) {
+                {
+                    Box(
+                        modifier =
+                            Modifier.semantics {
+                                liveRegion = if (isError) LiveRegionMode.Assertive else LiveRegionMode.Polite
+                            },
+                    ) {
+                        supportingText()
+                    }
                 }
-            }
-        } else {
-            null
-        },
+            } else {
+                null
+            },
         trailingIcon = trailingIcon,
         visualTransformation = visualTransformation,
         keyboardOptions = keyboardOptions,
         keyboardActions = keyboardActions,
         modifier = modifier.fillMaxWidth(),
-        colors = neonOutlinedFieldColors(isDark, accentColor, colorScheme)
+        colors = neonOutlinedFieldColors(isDark, accentColor, colorScheme),
     )
 }
 
@@ -69,40 +73,44 @@ fun NeonOutlinedField(
 private fun neonOutlinedFieldColors(
     isDark: Boolean,
     accentColor: Color,
-    colorScheme: ColorScheme
+    colorScheme: ColorScheme,
 ) = OutlinedTextFieldDefaults.colors(
     focusedBorderColor = accentColor,
     focusedLabelColor = accentColor,
     focusedTextColor = colorScheme.onSurface,
     cursorColor = accentColor,
-    unfocusedBorderColor = if (isDark) {
-        colorScheme.outline.copy(alpha = 0.18f)
-    } else {
-        colorScheme.outline.copy(alpha = 0.6f)
-    },
+    unfocusedBorderColor =
+        if (isDark) {
+            colorScheme.outline.copy(alpha = 0.18f)
+        } else {
+            colorScheme.outline.copy(alpha = 0.6f)
+        },
     unfocusedLabelColor = colorScheme.onSurfaceVariant,
     unfocusedTextColor = colorScheme.onSurface,
-    focusedContainerColor = if (isDark) {
-        colorScheme.primary.copy(alpha = 0.05f)
-    } else {
-        colorScheme.surface
-    },
+    focusedContainerColor =
+        if (isDark) {
+            colorScheme.primary.copy(alpha = 0.05f)
+        } else {
+            colorScheme.surface
+        },
     unfocusedContainerColor = if (isDark) Color.Transparent else colorScheme.surface,
     disabledBorderColor = colorScheme.outline.copy(alpha = 0.3f),
     disabledLabelColor = colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
     disabledTextColor = colorScheme.onSurface.copy(alpha = 0.5f),
-    disabledContainerColor = if (isDark) {
-        Color.Transparent
-    } else {
-        colorScheme.surfaceVariant.copy(alpha = 0.3f)
-    },
+    disabledContainerColor =
+        if (isDark) {
+            Color.Transparent
+        } else {
+            colorScheme.surfaceVariant.copy(alpha = 0.3f)
+        },
     disabledSupportingTextColor = colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
     errorBorderColor = colorScheme.error,
     errorLabelColor = colorScheme.error,
     errorCursorColor = colorScheme.error,
-    errorContainerColor = if (isDark) {
-        colorScheme.error.copy(alpha = 0.05f)
-    } else {
-        Color.Transparent
-    }
+    errorContainerColor =
+        if (isDark) {
+            colorScheme.error.copy(alpha = 0.05f)
+        } else {
+            Color.Transparent
+        },
 )

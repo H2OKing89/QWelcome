@@ -19,30 +19,37 @@ import kotlinx.coroutines.launch
 
 sealed class ImportStep {
     object Idle : ImportStep()
-    data class Validated(val validationResult: ImportValidationResult) : ImportStep()
+
+    data class Validated(
+        val validationResult: ImportValidationResult,
+    ) : ImportStep()
+
     object Complete : ImportStep()
 }
 
 data class ImportUiState(
     val isImporting: Boolean = false,
     val step: ImportStep = ImportStep.Idle,
-    val error: String? = null
+    val error: String? = null,
 )
 
 sealed class ImportEvent {
     data class ImportSuccess(
         val templatesImported: Int,
-        val techProfileImported: Boolean
+        val techProfileImported: Boolean,
     ) : ImportEvent()
-    data class ImportFailed(val message: String) : ImportEvent()
+
+    data class ImportFailed(
+        val message: String,
+    ) : ImportEvent()
+
     object RequestFileOpen : ImportEvent()
 }
 
 class ImportViewModel(
     private val repository: ImportExportRepository,
-    private val resourceProvider: ResourceProvider
+    private val resourceProvider: ResourceProvider,
 ) : ViewModel() {
-
     private val _uiState = MutableStateFlow(ImportUiState())
     val uiState: StateFlow<ImportUiState> = _uiState.asStateFlow()
 
@@ -56,49 +63,52 @@ class ImportViewModel(
         reset()
     }
 
-    fun onOpenFileRequest() = viewModelScope.launch {
-        _events.emit(ImportEvent.RequestFileOpen)
-    }
+    fun onOpenFileRequest() =
+        viewModelScope.launch {
+            _events.emit(ImportEvent.RequestFileOpen)
+        }
 
     fun onJsonContentReceived(json: String) {
         if (_uiState.value.isImporting) return
         _uiState.update { it.copy(isImporting = true, error = null) }
 
         importJob?.cancel()
-        importJob = viewModelScope.launch {
-            try {
-                when (val result = repository.validateImport(json)) {
-                    is ImportValidationResult.ValidTemplatePack,
-                    is ImportValidationResult.ValidFullBackup -> {
-                        _uiState.update {
-                            it.copy(
-                                isImporting = false,
-                                step = ImportStep.Validated(result)
-                            )
+        importJob =
+            viewModelScope.launch {
+                try {
+                    when (val result = repository.validateImport(json)) {
+                        is ImportValidationResult.ValidTemplatePack,
+                        is ImportValidationResult.ValidFullBackup,
+                        -> {
+                            _uiState.update {
+                                it.copy(
+                                    isImporting = false,
+                                    step = ImportStep.Validated(result),
+                                )
+                            }
+                        }
+                        is ImportValidationResult.Invalid -> {
+                            _uiState.update {
+                                it.copy(
+                                    isImporting = false,
+                                    error = result.message,
+                                    step = ImportStep.Idle,
+                                )
+                            }
                         }
                     }
-                    is ImportValidationResult.Invalid -> {
-                        _uiState.update {
-                            it.copy(
-                                isImporting = false,
-                                error = result.message,
-                                step = ImportStep.Idle
-                            )
-                        }
+                } catch (e: kotlin.coroutines.cancellation.CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    _uiState.update {
+                        it.copy(
+                            isImporting = false,
+                            error = "An unexpected error occurred: ${e.message}",
+                            step = ImportStep.Idle,
+                        )
                     }
-                }
-            } catch (e: kotlin.coroutines.cancellation.CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(
-                        isImporting = false,
-                        error = "An unexpected error occurred: ${e.message}",
-                        step = ImportStep.Idle
-                    )
                 }
             }
-        }
     }
 
     fun onImportConfirmed() {
@@ -107,65 +117,69 @@ class ImportViewModel(
 
         _uiState.update { it.copy(isImporting = true, error = null) }
         importJob?.cancel()
-        importJob = viewModelScope.launch {
-            try {
-                // Apply the import based on the validation result type
-                val applyResult = when (val validationResult = currentStep.validationResult) {
-                    is ImportValidationResult.ValidTemplatePack -> {
-                        // For now, replace all conflicts by default (no resolution UI yet)
-                        repository.applyTemplatePack(validationResult.pack, emptyMap())
-                    }
-                    is ImportValidationResult.ValidFullBackup -> {
-                        // For now, replace all conflicts and import everything by default
-                        repository.applyFullBackup(
-                            backup = validationResult.backup,
-                            importTechProfile = true,
-                            importDefaultTemplate = true,
-                            resolutions = emptyMap()
-                        )
-                    }
-                    is ImportValidationResult.Invalid -> {
-                        // This shouldn't happen as we check before calling this function
-                        _uiState.update { it.copy(isImporting = false) }
-                        return@launch
-                    }
-                }
+        importJob =
+            viewModelScope.launch {
+                try {
+                    // Apply the import based on the validation result type
+                    val applyResult =
+                        when (val validationResult = currentStep.validationResult) {
+                            is ImportValidationResult.ValidTemplatePack -> {
+                                // For now, replace all conflicts by default (no resolution UI yet)
+                                repository.applyTemplatePack(validationResult.pack, emptyMap())
+                            }
+                            is ImportValidationResult.ValidFullBackup -> {
+                                // For now, replace all conflicts and import everything by default
+                                repository.applyFullBackup(
+                                    backup = validationResult.backup,
+                                    importTechProfile = true,
+                                    importDefaultTemplate = true,
+                                    resolutions = emptyMap(),
+                                )
+                            }
+                            is ImportValidationResult.Invalid -> {
+                                // This shouldn't happen as we check before calling this function
+                                _uiState.update { it.copy(isImporting = false) }
+                                return@launch
+                            }
+                        }
 
-                when (applyResult) {
-                    is ImportApplyResult.Success -> {
-                        _uiState.update { it.copy(isImporting = false, step = ImportStep.Complete) }
-                        _events.emit(ImportEvent.ImportSuccess(
-                            templatesImported = applyResult.templatesImported,
-                            techProfileImported = applyResult.techProfileImported
-                        ))
-                    }
-                    is ImportApplyResult.Error -> {
-                        _uiState.update {
-                            it.copy(
-                                isImporting = false,
-                                error = applyResult.message,
-                                step = ImportStep.Idle // Reset on failure
+                    when (applyResult) {
+                        is ImportApplyResult.Success -> {
+                            _uiState.update { it.copy(isImporting = false, step = ImportStep.Complete) }
+                            _events.emit(
+                                ImportEvent.ImportSuccess(
+                                    templatesImported = applyResult.templatesImported,
+                                    techProfileImported = applyResult.techProfileImported,
+                                ),
                             )
                         }
-                        _events.emit(ImportEvent.ImportFailed(applyResult.message))
+                        is ImportApplyResult.Error -> {
+                            _uiState.update {
+                                it.copy(
+                                    isImporting = false,
+                                    error = applyResult.message,
+                                    step = ImportStep.Idle, // Reset on failure
+                                )
+                            }
+                            _events.emit(ImportEvent.ImportFailed(applyResult.message))
+                        }
                     }
+                } catch (e: kotlin.coroutines.cancellation.CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    val errorMessage = resourceProvider.getString(R.string.error_unexpected_import, e.message ?: "")
+                    _uiState.update {
+                        it.copy(
+                            isImporting = false,
+                            error = errorMessage,
+                            step = ImportStep.Idle, // Reset on failure
+                        )
+                    }
+                    _events.emit(ImportEvent.ImportFailed(errorMessage))
                 }
-            } catch (e: kotlin.coroutines.cancellation.CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                val errorMessage = resourceProvider.getString(R.string.error_unexpected_import, e.message ?: "")
-                _uiState.update {
-                    it.copy(
-                        isImporting = false,
-                        error = errorMessage,
-                        step = ImportStep.Idle // Reset on failure
-                    )
-                }
-                _events.emit(ImportEvent.ImportFailed(errorMessage))
             }
-        }
     }
-    
+
     fun onPasteContent(json: String) {
         onJsonContentReceived(json)
     }

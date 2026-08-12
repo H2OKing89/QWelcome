@@ -26,7 +26,7 @@ fun SettingsRoute(
     onBack: () -> Unit,
     onOpenExport: () -> Unit = {},
     onOpenImport: () -> Unit = {},
-    onOpenTemplates: () -> Unit = {}
+    onOpenTemplates: () -> Unit = {},
 ) {
     val viewModel = LocalSettingsViewModel.current
     val soundPlayer = LocalSoundPlayer.current
@@ -60,14 +60,15 @@ fun SettingsRoute(
     }
 
     SettingsScreen(
-        uiState = SettingsUiState(
-            profile = currentProfile,
-            privacySettings = privacySettings,
-            activeTemplate = activeTemplate,
-            updateState = updateState,
-            showDownloadConfirmDialog = showDownloadConfirmDialog,
-            currentVersion = viewModel.currentVersion
-        ),
+        uiState =
+            SettingsUiState(
+                profile = currentProfile,
+                privacySettings = privacySettings,
+                activeTemplate = activeTemplate,
+                updateState = updateState,
+                showDownloadConfirmDialog = showDownloadConfirmDialog,
+                currentVersion = viewModel.currentVersion,
+            ),
         onBack = onBack,
         onOpenExport = onOpenExport,
         onOpenImport = onOpenImport,
@@ -84,19 +85,24 @@ fun SettingsRoute(
             launchIntent(
                 context,
                 viewModel.openUnknownSourcesSettingsIntent(),
-                noBrowserMessage
+                noBrowserMessage,
             )
         },
         onCheckForUpdate = viewModel::checkForUpdate,
         onOpenProjectPage = {
-            val intent = Intent(Intent.ACTION_VIEW, PROJECT_URI.toUri())
-                .addCategory(Intent.CATEGORY_BROWSABLE)
+            val intent =
+                Intent(Intent.ACTION_VIEW, PROJECT_URI.toUri())
+                    .addCategory(Intent.CATEGORY_BROWSABLE)
             launchIntent(context, intent, noBrowserMessage)
-        }
+        },
     )
 }
 
-private fun launchIntent(context: Context, intent: Intent, failureMessage: String) {
+private fun launchIntent(
+    context: Context,
+    intent: Intent,
+    failureMessage: String,
+) {
     try {
         context.startActivity(intent)
     } catch (_: ActivityNotFoundException) {
@@ -104,7 +110,10 @@ private fun launchIntent(context: Context, intent: Intent, failureMessage: Strin
     }
 }
 
-private fun showToast(context: Context, message: String) {
+private fun showToast(
+    context: Context,
+    message: String,
+) {
     Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
 }
 

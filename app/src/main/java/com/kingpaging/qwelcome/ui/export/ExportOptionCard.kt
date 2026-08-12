@@ -36,7 +36,7 @@ internal fun ExportOptionCard(
     icon: ImageVector,
     iconTint: Color,
     isLoading: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     val isDark = LocalDarkTheme.current
     val haptic = rememberHapticFeedback()
@@ -48,17 +48,20 @@ internal fun ExportOptionCard(
         },
         enabled = !isLoading,
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isDark) {
-                MaterialTheme.colorScheme.surface.copy(alpha = 0.6f)
-            } else {
-                MaterialTheme.colorScheme.surface
-            }
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = if (isDark) 0.dp else 2.dp
-        ),
-        modifier = Modifier.fillMaxWidth()
+        colors =
+            CardDefaults.cardColors(
+                containerColor =
+                    if (isDark) {
+                        MaterialTheme.colorScheme.surface.copy(alpha = 0.6f)
+                    } else {
+                        MaterialTheme.colorScheme.surface
+                    },
+            ),
+        elevation =
+            CardDefaults.cardElevation(
+                defaultElevation = if (isDark) 0.dp else 2.dp,
+            ),
+        modifier = Modifier.fillMaxWidth(),
     ) {
         ExportOptionCardContent(title, description, icon, iconTint, isLoading)
     }
@@ -70,13 +73,14 @@ private fun ExportOptionCardContent(
     description: String,
     icon: ImageVector,
     iconTint: Color,
-    isLoading: Boolean
+    isLoading: Boolean,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         ExportOptionIcon(title, icon, iconTint, isLoading)
 
@@ -91,36 +95,39 @@ private fun ExportOptionIcon(
     title: String,
     icon: ImageVector,
     iconTint: Color,
-    isLoading: Boolean
+    isLoading: Boolean,
 ) {
     Box(
         modifier = Modifier.size(48.dp),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         if (isLoading) {
             CircularProgressIndicator(
                 modifier = Modifier.size(24.dp),
                 color = iconTint,
-                strokeWidth = 2.dp
+                strokeWidth = 2.dp,
             )
         } else {
             Icon(
                 imageVector = icon,
                 contentDescription = title,
                 tint = iconTint,
-                modifier = Modifier.size(32.dp)
+                modifier = Modifier.size(32.dp),
             )
         }
     }
 }
 
 @Composable
-private fun RowScope.ExportOptionText(title: String, description: String) {
+private fun RowScope.ExportOptionText(
+    title: String,
+    description: String,
+) {
     Column(modifier = Modifier.weight(1f)) {
         Text(
             text = title,
             style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface
+            color = MaterialTheme.colorScheme.onSurface,
         )
         Spacer(Modifier.height(4.dp))
         Text(
@@ -128,7 +135,7 @@ private fun RowScope.ExportOptionText(title: String, description: String) {
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
             maxLines = 2,
-            overflow = TextOverflow.Ellipsis
+            overflow = TextOverflow.Ellipsis,
         )
     }
 }

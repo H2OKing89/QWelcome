@@ -14,16 +14,14 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
@@ -56,7 +54,7 @@ fun SettingsScreen(
     onRetryInstall: () -> Unit,
     onOpenInstallSettings: () -> Unit,
     onCheckForUpdate: () -> Unit,
-    onOpenProjectPage: () -> Unit
+    onOpenProjectPage: () -> Unit,
 ) {
     var showDiscardDialog by rememberSaveable { mutableStateOf(false) }
     val currentProfile = uiState.profile
@@ -95,7 +93,7 @@ fun SettingsScreen(
                 showDiscardDialog = false
                 onBack()
             },
-            onKeepEditing = { showDiscardDialog = false }
+            onKeepEditing = { showDiscardDialog = false },
         )
     }
 
@@ -108,14 +106,14 @@ fun SettingsScreen(
                     stringResource(
                         R.string.text_update_download_confirm,
                         availableUpdate.version,
-                        formatBytes(availableUpdate.assetSizeBytes)
-                    )
+                        formatBytes(availableUpdate.assetSizeBytes),
+                    ),
                 )
             },
             confirmButton = {
                 NeonButton(
                     onClick = onConfirmDownload,
-                    style = NeonButtonStyle.PRIMARY
+                    style = NeonButtonStyle.PRIMARY,
                 ) {
                     Text(stringResource(R.string.action_download_update))
                 }
@@ -123,11 +121,11 @@ fun SettingsScreen(
             dismissButton = {
                 NeonButton(
                     onClick = onDismissDownloadConfirmation,
-                    style = NeonButtonStyle.TERTIARY
+                    style = NeonButtonStyle.TERTIARY,
                 ) {
                     Text(stringResource(R.string.action_cancel))
                 }
-            }
+            },
         )
     }
 
@@ -150,20 +148,21 @@ fun SettingsScreen(
                         }) {
                             Icon(
                                 Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = stringResource(R.string.content_desc_back)
+                                contentDescription = stringResource(R.string.content_desc_back),
                             )
                         }
-                    }
+                    },
                 )
-            }
+            },
         ) { padding ->
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .verticalScroll(rememberScrollState())
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(padding)
+                        .verticalScroll(rememberScrollState())
+                        .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 SettingsProfileSection(
                     activeTemplateName = uiState.activeTemplate.name,
@@ -175,7 +174,7 @@ fun SettingsScreen(
                     onTitleChange = { title = it },
                     onDepartmentChange = { dept = it },
                     onOpenTemplates = onOpenTemplates,
-                    onSaveProfile = { onSaveProfile(TechProfile(name, title, dept)) }
+                    onSaveProfile = { onSaveProfile(TechProfile(name, title, dept)) },
                 )
 
                 SettingsPrivacySection(
@@ -187,43 +186,45 @@ fun SettingsScreen(
                     onSetScreenCaptureProtectionEnabled = {
                         haptic()
                         onSetScreenCaptureProtectionEnabled(it)
-                    }
+                    },
                 )
 
                 SettingsDataManagementSection(
                     hasUnsavedChanges = hasUnsavedChanges,
                     onOpenExport = onOpenExport,
-                    onOpenImport = onOpenImport
+                    onOpenImport = onOpenImport,
                 )
 
                 SettingsUpdateSection(
                     currentVersion = uiState.currentVersion,
                     updateState = updateState,
-                    downloadActions = UpdateDownloadActions(
-                        onRequestDownloadConfirmation = {
-                            haptic()
-                            onRequestDownloadConfirmation()
-                        },
-                        onDismissUpdate = {
-                            haptic()
-                            onDismissUpdate()
-                        },
-                        onRetryInstall = {
-                            haptic()
-                            onRetryInstall()
-                        },
-                        onOpenInstallSettings = {
-                            haptic()
-                            onOpenInstallSettings()
-                        }
-                    ),
-                    navigationActions = UpdateNavigationActions(
-                        onCheckForUpdate = {
-                            haptic()
-                            onCheckForUpdate()
-                        },
-                        onOpenProjectPage = onOpenProjectPage
-                    )
+                    downloadActions =
+                        UpdateDownloadActions(
+                            onRequestDownloadConfirmation = {
+                                haptic()
+                                onRequestDownloadConfirmation()
+                            },
+                            onDismissUpdate = {
+                                haptic()
+                                onDismissUpdate()
+                            },
+                            onRetryInstall = {
+                                haptic()
+                                onRetryInstall()
+                            },
+                            onOpenInstallSettings = {
+                                haptic()
+                                onOpenInstallSettings()
+                            },
+                        ),
+                    navigationActions =
+                        UpdateNavigationActions(
+                            onCheckForUpdate = {
+                                haptic()
+                                onCheckForUpdate()
+                            },
+                            onOpenProjectPage = onOpenProjectPage,
+                        ),
                 )
             }
         }

@@ -11,5 +11,5 @@ data class ExportActions(
     val onToggleTemplateSelection: (String) -> Unit,
     val onToggleSelectAll: () -> Unit,
     val onDismissTemplateSelection: () -> Unit,
-    val onExportSelectedTemplates: () -> Unit
+    val onExportSelectedTemplates: () -> Unit,
 )

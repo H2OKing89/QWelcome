@@ -39,63 +39,66 @@ fun ExportRoute(onBack: () -> Unit) {
         viewModel.events.map(::EventEmission)
     }.collectAsStateWithLifecycle(initialValue = null)
 
-    val saveFileLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("application/json")
-    ) { uri ->
-        if (uri == null) {
-            viewModel.onFileSaveCancelled()
-        } else {
-            viewModel.savePendingFileExport(uri)
+    val saveFileLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.CreateDocument("application/json"),
+        ) { uri ->
+            if (uri == null) {
+                viewModel.onFileSaveCancelled()
+            } else {
+                viewModel.savePendingFileExport(uri)
+            }
         }
-    }
 
     LaunchedEffect(eventEmission) {
         val event = eventEmission?.event ?: return@LaunchedEffect
         try {
             when (event) {
-                    is ExportEvent.ExportSuccess -> Unit
-                    is ExportEvent.ExportError -> {
-                        soundPlayer.playBeep()
-                        Toast.makeText(context, event.message, Toast.LENGTH_LONG).show()
-                    }
-                    is ExportEvent.CopiedToClipboard -> {
-                        val typeName = resources.getString(event.type.labelRes())
-                        Toast.makeText(
+                is ExportEvent.ExportSuccess -> Unit
+                is ExportEvent.ExportError -> {
+                    soundPlayer.playBeep()
+                    Toast.makeText(context, event.message, Toast.LENGTH_LONG).show()
+                }
+                is ExportEvent.CopiedToClipboard -> {
+                    val typeName = resources.getString(event.type.labelRes())
+                    Toast
+                        .makeText(
                             context,
                             resources.getString(R.string.toast_type_copied, typeName),
-                            Toast.LENGTH_SHORT
+                            Toast.LENGTH_SHORT,
                         ).show()
-                    }
-                    is ExportEvent.ShareReady -> {
-                        val typeName = resources.getString(event.type.labelRes())
-                        navigator.shareText(
-                            message = event.json,
-                            chooserTitle = resources.getString(R.string.chooser_share_type, typeName),
-                            subject = resources.getString(R.string.subject_qwelcome_export, typeName)
-                        )
-                    }
-                    is ExportEvent.ShareToAppReady -> {
-                        val typeName = resources.getString(event.type.labelRes())
-                        navigator.shareToApp(
-                            packageName = event.packageName,
-                            message = event.json,
-                            subject = resources.getString(R.string.subject_qwelcome_export, typeName),
-                            chooserTitle = resources.getString(R.string.chooser_share_type, typeName)
-                        )
-                    }
-                    is ExportEvent.RequestFileSave -> saveFileLauncher.launch(event.suggestedName)
-                    is ExportEvent.FileSaved -> {
-                        val typeName = resources.getString(event.type.labelRes())
-                        Toast.makeText(
+                }
+                is ExportEvent.ShareReady -> {
+                    val typeName = resources.getString(event.type.labelRes())
+                    navigator.shareText(
+                        message = event.json,
+                        chooserTitle = resources.getString(R.string.chooser_share_type, typeName),
+                        subject = resources.getString(R.string.subject_qwelcome_export, typeName),
+                    )
+                }
+                is ExportEvent.ShareToAppReady -> {
+                    val typeName = resources.getString(event.type.labelRes())
+                    navigator.shareToApp(
+                        packageName = event.packageName,
+                        message = event.json,
+                        subject = resources.getString(R.string.subject_qwelcome_export, typeName),
+                        chooserTitle = resources.getString(R.string.chooser_share_type, typeName),
+                    )
+                }
+                is ExportEvent.RequestFileSave -> saveFileLauncher.launch(event.suggestedName)
+                is ExportEvent.FileSaved -> {
+                    val typeName = resources.getString(event.type.labelRes())
+                    Toast
+                        .makeText(
                             context,
                             resources.getString(R.string.toast_type_saved, typeName),
-                            Toast.LENGTH_SHORT
+                            Toast.LENGTH_SHORT,
                         ).show()
-                    }
-                    is ExportEvent.FileSaveFailed -> {
-                        soundPlayer.playBeep()
-                        showSaveError(context, event.message)
-                    }
+                }
+                is ExportEvent.FileSaveFailed -> {
+                    soundPlayer.playBeep()
+                    showSaveError(context, event.message)
+                }
             }
         } finally {
             viewModel.clearReplayedEvent()
@@ -104,40 +107,46 @@ fun ExportRoute(onBack: () -> Unit) {
 
     ExportScreen(
         uiState = uiState,
-        actions = ExportActions(
-            onBack = onBack,
-            onTemplatePackRequested = viewModel::onTemplatePackRequested,
-            onFullBackupRequested = viewModel::exportFullBackup,
-            onShareToPackageRequested = viewModel::onShareToPackageRequested,
-            onCopy = {
-                uiState.lastExportedJson?.let { json ->
-                    scope.launch {
-                        clipboardManager.setClipEntry(
-                            ClipEntry(ClipData.newPlainText(resources.getString(R.string.title_export), json))
-                        )
-                        viewModel.onCopiedToClipboard()
+        actions =
+            ExportActions(
+                onBack = onBack,
+                onTemplatePackRequested = viewModel::onTemplatePackRequested,
+                onFullBackupRequested = viewModel::exportFullBackup,
+                onShareToPackageRequested = viewModel::onShareToPackageRequested,
+                onCopy = {
+                    uiState.lastExportedJson?.let { json ->
+                        scope.launch {
+                            clipboardManager.setClipEntry(
+                                ClipEntry(ClipData.newPlainText(resources.getString(R.string.title_export), json)),
+                            )
+                            viewModel.onCopiedToClipboard()
+                        }
                     }
-                }
-            },
-            onShareRequested = viewModel::onShareRequested,
-            onSaveToFileRequested = viewModel::onSaveToFileRequested,
-            onToggleTemplateSelection = viewModel::toggleTemplateSelection,
-            onToggleSelectAll = viewModel::toggleSelectAll,
-            onDismissTemplateSelection = viewModel::dismissTemplateSelection,
-            onExportSelectedTemplates = viewModel::exportSelectedTemplates
-        )
+                },
+                onShareRequested = viewModel::onShareRequested,
+                onSaveToFileRequested = viewModel::onSaveToFileRequested,
+                onToggleTemplateSelection = viewModel::toggleTemplateSelection,
+                onToggleSelectAll = viewModel::toggleSelectAll,
+                onDismissTemplateSelection = viewModel::dismissTemplateSelection,
+                onExportSelectedTemplates = viewModel::exportSelectedTemplates,
+            ),
     )
 }
 
-private fun ExportType.labelRes(): Int = when (this) {
-    ExportType.TEMPLATE_PACK -> R.string.export_type_template_pack
-    ExportType.FULL_BACKUP -> R.string.export_type_full_backup
-}
+private fun ExportType.labelRes(): Int =
+    when (this) {
+        ExportType.TEMPLATE_PACK -> R.string.export_type_template_pack
+        ExportType.FULL_BACKUP -> R.string.export_type_full_backup
+    }
 
-private fun showSaveError(context: android.content.Context, message: String?) {
-    Toast.makeText(
-        context,
-        context.getString(R.string.toast_failed_save_file, message),
-        Toast.LENGTH_LONG
-    ).show()
+private fun showSaveError(
+    context: android.content.Context,
+    message: String?,
+) {
+    Toast
+        .makeText(
+            context,
+            context.getString(R.string.toast_failed_save_file, message),
+            Toast.LENGTH_LONG,
+        ).show()
 }

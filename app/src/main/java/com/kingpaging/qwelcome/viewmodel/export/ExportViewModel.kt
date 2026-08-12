@@ -4,16 +4,17 @@ import android.content.ContentResolver
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
+import android.util.Log
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.core.graphics.drawable.toBitmap
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.kingpaging.qwelcome.data.ExportResult
 import com.kingpaging.qwelcome.data.ImportExportRepository
 import com.kingpaging.qwelcome.data.SettingsStore
 import com.kingpaging.qwelcome.data.Template
-import android.util.Log
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -24,20 +25,20 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.getAndUpdate
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.IOException
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 enum class ExportType {
-    TEMPLATE_PACK, FULL_BACKUP
+    TEMPLATE_PACK,
+    FULL_BACKUP,
 }
 
 data class RecentShareTargetUi(
     val packageName: String,
     val appName: String,
-    val icon: ImageBitmap?
+    val icon: ImageBitmap?,
 )
 
 data class ExportUiState(
@@ -50,39 +51,65 @@ data class ExportUiState(
     val availableTemplates: List<Template> = emptyList(),
     val selectedTemplateIds: Set<String> = emptySet(),
     val showTemplateSelectionDialog: Boolean = false,
-    val recentShareTargets: List<RecentShareTargetUi> = emptyList()
+    val recentShareTargets: List<RecentShareTargetUi> = emptyList(),
 )
 
 private data class PendingFileExport(
     val content: String,
-    val type: ExportType
+    val type: ExportType,
 )
 
 sealed class ExportEvent {
-    data class ExportSuccess(val type: ExportType, val json: String) : ExportEvent()
-    data class ExportError(val message: String) : ExportEvent()
-    data class CopiedToClipboard(val type: ExportType) : ExportEvent()
-    data class ShareReady(val json: String, val type: ExportType) : ExportEvent()
-    data class ShareToAppReady(val packageName: String, val json: String, val type: ExportType) : ExportEvent()
-    data class RequestFileSave(val suggestedName: String) : ExportEvent()
-    data class FileSaved(val type: ExportType) : ExportEvent()
-    data class FileSaveFailed(val message: String?) : ExportEvent()
+    data class ExportSuccess(
+        val type: ExportType,
+        val json: String,
+    ) : ExportEvent()
+
+    data class ExportError(
+        val message: String,
+    ) : ExportEvent()
+
+    data class CopiedToClipboard(
+        val type: ExportType,
+    ) : ExportEvent()
+
+    data class ShareReady(
+        val json: String,
+        val type: ExportType,
+    ) : ExportEvent()
+
+    data class ShareToAppReady(
+        val packageName: String,
+        val json: String,
+        val type: ExportType,
+    ) : ExportEvent()
+
+    data class RequestFileSave(
+        val suggestedName: String,
+    ) : ExportEvent()
+
+    data class FileSaved(
+        val type: ExportType,
+    ) : ExportEvent()
+
+    data class FileSaveFailed(
+        val message: String?,
+    ) : ExportEvent()
 }
 
 class ExportViewModel(
     private val repository: ImportExportRepository,
     private val settingsStore: SettingsStore,
     private val packageManager: PackageManager? = null,
-    private val contentResolver: ContentResolver
+    private val contentResolver: ContentResolver,
 ) : ViewModel() {
-
     private val _uiState = MutableStateFlow(ExportUiState())
     val uiState: StateFlow<ExportUiState> = _uiState.asStateFlow()
 
     private val _events = MutableSharedFlow<ExportEvent>(replay = 1)
     val events: SharedFlow<ExportEvent> = _events.asSharedFlow()
 
-    private val _pendingFileExport = MutableStateFlow<PendingFileExport?>(null)
+    private val pendingFileExport = MutableStateFlow<PendingFileExport?>(null)
     private val recentShareTargetCache = mutableMapOf<String, RecentShareTargetUi>()
 
     companion object {
@@ -110,7 +137,7 @@ class ExportViewModel(
                 it.copy(
                     availableTemplates = templates,
                     selectedTemplateIds = templates.map { t -> t.id }.toSet(), // Select all by default
-                    showTemplateSelectionDialog = true
+                    showTemplateSelectionDialog = true,
                 )
             }
         }
@@ -121,11 +148,12 @@ class ExportViewModel(
      */
     fun toggleTemplateSelection(templateId: String) {
         _uiState.update { state ->
-            val newSelection = if (templateId in state.selectedTemplateIds) {
-                state.selectedTemplateIds - templateId
-            } else {
-                state.selectedTemplateIds + templateId
-            }
+            val newSelection =
+                if (templateId in state.selectedTemplateIds) {
+                    state.selectedTemplateIds - templateId
+                } else {
+                    state.selectedTemplateIds + templateId
+                }
             state.copy(selectedTemplateIds = newSelection)
         }
     }
@@ -136,11 +164,12 @@ class ExportViewModel(
     fun toggleSelectAll() {
         _uiState.update { state ->
             val allIds = state.availableTemplates.map { it.id }.toSet()
-            val newSelection = if (state.selectedTemplateIds == allIds) {
-                emptySet()
-            } else {
-                allIds
-            }
+            val newSelection =
+                if (state.selectedTemplateIds == allIds) {
+                    emptySet()
+                } else {
+                    allIds
+                }
             state.copy(selectedTemplateIds = newSelection)
         }
     }
@@ -177,14 +206,17 @@ class ExportViewModel(
         }
     }
 
-    private fun export(type: ExportType, action: suspend () -> ExportResult) {
+    private fun export(
+        type: ExportType,
+        action: suspend () -> ExportResult,
+    ) {
         viewModelScope.launch {
             _uiState.update {
                 it.copy(
                     isExporting = true,
                     currentlyExportingType = type,
                     lastExportedJson = null, // Clear previous result
-                    lastExportType = null
+                    lastExportType = null,
                 )
             }
             try {
@@ -196,7 +228,7 @@ class ExportViewModel(
                                 currentlyExportingType = null,
                                 lastExportedJson = result.json,
                                 lastExportType = type,
-                                templateCount = result.templateCount
+                                templateCount = result.templateCount,
                             )
                         }
                         _events.emit(ExportEvent.ExportSuccess(type, result.json))
@@ -214,63 +246,69 @@ class ExportViewModel(
             }
         }
     }
-    
-    fun onCopiedToClipboard() = viewModelScope.launch {
-        _uiState.value.lastExportType?.let {
-            _events.emit(ExportEvent.CopiedToClipboard(it))
-        }
-    }
-    
-    fun onShareRequested() = viewModelScope.launch {
-        val currentState = _uiState.value
-        if (currentState.lastExportedJson != null && currentState.lastExportType != null) {
-            _events.emit(ExportEvent.ShareReady(currentState.lastExportedJson, currentState.lastExportType))
-        }
-    }
 
-    fun onShareToPackageRequested(packageName: String) = viewModelScope.launch {
-        val currentState = _uiState.value
-        if (currentState.lastExportedJson != null && currentState.lastExportType != null) {
-            try {
-                settingsStore.recordRecentSharePackage(packageName)
-            } catch (e: Exception) {
-                Log.w(
-                    TAG,
-                    "Failed to persist recent share target packageName=$packageName; continuing with share",
-                    e
+    fun onCopiedToClipboard() =
+        viewModelScope.launch {
+            _uiState.value.lastExportType?.let {
+                _events.emit(ExportEvent.CopiedToClipboard(it))
+            }
+        }
+
+    fun onShareRequested() =
+        viewModelScope.launch {
+            val currentState = _uiState.value
+            if (currentState.lastExportedJson != null && currentState.lastExportType != null) {
+                _events.emit(ExportEvent.ShareReady(currentState.lastExportedJson, currentState.lastExportType))
+            }
+        }
+
+    fun onShareToPackageRequested(packageName: String) =
+        viewModelScope.launch {
+            val currentState = _uiState.value
+            if (currentState.lastExportedJson != null && currentState.lastExportType != null) {
+                try {
+                    settingsStore.recordRecentSharePackage(packageName)
+                } catch (e: Exception) {
+                    Log.w(
+                        TAG,
+                        "Failed to persist recent share target packageName=$packageName; continuing with share",
+                        e,
+                    )
+                }
+                _events.emit(
+                    ExportEvent.ShareToAppReady(
+                        packageName = packageName,
+                        json = currentState.lastExportedJson,
+                        type = currentState.lastExportType,
+                    ),
                 )
             }
-            _events.emit(
-                ExportEvent.ShareToAppReady(
-                    packageName = packageName,
-                    json = currentState.lastExportedJson,
-                    type = currentState.lastExportType
-                )
-            )
         }
-    }
-    
-    fun onSaveToFileRequested() = viewModelScope.launch {
-        val currentState = _uiState.value
-        if (currentState.lastExportedJson != null && currentState.lastExportType != null) {
-            val pendingExport = PendingFileExport(
-                content = currentState.lastExportedJson,
-                type = currentState.lastExportType
-            )
-            if (!_pendingFileExport.compareAndSet(expect = null, update = pendingExport)) {
-                _events.emit(ExportEvent.FileSaveFailed("Another file save is already pending"))
-                return@launch
+
+    fun onSaveToFileRequested() =
+        viewModelScope.launch {
+            val currentState = _uiState.value
+            if (currentState.lastExportedJson != null && currentState.lastExportType != null) {
+                val pendingExport =
+                    PendingFileExport(
+                        content = currentState.lastExportedJson,
+                        type = currentState.lastExportType,
+                    )
+                if (!pendingFileExport.compareAndSet(expect = null, update = pendingExport)) {
+                    _events.emit(ExportEvent.FileSaveFailed("Another file save is already pending"))
+                    return@launch
+                }
+                val filename = generateFileNameForExport(currentState.lastExportType)
+                _events.emit(ExportEvent.RequestFileSave(filename))
             }
-            val filename = generateFileNameForExport(currentState.lastExportType)
-            _events.emit(ExportEvent.RequestFileSave(filename))
         }
-    }
 
     private fun generateFileNameForExport(type: ExportType): String {
         // Using java.time API for thread-safety (SimpleDateFormat is not thread-safe)
-        val timestamp = LocalDateTime.now().format(
-            DateTimeFormatter.ofPattern("yyyy-MM-dd_HHmmss")
-        )
+        val timestamp =
+            LocalDateTime.now().format(
+                DateTimeFormatter.ofPattern("yyyy-MM-dd_HHmmss"),
+            )
 
         return when (type) {
             ExportType.TEMPLATE_PACK -> "qwelcome_templates_$timestamp.json"
@@ -285,15 +323,17 @@ class ExportViewModel(
     }
 
     private suspend fun writePendingFileExport(uri: Uri) {
-        val pendingExport = _pendingFileExport.getAndUpdate { null } ?: run {
-            _events.emit(ExportEvent.FileSaveFailed("No file export is pending"))
-            return
-        }
+        val pendingExport =
+            pendingFileExport.getAndUpdate { null } ?: run {
+                _events.emit(ExportEvent.FileSaveFailed("No file export is pending"))
+                return
+            }
 
         try {
             withContext(Dispatchers.IO) {
-                val outputStream = contentResolver.openOutputStream(uri)
-                    ?: throw IOException("Could not open output stream")
+                val outputStream =
+                    contentResolver.openOutputStream(uri)
+                        ?: throw IOException("Could not open output stream")
                 outputStream.use { it.write(pendingExport.content.toByteArray(Charsets.UTF_8)) }
             }
             _events.emit(ExportEvent.FileSaved(pendingExport.type))
@@ -311,7 +351,7 @@ class ExportViewModel(
     }
 
     fun onFileSaveCancelled() {
-        _pendingFileExport.value = null
+        pendingFileExport.value = null
     }
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
@@ -327,7 +367,7 @@ class ExportViewModel(
     fun reset() {
         val recentTargets = _uiState.value.recentShareTargets
         _uiState.value = ExportUiState(recentShareTargets = recentTargets)
-        _pendingFileExport.value = null
+        pendingFileExport.value = null
         clearReplayedEvent()
     }
 
@@ -347,14 +387,15 @@ class ExportViewModel(
             return RecentShareTargetUi(
                 packageName = packageName,
                 appName = packageName,
-                icon = null
+                icon = null,
             ).also { recentShareTargetCache[packageName] = it }
         }
 
-        val shareIntent = Intent(Intent.ACTION_SEND).apply {
-            type = "text/plain"
-            setPackage(packageName)
-        }
+        val shareIntent =
+            Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                setPackage(packageName)
+            }
         val canShare = packageManager.resolveActivity(shareIntent, 0) != null
         if (!canShare) return null
 
@@ -365,7 +406,7 @@ class ExportViewModel(
             RecentShareTargetUi(
                 packageName = packageName,
                 appName = label,
-                icon = icon
+                icon = icon,
             ).also {
                 recentShareTargetCache[packageName] = it
             }
@@ -373,7 +414,7 @@ class ExportViewModel(
             Log.d(
                 TAG,
                 "Package not found while resolving recent share target packageName=$packageName",
-                e
+                e,
             )
             null
         }

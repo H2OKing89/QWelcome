@@ -11,22 +11,22 @@ import com.kingpaging.qwelcome.util.SoundPlayer
  * set is introduced.
  */
 class FakeSoundPlayer : SoundPlayer {
-    val beepCount get() = _beepCalls
-    val confirmCount get() = _confirmCalls
+    val beepCount get() = beepCalls
+    val confirmCount get() = confirmCalls
 
-    private var _beepCalls = 0
-    private var _confirmCalls = 0
+    private var beepCalls = 0
+    private var confirmCalls = 0
 
     override fun playBeep() {
-        _beepCalls++
+        beepCalls++
     }
 
     override fun playConfirm() {
-        _confirmCalls++
+        confirmCalls++
     }
 
     fun reset() {
-        _beepCalls = 0
-        _confirmCalls = 0
+        beepCalls = 0
+        confirmCalls = 0
     }
 }

@@ -39,17 +39,16 @@ class FakeAppUpdater : AppUpdater {
         return enqueueResult
     }
 
-    override suspend fun getDownloadStatus(downloadId: Long): DownloadStatus {
-        return if (downloadStatusQueue.isEmpty()) {
+    override suspend fun getDownloadStatus(downloadId: Long): DownloadStatus =
+        if (downloadStatusQueue.isEmpty()) {
             DownloadStatus.Failed("No queued fake download status")
         } else {
             downloadStatusQueue.removeFirst()
         }
-    }
 
     override suspend fun verifyDownloadedApk(
         apkPath: String,
-        update: UpdateCheckResult.UpdateAvailable
+        update: UpdateCheckResult.UpdateAvailable,
     ): VerificationResult {
         lastVerifiedApkPath = apkPath
         lastVerifiedUpdate = update

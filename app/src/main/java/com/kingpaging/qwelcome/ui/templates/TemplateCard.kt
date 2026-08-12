@@ -9,7 +9,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -31,9 +30,9 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -47,8 +46,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -62,9 +61,10 @@ import com.kingpaging.qwelcome.util.rememberHapticFeedback
 private val PreviewWhitespace = Regex("\\s+")
 private const val MAX_VISIBLE_TAGS = 2
 
-internal fun compactTemplatePreview(content: String): String = content
-    .replace(PreviewWhitespace, " ")
-    .trim()
+internal fun compactTemplatePreview(content: String): String =
+    content
+        .replace(PreviewWhitespace, " ")
+        .trim()
 
 @OptIn(ExperimentalFoundationApi::class)
 @Suppress("FunctionNaming", "LongMethod")
@@ -79,61 +79,67 @@ internal fun TemplateCard(
     onRename: () -> Unit,
     onDuplicate: () -> Unit,
     onDelete: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val isDark = LocalDarkTheme.current
     val colors = MaterialTheme.colorScheme
     val useDescription = stringResource(R.string.content_desc_use_named_template, template.name)
     val previewDescription = stringResource(R.string.content_desc_preview_named_template, template.name)
-    val isValid = remember(template.content) {
-        Template.hasRequiredPlaceholders(template.content)
-    }
+    val isValid =
+        remember(template.content) {
+            Template.hasRequiredPlaceholders(template.content)
+        }
     val preview = remember(template.content) { compactTemplatePreview(template.content) }
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val isFocused by interactionSource.collectIsFocusedAsState()
     val isHovered by interactionSource.collectIsHoveredAsState()
-    val containerColor = when {
-        isPressed -> colors.primaryContainer.copy(alpha = if (isDark) 0.36f else 0.55f)
-        isFocused || isHovered -> colors.surfaceVariant.copy(alpha = if (isDark) 0.82f else 0.65f)
-        isDark -> colors.surface.copy(alpha = 0.72f)
-        else -> colors.surface
-    }
+    val containerColor =
+        when {
+            isPressed -> colors.primaryContainer.copy(alpha = if (isDark) 0.36f else 0.55f)
+            isFocused || isHovered -> colors.surfaceVariant.copy(alpha = if (isDark) 0.82f else 0.65f)
+            isDark -> colors.surface.copy(alpha = 0.72f)
+            else -> colors.surface
+        }
 
     Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .semantics {
-                contentDescription = useDescription
-                selected = isActive
-            }
-            .combinedClickable(
-                interactionSource = interactionSource,
-                indication = LocalIndication.current,
-                role = Role.Button,
-                onClickLabel = useDescription,
-                onLongClickLabel = previewDescription,
-                onClick = onSelect,
-                onLongClick = onPreview
-            ),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .semantics {
+                    contentDescription = useDescription
+                    selected = isActive
+                }.combinedClickable(
+                    interactionSource = interactionSource,
+                    indication = LocalIndication.current,
+                    role = Role.Button,
+                    onClickLabel = useDescription,
+                    onLongClickLabel = previewDescription,
+                    onClick = onSelect,
+                    onLongClick = onPreview,
+                ),
         shape = RoundedCornerShape(8.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = containerColor
-        ),
+        colors =
+            CardDefaults.cardColors(
+                containerColor = containerColor,
+            ),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        border = BorderStroke(
-            width = if (isActive) 1.5.dp else 0.5.dp,
-            color = if (isActive || isFocused) {
-                colors.primary.copy(alpha = 0.9f)
-            } else {
-                colors.outlineVariant.copy(alpha = if (isDark) 0.45f else 0.75f)
-            }
-        )
+        border =
+            BorderStroke(
+                width = if (isActive) 1.5.dp else 0.5.dp,
+                color =
+                    if (isActive || isFocused) {
+                        colors.primary.copy(alpha = 0.9f)
+                    } else {
+                        colors.outlineVariant.copy(alpha = if (isDark) 0.45f else 0.75f)
+                    },
+            ),
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 10.dp)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
         ) {
             TemplateCardHeader(
                 template = template,
@@ -144,7 +150,7 @@ internal fun TemplateCard(
                 onEdit = onEdit,
                 onRename = onRename,
                 onDuplicate = onDuplicate,
-                onDelete = onDelete
+                onDelete = onDelete,
             )
 
             Text(
@@ -153,7 +159,7 @@ internal fun TemplateCard(
                 color = colors.onSurfaceVariant,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(top = 6.dp)
+                modifier = Modifier.padding(top = 6.dp),
             )
         }
     }
@@ -170,11 +176,11 @@ private fun TemplateCardHeader(
     onEdit: () -> Unit,
     onRename: () -> Unit,
     onDuplicate: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -184,16 +190,17 @@ private fun TemplateCardHeader(
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f, fill = false)
+                    modifier = Modifier.weight(1f, fill = false),
                 )
                 if (isDefault) {
                     Icon(
                         imageVector = Icons.Default.Lock,
                         contentDescription = stringResource(R.string.content_desc_builtin_template),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier
-                            .padding(start = 6.dp)
-                            .size(16.dp)
+                        modifier =
+                            Modifier
+                                .padding(start = 6.dp)
+                                .size(16.dp),
                     )
                 }
             }
@@ -205,9 +212,10 @@ private fun TemplateCardHeader(
                 imageVector = Icons.Default.Warning,
                 contentDescription = stringResource(R.string.content_desc_invalid_template),
                 tint = MaterialTheme.colorScheme.error,
-                modifier = Modifier
-                    .padding(start = 8.dp)
-                    .size(18.dp)
+                modifier =
+                    Modifier
+                        .padding(start = 8.dp)
+                        .size(18.dp),
             )
         }
 
@@ -216,9 +224,10 @@ private fun TemplateCardHeader(
                 imageVector = Icons.Default.CheckCircle,
                 contentDescription = stringResource(R.string.content_desc_active_template),
                 tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier
-                    .padding(start = 8.dp)
-                    .size(20.dp)
+                modifier =
+                    Modifier
+                        .padding(start = 8.dp)
+                        .size(20.dp),
             )
         }
 
@@ -230,7 +239,7 @@ private fun TemplateCardHeader(
             onEdit = onEdit,
             onRename = onRename,
             onDuplicate = onDuplicate,
-            onDelete = onDelete
+            onDelete = onDelete,
         )
     }
 }
@@ -245,7 +254,7 @@ private fun TemplateActionsMenu(
     onEdit: () -> Unit,
     onRename: () -> Unit,
     onDuplicate: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
 ) {
     val haptic = rememberHapticFeedback()
     var expanded by remember { mutableStateOf(false) }
@@ -257,16 +266,17 @@ private fun TemplateActionsMenu(
         }) {
             Icon(
                 imageVector = Icons.Default.MoreVert,
-                contentDescription = stringResource(
-                    R.string.content_desc_template_actions_named,
-                    templateName
-                ),
-                tint = MaterialTheme.colorScheme.secondary
+                contentDescription =
+                    stringResource(
+                        R.string.content_desc_template_actions_named,
+                        templateName,
+                    ),
+                tint = MaterialTheme.colorScheme.secondary,
             )
         }
         DropdownMenu(
             expanded = expanded,
-            onDismissRequest = { expanded = false }
+            onDismissRequest = { expanded = false },
         ) {
             val dismissAndRun: (() -> Unit) -> Unit = { action ->
                 expanded = false
@@ -275,7 +285,7 @@ private fun TemplateActionsMenu(
             if (isDefault) {
                 DefaultTemplateMenuItems(
                     onCustomize = { dismissAndRun(onEdit) },
-                    onPreview = { dismissAndRun(onPreview) }
+                    onPreview = { dismissAndRun(onPreview) },
                 )
             } else {
                 UserTemplateMenuItems(
@@ -284,7 +294,7 @@ private fun TemplateActionsMenu(
                     onRename = { dismissAndRun(onRename) },
                     onPreview = { dismissAndRun(onPreview) },
                     onDuplicate = { dismissAndRun(onDuplicate) },
-                    onDelete = { dismissAndRun(onDelete) }
+                    onDelete = { dismissAndRun(onDelete) },
                 )
             }
         }
@@ -295,17 +305,17 @@ private fun TemplateActionsMenu(
 @Composable
 private fun DefaultTemplateMenuItems(
     onCustomize: () -> Unit,
-    onPreview: () -> Unit
+    onPreview: () -> Unit,
 ) {
     TemplateActionMenuItem(
         labelRes = R.string.action_customize_copy,
         icon = Icons.Default.Edit,
-        onClick = onCustomize
+        onClick = onCustomize,
     )
     TemplateActionMenuItem(
         labelRes = R.string.action_preview_template,
         icon = Icons.Default.Visibility,
-        onClick = onPreview
+        onClick = onPreview,
     )
 }
 
@@ -317,12 +327,12 @@ private fun UserTemplateMenuItems(
     onRename: () -> Unit,
     onPreview: () -> Unit,
     onDuplicate: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
 ) {
     TemplateActionMenuItem(
         labelRes = if (isValid) R.string.action_edit_template else R.string.action_fix,
         icon = if (isValid) Icons.Default.Edit else Icons.Default.Warning,
-        onClick = onEdit
+        onClick = onEdit,
     )
     TemplateActionMenuItem(R.string.action_rename_template, Icons.Default.Edit, onRename)
     TemplateActionMenuItem(R.string.action_preview_template, Icons.Default.Visibility, onPreview)
@@ -332,7 +342,7 @@ private fun UserTemplateMenuItems(
         labelRes = R.string.action_delete_template,
         icon = Icons.Default.Delete,
         onClick = onDelete,
-        tint = MaterialTheme.colorScheme.error
+        tint = MaterialTheme.colorScheme.error,
     )
 }
 
@@ -342,12 +352,12 @@ private fun TemplateActionMenuItem(
     @StringRes labelRes: Int,
     icon: ImageVector,
     onClick: () -> Unit,
-    tint: Color = LocalContentColor.current
+    tint: Color = LocalContentColor.current,
 ) {
     DropdownMenuItem(
         text = { Text(text = stringResource(labelRes), color = tint) },
         leadingIcon = { Icon(imageVector = icon, contentDescription = null, tint = tint) },
-        onClick = onClick
+        onClick = onClick,
     )
 }
 
@@ -356,24 +366,26 @@ private fun TemplateActionMenuItem(
 private fun TemplateTagMetadata(tags: List<String>) {
     val overflowCount = tags.size - MAX_VISIBLE_TAGS
     val visibleTags = tags.take(MAX_VISIBLE_TAGS).joinToString(" • ")
-    val summary = when {
-        tags.isEmpty() -> stringResource(R.string.text_no_tags)
-        overflowCount > 0 -> "$visibleTags  ${stringResource(R.string.text_more_tags, overflowCount)}"
-        else -> visibleTags
-    }
+    val summary =
+        when {
+            tags.isEmpty() -> stringResource(R.string.text_no_tags)
+            overflowCount > 0 -> "$visibleTags  ${stringResource(R.string.text_more_tags, overflowCount)}"
+            else -> visibleTags
+        }
     Text(
         text = summary,
         style = MaterialTheme.typography.labelSmall,
-        color = if (tags.isEmpty()) {
-            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-        } else {
-            MaterialTheme.colorScheme.secondary
-        },
+        color =
+            if (tags.isEmpty()) {
+                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+            } else {
+                MaterialTheme.colorScheme.secondary
+            },
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
-        modifier = Modifier
-            .padding(top = 2.dp)
-            .heightIn(min = 16.dp)
+        modifier =
+            Modifier
+                .padding(top = 2.dp)
+                .heightIn(min = 16.dp),
     )
 }
-

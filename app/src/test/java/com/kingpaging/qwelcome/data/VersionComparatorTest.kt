@@ -16,7 +16,6 @@ import org.junit.Test
  * - Edge cases (empty strings, different-length version parts)
  */
 class VersionComparatorTest {
-
     // ========== Basic version bumps ==========
 
     @Test

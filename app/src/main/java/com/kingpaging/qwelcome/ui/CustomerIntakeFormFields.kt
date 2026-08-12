@@ -60,16 +60,16 @@ internal fun CustomerFormFields(
     onOpenNetworkChanged: (Boolean) -> Unit,
     onPasswordChanged: (String) -> Unit,
     onPasswordVisibilityToggle: () -> Unit,
-    onAccountNumberChanged: (String) -> Unit
+    onAccountNumberChanged: (String) -> Unit,
 ) {
     NeonPanel(
-        modifier = Modifier.semantics(mergeDescendants = true) {}
+        modifier = Modifier.semantics(mergeDescendants = true) {},
     ) {
         CustomerContactFields(
             uiState = uiState,
             focusTargets = focusTargets,
             onCustomerNameChanged = onCustomerNameChanged,
-            onCustomerPhoneChanged = onCustomerPhoneChanged
+            onCustomerPhoneChanged = onCustomerPhoneChanged,
         )
         WifiCredentialFields(
             uiState = uiState,
@@ -77,7 +77,7 @@ internal fun CustomerFormFields(
             passwordVisible = passwordVisible,
             onSsidChanged = onSsidChanged,
             onPasswordChanged = onPasswordChanged,
-            onPasswordVisibilityToggle = onPasswordVisibilityToggle
+            onPasswordVisibilityToggle = onPasswordVisibilityToggle,
         )
         AdvancedWifiOptions(
             isOpenNetwork = uiState.isOpenNetwork,
@@ -89,23 +89,22 @@ internal fun CustomerFormFields(
             onExpandedChange = onAdvancedWifiOptionsExpandedChange,
             securityDropdownExpanded = securityDropdownExpanded,
             onSecurityDropdownExpandedChange = onSecurityDropdownExpandedChange,
-            onSecurityTypeChanged = onSecurityTypeChanged
+            onSecurityTypeChanged = onSecurityTypeChanged,
         )
         AccountNumberField(
             uiState = uiState,
             focusTargets = focusTargets,
-            onAccountNumberChanged = onAccountNumberChanged
+            onAccountNumberChanged = onAccountNumberChanged,
         )
     }
 }
-
 
 @Composable
 private fun CustomerContactFields(
     uiState: CustomerIntakeUiState,
     focusTargets: CustomerFormFocusTargets,
     onCustomerNameChanged: (String) -> Unit,
-    onCustomerPhoneChanged: (String) -> Unit
+    onCustomerPhoneChanged: (String) -> Unit,
 ) {
     NeonOutlinedField(
         value = uiState.customerName,
@@ -113,9 +112,10 @@ private fun CustomerContactFields(
         label = { Text(stringResource(R.string.label_customer_name)) },
         isError = uiState.customerNameError != null,
         supportingText = { uiState.customerNameError?.let { Text(it) } },
-        modifier = Modifier
-            .focusRequester(focusTargets.customerName.focusRequester)
-            .bringIntoViewRequester(focusTargets.customerName.bringIntoViewRequester)
+        modifier =
+            Modifier
+                .focusRequester(focusTargets.customerName.focusRequester)
+                .bringIntoViewRequester(focusTargets.customerName.bringIntoViewRequester),
     )
 
     NeonOutlinedField(
@@ -125,9 +125,10 @@ private fun CustomerContactFields(
         isError = uiState.customerPhoneError != null,
         supportingText = { uiState.customerPhoneError?.let { Text(it) } },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-        modifier = Modifier
-            .focusRequester(focusTargets.customerPhone.focusRequester)
-            .bringIntoViewRequester(focusTargets.customerPhone.bringIntoViewRequester)
+        modifier =
+            Modifier
+                .focusRequester(focusTargets.customerPhone.focusRequester)
+                .bringIntoViewRequester(focusTargets.customerPhone.bringIntoViewRequester),
     )
 }
 
@@ -138,7 +139,7 @@ private fun WifiCredentialFields(
     passwordVisible: Boolean,
     onSsidChanged: (String) -> Unit,
     onPasswordChanged: (String) -> Unit,
-    onPasswordVisibilityToggle: () -> Unit
+    onPasswordVisibilityToggle: () -> Unit,
 ) {
     NeonOutlinedField(
         value = uiState.ssid,
@@ -146,16 +147,17 @@ private fun WifiCredentialFields(
         label = { Text(stringResource(R.string.label_wifi_ssid)) },
         isError = uiState.ssidError != null,
         supportingText = { uiState.ssidError?.let { Text(it) } },
-        modifier = Modifier
-            .focusRequester(focusTargets.ssid.focusRequester)
-            .bringIntoViewRequester(focusTargets.ssid.bringIntoViewRequester)
+        modifier =
+            Modifier
+                .focusRequester(focusTargets.ssid.focusRequester)
+                .bringIntoViewRequester(focusTargets.ssid.bringIntoViewRequester),
     )
     WifiPasswordField(
         uiState = uiState,
         focusTargets = focusTargets,
         passwordVisible = passwordVisible,
         onPasswordChanged = onPasswordChanged,
-        onPasswordVisibilityToggle = onPasswordVisibilityToggle
+        onPasswordVisibilityToggle = onPasswordVisibilityToggle,
     )
 }
 
@@ -165,7 +167,7 @@ private fun WifiPasswordField(
     focusTargets: CustomerFormFocusTargets,
     passwordVisible: Boolean,
     onPasswordChanged: (String) -> Unit,
-    onPasswordVisibilityToggle: () -> Unit
+    onPasswordVisibilityToggle: () -> Unit,
 ) {
     NeonOutlinedField(
         value = if (uiState.isOpenNetwork) "" else uiState.password,
@@ -180,27 +182,30 @@ private fun WifiPasswordField(
                 uiState.passwordError?.let { Text(it) }
             }
         },
-        visualTransformation = if (passwordVisible) {
-            VisualTransformation.None
-        } else {
-            PasswordVisualTransformation()
-        },
+        visualTransformation =
+            if (passwordVisible) {
+                VisualTransformation.None
+            } else {
+                PasswordVisualTransformation()
+            },
         trailingIcon = {
             if (!uiState.isOpenNetwork) {
                 val image = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
-                val description = if (passwordVisible) {
-                    stringResource(R.string.content_desc_hide_password)
-                } else {
-                    stringResource(R.string.content_desc_show_password)
-                }
+                val description =
+                    if (passwordVisible) {
+                        stringResource(R.string.content_desc_hide_password)
+                    } else {
+                        stringResource(R.string.content_desc_show_password)
+                    }
                 IconButton(onClick = onPasswordVisibilityToggle) {
                     Icon(imageVector = image, contentDescription = description)
                 }
             }
         },
-        modifier = Modifier
-            .focusRequester(focusTargets.password.focusRequester)
-            .bringIntoViewRequester(focusTargets.password.bringIntoViewRequester)
+        modifier =
+            Modifier
+                .focusRequester(focusTargets.password.focusRequester)
+                .bringIntoViewRequester(focusTargets.password.bringIntoViewRequester),
     )
 }
 
@@ -215,26 +220,27 @@ private fun AdvancedWifiOptions(
     onExpandedChange: (Boolean) -> Unit,
     securityDropdownExpanded: Boolean,
     onSecurityDropdownExpandedChange: (Boolean) -> Unit,
-    onSecurityTypeChanged: (WifiQrGenerator.SecurityType) -> Unit
+    onSecurityTypeChanged: (WifiQrGenerator.SecurityType) -> Unit,
 ) {
     val expandedLabel = stringResource(R.string.state_expanded)
     val collapsedLabel = stringResource(R.string.state_collapsed)
     NeonButton(
         onClick = { onExpandedChange(!expanded) },
-        modifier = Modifier
-            .fillMaxWidth()
-            .semantics {
-                stateDescription = if (expanded) expandedLabel else collapsedLabel
-            },
-        style = NeonButtonStyle.TERTIARY
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .semantics {
+                    stateDescription = if (expanded) expandedLabel else collapsedLabel
+                },
+        style = NeonButtonStyle.TERTIARY,
     ) {
         Text(
             text = stringResource(R.string.label_advanced_wifi_options),
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f),
         )
         Icon(
             imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-            contentDescription = null
+            contentDescription = null,
         )
     }
 
@@ -247,7 +253,7 @@ private fun AdvancedWifiOptions(
             securityType = securityType,
             securityDropdownExpanded = securityDropdownExpanded,
             onSecurityDropdownExpandedChange = onSecurityDropdownExpandedChange,
-            onSecurityTypeChanged = onSecurityTypeChanged
+            onSecurityTypeChanged = onSecurityTypeChanged,
         )
     }
 }
@@ -261,17 +267,17 @@ private fun AdvancedWifiOptionsSection(
     securityType: WifiQrGenerator.SecurityType,
     securityDropdownExpanded: Boolean,
     onSecurityDropdownExpandedChange: (Boolean) -> Unit,
-    onSecurityTypeChanged: (WifiQrGenerator.SecurityType) -> Unit
+    onSecurityTypeChanged: (WifiQrGenerator.SecurityType) -> Unit,
 ) {
     NetworkOptionToggle(
         value = isOpenNetwork,
         onValueChange = onOpenNetworkChanged,
-        labelResource = R.string.label_open_network
+        labelResource = R.string.label_open_network,
     )
     NetworkOptionToggle(
         value = isHiddenNetwork,
         onValueChange = onHiddenNetworkChanged,
-        labelResource = R.string.label_hidden_network
+        labelResource = R.string.label_hidden_network,
     )
 
     if (!isOpenNetwork) {
@@ -279,7 +285,7 @@ private fun AdvancedWifiOptionsSection(
             securityType = securityType,
             expanded = securityDropdownExpanded,
             onExpandedChange = onSecurityDropdownExpandedChange,
-            onSecurityTypeChanged = onSecurityTypeChanged
+            onSecurityTypeChanged = onSecurityTypeChanged,
         )
     }
 }
@@ -288,32 +294,33 @@ private fun AdvancedWifiOptionsSection(
 private fun NetworkOptionToggle(
     value: Boolean,
     onValueChange: (Boolean) -> Unit,
-    @StringRes labelResource: Int
+    @StringRes labelResource: Int,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .toggleable(
-                value = value,
-                onValueChange = onValueChange,
-                role = Role.Checkbox
-            )
-            .padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .toggleable(
+                    value = value,
+                    onValueChange = onValueChange,
+                    role = Role.Checkbox,
+                ).padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Checkbox(
             checked = value,
             onCheckedChange = null,
-            colors = CheckboxDefaults.colors(
-                checkedColor = MaterialTheme.colorScheme.secondary,
-                uncheckedColor = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            colors =
+                CheckboxDefaults.colors(
+                    checkedColor = MaterialTheme.colorScheme.secondary,
+                    uncheckedColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                ),
         )
         Text(
             text = stringResource(labelResource),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(start = 8.dp)
+            modifier = Modifier.padding(start = 8.dp),
         )
     }
 }
@@ -323,34 +330,35 @@ private fun SecurityTypeSelector(
     securityType: WifiQrGenerator.SecurityType,
     expanded: Boolean,
     onExpandedChange: (Boolean) -> Unit,
-    onSecurityTypeChanged: (WifiQrGenerator.SecurityType) -> Unit
+    onSecurityTypeChanged: (WifiQrGenerator.SecurityType) -> Unit,
 ) {
     NeonDropdownMenuBox(
         expanded = expanded,
         onExpandedChange = onExpandedChange,
-        selectedText = stringResource(
-            if (securityType == WifiQrGenerator.SecurityType.WPA2_PSK) {
-                R.string.security_wpa2
-            } else {
-                R.string.security_wpa3_sae
-            }
-        ),
+        selectedText =
+            stringResource(
+                if (securityType == WifiQrGenerator.SecurityType.WPA2_PSK) {
+                    R.string.security_wpa2
+                } else {
+                    R.string.security_wpa3_sae
+                },
+            ),
         label = { Text(stringResource(R.string.label_wifi_security)) },
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
     ) {
         DropdownMenuItem(
             text = { Text(stringResource(R.string.security_wpa2)) },
             onClick = {
                 onSecurityTypeChanged(WifiQrGenerator.SecurityType.WPA2_PSK)
                 onExpandedChange(false)
-            }
+            },
         )
         DropdownMenuItem(
             text = { Text(stringResource(R.string.security_wpa3_sae)) },
             onClick = {
                 onSecurityTypeChanged(WifiQrGenerator.SecurityType.WPA3_SAE)
                 onExpandedChange(false)
-            }
+            },
         )
     }
 }
@@ -359,7 +367,7 @@ private fun SecurityTypeSelector(
 private fun AccountNumberField(
     uiState: CustomerIntakeUiState,
     focusTargets: CustomerFormFocusTargets,
-    onAccountNumberChanged: (String) -> Unit
+    onAccountNumberChanged: (String) -> Unit,
 ) {
     NeonOutlinedField(
         value = uiState.accountNumber,
@@ -368,8 +376,9 @@ private fun AccountNumberField(
         isError = uiState.accountNumberError != null,
         supportingText = { uiState.accountNumberError?.let { Text(it) } },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-        modifier = Modifier
-            .focusRequester(focusTargets.accountNumber.focusRequester)
-            .bringIntoViewRequester(focusTargets.accountNumber.bringIntoViewRequester)
+        modifier =
+            Modifier
+                .focusRequester(focusTargets.accountNumber.focusRequester)
+                .bringIntoViewRequester(focusTargets.accountNumber.bringIntoViewRequester),
     )
 }

@@ -7,15 +7,14 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.ui.theme.CyberpunkTheme
-import java.util.concurrent.atomic.AtomicBoolean
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.util.concurrent.atomic.AtomicBoolean
 
 @RunWith(AndroidJUnit4::class)
 class ImportIdleStepTest {
-
     @get:Rule
     val composeRule = createComposeRule()
 
@@ -29,7 +28,7 @@ class ImportIdleStepTest {
                     isLoading = false,
                     error = null,
                     onOpenFile = { openFileInvoked.set(true) },
-                    onPaste = {}
+                    onPaste = {},
                 )
             }
         }

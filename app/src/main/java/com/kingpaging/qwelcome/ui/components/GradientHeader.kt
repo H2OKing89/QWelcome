@@ -22,38 +22,38 @@ import com.kingpaging.qwelcome.ui.theme.DisplayFont
  * Adapts gradient colors for dark/light mode readability.
  */
 @Composable
-fun QWelcomeHeader(
-    modifier: Modifier = Modifier
-) {
-    val textGradient = Brush.verticalGradient(
-        listOf(
-            MaterialTheme.colorScheme.secondary,
-            MaterialTheme.colorScheme.tertiary
+fun QWelcomeHeader(modifier: Modifier = Modifier) {
+    val textGradient =
+        Brush.verticalGradient(
+            listOf(
+                MaterialTheme.colorScheme.secondary,
+                MaterialTheme.colorScheme.tertiary,
+            ),
         )
-    )
-    
+
     Row(
         modifier = modifier.padding(horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         // Vector Q logo
         Image(
             painter = painterResource(id = R.drawable.q_logo),
             contentDescription = stringResource(R.string.content_desc_q_logo),
-            modifier = Modifier.size(40.dp)
+            modifier = Modifier.size(40.dp),
         )
-        
+
         // "WELCOME" text with gradient
         Text(
             text = stringResource(R.string.label_welcome),
-            style = TextStyle(
-                fontFamily = DisplayFont,
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 3.sp,
-                brush = textGradient
-            )
+            style =
+                TextStyle(
+                    fontFamily = DisplayFont,
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 3.sp,
+                    brush = textGradient,
+                ),
         )
     }
 }
@@ -63,38 +63,38 @@ fun QWelcomeHeader(
  * Adapts gradient colors for dark/light mode readability.
  */
 @Composable
-fun QWelcomeHeaderLarge(
-    modifier: Modifier = Modifier
-) {
-    val textGradient = Brush.verticalGradient(
-        listOf(
-            MaterialTheme.colorScheme.secondary,
-            MaterialTheme.colorScheme.tertiary
+fun QWelcomeHeaderLarge(modifier: Modifier = Modifier) {
+    val textGradient =
+        Brush.verticalGradient(
+            listOf(
+                MaterialTheme.colorScheme.secondary,
+                MaterialTheme.colorScheme.tertiary,
+            ),
         )
-    )
-    
+
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         // Large Q logo
         Image(
             painter = painterResource(id = R.drawable.q_logo),
             contentDescription = stringResource(R.string.content_desc_q_logo),
-            modifier = Modifier.size(80.dp)
+            modifier = Modifier.size(80.dp),
         )
-        
+
         // "WELCOME" text
         Text(
             text = stringResource(R.string.label_welcome),
-            style = TextStyle(
-                fontFamily = DisplayFont,
-                fontSize = 28.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 4.sp,
-                brush = textGradient
-            )
+            style =
+                TextStyle(
+                    fontFamily = DisplayFont,
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 4.sp,
+                    brush = textGradient,
+                ),
         )
     }
 }

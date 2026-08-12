@@ -26,7 +26,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -73,7 +72,7 @@ fun TemplateListScreen(
     onSetActiveTemplate: (String) -> Unit,
     onDuplicateAndEdit: (Template) -> Unit,
     onDuplicateTemplate: (Template) -> Unit,
-    onShowDeleteConfirmation: (Template) -> Unit
+    onShowDeleteConfirmation: (Template) -> Unit,
 ) {
     val haptic = rememberHapticFeedback()
     val templateListState = rememberLazyListState()
@@ -92,7 +91,7 @@ fun TemplateListScreen(
             templateName = template.name,
             isActive = template.id == uiState.activeTemplateId,
             onConfirm = { onDeleteTemplate(template.id) },
-            onDismiss = onDismissDeleteConfirmation
+            onDismiss = onDismissDeleteConfirmation,
         )
     }
 
@@ -108,14 +107,14 @@ fun TemplateListScreen(
                 haptic()
                 onClearTagFilter()
             },
-            onDismiss = { showTagFilters = false }
+            onDismiss = { showTagFilters = false },
         )
     }
 
     previewTemplate?.let { template ->
         TemplatePreviewSheet(
             template = template,
-            onDismiss = { previewTemplate = null }
+            onDismiss = { previewTemplate = null },
         )
     }
 
@@ -126,7 +125,7 @@ fun TemplateListScreen(
                 onRenameTemplate(template.id, name)
                 renameTemplate = null
             },
-            onDismiss = { renameTemplate = null }
+            onDismiss = { renameTemplate = null },
         )
     }
 
@@ -139,7 +138,7 @@ fun TemplateListScreen(
                     title = {
                         Text(
                             text = stringResource(R.string.title_templates),
-                            color = MaterialTheme.colorScheme.primary
+                            color = MaterialTheme.colorScheme.primary,
                         )
                     },
                     navigationIcon = {
@@ -150,7 +149,7 @@ fun TemplateListScreen(
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = stringResource(R.string.content_desc_back),
-                                tint = MaterialTheme.colorScheme.primary
+                                tint = MaterialTheme.colorScheme.primary,
                             )
                         }
                     },
@@ -162,45 +161,48 @@ fun TemplateListScreen(
                             Icon(
                                 imageVector = Icons.Default.Add,
                                 contentDescription = stringResource(R.string.action_new_template),
-                                tint = MaterialTheme.colorScheme.secondary
+                                tint = MaterialTheme.colorScheme.secondary,
                             )
                         }
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
                 )
-            }
+            },
         ) { padding ->
             if (uiState.isLoading) {
                 Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding),
-                    contentAlignment = Alignment.Center
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .padding(padding),
+                    contentAlignment = Alignment.Center,
                 ) {
                     CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 }
             } else {
-                val filteredTemplates = remember(
-                    uiState.templates,
-                    uiState.activeTemplateId,
-                    uiState.searchQuery,
-                    uiState.selectedTags,
-                    uiState.templateLastUsedAt
-                ) {
-                    filterAndOrderTemplates(
-                        templates = uiState.templates,
-                        activeTemplateId = uiState.activeTemplateId,
-                        searchQuery = uiState.searchQuery,
-                        selectedTags = uiState.selectedTags,
-                        templateLastUsedAt = uiState.templateLastUsedAt
-                    )
-                }
+                val filteredTemplates =
+                    remember(
+                        uiState.templates,
+                        uiState.activeTemplateId,
+                        uiState.searchQuery,
+                        uiState.selectedTags,
+                        uiState.templateLastUsedAt,
+                    ) {
+                        filterAndOrderTemplates(
+                            templates = uiState.templates,
+                            activeTemplateId = uiState.activeTemplateId,
+                            searchQuery = uiState.searchQuery,
+                            selectedTags = uiState.selectedTags,
+                            templateLastUsedAt = uiState.templateLastUsedAt,
+                        )
+                    }
 
                 Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding)
-                        .padding(horizontal = 16.dp)
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .padding(padding)
+                            .padding(horizontal = 16.dp),
                 ) {
                     TemplateLibraryControls(
                         query = uiState.searchQuery,
@@ -214,27 +216,32 @@ fun TemplateListScreen(
                         onOpenTags = {
                             haptic()
                             showTagFilters = true
-                        }
+                        },
                     )
 
                     LazyColumn(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f)
-                            .testTag(TEMPLATE_LIST_TEST_TAG),
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .weight(1f)
+                                .testTag(TEMPLATE_LIST_TEST_TAG),
                         state = templateListState,
                         contentPadding = PaddingValues(top = 8.dp, bottom = 96.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         if (uiState.showTemplateLimitWarning && !uiState.warningDismissed) {
                             item(key = "template_limit_warning") {
                                 NeonWarningBanner(
-                                    text = androidx.compose.ui.res.pluralStringResource(
-                                        R.plurals.warning_template_limit,
-                                        uiState.templates.size,
-                                        uiState.templates.size
-                                    ),
-                                    onDismiss = { haptic(); onDismissTemplateLimitWarning() }
+                                    text =
+                                        androidx.compose.ui.res.pluralStringResource(
+                                            R.plurals.warning_template_limit,
+                                            uiState.templates.size,
+                                            uiState.templates.size,
+                                        ),
+                                    onDismiss = {
+                                        haptic()
+                                        onDismissTemplateLimitWarning()
+                                    },
                                 )
                             }
                         }
@@ -244,7 +251,10 @@ fun TemplateListScreen(
                                 template = template,
                                 isActive = template.id == uiState.activeTemplateId,
                                 isDefault = template.id == DEFAULT_TEMPLATE_ID,
-                                onSelect = { haptic(); onSetActiveTemplate(template.id) },
+                                onSelect = {
+                                    haptic()
+                                    onSetActiveTemplate(template.id)
+                                },
                                 onPreview = {
                                     haptic()
                                     previewTemplate = template
@@ -261,9 +271,15 @@ fun TemplateListScreen(
                                     haptic()
                                     renameTemplate = template
                                 },
-                                onDuplicate = { haptic(); onDuplicateTemplate(template) },
-                                onDelete = { haptic(); onShowDeleteConfirmation(template) },
-                                modifier = Modifier.animateItem()
+                                onDuplicate = {
+                                    haptic()
+                                    onDuplicateTemplate(template)
+                                },
+                                onDelete = {
+                                    haptic()
+                                    onShowDeleteConfirmation(template)
+                                },
+                                modifier = Modifier.animateItem(),
                             )
                         }
 
@@ -271,39 +287,41 @@ fun TemplateListScreen(
                         if (shouldShowNoResults) {
                             item(key = "no_results") {
                                 Column(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 32.dp),
+                                    modifier =
+                                        Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 32.dp),
                                     horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                                    verticalArrangement = Arrangement.spacedBy(12.dp),
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Search,
                                         contentDescription = null,
                                         tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-                                        modifier = Modifier.size(32.dp)
+                                        modifier = Modifier.size(32.dp),
                                     )
                                     Text(
-                                        text = when {
-                                            uiState.searchQuery.isNotBlank() &&
-                                                uiState.selectedTags.isNotEmpty() -> {
-                                                stringResource(
-                                                    R.string.text_no_templates_match_with_filters,
-                                                    uiState.searchQuery
-                                                )
-                                            }
+                                        text =
+                                            when {
+                                                uiState.searchQuery.isNotBlank() &&
+                                                    uiState.selectedTags.isNotEmpty() -> {
+                                                    stringResource(
+                                                        R.string.text_no_templates_match_with_filters,
+                                                        uiState.searchQuery,
+                                                    )
+                                                }
 
-                                            uiState.searchQuery.isNotBlank() -> {
-                                                stringResource(
-                                                    R.string.text_no_templates_match,
-                                                    uiState.searchQuery
-                                                )
-                                            }
+                                                uiState.searchQuery.isNotBlank() -> {
+                                                    stringResource(
+                                                        R.string.text_no_templates_match,
+                                                        uiState.searchQuery,
+                                                    )
+                                                }
 
-                                            else -> stringResource(R.string.text_no_templates_for_filters)
-                                        },
+                                                else -> stringResource(R.string.text_no_templates_for_filters)
+                                            },
                                         style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                                     )
                                     NeonButton(
                                         onClick = {
@@ -312,7 +330,7 @@ fun TemplateListScreen(
                                             onClearTagFilter()
                                         },
                                         glowColor = MaterialTheme.colorScheme.secondary,
-                                        style = NeonButtonStyle.TERTIARY
+                                        style = NeonButtonStyle.TERTIARY,
                                     ) {
                                         Text(stringResource(R.string.action_clear_filters))
                                     }
@@ -331,7 +349,7 @@ private fun DeleteConfirmationDialog(
     templateName: String,
     isActive: Boolean,
     onConfirm: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -339,24 +357,28 @@ private fun DeleteConfirmationDialog(
         title = {
             Text(
                 text = stringResource(R.string.title_delete_template),
-                color = MaterialTheme.colorScheme.error
+                color = MaterialTheme.colorScheme.error,
             )
         },
         text = {
             Text(
-                text = stringResource(
-                    if (isActive) R.string.text_delete_active_template_confirm
-                    else R.string.text_delete_template_confirm,
-                    templateName
-                ),
-                color = MaterialTheme.colorScheme.onSurface
+                text =
+                    stringResource(
+                        if (isActive) {
+                            R.string.text_delete_active_template_confirm
+                        } else {
+                            R.string.text_delete_template_confirm
+                        },
+                        templateName,
+                    ),
+                color = MaterialTheme.colorScheme.onSurface,
             )
         },
         confirmButton = {
             NeonButton(
                 onClick = onConfirm,
                 glowColor = MaterialTheme.colorScheme.error,
-                style = NeonButtonStyle.PRIMARY
+                style = NeonButtonStyle.PRIMARY,
             ) {
                 Text(stringResource(R.string.action_delete))
             }
@@ -365,10 +387,10 @@ private fun DeleteConfirmationDialog(
             NeonButton(
                 onClick = onDismiss,
                 glowColor = MaterialTheme.colorScheme.secondary,
-                style = NeonButtonStyle.TERTIARY
+                style = NeonButtonStyle.TERTIARY,
             ) {
                 Text(stringResource(R.string.action_cancel))
             }
-        }
+        },
     )
 }

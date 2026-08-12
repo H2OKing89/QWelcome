@@ -33,28 +33,28 @@ internal fun CustomerIntakeActionButtonRow(
     copySuccess: Boolean,
     onSmsClick: () -> Unit,
     onShareClick: () -> Unit,
-    onCopyClick: () -> Unit
+    onCopyClick: () -> Unit,
 ) {
     Text(
         stringResource(R.string.header_send),
         style = MaterialTheme.typography.labelMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.semantics { heading() }
+        modifier = Modifier.semantics { heading() },
     )
 
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         NeonCyanButton(
             onClick = onSmsClick,
             modifier = Modifier.weight(1f),
-            style = NeonButtonStyle.PRIMARY
+            style = NeonButtonStyle.PRIMARY,
         ) {
             Icon(
                 Icons.AutoMirrored.Filled.Send,
                 contentDescription = null,
-                modifier = Modifier.size(16.dp)
+                modifier = Modifier.size(16.dp),
             )
             Spacer(Modifier.width(6.dp))
             Text(stringResource(R.string.action_sms))
@@ -62,12 +62,12 @@ internal fun CustomerIntakeActionButtonRow(
         NeonCyanButton(
             onClick = onShareClick,
             modifier = Modifier.weight(1f),
-            style = NeonButtonStyle.SECONDARY
+            style = NeonButtonStyle.SECONDARY,
         ) {
             Icon(
                 Icons.Filled.Share,
                 contentDescription = null,
-                modifier = Modifier.size(16.dp)
+                modifier = Modifier.size(16.dp),
             )
             Spacer(Modifier.width(4.dp))
             Text(stringResource(R.string.action_share))
@@ -77,12 +77,12 @@ internal fun CustomerIntakeActionButtonRow(
             onClick = onCopyClick,
             modifier = Modifier.weight(1f),
             style = NeonButtonStyle.TERTIARY,
-            glowColor = if (copySuccess) cyberColors.success else MaterialTheme.colorScheme.primary
+            glowColor = if (copySuccess) cyberColors.success else MaterialTheme.colorScheme.primary,
         ) {
             Icon(
                 if (copySuccess) Icons.Filled.Check else Icons.Filled.ContentCopy,
                 contentDescription = null,
-                modifier = Modifier.size(16.dp)
+                modifier = Modifier.size(16.dp),
             )
             Spacer(Modifier.width(4.dp))
             Text(
@@ -90,7 +90,7 @@ internal fun CustomerIntakeActionButtonRow(
                     stringResource(R.string.action_copied)
                 } else {
                     stringResource(R.string.action_copy)
-                }
+                },
             )
         }
     }

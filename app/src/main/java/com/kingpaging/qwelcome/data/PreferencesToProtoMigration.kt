@@ -5,9 +5,9 @@ import android.util.Log
 import androidx.datastore.core.DataMigration
 import androidx.datastore.core.DataStore
 import androidx.datastore.dataStore
+import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.first
@@ -27,7 +27,7 @@ private const val ACTIVE_TEMPLATE_ID_KEY = "active_template_id"
 
 private class TemplatesMigrationException(
     val rawTemplatesJson: String,
-    cause: Throwable
+    cause: Throwable,
 ) : IllegalStateException("Failed to parse legacy templates JSON during migration", cause)
 
 internal val Context.tempPreferencesDataStore by preferencesDataStore(name = "settings")
@@ -37,11 +37,11 @@ val Context.protoDataStore: DataStore<UserPreferences> by dataStore(
     serializer = UserPreferencesSerializer,
     produceMigrations = { context ->
         listOf(PreferencesToProtoMigration(context))
-    }
+    },
 )
 
 internal class PreferencesToProtoMigration(
-    private val context: Context
+    private val context: Context,
 ) : DataMigration<UserPreferences> {
     private var cachedLegacyPrefs: Preferences? = null
 
@@ -63,29 +63,32 @@ internal class PreferencesToProtoMigration(
         val prefs = cachedLegacyPrefs ?: context.tempPreferencesDataStore.data.first()
         val json = Json { ignoreUnknownKeys = true }
 
-        val techProfile = TechProfileProto.newBuilder()
-            .setName(prefs[stringPreferencesKey(TECH_NAME_KEY)].orEmpty())
-            .setTitle(prefs[stringPreferencesKey(TECH_TITLE_KEY)].orEmpty())
-            .setDept(prefs[stringPreferencesKey(TECH_DEPT_KEY)].orEmpty())
-            .build()
+        val techProfile =
+            TechProfileProto
+                .newBuilder()
+                .setName(prefs[stringPreferencesKey(TECH_NAME_KEY)].orEmpty())
+                .setTitle(prefs[stringPreferencesKey(TECH_TITLE_KEY)].orEmpty())
+                .setDept(prefs[stringPreferencesKey(TECH_DEPT_KEY)].orEmpty())
+                .build()
 
         val templatesJson = prefs[stringPreferencesKey(TEMPLATES_JSON_KEY)]
-        val templates = try {
-            parseTemplateProtos(templatesJson, json)
-        } catch (e: TemplatesMigrationException) {
-            Log.e(
-                TAG,
-                "Template migration failed; preserving legacy preferences for manual recovery. JSON length: ${e.rawTemplatesJson.length}",
-                e
-            )
-            throw e
-        }
+        val templates =
+            try {
+                parseTemplateProtos(templatesJson, json)
+            } catch (e: TemplatesMigrationException) {
+                Log.e(
+                    TAG,
+                    "Template migration failed; preserving legacy preferences for manual recovery. JSON length: ${e.rawTemplatesJson.length}",
+                    e,
+                )
+                throw e
+            }
 
-        return UserPreferences.newBuilder()
+        return UserPreferences
+            .newBuilder()
             .setActiveTemplateId(
-                prefs[stringPreferencesKey(ACTIVE_TEMPLATE_ID_KEY)] ?: DEFAULT_TEMPLATE_ID
-            )
-            .setTechProfile(techProfile)
+                prefs[stringPreferencesKey(ACTIVE_TEMPLATE_ID_KEY)] ?: DEFAULT_TEMPLATE_ID,
+            ).setTechProfile(techProfile)
             .addAllTemplates(templates)
             .build()
     }
@@ -104,7 +107,7 @@ internal class PreferencesToProtoMigration(
 
     private fun parseTemplateProtos(
         templatesJson: String?,
-        json: Json
+        json: Json,
     ): List<TemplateProto> {
         if (templatesJson.isNullOrBlank()) return emptyList()
         return try {
@@ -113,7 +116,7 @@ internal class PreferencesToProtoMigration(
             Log.e(
                 TAG,
                 "Error decoding templates from preferences. JSON length: ${templatesJson.length}",
-                e
+                e,
             )
             logCorruptedTemplatesDiagnostics(templatesJson)
             throw TemplatesMigrationException(templatesJson, e)
@@ -134,7 +137,7 @@ internal class PreferencesToProtoMigration(
             } else {
                 Log.w(
                     TAG,
-                    "Found $matchCount template fragment(s) in corrupted data - manual recovery may be needed"
+                    "Found $matchCount template fragment(s) in corrupted data - manual recovery may be needed",
                 )
             }
         } catch (e: java.util.regex.PatternSyntaxException) {

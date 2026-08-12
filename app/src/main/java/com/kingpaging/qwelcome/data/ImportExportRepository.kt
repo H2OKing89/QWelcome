@@ -24,56 +24,59 @@ internal const val MAX_IMPORT_SIZE_BYTES = 10 * 1024 * 1024
  */
 class ImportExportRepository(
     settingsStore: SettingsStore,
-    resourceProvider: ResourceProvider
+    resourceProvider: ResourceProvider,
 ) {
+    private val json =
+        Json {
+            ignoreUnknownKeys = true // Forward compatibility
+            isLenient = true // Tolerates trailing commas, unquoted strings (clipboard UX)
+            prettyPrint = true // Human readable for sharing
+            encodeDefaults = true // Include default values
+        }
 
-    private val json = Json {
-        ignoreUnknownKeys = true  // Forward compatibility
-        isLenient = true          // Tolerates trailing commas, unquoted strings (clipboard UX)
-        prettyPrint = true        // Human readable for sharing
-        encodeDefaults = true     // Include default values
-    }
-
-    private val exportService = ExportService(
-        settingsStore = settingsStore,
-        resourceProvider = resourceProvider,
-        json = json
-    )
-    private val importValidationService = ImportValidationService(
-        settingsStore = settingsStore,
-        resourceProvider = resourceProvider,
-        json = json
-    )
-    private val importApplyService = ImportApplyService(
-        settingsStore = settingsStore,
-        resourceProvider = resourceProvider
-    )
+    private val exportService =
+        ExportService(
+            settingsStore = settingsStore,
+            resourceProvider = resourceProvider,
+            json = json,
+        )
+    private val importValidationService =
+        ImportValidationService(
+            settingsStore = settingsStore,
+            resourceProvider = resourceProvider,
+            json = json,
+        )
+    private val importApplyService =
+        ImportApplyService(
+            settingsStore = settingsStore,
+            resourceProvider = resourceProvider,
+        )
 
     suspend fun exportTemplatePack(templateIds: List<String> = emptyList()): ExportResult =
         exportService.exportTemplatePack(templateIds)
 
-    suspend fun exportFullBackup(): ExportResult =
-        exportService.exportFullBackup()
+    suspend fun exportFullBackup(): ExportResult = exportService.exportFullBackup()
 
     suspend fun validateImport(jsonString: String): ImportValidationResult =
         importValidationService.validateImport(jsonString)
 
     suspend fun applyTemplatePack(
         pack: TemplatePack,
-        resolutions: Map<String, ConflictResolution> = emptyMap()
+        resolutions: Map<String, ConflictResolution> = emptyMap(),
     ): ImportApplyResult = importApplyService.applyTemplatePack(pack, resolutions)
 
     suspend fun applyFullBackup(
         backup: FullBackup,
         importTechProfile: Boolean = false,
         importDefaultTemplate: Boolean = true,
-        resolutions: Map<String, ConflictResolution> = emptyMap()
-    ): ImportApplyResult = importApplyService.applyFullBackup(
-        backup = backup,
-        importTechProfile = importTechProfile,
-        importDefaultTemplate = importDefaultTemplate,
-        resolutions = resolutions
-    )
+        resolutions: Map<String, ConflictResolution> = emptyMap(),
+    ): ImportApplyResult =
+        importApplyService.applyFullBackup(
+            backup = backup,
+            importTechProfile = importTechProfile,
+            importDefaultTemplate = importDefaultTemplate,
+            resolutions = resolutions,
+        )
 }
 
 // ========== Result Types ==========
@@ -84,10 +87,12 @@ class ImportExportRepository(
 sealed class ExportResult {
     data class Success(
         val json: String,
-        val templateCount: Int
+        val templateCount: Int,
     ) : ExportResult()
 
-    data class Error(val message: String) : ExportResult()
+    data class Error(
+        val message: String,
+    ) : ExportResult()
 }
 
 /**
@@ -97,7 +102,7 @@ sealed class ImportValidationResult {
     data class ValidTemplatePack(
         val pack: TemplatePack,
         val conflicts: List<TemplateConflict>,
-        val warnings: List<ImportWarning>
+        val warnings: List<ImportWarning>,
     ) : ImportValidationResult() {
         val hasConflicts: Boolean get() = conflicts.isNotEmpty()
         val hasWarnings: Boolean get() = warnings.isNotEmpty()
@@ -106,14 +111,16 @@ sealed class ImportValidationResult {
     data class ValidFullBackup(
         val backup: FullBackup,
         val conflicts: List<TemplateConflict>,
-        val warnings: List<ImportWarning>
+        val warnings: List<ImportWarning>,
     ) : ImportValidationResult() {
         val hasConflicts: Boolean get() = conflicts.isNotEmpty()
         val hasWarnings: Boolean get() = warnings.isNotEmpty()
         val hasTechProfile: Boolean get() = true
     }
 
-    data class Invalid(val message: String) : ImportValidationResult()
+    data class Invalid(
+        val message: String,
+    ) : ImportValidationResult()
 }
 
 /**
@@ -122,10 +129,12 @@ sealed class ImportValidationResult {
 sealed class ImportApplyResult {
     data class Success(
         val templatesImported: Int,
-        val techProfileImported: Boolean = false
+        val techProfileImported: Boolean = false,
     ) : ImportApplyResult()
 
-    data class Error(val message: String) : ImportApplyResult()
+    data class Error(
+        val message: String,
+    ) : ImportApplyResult()
 }
 
 /**
@@ -133,7 +142,7 @@ sealed class ImportApplyResult {
  */
 data class TemplateConflict(
     val importedTemplate: Template,
-    val existingTemplate: Template
+    val existingTemplate: Template,
 ) {
     val templateId: String get() = importedTemplate.id
     val templateName: String get() = importedTemplate.name
@@ -145,10 +154,12 @@ data class TemplateConflict(
 enum class ConflictResolution {
     /** Replace the existing template with the imported one */
     REPLACE,
+
     /** Keep the existing template, skip the imported one */
     KEEP_EXISTING,
+
     /** Save the imported template as a new copy with a new ID */
-    SAVE_AS_COPY
+    SAVE_AS_COPY,
 }
 
 /**
@@ -161,9 +172,10 @@ sealed class ImportWarning {
      */
     data class NewerVersion(
         val importVersion: Int,
-        val supportedVersion: Int
+        val supportedVersion: Int,
     ) : ImportWarning() {
-        override fun toString() = "Created by newer app version (schema v$importVersion, this app supports v$supportedVersion)"
+        override fun toString() =
+            "Created by newer app version (schema v$importVersion, this app supports v$supportedVersion)"
     }
 
     /**
@@ -171,7 +183,7 @@ sealed class ImportWarning {
      */
     data class MissingField(
         val templateIdentifier: String,
-        val fieldName: String
+        val fieldName: String,
     ) : ImportWarning() {
         override fun toString() = "Template '$templateIdentifier' is missing '$fieldName'"
     }
@@ -181,7 +193,7 @@ sealed class ImportWarning {
      */
     data class LongContent(
         val templateName: String,
-        val length: Int
+        val length: Int,
     ) : ImportWarning() {
         override fun toString() = "Template '$templateName' has long content ($length chars)"
     }
@@ -191,7 +203,7 @@ sealed class ImportWarning {
      */
     data class MissingPlaceholders(
         val templateName: String,
-        val placeholders: List<String>
+        val placeholders: List<String>,
     ) : ImportWarning() {
         override fun toString() = "Template '$templateName' is missing placeholders: ${placeholders.joinToString(", ")}"
     }

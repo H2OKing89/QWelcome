@@ -19,7 +19,7 @@ import com.kingpaging.qwelcome.ui.theme.*
 @Composable
 fun CyberpunkBackdrop(
     modifier: Modifier = Modifier,
-    content: @Composable BoxScope.() -> Unit
+    content: @Composable BoxScope.() -> Unit,
 ) {
     val isDark = LocalDarkTheme.current
     val colorScheme = MaterialTheme.colorScheme
@@ -30,37 +30,42 @@ fun CyberpunkBackdrop(
             if (isDark) {
                 // Dark mode: Deep space gradient (purple-black)
                 drawRect(
-                    brush = Brush.radialGradient(
-                        colors = listOf(
-                            Color(0xFF120A1C),  // Dark purple center
-                            Color(0xFF05030A)   // Near black edges
+                    brush =
+                        Brush.radialGradient(
+                            colors =
+                                listOf(
+                                    Color(0xFF120A1C), // Dark purple center
+                                    Color(0xFF05030A), // Near black edges
+                                ),
+                            center = center,
+                            radius = size.maxDimension * 0.85f,
                         ),
-                        center = center,
-                        radius = size.maxDimension * 0.85f
-                    )
                 )
             } else {
                 // Light mode: Clean white with subtle purple tint
                 drawRect(
-                    brush = Brush.radialGradient(
-                        colors = listOf(
-                            Color(0xFFFFFFFF),  // Pure white center
-                            Color(0xFFF5F0FA)   // Subtle purple tint edges
+                    brush =
+                        Brush.radialGradient(
+                            colors =
+                                listOf(
+                                    Color(0xFFFFFFFF), // Pure white center
+                                    Color(0xFFF5F0FA), // Subtle purple tint edges
+                                ),
+                            center = center,
+                            radius = size.maxDimension * 0.85f,
                         ),
-                        center = center,
-                        radius = size.maxDimension * 0.85f
-                    )
                 )
             }
 
             // Cyberpunk grid overlay
             val spacing = GRID_SPACING_DP.toPx()
-            val gridColor = if (isDark) {
-                Color.White.copy(alpha = 0.04f)
-            } else {
-                colorScheme.primary.copy(alpha = 0.04f) // Theme-aware grid for light mode
-            }
-            
+            val gridColor =
+                if (isDark) {
+                    Color.White.copy(alpha = 0.04f)
+                } else {
+                    colorScheme.primary.copy(alpha = 0.04f) // Theme-aware grid for light mode
+                }
+
             // Vertical lines
             for (x in 0..(size.width / spacing).toInt()) {
                 val px = x * spacing

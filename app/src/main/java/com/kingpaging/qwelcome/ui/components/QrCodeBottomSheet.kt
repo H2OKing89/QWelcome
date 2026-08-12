@@ -6,22 +6,19 @@ import android.Manifest
 import android.content.ActivityNotFoundException
 import android.content.ContentValues
 import android.content.Context
-import android.content.pm.PackageManager
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
 import android.widget.Toast
-import com.kingpaging.qwelcome.R
-import androidx.core.graphics.createBitmap
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material3.*
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,11 +27,15 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
-import androidx.core.content.FileProvider
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
+import androidx.core.graphics.createBitmap
+import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.ui.theme.CyberDarkScheme
-import com.kingpaging.qwelcome.util.sanitizeFileName
 import com.kingpaging.qwelcome.util.WifiQrGenerator
+import com.kingpaging.qwelcome.util.sanitizeFileName
+import io.github.alexzhirkevich.qrose.ImageFormat
+import io.github.alexzhirkevich.qrose.QrCodePainter
 import io.github.alexzhirkevich.qrose.options.QrBallShape
 import io.github.alexzhirkevich.qrose.options.QrBrush
 import io.github.alexzhirkevich.qrose.options.QrFrameShape
@@ -42,7 +43,6 @@ import io.github.alexzhirkevich.qrose.options.QrOptions
 import io.github.alexzhirkevich.qrose.options.QrPixelShape
 import io.github.alexzhirkevich.qrose.options.brush
 import io.github.alexzhirkevich.qrose.options.roundCorners
-import io.github.alexzhirkevich.qrose.QrCodePainter
 import io.github.alexzhirkevich.qrose.rememberQrCodePainter
 import io.github.alexzhirkevich.qrose.toByteArray
 import kotlinx.coroutines.Dispatchers
@@ -60,20 +60,21 @@ fun QrCodeBottomSheet(
     isOpenNetwork: Boolean = false,
     securityType: WifiQrGenerator.SecurityType = WifiQrGenerator.SecurityType.WPA2_PSK,
     isHiddenNetwork: Boolean = false,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var isSaving by remember { mutableStateOf(false) }
     var isSharing by remember { mutableStateOf(false) }
     var showSaveWarning by remember { mutableStateOf(false) }
-    val wifiString = remember(ssid, password, isOpenNetwork, securityType, isHiddenNetwork) {
-        if (isOpenNetwork) {
-            WifiQrGenerator.generateOpenNetworkString(ssid, isHiddenNetwork)
-        } else {
-            WifiQrGenerator.generateWifiString(ssid, password, securityType, isHiddenNetwork)
+    val wifiString =
+        remember(ssid, password, isOpenNetwork, securityType, isHiddenNetwork) {
+            if (isOpenNetwork) {
+                WifiQrGenerator.generateOpenNetworkString(ssid, isHiddenNetwork)
+            } else {
+                WifiQrGenerator.generateWifiString(ssid, password, securityType, isHiddenNetwork)
+            }
         }
-    }
     val saveQrCode: () -> Unit = {
         scope.launch {
             isSaving = true
@@ -81,42 +82,47 @@ fun QrCodeBottomSheet(
             isSaving = false
         }
     }
-    val storagePermissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        if (granted) {
-            saveQrCode()
-        } else {
-            Toast.makeText(context, R.string.toast_permission_denied, Toast.LENGTH_SHORT).show()
+    val storagePermissionLauncher =
+        rememberLauncherForActivityResult(
+            ActivityResultContracts.RequestPermission(),
+        ) { granted ->
+            if (granted) {
+                saveQrCode()
+            } else {
+                Toast.makeText(context, R.string.toast_permission_denied, Toast.LENGTH_SHORT).show()
+            }
         }
-    }
 
     // Use CyberDarkScheme for consistent QR styling in both preview and export
-    val darkBrush = Brush.linearGradient(
-        listOf(
-            CyberDarkScheme.secondary,
-            CyberDarkScheme.tertiary,
-            CyberDarkScheme.primary
+    val darkBrush =
+        Brush.linearGradient(
+            listOf(
+                CyberDarkScheme.secondary,
+                CyberDarkScheme.tertiary,
+                CyberDarkScheme.primary,
+            ),
         )
-    )
-    val ballBrush = Brush.linearGradient(
-        listOf(
-            CyberDarkScheme.primary,
-            CyberDarkScheme.secondary
+    val ballBrush =
+        Brush.linearGradient(
+            listOf(
+                CyberDarkScheme.primary,
+                CyberDarkScheme.secondary,
+            ),
         )
-    )
-    val frameBrush = Brush.linearGradient(
-        listOf(
-            CyberDarkScheme.secondary,
-            CyberDarkScheme.tertiary
+    val frameBrush =
+        Brush.linearGradient(
+            listOf(
+                CyberDarkScheme.secondary,
+                CyberDarkScheme.tertiary,
+            ),
         )
-    )
 
     // Use shared options for both preview and export
-    val qrPainter = rememberQrCodePainter(
-        data = wifiString,
-        options = createQrOptions(darkBrush, ballBrush, frameBrush)
-    )
+    val qrPainter =
+        rememberQrCodePainter(
+            data = wifiString,
+            options = createQrOptions(darkBrush, ballBrush, frameBrush),
+        )
 
     // Start expanded to show all content
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -136,7 +142,7 @@ fun QrCodeBottomSheet(
                             Build.VERSION.SDK_INT <= Build.VERSION_CODES.P &&
                             ContextCompat.checkSelfPermission(
                                 context,
-                                Manifest.permission.WRITE_EXTERNAL_STORAGE
+                                Manifest.permission.WRITE_EXTERNAL_STORAGE,
                             ) != PackageManager.PERMISSION_GRANTED
                         ) {
                             storagePermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
@@ -144,7 +150,7 @@ fun QrCodeBottomSheet(
                             saveQrCode()
                         }
                     },
-                    style = NeonButtonStyle.PRIMARY
+                    style = NeonButtonStyle.PRIMARY,
                 ) {
                     Text(stringResource(R.string.action_save_anyway))
                 }
@@ -152,11 +158,11 @@ fun QrCodeBottomSheet(
             dismissButton = {
                 NeonButton(
                     onClick = { showSaveWarning = false },
-                    style = NeonButtonStyle.TERTIARY
+                    style = NeonButtonStyle.TERTIARY,
                 ) {
                     Text(stringResource(R.string.action_cancel))
                 }
-            }
+            },
         )
     }
 
@@ -169,40 +175,43 @@ fun QrCodeBottomSheet(
             Surface(
                 modifier = Modifier.padding(vertical = 12.dp),
                 color = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f),
-                shape = RoundedCornerShape(2.dp)
+                shape = RoundedCornerShape(2.dp),
             ) {
                 Box(Modifier.size(width = 32.dp, height = 4.dp))
             }
-        }
+        },
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             QrCodeSheetContent(
                 qrPainter = qrPainter,
-                network = QrCodeNetworkDetails(
-                    ssid = ssid,
-                    isOpenNetwork = isOpenNetwork,
-                    securityType = securityType
-                ),
+                network =
+                    QrCodeNetworkDetails(
+                        ssid = ssid,
+                        isOpenNetwork = isOpenNetwork,
+                        securityType = securityType,
+                    ),
                 isSaving = isSaving,
                 isSharing = isSharing,
-                actions = QrCodeSheetActions(
-                    onRequestSave = { showSaveWarning = true },
-                    onShare = {
-                        scope.launch {
-                            isSharing = true
-                            try {
-                                shareQrCode(context, wifiString, ssid)
-                            } finally {
-                                isSharing = false
+                actions =
+                    QrCodeSheetActions(
+                        onRequestSave = { showSaveWarning = true },
+                        onShare = {
+                            scope.launch {
+                                isSharing = true
+                                try {
+                                    shareQrCode(context, wifiString, ssid)
+                                } finally {
+                                    isSharing = false
+                                }
                             }
-                        }
-                    }
-                )
+                        },
+                    ),
             )
         }
     }
@@ -214,19 +223,20 @@ fun QrCodeBottomSheet(
 private fun createQrOptions(
     darkBrush: Brush,
     ballBrush: Brush,
-    frameBrush: Brush
-): QrOptions = QrOptions {
-    shapes {
-        ball = QrBallShape.roundCorners(.25f)
-        frame = QrFrameShape.roundCorners(.25f)
-        darkPixel = QrPixelShape.roundCorners()
+    frameBrush: Brush,
+): QrOptions =
+    QrOptions {
+        shapes {
+            ball = QrBallShape.roundCorners(.25f)
+            frame = QrFrameShape.roundCorners(.25f)
+            darkPixel = QrPixelShape.roundCorners()
+        }
+        colors {
+            dark = QrBrush.brush { darkBrush }
+            ball = QrBrush.brush { ballBrush }
+            frame = QrBrush.brush { frameBrush }
+        }
     }
-    colors {
-        dark = QrBrush.brush { darkBrush }
-        ball = QrBrush.brush { ballBrush }
-        frame = QrBrush.brush { frameBrush }
-    }
-}
 
 /**
  * Generate a high-res QR code bitmap using qrose library.
@@ -235,39 +245,44 @@ private fun createQrOptions(
  */
 private fun generateHighResQrBitmap(
     wifiString: String,
-    size: Int = 1024
+    size: Int = 1024,
 ): Bitmap {
     // Use dark scheme colors for consistent QR code styling
-    val darkBrush = Brush.linearGradient(
-        listOf(
-            CyberDarkScheme.secondary,
-            CyberDarkScheme.tertiary,
-            CyberDarkScheme.primary
+    val darkBrush =
+        Brush.linearGradient(
+            listOf(
+                CyberDarkScheme.secondary,
+                CyberDarkScheme.tertiary,
+                CyberDarkScheme.primary,
+            ),
         )
-    )
-    val ballBrush = Brush.linearGradient(
-        listOf(
-            CyberDarkScheme.primary,
-            CyberDarkScheme.secondary
+    val ballBrush =
+        Brush.linearGradient(
+            listOf(
+                CyberDarkScheme.primary,
+                CyberDarkScheme.secondary,
+            ),
         )
-    )
-    val frameBrush = Brush.linearGradient(
-        listOf(
-            CyberDarkScheme.secondary,
-            CyberDarkScheme.tertiary
+    val frameBrush =
+        Brush.linearGradient(
+            listOf(
+                CyberDarkScheme.secondary,
+                CyberDarkScheme.tertiary,
+            ),
         )
-    )
-    val painter = QrCodePainter(
-        data = wifiString,
-        options = createQrOptions(darkBrush, ballBrush, frameBrush)
-    )
+    val painter =
+        QrCodePainter(
+            data = wifiString,
+            options = createQrOptions(darkBrush, ballBrush, frameBrush),
+        )
 
     // Export QR code to PNG bytes
-    val bytes = painter.toByteArray(size, size, Bitmap.CompressFormat.PNG)
+    val bytes = painter.toByteArray(size, size, ImageFormat.PNG)
 
     // Decode bytes to bitmap
-    val qrBitmap = android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-        ?: throw IllegalStateException("Failed to decode QR code bitmap from bytes")
+    val qrBitmap =
+        android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+            ?: throw IllegalStateException("Failed to decode QR code bitmap from bytes")
 
     // Create final bitmap with white background and padding
     val padding = size / 10
@@ -289,7 +304,7 @@ private fun generateHighResQrBitmap(
 private suspend fun saveQrCodeToGallery(
     context: Context,
     wifiString: String,
-    ssid: String
+    ssid: String,
 ) {
     try {
         withContext(Dispatchers.IO) {
@@ -317,15 +332,21 @@ private suspend fun saveQrCodeToGallery(
     }
 }
 
-private fun writeQrBitmapToMediaStore(context: Context, bmp: Bitmap, filename: String) {
+private fun writeQrBitmapToMediaStore(
+    context: Context,
+    bmp: Bitmap,
+    filename: String,
+) {
     val resolver = context.contentResolver
-    val contentValues = ContentValues().apply {
-        put(MediaStore.Images.Media.DISPLAY_NAME, filename)
-        put(MediaStore.Images.Media.MIME_TYPE, "image/png")
-        put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/QWelcome")
-    }
-    val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
-        ?: throw IOException("Failed to create media entry")
+    val contentValues =
+        ContentValues().apply {
+            put(MediaStore.Images.Media.DISPLAY_NAME, filename)
+            put(MediaStore.Images.Media.MIME_TYPE, "image/png")
+            put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/QWelcome")
+        }
+    val uri =
+        resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+            ?: throw IOException("Failed to create media entry")
     var writeCompleted = false
     try {
         writeBitmapPngToStream(resolver.openOutputStream(uri), bmp)
@@ -339,7 +360,10 @@ private fun writeQrBitmapToMediaStore(context: Context, bmp: Bitmap, filename: S
     }
 }
 
-private fun writeQrBitmapToLegacyStorage(bmp: Bitmap, filename: String) {
+private fun writeQrBitmapToLegacyStorage(
+    bmp: Bitmap,
+    filename: String,
+) {
     @Suppress("DEPRECATION")
     val picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
     val qwelcomeDir = File(picturesDir, "QWelcome")
@@ -361,7 +385,10 @@ private fun writeQrBitmapToLegacyStorage(bmp: Bitmap, filename: String) {
 }
 
 /** Encodes [bmp] as PNG into [outputStream], closing it and throwing if either step fails. */
-private fun writeBitmapPngToStream(outputStream: OutputStream?, bmp: Bitmap) {
+private fun writeBitmapPngToStream(
+    outputStream: OutputStream?,
+    bmp: Bitmap,
+) {
     val stream = outputStream ?: throw IOException("Failed to open output stream")
     stream.use {
         val encoded = bmp.compress(Bitmap.CompressFormat.PNG, 100, it)
@@ -374,29 +401,31 @@ private fun writeBitmapPngToStream(outputStream: OutputStream?, bmp: Bitmap) {
 private suspend fun shareQrCode(
     context: Context,
     wifiString: String,
-    ssid: String
+    ssid: String,
 ) {
     var bitmap: Bitmap? = null
     try {
-        val (uri, bmp) = withContext(Dispatchers.IO) {
-            val bmp = generateHighResQrBitmap(wifiString)
-            val cacheDir = File(context.cacheDir, "qr_codes")
-            if (!cacheDir.exists() && !cacheDir.mkdirs()) {
-                throw IOException("Failed to create cache directory")
+        val (uri, bmp) =
+            withContext(Dispatchers.IO) {
+                val bmp = generateHighResQrBitmap(wifiString)
+                val cacheDir = File(context.cacheDir, "qr_codes")
+                if (!cacheDir.exists() && !cacheDir.mkdirs()) {
+                    throw IOException("Failed to create cache directory")
+                }
+                val file = File(cacheDir, "WiFi_QR_${sanitizeFileName(ssid)}.png")
+                FileOutputStream(file).use { stream ->
+                    bmp.compress(Bitmap.CompressFormat.PNG, 100, stream)
+                }
+                FileProvider.getUriForFile(context, "${context.packageName}.provider", file) to bmp
             }
-            val file = File(cacheDir, "WiFi_QR_${sanitizeFileName(ssid)}.png")
-            FileOutputStream(file).use { stream ->
-                bmp.compress(Bitmap.CompressFormat.PNG, 100, stream)
-            }
-            FileProvider.getUriForFile(context, "${context.packageName}.provider", file) to bmp
-        }
         bitmap = bmp
-        val intent = Intent(Intent.ACTION_SEND).apply {
-            type = "image/png"
-            putExtra(Intent.EXTRA_STREAM, uri)
-            putExtra(Intent.EXTRA_TEXT, context.getString(R.string.share_text_wifi_network_qr, ssid))
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        }
+        val intent =
+            Intent(Intent.ACTION_SEND).apply {
+                type = "image/png"
+                putExtra(Intent.EXTRA_STREAM, uri)
+                putExtra(Intent.EXTRA_TEXT, context.getString(R.string.share_text_wifi_network_qr, ssid))
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
         context.startActivity(Intent.createChooser(intent, context.getString(R.string.chooser_share_wifi_qr)))
     } catch (e: SecurityException) {
         Log.e("QrCodeBottomSheet", "Permission denied while sharing QR code", e)

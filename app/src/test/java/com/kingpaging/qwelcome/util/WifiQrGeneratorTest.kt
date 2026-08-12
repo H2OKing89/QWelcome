@@ -13,7 +13,6 @@ import org.junit.Test
  * - WiFi string generation with proper escaping
  */
 class WifiQrGeneratorTest {
-
     // ========== Password Validation Tests ==========
 
     @Test
@@ -114,7 +113,7 @@ class WifiQrGeneratorTest {
         val ssid8Emoji = "🏠".repeat(8)
         assertEquals(32, ssid8Emoji.toByteArray(Charsets.UTF_8).size)
         assertEquals(WifiQrGenerator.ValidationResult.Success, WifiQrGenerator.validateSsid(ssid8Emoji))
-        
+
         // 9 emoji = 36 bytes (invalid)
         val ssid9Emoji = "🏠".repeat(9)
         assertEquals(36, ssid9Emoji.toByteArray(Charsets.UTF_8).size)
@@ -128,7 +127,7 @@ class WifiQrGeneratorTest {
         val ssid10Chars = "中文网络名称测试用的"
         assertEquals(30, ssid10Chars.toByteArray(Charsets.UTF_8).size)
         assertEquals(WifiQrGenerator.ValidationResult.Success, WifiQrGenerator.validateSsid(ssid10Chars))
-        
+
         // 11 chars = 33 bytes (invalid)
         val ssid11Chars = "中文网络名称测试用的一"
         assertEquals(33, ssid11Chars.toByteArray(Charsets.UTF_8).size)
@@ -145,22 +144,24 @@ class WifiQrGeneratorTest {
 
     @Test
     fun `generateWifiString produces SAE format for WPA3`() {
-        val result = WifiQrGenerator.generateWifiString(
-            "MyNetwork",
-            "password123",
-            securityType = WifiQrGenerator.SecurityType.WPA3_SAE
-        )
+        val result =
+            WifiQrGenerator.generateWifiString(
+                "MyNetwork",
+                "password123",
+                securityType = WifiQrGenerator.SecurityType.WPA3_SAE,
+            )
 
         assertEquals("WIFI:T:SAE;S:MyNetwork;P:password123;;", result)
     }
 
     @Test
     fun `generateWifiString marks hidden networks`() {
-        val result = WifiQrGenerator.generateWifiString(
-            "MyNetwork",
-            "password123",
-            isHidden = true
-        )
+        val result =
+            WifiQrGenerator.generateWifiString(
+                "MyNetwork",
+                "password123",
+                isHidden = true,
+            )
 
         assertEquals("WIFI:T:WPA;S:MyNetwork;P:password123;H:true;;", result)
     }

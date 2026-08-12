@@ -57,7 +57,7 @@ internal fun ContentEditorDialog(
     contentInteractionSource: MutableInteractionSource,
     contentError: String?,
     onDismissRequest: () -> Unit,
-    onInsertPlaceholder: (String) -> Unit
+    onInsertPlaceholder: (String) -> Unit,
 ) {
     val parentFocusManager = LocalFocusManager.current
     val parentKeyboardController = LocalSoftwareKeyboardController.current
@@ -69,44 +69,46 @@ internal fun ContentEditorDialog(
 
     Dialog(
         onDismissRequest = onDismissRequest,
-        properties = DialogProperties(
-            usePlatformDefaultWidth = false,
-            decorFitsSystemWindows = false
-        )
+        properties =
+            DialogProperties(
+                usePlatformDefaultWidth = false,
+                decorFitsSystemWindows = false,
+            ),
     ) {
         BackHandler(onBack = onDismissRequest)
         val workspaceKeyboardController = LocalSoftwareKeyboardController.current
 
         Surface(
-            modifier = Modifier
-                .fillMaxSize()
-                .imePadding(),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .imePadding(),
             shape = RectangleShape,
             color = MaterialTheme.colorScheme.surface,
             tonalElevation = 0.dp,
-            shadowElevation = 0.dp
+            shadowElevation = 0.dp,
         ) {
             Column(
                 modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 TopAppBar(
                     title = {
                         Text(
                             text = stringResource(R.string.label_message),
                             color = MaterialTheme.colorScheme.secondary,
-                            modifier = Modifier.testTag(TEMPLATE_CONTENT_LABEL_TEST_TAG)
+                            modifier = Modifier.testTag(TEMPLATE_CONTENT_LABEL_TEST_TAG),
                         )
                     },
                     navigationIcon = {
                         IconButton(
                             onClick = onDismissRequest,
-                            modifier = Modifier.testTag(TEMPLATE_CONTENT_BACK_BUTTON_TEST_TAG)
+                            modifier = Modifier.testTag(TEMPLATE_CONTENT_BACK_BUTTON_TEST_TAG),
                         ) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = stringResource(R.string.content_desc_back),
-                                tint = MaterialTheme.colorScheme.secondary
+                                tint = MaterialTheme.colorScheme.secondary,
                             )
                         }
                     },
@@ -115,17 +117,19 @@ internal fun ContentEditorDialog(
                             Text(stringResource(R.string.action_done))
                         }
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = Color.Transparent
-                    )
+                    colors =
+                        TopAppBarDefaults.topAppBarColors(
+                            containerColor = Color.Transparent,
+                        ),
                 )
 
                 Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 16.dp)
-                        .padding(bottom = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 16.dp)
+                            .padding(bottom = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     PlaceholderToolbar { placeholder ->
                         onInsertPlaceholder(placeholder)
@@ -139,9 +143,10 @@ internal fun ContentEditorDialog(
                         contentFocusRequester = contentFocusRequester,
                         contentInteractionSource = contentInteractionSource,
                         contentError = contentError,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f)
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .weight(1f),
                     )
                 }
             }
@@ -155,20 +160,22 @@ private fun MessageValidationStrip(contentError: String?) {
     if (contentError == null) return
 
     Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .semantics { liveRegion = LiveRegionMode.Polite },
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .semantics { liveRegion = LiveRegionMode.Polite },
         shape = MaterialTheme.shapes.small,
         color = MaterialTheme.colorScheme.errorContainer,
-        contentColor = MaterialTheme.colorScheme.onErrorContainer
+        contentColor = MaterialTheme.colorScheme.onErrorContainer,
     ) {
         Text(
-            text = stringResource(
-                R.string.error_template_missing_placeholders,
-                contentError
-            ),
+            text =
+                stringResource(
+                    R.string.error_template_missing_placeholders,
+                    contentError,
+                ),
             style = MaterialTheme.typography.bodySmall,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
         )
     }
 }
@@ -179,41 +186,50 @@ internal fun ContentEditorField(
     contentFocusRequester: FocusRequester,
     contentInteractionSource: MutableInteractionSource,
     contentError: String?,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val hasContentError = contentError != null
-    val fieldColors = OutlinedTextFieldDefaults.colors(
-        focusedBorderColor = if (hasContentError) {
-            MaterialTheme.colorScheme.error
-        } else {
-            MaterialTheme.colorScheme.secondary
-        },
-        unfocusedBorderColor = if (hasContentError) {
-            MaterialTheme.colorScheme.error.copy(alpha = 0.6f)
-        } else {
-            MaterialTheme.colorScheme.outline
-        },
-        cursorColor = MaterialTheme.colorScheme.secondary,
-        focusedLabelColor = if (hasContentError) {
-            MaterialTheme.colorScheme.error
-        } else {
-            MaterialTheme.colorScheme.secondary
-        },
-        unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
-    )
+    val fieldColors =
+        OutlinedTextFieldDefaults.colors(
+            focusedBorderColor =
+                if (hasContentError) {
+                    MaterialTheme.colorScheme.error
+                } else {
+                    MaterialTheme.colorScheme.secondary
+                },
+            unfocusedBorderColor =
+                if (hasContentError) {
+                    MaterialTheme.colorScheme.error.copy(alpha = 0.6f)
+                } else {
+                    MaterialTheme.colorScheme.outline
+                },
+            cursorColor = MaterialTheme.colorScheme.secondary,
+            focusedLabelColor =
+                if (hasContentError) {
+                    MaterialTheme.colorScheme.error
+                } else {
+                    MaterialTheme.colorScheme.secondary
+                },
+            unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     BasicTextField(
         state = contentState,
-        lineLimits = TextFieldLineLimits.MultiLine(
-            minHeightInLines = 1,
-            maxHeightInLines = Int.MAX_VALUE
-        ),
-        modifier = modifier
-            .focusRequester(contentFocusRequester)
-            .testTag(TEMPLATE_CONTENT_FIELD_TEST_TAG),
-        textStyle = MaterialTheme.typography.bodyMedium.copy(
-            color = MaterialTheme.colorScheme.onSurface
-        ),
-        cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.secondary),
+        lineLimits =
+            TextFieldLineLimits.MultiLine(
+                minHeightInLines = 1,
+                maxHeightInLines = Int.MAX_VALUE,
+            ),
+        modifier =
+            modifier
+                .focusRequester(contentFocusRequester)
+                .testTag(TEMPLATE_CONTENT_FIELD_TEST_TAG),
+        textStyle =
+            MaterialTheme.typography.bodyMedium.copy(
+                color = MaterialTheme.colorScheme.onSurface,
+            ),
+        cursorBrush =
+            androidx.compose.ui.graphics
+                .SolidColor(MaterialTheme.colorScheme.secondary),
         interactionSource = contentInteractionSource,
         decorator = { innerTextField ->
             OutlinedTextFieldDefaults.DecorationBox(
@@ -225,12 +241,12 @@ internal fun ContentEditorField(
                 interactionSource = contentInteractionSource,
                 label = {
                     Text(
-                        text = stringResource(R.string.label_message)
+                        text = stringResource(R.string.label_message),
                     )
                 },
                 isError = hasContentError,
-                colors = fieldColors
+                colors = fieldColors,
             )
-        }
+        },
     )
 }

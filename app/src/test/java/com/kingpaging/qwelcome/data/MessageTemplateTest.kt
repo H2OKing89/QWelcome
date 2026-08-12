@@ -12,16 +12,15 @@ import org.junit.Test
  * - Edge cases (empty values, missing profile)
  */
 class MessageTemplateTest {
-
     // ========== Basic Placeholder Tests ==========
 
     @Test
     fun `generate replaces customer_name placeholder`() {
         val template = "Hello {{ customer_name }}!"
         val data = createCustomerData(customerName = "John Doe")
-        
+
         val result = MessageTemplate.generate(template, data)
-        
+
         assertEquals("Hello John Doe!", result)
     }
 
@@ -29,9 +28,9 @@ class MessageTemplateTest {
     fun `generate replaces ssid placeholder`() {
         val template = "Network: {{ ssid }}"
         val data = createCustomerData(ssid = "MyWiFi")
-        
+
         val result = MessageTemplate.generate(template, data)
-        
+
         assertEquals("Network: MyWiFi", result)
     }
 
@@ -39,9 +38,9 @@ class MessageTemplateTest {
     fun `generate replaces password placeholder`() {
         val template = "Password: {{ password }}"
         val data = createCustomerData(password = "secret123")
-        
+
         val result = MessageTemplate.generate(template, data)
-        
+
         assertEquals("Password: secret123", result)
     }
 
@@ -49,24 +48,26 @@ class MessageTemplateTest {
     fun `generate replaces account_number placeholder`() {
         val template = "Account: {{ account_number }}"
         val data = createCustomerData(accountNumber = "ACC-12345")
-        
+
         val result = MessageTemplate.generate(template, data)
-        
+
         assertEquals("Account: ACC-12345", result)
     }
 
     @Test
     fun `generate replaces multiple placeholders`() {
-        val template = "Hi {{ customer_name }}, your WiFi is {{ ssid }} with password {{ password }}. Account: {{ account_number }}"
-        val data = createCustomerData(
-            customerName = "Jane",
-            ssid = "HomeNet",
-            password = "pass1234",
-            accountNumber = "A001"
-        )
-        
+        val template =
+            "Hi {{ customer_name }}, your WiFi is {{ ssid }} with password {{ password }}. Account: {{ account_number }}"
+        val data =
+            createCustomerData(
+                customerName = "Jane",
+                ssid = "HomeNet",
+                password = "pass1234",
+                accountNumber = "A001",
+            )
+
         val result = MessageTemplate.generate(template, data)
-        
+
         assertEquals("Hi Jane, your WiFi is HomeNet with password pass1234. Account: A001", result)
     }
 
@@ -74,9 +75,9 @@ class MessageTemplateTest {
     fun `generate handles duplicate placeholders`() {
         val template = "{{ customer_name }}, welcome {{ customer_name }}!"
         val data = createCustomerData(customerName = "Bob")
-        
+
         val result = MessageTemplate.generate(template, data)
-        
+
         assertEquals("Bob, welcome Bob!", result)
     }
 
@@ -87,9 +88,9 @@ class MessageTemplateTest {
         val template = "Message\n\n{{ tech_signature }}"
         val data = createCustomerData()
         val profile = TechProfile(name = "John Tech", title = "Installer", dept = "Field Services")
-        
+
         val result = MessageTemplate.generate(template, data, profile)
-        
+
         assertEquals("Message\n\nJohn Tech\nInstaller\nField Services", result)
     }
 
@@ -98,9 +99,9 @@ class MessageTemplateTest {
         val template = "Signed: {{ tech_signature }}"
         val data = createCustomerData()
         val profile = TechProfile(name = "John", title = "", dept = "")
-        
+
         val result = MessageTemplate.generate(template, data, profile)
-        
+
         assertEquals("Signed: John", result)
     }
 
@@ -109,9 +110,9 @@ class MessageTemplateTest {
         val template = "From: {{ tech_signature }}"
         val data = createCustomerData()
         val profile = TechProfile(name = "", title = "Senior Installer", dept = "")
-        
+
         val result = MessageTemplate.generate(template, data, profile)
-        
+
         assertEquals("From: Senior Installer", result)
     }
 
@@ -120,9 +121,9 @@ class MessageTemplateTest {
         val template = "From: {{ tech_signature }}"
         val data = createCustomerData()
         val profile = TechProfile(name = "", title = "", dept = "IT Department")
-        
+
         val result = MessageTemplate.generate(template, data, profile)
-        
+
         assertEquals("From: IT Department", result)
     }
 
@@ -131,9 +132,9 @@ class MessageTemplateTest {
         val template = "{{ tech_signature }}"
         val data = createCustomerData()
         val profile = TechProfile(name = "Jane Doe", title = "Lead Tech", dept = "")
-        
+
         val result = MessageTemplate.generate(template, data, profile)
-        
+
         assertEquals("Jane Doe\nLead Tech", result)
     }
 
@@ -163,9 +164,9 @@ class MessageTemplateTest {
     fun `generate removes tech_signature placeholder when no profile provided`() {
         val template = "Message\n\n{{ tech_signature }}"
         val data = createCustomerData()
-        
+
         val result = MessageTemplate.generate(template, data, techProfile = null)
-        
+
         assertEquals("Message\n\n", result)
     }
 
@@ -174,9 +175,9 @@ class MessageTemplateTest {
         val template = "Text{{ tech_signature }}End"
         val data = createCustomerData()
         val profile = TechProfile(name = "", title = "", dept = "")
-        
+
         val result = MessageTemplate.generate(template, data, profile)
-        
+
         assertEquals("TextEnd", result)
     }
 
@@ -185,9 +186,9 @@ class MessageTemplateTest {
         val template = "{{ tech_signature }}"
         val data = createCustomerData()
         val profile = TechProfile(name = "   ", title = "   ", dept = "   ")
-        
+
         val result = MessageTemplate.generate(template, data, profile)
-        
+
         assertEquals("", result)
     }
 
@@ -197,9 +198,9 @@ class MessageTemplateTest {
     fun `generate handles empty customer values`() {
         val template = "Name: {{ customer_name }}, SSID: {{ ssid }}"
         val data = createCustomerData(customerName = "", ssid = "")
-        
+
         val result = MessageTemplate.generate(template, data)
-        
+
         assertEquals("Name: , SSID: ", result)
     }
 
@@ -207,9 +208,9 @@ class MessageTemplateTest {
     fun `generate handles template without placeholders`() {
         val template = "This is plain text with no placeholders"
         val data = createCustomerData()
-        
+
         val result = MessageTemplate.generate(template, data)
-        
+
         assertEquals("This is plain text with no placeholders", result)
     }
 
@@ -235,17 +236,19 @@ class MessageTemplateTest {
 
     @Test
     fun `generate describes open networks without an empty password`() {
-        val result = MessageTemplate.generate(
-            template = "Password: {{ password }}",
-            data = CustomerData(
-                customerName = "Alice",
-                customerPhone = "",
-                ssid = "TestWiFi",
-                password = "",
-                accountNumber = "",
-                isOpenNetwork = true
+        val result =
+            MessageTemplate.generate(
+                template = "Password: {{ password }}",
+                data =
+                    CustomerData(
+                        customerName = "Alice",
+                        customerPhone = "",
+                        ssid = "TestWiFi",
+                        password = "",
+                        accountNumber = "",
+                        isOpenNetwork = true,
+                    ),
             )
-        )
 
         assertEquals("Password: No password - open network", result)
     }
@@ -253,11 +256,12 @@ class MessageTemplateTest {
     @Test
     fun `generate replaces placeholders with or without whitespace`() {
         val template = "{{customer_name}} {{ ssid }} {{password}}"
-        val data = createCustomerData(
-            customerName = "Jane",
-            ssid = "HomeNet",
-            password = "pass1234"
-        )
+        val data =
+            createCustomerData(
+                customerName = "Jane",
+                ssid = "HomeNet",
+                password = "pass1234",
+            )
 
         val result = MessageTemplate.generate(template, data)
 
@@ -277,26 +281,28 @@ class MessageTemplateTest {
     @Test
     fun `generate handles special characters in values`() {
         val template = "{{ customer_name }} - {{ ssid }}"
-        val data = createCustomerData(
-            customerName = "O'Brien & Co.",
-            ssid = "WiFi<>Network"
-        )
-        
+        val data =
+            createCustomerData(
+                customerName = "O'Brien & Co.",
+                ssid = "WiFi<>Network",
+            )
+
         val result = MessageTemplate.generate(template, data)
-        
+
         assertEquals("O'Brien & Co. - WiFi<>Network", result)
     }
 
     @Test
     fun `generate handles unicode in values`() {
         val template = "{{ customer_name }}: {{ ssid }}"
-        val data = createCustomerData(
-            customerName = "José García",
-            ssid = "网络🏠"
-        )
-        
+        val data =
+            createCustomerData(
+                customerName = "José García",
+                ssid = "网络🏠",
+            )
+
         val result = MessageTemplate.generate(template, data)
-        
+
         assertEquals("José García: 网络🏠", result)
     }
 
@@ -304,9 +310,9 @@ class MessageTemplateTest {
     fun `generate handles newlines in template`() {
         val template = "Line 1\n{{ customer_name }}\nLine 3"
         val data = createCustomerData(customerName = "User")
-        
+
         val result = MessageTemplate.generate(template, data)
-        
+
         assertEquals("Line 1\nUser\nLine 3", result)
     }
 
@@ -316,13 +322,14 @@ class MessageTemplateTest {
     fun `PLACEHOLDERS contains all expected keys`() {
         val keys = MessageTemplate.PLACEHOLDERS.map { it.first }
 
-        val expectedKeys = setOf(
-            MessageTemplate.KEY_CUSTOMER_NAME,
-            MessageTemplate.KEY_SSID,
-            MessageTemplate.KEY_PASSWORD,
-            MessageTemplate.KEY_ACCOUNT_NUMBER,
-            MessageTemplate.KEY_TECH_SIGNATURE
-        )
+        val expectedKeys =
+            setOf(
+                MessageTemplate.KEY_CUSTOMER_NAME,
+                MessageTemplate.KEY_SSID,
+                MessageTemplate.KEY_PASSWORD,
+                MessageTemplate.KEY_ACCOUNT_NUMBER,
+                MessageTemplate.KEY_TECH_SIGNATURE,
+            )
 
         assertEquals(expectedKeys, keys.toSet())
     }
@@ -343,12 +350,12 @@ class MessageTemplateTest {
         customerPhone: String = "555-123-4567",
         ssid: String = "TestNetwork",
         password: String = "TestPass123",
-        accountNumber: String = "TEST001"
+        accountNumber: String = "TEST001",
     ) = CustomerData(
         customerName = customerName,
         customerPhone = customerPhone,
         ssid = ssid,
         password = password,
-        accountNumber = accountNumber
+        accountNumber = accountNumber,
     )
 }

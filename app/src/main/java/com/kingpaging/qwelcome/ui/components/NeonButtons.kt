@@ -28,7 +28,7 @@ private val ButtonShape = RoundedCornerShape(8.dp)
 enum class NeonButtonStyle {
     PRIMARY,
     SECONDARY,
-    TERTIARY
+    TERTIARY,
 }
 
 @Composable
@@ -38,7 +38,7 @@ fun NeonButton(
     glowColor: Color = MaterialTheme.colorScheme.primary,
     enabled: Boolean = true,
     style: NeonButtonStyle = NeonButtonStyle.PRIMARY,
-    content: @Composable RowScope.() -> Unit
+    content: @Composable RowScope.() -> Unit,
 ) {
     val haptic = LocalHapticFeedback.current
     val isDark = LocalDarkTheme.current
@@ -53,23 +53,26 @@ fun NeonButton(
         },
         enabled = enabled,
         shape = ButtonShape,
-        colors = ButtonDefaults.buttonColors(
-            containerColor = visuals.containerColor,
-            contentColor = visuals.contentColor,
-            disabledContainerColor = visuals.disabledContainerColor,
-            disabledContentColor = if (isDark) {
-                glowColor.copy(alpha = 0.38f)
-            } else {
-                colorScheme.onSurface.copy(alpha = 0.38f)
-            }
-        ),
+        colors =
+            ButtonDefaults.buttonColors(
+                containerColor = visuals.containerColor,
+                contentColor = visuals.contentColor,
+                disabledContainerColor = visuals.disabledContainerColor,
+                disabledContentColor =
+                    if (isDark) {
+                        glowColor.copy(alpha = 0.38f)
+                    } else {
+                        colorScheme.onSurface.copy(alpha = 0.38f)
+                    },
+            ),
         border = neonButtonBorder(glowColor, visuals.borderWidth, visuals.borderAlpha),
         elevation = neonButtonElevation(style, isDark),
-        modifier = modifier
-            .heightIn(min = 48.dp)
-            .neonPrimaryGlow(enabled, isDark, style, glowColor, glowAlpha),
+        modifier =
+            modifier
+                .heightIn(min = 48.dp)
+                .neonPrimaryGlow(enabled, isDark, style, glowColor, glowAlpha),
         contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
-        content = content
+        content = content,
     )
 }
 
@@ -77,28 +80,35 @@ fun NeonButton(
 private fun neonButtonBorder(
     glowColor: Color,
     borderWidth: Dp,
-    borderAlpha: Float
-): BorderStroke? = if (borderWidth > 0.dp) {
-    BorderStroke(
-        width = borderWidth,
-        brush = Brush.linearGradient(
-            colors = listOf(
-                glowColor.copy(alpha = borderAlpha),
-                glowColor.copy(alpha = borderAlpha * 0.7f)
-            )
+    borderAlpha: Float,
+): BorderStroke? =
+    if (borderWidth > 0.dp) {
+        BorderStroke(
+            width = borderWidth,
+            brush =
+                Brush.linearGradient(
+                    colors =
+                        listOf(
+                            glowColor.copy(alpha = borderAlpha),
+                            glowColor.copy(alpha = borderAlpha * 0.7f),
+                        ),
+                ),
         )
-    )
-} else {
-    null
-}
+    } else {
+        null
+    }
 
 @Composable
-private fun neonButtonElevation(style: NeonButtonStyle, isDark: Boolean) = when {
-    !isDark && style == NeonButtonStyle.PRIMARY -> ButtonDefaults.buttonElevation(
-        defaultElevation = 2.dp,
-        pressedElevation = 4.dp,
-        disabledElevation = 0.dp
-    )
+private fun neonButtonElevation(
+    style: NeonButtonStyle,
+    isDark: Boolean,
+) = when {
+    !isDark && style == NeonButtonStyle.PRIMARY ->
+        ButtonDefaults.buttonElevation(
+            defaultElevation = 2.dp,
+            pressedElevation = 4.dp,
+            disabledElevation = 0.dp,
+        )
     else -> ButtonDefaults.buttonElevation(0.dp, 0.dp, 0.dp)
 }
 
@@ -107,18 +117,19 @@ private fun Modifier.neonPrimaryGlow(
     isDark: Boolean,
     style: NeonButtonStyle,
     glowColor: Color,
-    glowAlpha: Float
-): Modifier = if (!enabled || !isDark || style != NeonButtonStyle.PRIMARY) {
-    this
-} else {
-    drawBehind {
-        drawRoundRect(
-            color = glowColor.copy(alpha = glowAlpha * 0.25f),
-            cornerRadius = CornerRadius(8.dp.toPx()),
-            style = Stroke(width = 2.dp.toPx())
-        )
+    glowAlpha: Float,
+): Modifier =
+    if (!enabled || !isDark || style != NeonButtonStyle.PRIMARY) {
+        this
+    } else {
+        drawBehind {
+            drawRoundRect(
+                color = glowColor.copy(alpha = glowAlpha * 0.25f),
+                cornerRadius = CornerRadius(8.dp.toPx()),
+                style = Stroke(width = 2.dp.toPx()),
+            )
+        }
     }
-}
 
 @Composable
 fun NeonCyanButton(
@@ -126,7 +137,7 @@ fun NeonCyanButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     style: NeonButtonStyle = NeonButtonStyle.PRIMARY,
-    content: @Composable RowScope.() -> Unit
+    content: @Composable RowScope.() -> Unit,
 ) {
     NeonButton(
         onClick = onClick,
@@ -134,7 +145,7 @@ fun NeonCyanButton(
         glowColor = MaterialTheme.colorScheme.primary,
         enabled = enabled,
         style = style,
-        content = content
+        content = content,
     )
 }
 
@@ -144,7 +155,7 @@ fun NeonMagentaButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     style: NeonButtonStyle = NeonButtonStyle.SECONDARY,
-    content: @Composable RowScope.() -> Unit
+    content: @Composable RowScope.() -> Unit,
 ) {
     NeonButton(
         onClick = onClick,
@@ -152,6 +163,6 @@ fun NeonMagentaButton(
         glowColor = MaterialTheme.colorScheme.secondary,
         enabled = enabled,
         style = style,
-        content = content
+        content = content,
     )
 }

@@ -7,7 +7,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.input.TextFieldState
@@ -16,7 +15,6 @@ import androidx.compose.foundation.text.input.insert
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SheetState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -37,8 +35,8 @@ import com.kingpaging.qwelcome.data.Template
 import com.kingpaging.qwelcome.ui.components.CyberpunkBackdrop
 import com.kingpaging.qwelcome.ui.components.NeonDiscardDialog
 import com.kingpaging.qwelcome.util.rememberHapticFeedback
-import com.kingpaging.qwelcome.viewmodel.templates.TemplateEditorUiState
 import com.kingpaging.qwelcome.viewmodel.templates.MAX_TEMPLATE_NAME_LENGTH
+import com.kingpaging.qwelcome.viewmodel.templates.TemplateEditorUiState
 import kotlinx.coroutines.flow.distinctUntilChanged
 
 private const val TAG_MAX_LENGTH = 32
@@ -47,14 +45,16 @@ private const val TAG_MAX_LENGTH = 32
 internal fun normalizeTemplateTag(rawTag: String): String = rawTag.trim().take(TAG_MAX_LENGTH)
 
 /** Case-insensitive containment check used to prevent duplicate tags. */
-internal fun List<String>.containsTagIgnoreCase(tag: String): Boolean =
-    any { it.equals(tag, ignoreCase = true) }
+internal fun List<String>.containsTagIgnoreCase(tag: String): Boolean = any { it.equals(tag, ignoreCase = true) }
 
 /**
  * Normalizes [draftTagInput] and appends it to [existingTags], unless it is blank after
  * normalization or already present (case-insensitively).
  */
-internal fun mergeDraftTag(existingTags: List<String>, draftTagInput: String): List<String> {
+internal fun mergeDraftTag(
+    existingTags: List<String>,
+    draftTagInput: String,
+): List<String> {
     val draftTag = normalizeTemplateTag(draftTagInput)
     return if (draftTag.isBlank() || existingTags.containsTagIgnoreCase(draftTag)) {
         existingTags
@@ -65,7 +65,7 @@ internal fun mergeDraftTag(existingTags: List<String>, draftTagInput: String): L
 
 private class TemplateEditorState(
     val contentFieldState: TextFieldState,
-    private val showContentEditorDialogState: MutableState<Boolean>
+    private val showContentEditorDialogState: MutableState<Boolean>,
 ) {
     var showContentEditorDialog: Boolean
         get() = showContentEditorDialogState.value
@@ -84,7 +84,7 @@ private class TemplateEditorState(
     fun dismiss(
         isDirty: Boolean,
         onToggleDiscardDialog: (Boolean) -> Unit,
-        onCancelEditing: () -> Unit
+        onCancelEditing: () -> Unit,
     ) {
         if (isDirty) {
             onToggleDiscardDialog(true)
@@ -98,7 +98,7 @@ private class TemplateEditorState(
         editorUiState: TemplateEditorUiState,
         onCreate: (name: String, content: String, tags: List<String>) -> Unit,
         onUpdate: (name: String, content: String, tags: List<String>) -> Unit,
-        onNameErrorChange: (Int?) -> Unit
+        onNameErrorChange: (Int?) -> Unit,
     ) {
         if (editorUiState.name.isBlank()) {
             onNameErrorChange(R.string.error_name_required)
@@ -117,7 +117,7 @@ private class TemplateEditorState(
             onUpdate(
                 editorUiState.name,
                 editorUiState.contentText,
-                tags
+                tags,
             )
         }
     }
@@ -137,7 +137,7 @@ private class TemplateEditorState(
     fun insertPlaceholder(
         placeholder: String,
         onContentChange: (String) -> Unit,
-        contentFocusRequester: FocusRequester
+        contentFocusRequester: FocusRequester,
     ) {
         insertAtCursor(contentFieldState, placeholder)
         onContentChange(contentFieldState.text.toString())
@@ -146,9 +146,7 @@ private class TemplateEditorState(
 }
 
 @Composable
-private fun rememberTemplateEditorState(
-    initialContentText: String
-): TemplateEditorState {
+private fun rememberTemplateEditorState(initialContentText: String): TemplateEditorState {
     val contentFieldState = rememberTextFieldState(initialText = initialContentText)
     val showContentEditorDialogState = rememberSaveable { mutableStateOf(false) }
     return remember {
@@ -160,7 +158,7 @@ private fun rememberTemplateEditorState(
 private fun BindTemplateEditorState(
     state: TemplateEditorState,
     contentText: String,
-    onContentChange: (String) -> Unit
+    onContentChange: (String) -> Unit,
 ) {
     LaunchedEffect(contentText) {
         state.syncContentFieldValue(contentText)
@@ -181,7 +179,7 @@ private fun TemplateTagsSheetHost(
     onNewTagInputChange: (String) -> Unit,
     onTagsChange: (List<String>) -> Unit,
     addTag: (String) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     if (!visible && !sheetState.isVisible) return
@@ -197,11 +195,11 @@ private fun TemplateTagsSheetHost(
             onTagsChange(
                 editorUiState.tags.filterNot {
                     it.equals(tag, ignoreCase = true)
-                }
+                },
             )
         },
         onSuggestionSelected = addTag,
-        onDismiss = onDismiss
+        onDismiss = onDismiss,
     )
 }
 
@@ -219,7 +217,7 @@ internal fun TemplateEditorContent(
     onNewTagInputChange: (String) -> Unit,
     onContentChange: (String) -> Unit,
     onNameErrorChange: (Int?) -> Unit,
-    onToggleDiscardDialog: (Boolean) -> Unit
+    onToggleDiscardDialog: (Boolean) -> Unit,
 ) {
     val isNew = template.id == NEW_TEMPLATE_ID
     val originalName = if (isNew) "" else template.name
@@ -235,25 +233,28 @@ internal fun TemplateEditorContent(
     BindTemplateEditorState(
         state = editorState,
         contentText = editorUiState.contentText,
-        onContentChange = onContentChange
+        onContentChange = onContentChange,
     )
 
-    val isDirty = editorUiState.name != originalName ||
-        editorUiState.contentText != originalContent ||
-        editorUiState.tags != originalTags ||
-        editorUiState.newTagInput.isNotBlank()
+    val isDirty =
+        editorUiState.name != originalName ||
+            editorUiState.contentText != originalContent ||
+            editorUiState.tags != originalTags ||
+            editorUiState.newTagInput.isNotBlank()
     val isValid = editorUiState.name.isNotBlank() && editorUiState.contentError == null
     val saveEnabled = isValid && isDirty
-    val suggestedTags = listOf(
-        stringResource(R.string.tag_residential),
-        stringResource(R.string.tag_business),
-        stringResource(R.string.tag_install),
-        stringResource(R.string.tag_repair),
-        stringResource(R.string.tag_troubleshooting)
-    )
-    val availableSuggestions = suggestedTags.filter { suggestion ->
-        editorUiState.tags.none { it.equals(suggestion, ignoreCase = true) }
-    }
+    val suggestedTags =
+        listOf(
+            stringResource(R.string.tag_residential),
+            stringResource(R.string.tag_business),
+            stringResource(R.string.tag_install),
+            stringResource(R.string.tag_repair),
+            stringResource(R.string.tag_troubleshooting),
+        )
+    val availableSuggestions =
+        suggestedTags.filter { suggestion ->
+            editorUiState.tags.none { it.equals(suggestion, ignoreCase = true) }
+        }
 
     val addTag: (String) -> Unit = { rawTag ->
         val normalized = normalizeTemplateTag(rawTag)
@@ -275,7 +276,7 @@ internal fun TemplateEditorContent(
                 onToggleDiscardDialog(false)
                 onCancelEditing()
             },
-            onKeepEditing = { onToggleDiscardDialog(false) }
+            onKeepEditing = { onToggleDiscardDialog(false) },
         )
     }
 
@@ -297,19 +298,20 @@ internal fun TemplateEditorContent(
                             editorUiState = editorUiState,
                             onCreate = onCreate,
                             onUpdate = onUpdate,
-                            onNameErrorChange = onNameErrorChange
+                            onNameErrorChange = onNameErrorChange,
                         )
-                    }
+                    },
                 )
-            }
+            },
         ) { innerPadding ->
             LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .padding(horizontal = 16.dp),
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
+                        .padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(top = 8.dp, bottom = 24.dp)
+                contentPadding = PaddingValues(top = 8.dp, bottom = 24.dp),
             ) {
                 item(key = "template_name") {
                     TemplateNameField(
@@ -319,7 +321,7 @@ internal fun TemplateEditorContent(
                             onNameChange(it.take(MAX_TEMPLATE_NAME_LENGTH))
                             onNameErrorChange(null)
                         },
-                        onNext = { editorState.openContentEditor() }
+                        onNext = { editorState.openContentEditor() },
                     )
                 }
 
@@ -330,7 +332,7 @@ internal fun TemplateEditorContent(
                         onOpenEditor = {
                             haptic()
                             editorState.openContentEditor()
-                        }
+                        },
                     )
                 }
 
@@ -340,7 +342,7 @@ internal fun TemplateEditorContent(
                         onOpen = {
                             haptic()
                             showTagsSheet.value = true
-                        }
+                        },
                     )
                 }
             }
@@ -353,7 +355,7 @@ internal fun TemplateEditorContent(
             onNewTagInputChange = onNewTagInputChange,
             onTagsChange = onTagsChange,
             addTag = addTag,
-            onDismiss = { showTagsSheet.value = false }
+            onDismiss = { showTagsSheet.value = false },
         )
 
         if (editorState.showContentEditorDialog) {
@@ -367,15 +369,18 @@ internal fun TemplateEditorContent(
                     editorState.insertPlaceholder(
                         placeholder = placeholder,
                         onContentChange = onContentChange,
-                        contentFocusRequester = contentFocusRequester
+                        contentFocusRequester = contentFocusRequester,
                     )
-                }
+                },
             )
         }
     }
 }
 
-private fun insertAtCursor(state: TextFieldState, textToInsert: String) {
+private fun insertAtCursor(
+    state: TextFieldState,
+    textToInsert: String,
+) {
     if (textToInsert.isEmpty()) return
     state.edit {
         val start = minOf(selection.start, selection.end).coerceIn(0, length)

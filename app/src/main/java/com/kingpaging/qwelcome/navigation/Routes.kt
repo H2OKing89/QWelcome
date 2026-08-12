@@ -7,7 +7,6 @@ import kotlinx.serialization.Serializable
  * Using Kotlin serialization for type-safe argument passing.
  */
 object Routes {
-
     /** Main customer intake form screen */
     @Serializable
     object Main
@@ -30,5 +29,7 @@ object Routes {
 
     /** Full-screen template editor for an existing template or [NEW_TEMPLATE_ID]. */
     @Serializable
-    data class TemplateEditor(val templateId: String)
+    data class TemplateEditor(
+        val templateId: String,
+    )
 }

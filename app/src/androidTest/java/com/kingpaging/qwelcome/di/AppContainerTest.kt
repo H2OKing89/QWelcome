@@ -10,7 +10,6 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class AppContainerTest {
-
     private val application = ApplicationProvider.getApplicationContext<QWelcomeApplication>()
 
     @Test

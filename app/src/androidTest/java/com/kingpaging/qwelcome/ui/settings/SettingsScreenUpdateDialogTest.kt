@@ -32,7 +32,6 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class SettingsScreenUpdateDialogTest {
-
     @get:Rule
     val composeRule = createComposeRule()
 
@@ -44,21 +43,25 @@ class SettingsScreenUpdateDialogTest {
     fun setup() {
         appContext = ApplicationProvider.getApplicationContext()
         val settingsStore = SettingsStore(appContext)
-        fakeAppUpdater = FakeAppUpdater().apply {
-            checkForUpdateResult = UpdateCheckResult.UpdateAvailable(
-                latestVersion = "9.9.9",
-                downloadUrl = "https://github.com/H2OKing89/QWelcome/releases/download/v9.9.9/QWelcome-v9.9.9.apk",
-                releaseNotes = "test",
-                assetName = "QWelcome-v9.9.9.apk",
-                assetSizeBytes = 1234L,
-                sha256Hex = "f".repeat(64)
+        fakeAppUpdater =
+            FakeAppUpdater().apply {
+                checkForUpdateResult =
+                    UpdateCheckResult.UpdateAvailable(
+                        latestVersion = "9.9.9",
+                        downloadUrl =
+                            "https://github.com/H2OKing89/QWelcome/releases/download/v9.9.9/QWelcome-v9.9.9.apk",
+                        releaseNotes = "test",
+                        assetName = "QWelcome-v9.9.9.apk",
+                        assetSizeBytes = 1234L,
+                        sha256Hex = "f".repeat(64),
+                    )
+            }
+        vm =
+            SettingsViewModel(
+                store = settingsStore,
+                resourceProvider = AndroidResourceProvider(appContext),
+                appUpdater = fakeAppUpdater,
             )
-        }
-        vm = SettingsViewModel(
-            store = settingsStore,
-            resourceProvider = AndroidResourceProvider(appContext),
-            appUpdater = fakeAppUpdater
-        )
     }
 
     @Test
@@ -84,12 +87,15 @@ class SettingsScreenUpdateDialogTest {
     fun privacySwitches_have_title_content_descriptions() {
         setScreenContent()
 
-        composeRule.onNodeWithContentDescription(
-            appContext.getString(R.string.label_crash_reporting)
-        ).assertIsDisplayed()
-        composeRule.onNodeWithContentDescription(
-            appContext.getString(R.string.label_screen_capture_protection)
-        ).performScrollTo().assertIsDisplayed()
+        composeRule
+            .onNodeWithContentDescription(
+                appContext.getString(R.string.label_crash_reporting),
+            ).assertIsDisplayed()
+        composeRule
+            .onNodeWithContentDescription(
+                appContext.getString(R.string.label_screen_capture_protection),
+            ).performScrollTo()
+            .assertIsDisplayed()
     }
 
     @Test
@@ -97,14 +103,15 @@ class SettingsScreenUpdateDialogTest {
         composeRule.setContent {
             CyberpunkTheme {
                 SettingsScreen(
-                    uiState = SettingsUiState(
-                        profile = TechProfile(name = "Route-free Tech"),
-                        privacySettings = PrivacySettings(),
-                        activeTemplate = Template(name = "Plain State", content = "Message"),
-                        updateState = UpdateState.Idle,
-                        showDownloadConfirmDialog = false,
-                        currentVersion = "1.0.0"
-                    ),
+                    uiState =
+                        SettingsUiState(
+                            profile = TechProfile(name = "Route-free Tech"),
+                            privacySettings = PrivacySettings(),
+                            activeTemplate = Template(name = "Plain State", content = "Message"),
+                            updateState = UpdateState.Idle,
+                            showDownloadConfirmDialog = false,
+                            currentVersion = "1.0.0",
+                        ),
                     onBack = {},
                     onOpenExport = {},
                     onOpenImport = {},
@@ -119,7 +126,7 @@ class SettingsScreenUpdateDialogTest {
                     onRetryInstall = {},
                     onOpenInstallSettings = {},
                     onCheckForUpdate = {},
-                    onOpenProjectPage = {}
+                    onOpenProjectPage = {},
                 )
             }
         }
@@ -133,7 +140,7 @@ class SettingsScreenUpdateDialogTest {
             CyberpunkTheme {
                 CompositionLocalProvider(
                     LocalSettingsViewModel provides vm,
-                    LocalSoundPlayer provides FakeSoundPlayer()
+                    LocalSoundPlayer provides FakeSoundPlayer(),
                 ) {
                     SettingsRoute(onBack = {})
                 }

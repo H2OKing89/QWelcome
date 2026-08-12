@@ -27,7 +27,6 @@ import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class CustomerIntakeViewModelTest {
-
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
@@ -37,23 +36,25 @@ class CustomerIntakeViewModelTest {
     private val savedStateHandle = SavedStateHandle()
     private lateinit var vm: CustomerIntakeViewModel
 
-    private val testTemplate = Template(
-        id = "550e8400-e29b-41d4-a716-446655440000",
-        name = "Test",
-        content = "Hello {{ customer_name }}, SSID: {{ ssid }}, PW: {{ password }}, Acct: {{ account_number }}"
-    )
+    private val testTemplate =
+        Template(
+            id = "550e8400-e29b-41d4-a716-446655440000",
+            name = "Test",
+            content = "Hello {{ customer_name }}, SSID: {{ ssid }}, PW: {{ password }}, Acct: {{ account_number }}",
+        )
 
     @Before
     fun setup() {
         every { mockStore.techProfileFlow } returns flowOf(TechProfile("Tech", "Sr Tech", "IT"))
         every { mockStore.activeTemplateFlow } returns flowOf(testTemplate)
-        vm = CustomerIntakeViewModel(
-            savedStateHandle = savedStateHandle,
-            settingsStore = mockStore,
-            resourceProvider = fakeResourceProvider,
-            timeProvider = fakeTimeProvider,
-            enableForegroundInactivityTimer = false
-        )
+        vm =
+            CustomerIntakeViewModel(
+                savedStateHandle = savedStateHandle,
+                settingsStore = mockStore,
+                resourceProvider = fakeResourceProvider,
+                timeProvider = fakeTimeProvider,
+                enableForegroundInactivityTimer = false,
+            )
     }
 
     @After
@@ -128,134 +129,145 @@ class CustomerIntakeViewModelTest {
     }
 
     @Test
-    fun `onSmsClicked with empty fields sets validation errors`() = runTest {
-        val navigator = FakeNavigator()
-        vm.onSmsClicked(navigator)
-        advanceUntilIdle()
-
-        assertNotNull(vm.uiState.value.customerNameError)
-        assertNotNull(vm.uiState.value.customerPhoneError)
-        assertNotNull(vm.uiState.value.ssidError)
-        assertNotNull(vm.uiState.value.passwordError)
-        assertNotNull(vm.uiState.value.accountNumberError)
-        assertTrue(navigator.smsCalls.isEmpty())
-    }
-
-    @Test
-    fun `onSmsClicked with invalid fields emits ValidationFailed`() = runTest {
-        val navigator = FakeNavigator()
-
-        vm.uiEvent.test {
+    fun `onSmsClicked with empty fields sets validation errors`() =
+        runTest {
+            val navigator = FakeNavigator()
             vm.onSmsClicked(navigator)
             advanceUntilIdle()
 
-            val event = awaitItem()
-            assertTrue(event is UiEvent.ValidationFailed)
+            assertNotNull(vm.uiState.value.customerNameError)
+            assertNotNull(vm.uiState.value.customerPhoneError)
+            assertNotNull(vm.uiState.value.ssidError)
+            assertNotNull(vm.uiState.value.passwordError)
+            assertNotNull(vm.uiState.value.accountNumberError)
+            assertTrue(navigator.smsCalls.isEmpty())
         }
-    }
 
     @Test
-    fun `onSmsClicked with valid fields calls navigator openSms`() = runTest {
-        val navigator = FakeNavigator()
-        fillValidFields()
+    fun `onSmsClicked with invalid fields emits ValidationFailed`() =
+        runTest {
+            val navigator = FakeNavigator()
 
-        vm.onSmsClicked(navigator)
-        advanceUntilIdle()
+            vm.uiEvent.test {
+                vm.onSmsClicked(navigator)
+                advanceUntilIdle()
 
-        assertEquals(1, navigator.smsCalls.size)
-        assertEquals("+12125551234", navigator.smsCalls[0].phoneNumber)
-        assertTrue(navigator.smsCalls[0].message.contains("Alice"))
-    }
-
-    @Test
-    fun `onShareClicked with valid fields calls navigator shareText`() = runTest {
-        val navigator = FakeNavigator()
-        fillValidFields()
-
-        vm.onShareClicked(navigator)
-        advanceUntilIdle()
-
-        assertEquals(1, navigator.shareCalls.size)
-        assertTrue(navigator.shareCalls[0].message.contains("Alice"))
-    }
-
-    @Test
-    fun `onCopyClicked with valid fields calls navigator copyToClipboard and emits events`() = runTest {
-        val navigator = FakeNavigator()
-        fillValidFields()
-
-        vm.uiEvent.test {
-            vm.onCopyClicked(navigator)
-            advanceUntilIdle()
-
-            assertEquals(1, navigator.copyCalls.size)
-            assertTrue(navigator.copyCalls[0].text.contains("Alice"))
-
-            val event1 = awaitItem()
-            assertTrue(event1 is UiEvent.CopySuccess)
-            val event2 = awaitItem()
-            assertTrue(event2 is UiEvent.ShowToast)
+                val event = awaitItem()
+                assertTrue(event is UiEvent.ValidationFailed)
+            }
         }
-    }
 
     @Test
-    fun `onCopyClicked when clipboard fails emits ActionFailed and toast`() = runTest {
-        val navigator = FakeNavigator().apply { clipboardSucceeds = false }
-        fillValidFields()
+    fun `onSmsClicked with valid fields calls navigator openSms`() =
+        runTest {
+            val navigator = FakeNavigator()
+            fillValidFields()
 
-        vm.uiEvent.test {
-            vm.onCopyClicked(navigator)
-            advanceUntilIdle()
-
-            val event1 = awaitItem()
-            assertTrue(event1 is UiEvent.ActionFailed)
-            val event2 = awaitItem()
-            assertTrue(event2 is UiEvent.ShowToast)
-        }
-    }
-
-    @Test
-    fun `rate limiting emits RateLimitExceeded on rapid actions`() = runTest {
-        val navigator = FakeNavigator()
-        fillValidFields()
-
-        vm.uiEvent.test {
-            // First call succeeds - advance time to ensure cooldown passes
-            fakeTimeProvider.advanceBy(3000L) // More than 2 second cooldown
             vm.onSmsClicked(navigator)
             advanceUntilIdle()
 
-            // Immediate second call should be rate limited (no time advance)
-            vm.onSmsClicked(navigator)
-            advanceUntilIdle()
-
-            val event = awaitItem()
-            assertTrue(event is UiEvent.RateLimitExceeded)
+            assertEquals(1, navigator.smsCalls.size)
+            assertEquals("+12125551234", navigator.smsCalls[0].phoneNumber)
+            assertTrue(navigator.smsCalls[0].message.contains("Alice"))
         }
-    }
 
     @Test
-    fun `clearForm resets all fields and shows toast`() = runTest {
-        fillValidFields()
-        assertTrue(vm.uiState.value.customerName.isNotBlank())
+    fun `onShareClicked with valid fields calls navigator shareText`() =
+        runTest {
+            val navigator = FakeNavigator()
+            fillValidFields()
 
-        vm.uiEvent.test {
-            vm.clearForm()
+            vm.onShareClicked(navigator)
             advanceUntilIdle()
 
-            // Verify fields are cleared
-            assertEquals("", vm.uiState.value.customerName)
-            assertEquals("", vm.uiState.value.customerPhone)
-            assertEquals("", vm.uiState.value.ssid)
-            assertEquals("", vm.uiState.value.password)
-            assertEquals("", vm.uiState.value.accountNumber)
-
-            // Verify toast event is emitted (FakeResourceProvider returns "string_resId")
-            val event = awaitItem()
-            assertTrue(event is UiEvent.ShowToast)
-            assertTrue((event as UiEvent.ShowToast).message.startsWith("string_"))
+            assertEquals(1, navigator.shareCalls.size)
+            assertTrue(navigator.shareCalls[0].message.contains("Alice"))
         }
-    }
+
+    @Test
+    fun `onCopyClicked with valid fields calls navigator copyToClipboard and emits events`() =
+        runTest {
+            val navigator = FakeNavigator()
+            fillValidFields()
+
+            vm.uiEvent.test {
+                vm.onCopyClicked(navigator)
+                advanceUntilIdle()
+
+                assertEquals(1, navigator.copyCalls.size)
+                assertTrue(navigator.copyCalls[0].text.contains("Alice"))
+
+                val event1 = awaitItem()
+                assertTrue(event1 is UiEvent.CopySuccess)
+                val event2 = awaitItem()
+                assertTrue(event2 is UiEvent.ShowToast)
+            }
+        }
+
+    @Test
+    fun `onCopyClicked when clipboard fails emits ActionFailed and toast`() =
+        runTest {
+            val navigator = FakeNavigator().apply { clipboardSucceeds = false }
+            fillValidFields()
+
+            vm.uiEvent.test {
+                vm.onCopyClicked(navigator)
+                advanceUntilIdle()
+
+                val event1 = awaitItem()
+                assertTrue(event1 is UiEvent.ActionFailed)
+                val event2 = awaitItem()
+                assertTrue(event2 is UiEvent.ShowToast)
+            }
+        }
+
+    @Test
+    fun `rate limiting emits RateLimitExceeded on rapid actions`() =
+        runTest {
+            val navigator = FakeNavigator()
+            fillValidFields()
+
+            vm.uiEvent.test {
+                // First call succeeds - advance time to ensure cooldown passes
+                fakeTimeProvider.advanceBy(3000L) // More than 2 second cooldown
+                vm.onSmsClicked(navigator)
+                advanceUntilIdle()
+
+                // Immediate second call should be rate limited (no time advance)
+                vm.onSmsClicked(navigator)
+                advanceUntilIdle()
+
+                val event = awaitItem()
+                assertTrue(event is UiEvent.RateLimitExceeded)
+            }
+        }
+
+    @Test
+    fun `clearForm resets all fields and shows toast`() =
+        runTest {
+            fillValidFields()
+            assertTrue(
+                vm.uiState.value.customerName
+                    .isNotBlank(),
+            )
+
+            vm.uiEvent.test {
+                vm.clearForm()
+                advanceUntilIdle()
+
+                // Verify fields are cleared
+                assertEquals("", vm.uiState.value.customerName)
+                assertEquals("", vm.uiState.value.customerPhone)
+                assertEquals("", vm.uiState.value.ssid)
+                assertEquals("", vm.uiState.value.password)
+                assertEquals("", vm.uiState.value.accountNumber)
+
+                // Verify toast event is emitted (FakeResourceProvider returns "string_resId")
+                val event = awaitItem()
+                assertTrue(event is UiEvent.ShowToast)
+                assertTrue((event as UiEvent.ShowToast).message.startsWith("string_"))
+            }
+        }
 
     @Test
     fun `clearFormWithUndo restores the manually cleared form`() {
@@ -323,149 +335,166 @@ class CustomerIntakeViewModelTest {
 
         vm.onCustomerNameChanged(name)
 
-        assertEquals(name, vm.uiState.value.toCustomerData().customerName)
-    }
-
-    @Test
-    fun `message generation uses template and profile`() = runTest {
-        val navigator = FakeNavigator()
-        fillValidFields()
-
-        vm.onShareClicked(navigator)
-        advanceUntilIdle()
-
-        val message = navigator.shareCalls[0].message
-        assertTrue(message.contains("Alice"))
-        assertTrue(message.contains("TestWiFi"))
-        assertTrue(message.contains("password123"))
-        assertTrue(message.contains("ACC-001"))
-    }
-
-    @Test
-    fun `onSmsClicked without phone number shows phone error`() = runTest {
-        val navigator = FakeNavigator()
-        vm.onCustomerNameChanged("Alice")
-        vm.onSsidChanged("TestWiFi")
-        vm.onPasswordChanged("password123")
-        vm.onAccountNumberChanged("ACC-001")
-        // No phone number set
-
-        vm.onSmsClicked(navigator)
-        advanceUntilIdle()
-
-        assertNotNull(vm.uiState.value.customerPhoneError)
-        assertTrue(navigator.smsCalls.isEmpty())
-    }
-
-    @Test
-    fun `onShareClicked without phone number succeeds`() = runTest {
-        val navigator = FakeNavigator()
-        vm.onCustomerNameChanged("Alice")
-        vm.onSsidChanged("TestWiFi")
-        vm.onPasswordChanged("password123")
-        vm.onAccountNumberChanged("ACC-001")
-        // No phone — share doesn't require it
-
-        vm.onShareClicked(navigator)
-        advanceUntilIdle()
-
-        assertEquals(1, navigator.shareCalls.size)
-    }
-
-    @Test
-    fun `onShareClicked only requires optional fields used by active template`() = runTest {
-        every { mockStore.activeTemplateFlow } returns flowOf(
-            testTemplate.copy(content = "Hello {{ customer_name }}, {{ ssid }}")
+        assertEquals(
+            name,
+            vm.uiState.value
+                .toCustomerData()
+                .customerName,
         )
-        val navigator = FakeNavigator()
-        vm.onCustomerNameChanged("Alice")
-        vm.onSsidChanged("TestWiFi")
-
-        vm.onShareClicked(navigator)
-        advanceUntilIdle()
-
-        assertEquals(1, navigator.shareCalls.size)
-        assertNull(vm.uiState.value.passwordError)
-        assertNull(vm.uiState.value.accountNumberError)
     }
 
     @Test
-    fun `auto-clear clears form after timeout on resume`() = runTest {
-        fillValidFields()
-        assertTrue(vm.uiState.value.customerName.isNotBlank())
+    fun `message generation uses template and profile`() =
+        runTest {
+            val navigator = FakeNavigator()
+            fillValidFields()
 
-        vm.uiEvent.test {
+            vm.onShareClicked(navigator)
+            advanceUntilIdle()
+
+            val message = navigator.shareCalls[0].message
+            assertTrue(message.contains("Alice"))
+            assertTrue(message.contains("TestWiFi"))
+            assertTrue(message.contains("password123"))
+            assertTrue(message.contains("ACC-001"))
+        }
+
+    @Test
+    fun `onSmsClicked without phone number shows phone error`() =
+        runTest {
+            val navigator = FakeNavigator()
+            vm.onCustomerNameChanged("Alice")
+            vm.onSsidChanged("TestWiFi")
+            vm.onPasswordChanged("password123")
+            vm.onAccountNumberChanged("ACC-001")
+            // No phone number set
+
+            vm.onSmsClicked(navigator)
+            advanceUntilIdle()
+
+            assertNotNull(vm.uiState.value.customerPhoneError)
+            assertTrue(navigator.smsCalls.isEmpty())
+        }
+
+    @Test
+    fun `onShareClicked without phone number succeeds`() =
+        runTest {
+            val navigator = FakeNavigator()
+            vm.onCustomerNameChanged("Alice")
+            vm.onSsidChanged("TestWiFi")
+            vm.onPasswordChanged("password123")
+            vm.onAccountNumberChanged("ACC-001")
+            // No phone — share doesn't require it
+
+            vm.onShareClicked(navigator)
+            advanceUntilIdle()
+
+            assertEquals(1, navigator.shareCalls.size)
+        }
+
+    @Test
+    fun `onShareClicked only requires optional fields used by active template`() =
+        runTest {
+            every { mockStore.activeTemplateFlow } returns
+                flowOf(
+                    testTemplate.copy(content = "Hello {{ customer_name }}, {{ ssid }}"),
+                )
+            val navigator = FakeNavigator()
+            vm.onCustomerNameChanged("Alice")
+            vm.onSsidChanged("TestWiFi")
+
+            vm.onShareClicked(navigator)
+            advanceUntilIdle()
+
+            assertEquals(1, navigator.shareCalls.size)
+            assertNull(vm.uiState.value.passwordError)
+            assertNull(vm.uiState.value.accountNumberError)
+        }
+
+    @Test
+    fun `auto-clear clears form after timeout on resume`() =
+        runTest {
+            fillValidFields()
+            assertTrue(
+                vm.uiState.value.customerName
+                    .isNotBlank(),
+            )
+
+            vm.uiEvent.test {
+                // Simulate going to background
+                vm.onPause()
+
+                // Advance time by more than 10 minutes
+                fakeTimeProvider.advanceBy(11 * 60 * 1000L)
+
+                // Resume - should auto-clear and show toast
+                vm.onResume()
+                advanceUntilIdle()
+
+                // Verify fields are cleared
+                assertEquals("", vm.uiState.value.customerName)
+                assertEquals("", vm.uiState.value.customerPhone)
+
+                // Verify toast event is emitted
+                val event = awaitItem()
+                assertTrue(event is UiEvent.ShowToast)
+            }
+        }
+
+    @Test
+    fun `auto-clear does not clear form if timeout not reached`() =
+        runTest {
+            fillValidFields()
+            val originalName = vm.uiState.value.customerName
+
             // Simulate going to background
             vm.onPause()
 
-            // Advance time by more than 10 minutes
-            fakeTimeProvider.advanceBy(11 * 60 * 1000L)
+            // Advance time by less than 10 minutes
+            fakeTimeProvider.advanceBy(5 * 60 * 1000L)
 
-            // Resume - should auto-clear and show toast
+            // Resume - should NOT clear
             vm.onResume()
             advanceUntilIdle()
 
-            // Verify fields are cleared
-            assertEquals("", vm.uiState.value.customerName)
-            assertEquals("", vm.uiState.value.customerPhone)
-
-            // Verify toast event is emitted
-            val event = awaitItem()
-            assertTrue(event is UiEvent.ShowToast)
+            // Verify fields are NOT cleared
+            assertEquals(originalName, vm.uiState.value.customerName)
         }
-    }
 
     @Test
-    fun `auto-clear does not clear form if timeout not reached`() = runTest {
-        fillValidFields()
-        val originalName = vm.uiState.value.customerName
+    fun `auto-clear survives process death with SavedStateHandle`() =
+        runTest {
+            fillValidFields()
 
-        // Simulate going to background
-        vm.onPause()
+            // Simulate going to background
+            vm.onPause()
 
-        // Advance time by less than 10 minutes
-        fakeTimeProvider.advanceBy(5 * 60 * 1000L)
+            // Advance time
+            fakeTimeProvider.advanceBy(11 * 60 * 1000L)
 
-        // Resume - should NOT clear
-        vm.onResume()
-        advanceUntilIdle()
+            // Simulate process death and recreation with same SavedStateHandle
+            val newVm =
+                CustomerIntakeViewModel(
+                    savedStateHandle = savedStateHandle, // Same SavedStateHandle
+                    settingsStore = mockStore,
+                    resourceProvider = fakeResourceProvider,
+                    timeProvider = fakeTimeProvider,
+                    enableForegroundInactivityTimer = false,
+                )
 
-        // Verify fields are NOT cleared
-        assertEquals(originalName, vm.uiState.value.customerName)
-    }
+            newVm.uiEvent.test {
+                // Resume on new instance - should auto-clear
+                newVm.onResume()
+                advanceUntilIdle()
 
-    @Test
-    fun `auto-clear survives process death with SavedStateHandle`() = runTest {
-        fillValidFields()
+                // Verify fields are cleared
+                assertEquals("", newVm.uiState.value.customerName)
 
-        // Simulate going to background
-        vm.onPause()
-
-        // Advance time
-        fakeTimeProvider.advanceBy(11 * 60 * 1000L)
-
-        // Simulate process death and recreation with same SavedStateHandle
-        val newVm = CustomerIntakeViewModel(
-            savedStateHandle = savedStateHandle, // Same SavedStateHandle
-            settingsStore = mockStore,
-            resourceProvider = fakeResourceProvider,
-            timeProvider = fakeTimeProvider,
-            enableForegroundInactivityTimer = false
-        )
-
-        newVm.uiEvent.test {
-            // Resume on new instance - should auto-clear
-            newVm.onResume()
-            advanceUntilIdle()
-
-            // Verify fields are cleared
-            assertEquals("", newVm.uiState.value.customerName)
-
-            // Verify toast event is emitted
-            val event = awaitItem()
-            assertTrue(event is UiEvent.ShowToast)
+                // Verify toast event is emitted
+                val event = awaitItem()
+                assertTrue(event is UiEvent.ShowToast)
+            }
         }
-    }
 
     @Test
     fun `auto-clear clears form after foreground inactivity timeout`() {
@@ -479,50 +508,54 @@ class CustomerIntakeViewModelTest {
     }
 
     @Test
-    fun `auto-clear clears form from zero-valued activity timestamp`() = runTest {
-        val zeroTimeProvider = FakeTimeProvider()
-        val zeroTimestampState = SavedStateHandle()
-        val zeroTimestampVm = CustomerIntakeViewModel(
-            savedStateHandle = zeroTimestampState,
-            settingsStore = mockStore,
-            resourceProvider = fakeResourceProvider,
-            timeProvider = zeroTimeProvider,
-            enableForegroundInactivityTimer = false
-        )
+    fun `auto-clear clears form from zero-valued activity timestamp`() =
+        runTest {
+            val zeroTimeProvider = FakeTimeProvider()
+            val zeroTimestampState = SavedStateHandle()
+            val zeroTimestampVm =
+                CustomerIntakeViewModel(
+                    savedStateHandle = zeroTimestampState,
+                    settingsStore = mockStore,
+                    resourceProvider = fakeResourceProvider,
+                    timeProvider = zeroTimeProvider,
+                    enableForegroundInactivityTimer = false,
+                )
 
-        zeroTimestampVm.onCustomerNameChanged("Alice")
-        zeroTimeProvider.advanceBy(10 * 60 * 1000L)
+            zeroTimestampVm.onCustomerNameChanged("Alice")
+            zeroTimeProvider.advanceBy(10 * 60 * 1000L)
 
-        zeroTimestampVm.onResume()
-        advanceUntilIdle()
+            zeroTimestampVm.onResume()
+            advanceUntilIdle()
 
-        assertEquals("", zeroTimestampVm.uiState.value.customerName)
-    }
+            assertEquals("", zeroTimestampVm.uiState.value.customerName)
+        }
 
     @Test
-    fun `auto-clear clears form when saved timestamp is later than current elapsed time`() = runTest {
-        // Simulates a device reboot: elapsedRealtime() resets to a small value while the
-        // SavedStateHandle still holds a timestamp recorded before the reboot (larger value).
-        val futureTimeProvider = FakeTimeProvider(1_000_000L)
-        val rebootState = SavedStateHandle()
-        val rebootVm = CustomerIntakeViewModel(
-            savedStateHandle = rebootState,
-            settingsStore = mockStore,
-            resourceProvider = fakeResourceProvider,
-            timeProvider = futureTimeProvider,
-            enableForegroundInactivityTimer = false
-        )
+    fun `auto-clear clears form when saved timestamp is later than current elapsed time`() =
+        runTest {
+            // Simulates a device reboot: elapsedRealtime() resets to a small value while the
+            // SavedStateHandle still holds a timestamp recorded before the reboot (larger value).
+            val futureTimeProvider = FakeTimeProvider(1_000_000L)
+            val rebootState = SavedStateHandle()
+            val rebootVm =
+                CustomerIntakeViewModel(
+                    savedStateHandle = rebootState,
+                    settingsStore = mockStore,
+                    resourceProvider = fakeResourceProvider,
+                    timeProvider = futureTimeProvider,
+                    enableForegroundInactivityTimer = false,
+                )
 
-        rebootVm.onCustomerNameChanged("Alice")
+            rebootVm.onCustomerNameChanged("Alice")
 
-        // elapsedRealtime() now reports a value lower than the saved timestamp.
-        futureTimeProvider.setTime(500L)
+            // elapsedRealtime() now reports a value lower than the saved timestamp.
+            futureTimeProvider.setTime(500L)
 
-        rebootVm.onResume()
-        advanceUntilIdle()
+            rebootVm.onResume()
+            advanceUntilIdle()
 
-        assertEquals("", rebootVm.uiState.value.customerName)
-    }
+            assertEquals("", rebootVm.uiState.value.customerName)
+        }
 
     private fun fillValidFields() {
         vm.onCustomerNameChanged("Alice")

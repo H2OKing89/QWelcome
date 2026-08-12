@@ -22,23 +22,25 @@ internal fun TemplateEditorTopBar(
     isNew: Boolean,
     canSave: Boolean,
     onBack: () -> Unit,
-    onSave: () -> Unit
+    onSave: () -> Unit,
 ) {
-    val saveIconTint = if (canSave) {
-        MaterialTheme.colorScheme.secondary
-    } else {
-        MaterialTheme.colorScheme.secondary.copy(alpha = 0.38f)
-    }
+    val saveIconTint =
+        if (canSave) {
+            MaterialTheme.colorScheme.secondary
+        } else {
+            MaterialTheme.colorScheme.secondary.copy(alpha = 0.38f)
+        }
 
     TopAppBar(
         title = {
             Text(
-                text = if (isNew) {
-                    stringResource(R.string.title_create_template)
-                } else {
-                    stringResource(R.string.title_edit_template)
-                },
-                color = MaterialTheme.colorScheme.secondary
+                text =
+                    if (isNew) {
+                        stringResource(R.string.title_create_template)
+                    } else {
+                        stringResource(R.string.title_edit_template)
+                    },
+                color = MaterialTheme.colorScheme.secondary,
             )
         },
         navigationIcon = {
@@ -46,24 +48,25 @@ internal fun TemplateEditorTopBar(
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = stringResource(R.string.content_desc_back),
-                    tint = MaterialTheme.colorScheme.secondary
+                    tint = MaterialTheme.colorScheme.secondary,
                 )
             }
         },
         actions = {
             IconButton(
                 onClick = onSave,
-                enabled = canSave
+                enabled = canSave,
             ) {
                 Icon(
                     imageVector = Icons.Default.Check,
-                    contentDescription = stringResource(
-                        if (isNew) R.string.action_create else R.string.action_save
-                    ),
-                    tint = saveIconTint
+                    contentDescription =
+                        stringResource(
+                            if (isNew) R.string.action_create else R.string.action_save,
+                        ),
+                    tint = saveIconTint,
                 )
             }
         },
-        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
+        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
     )
 }

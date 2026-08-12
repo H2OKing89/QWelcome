@@ -7,21 +7,25 @@ import android.content.Intent
 import android.os.Build
 import android.util.Log
 import com.kingpaging.qwelcome.data.SettingsStore
-import java.io.IOException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.io.IOException
 
 private const val TAG = "ShareTargetReceiver"
 
 class ShareTargetChosenReceiver : BroadcastReceiver() {
-    override fun onReceive(context: Context, intent: Intent) {
-        val componentName = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            intent.getParcelableExtra(Intent.EXTRA_CHOSEN_COMPONENT, ComponentName::class.java)
-        } else {
-            @Suppress("DEPRECATION")
-            intent.getParcelableExtra(Intent.EXTRA_CHOSEN_COMPONENT)
-        }
+    override fun onReceive(
+        context: Context,
+        intent: Intent,
+    ) {
+        val componentName =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                intent.getParcelableExtra(Intent.EXTRA_CHOSEN_COMPONENT, ComponentName::class.java)
+            } else {
+                @Suppress("DEPRECATION")
+                intent.getParcelableExtra(Intent.EXTRA_CHOSEN_COMPONENT)
+            }
 
         val packageName = componentName?.packageName?.takeIf { it.isNotBlank() } ?: return
 

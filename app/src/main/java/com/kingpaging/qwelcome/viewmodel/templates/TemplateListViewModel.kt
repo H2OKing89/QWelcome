@@ -31,30 +31,34 @@ internal fun filterAndOrderTemplates(
     activeTemplateId: String,
     searchQuery: String,
     selectedTags: Set<String>,
-    templateLastUsedAt: Map<String, Long> = emptyMap()
+    templateLastUsedAt: Map<String, Long> = emptyMap(),
 ): List<Template> {
     val query = searchQuery.trim()
-    val normalizedSelectedTags = selectedTags
-        .map { it.trim().lowercase() }
-        .filter { it.isNotBlank() }
-        .toSet()
-    val matchingTemplates = templates.filter { template ->
-        val matchesTags = normalizedSelectedTags.isEmpty() || template.tags.any { tag ->
-            tag.trim().lowercase() in normalizedSelectedTags
+    val normalizedSelectedTags =
+        selectedTags
+            .map { it.trim().lowercase() }
+            .filter { it.isNotBlank() }
+            .toSet()
+    val matchingTemplates =
+        templates.filter { template ->
+            val matchesTags =
+                normalizedSelectedTags.isEmpty() ||
+                    template.tags.any { tag ->
+                        tag.trim().lowercase() in normalizedSelectedTags
+                    }
+            val matchesQuery =
+                query.isEmpty() ||
+                    template.name.contains(query, ignoreCase = true) ||
+                    template.content.contains(query, ignoreCase = true)
+            matchesTags && matchesQuery
         }
-        val matchesQuery = query.isEmpty() ||
-            template.name.contains(query, ignoreCase = true) ||
-            template.content.contains(query, ignoreCase = true)
-        matchesTags && matchesQuery
-    }
     return matchingTemplates
         .withIndex()
         .sortedWith(
             compareByDescending<IndexedValue<Template>> { it.value.id == activeTemplateId }
                 .thenByDescending { templateLastUsedAt[it.value.id] ?: Long.MIN_VALUE }
-                .thenBy { it.index }
-        )
-        .map { it.value }
+                .thenBy { it.index },
+        ).map { it.value }
 }
 
 /**
@@ -70,38 +74,49 @@ data class TemplateListUiState(
     val allTags: Set<String> = emptySet(),
     val templateLastUsedAt: Map<String, Long> = emptyMap(),
     val showTemplateLimitWarning: Boolean = false,
-    val warningDismissed: Boolean = false
+    val warningDismissed: Boolean = false,
 )
 
 /**
  * One-shot events for the template list screen.
  */
 sealed class TemplateListEvent {
-    data class Error(val message: String) : TemplateListEvent()
-    data class TemplateDeleted(val name: String) : TemplateListEvent()
+    data class Error(
+        val message: String,
+    ) : TemplateListEvent()
+
+    data class TemplateDeleted(
+        val name: String,
+    ) : TemplateListEvent()
+
     data class TemplateDuplicated(
         val template: Template,
-        val openEditor: Boolean = false
+        val openEditor: Boolean = false,
     ) : TemplateListEvent()
+
     data class ActiveTemplateChanged(
         val template: Template,
-        val change: TemplateSelectionChange
+        val change: TemplateSelectionChange,
     ) : TemplateListEvent()
+
     data class TemplateSelectionBlocked(
         val template: Template,
-        val missingPlaceholders: List<String>
+        val missingPlaceholders: List<String>,
     ) : TemplateListEvent()
-    data class TemplateRenamed(val template: Template) : TemplateListEvent()
+
+    data class TemplateRenamed(
+        val template: Template,
+    ) : TemplateListEvent()
 }
 
 enum class TemplateListEventOwner {
     INTAKE,
-    LIBRARY
+    LIBRARY,
 }
 
 private data class OwnedTemplateListEvent(
     val owner: TemplateListEventOwner,
-    val event: TemplateListEvent
+    val event: TemplateListEvent,
 )
 
 /**
@@ -110,17 +125,17 @@ private data class OwnedTemplateListEvent(
  */
 class TemplateListViewModel(
     private val settingsStore: SettingsStore,
-    private val resourceProvider: ResourceProvider
+    private val resourceProvider: ResourceProvider,
 ) : ViewModel() {
-
     private val _uiState = MutableStateFlow(TemplateListUiState())
     val uiState: StateFlow<TemplateListUiState> = _uiState.asStateFlow()
 
-    private val _events = MutableSharedFlow<OwnedTemplateListEvent>(replay = 0, extraBufferCapacity = 1)
+    private val events = MutableSharedFlow<OwnedTemplateListEvent>(replay = 0, extraBufferCapacity = 1)
 
-    fun eventsFor(owner: TemplateListEventOwner): Flow<TemplateListEvent> = _events
-        .filter { it.owner == owner }
-        .map { it.event }
+    fun eventsFor(owner: TemplateListEventOwner): Flow<TemplateListEvent> =
+        events
+            .filter { it.owner == owner }
+            .map { it.event }
 
     init {
         // Combine templates and active template ID into UI state
@@ -128,19 +143,20 @@ class TemplateListViewModel(
             combine(
                 settingsStore.allTemplatesFlow,
                 settingsStore.activeTemplateIdFlow,
-                settingsStore.templateLastUsedFlow
+                settingsStore.templateLastUsedFlow,
             ) { templates, activeId, templateLastUsedAt ->
                 TemplateListUiState(
                     templates = templates,
                     activeTemplateId = activeId,
                     templateLastUsedAt = templateLastUsedAt,
-                    allTags = templates
-                        .flatMap { it.tags }
-                        .map { it.trim() }
-                        .filter { it.isNotBlank() }
-                        .toSet(),
+                    allTags =
+                        templates
+                            .flatMap { it.tags }
+                            .map { it.trim() }
+                            .filter { it.isNotBlank() }
+                            .toSet(),
                     showTemplateLimitWarning = templates.size > TEMPLATE_SOFT_LIMIT,
-                    isLoading = false
+                    isLoading = false,
                 )
             }.collect { newState ->
                 _uiState.update { current ->
@@ -152,7 +168,7 @@ class TemplateListViewModel(
                         allTags = newState.allTags,
                         templateLastUsedAt = newState.templateLastUsedAt,
                         showTemplateLimitWarning = newState.showTemplateLimitWarning,
-                        isLoading = newState.isLoading
+                        isLoading = newState.isLoading,
                     )
                 }
             }
@@ -164,7 +180,7 @@ class TemplateListViewModel(
      */
     fun setActiveTemplate(
         templateId: String,
-        eventOwner: TemplateListEventOwner = TemplateListEventOwner.LIBRARY
+        eventOwner: TemplateListEventOwner = TemplateListEventOwner.LIBRARY,
     ) {
         viewModelScope.launch {
             try {
@@ -172,7 +188,7 @@ class TemplateListViewModel(
                     is TemplateSelectionResult.Selected -> {
                         emitEvent(
                             eventOwner,
-                            TemplateListEvent.ActiveTemplateChanged(result.template, result.change)
+                            TemplateListEvent.ActiveTemplateChanged(result.template, result.change),
                         )
                     }
                     is TemplateSelectionResult.Blocked -> {
@@ -180,8 +196,8 @@ class TemplateListViewModel(
                             eventOwner,
                             TemplateListEvent.TemplateSelectionBlocked(
                                 result.template,
-                                result.missingPlaceholders
-                            )
+                                result.missingPlaceholders,
+                            ),
                         )
                     }
                     is TemplateSelectionResult.NotFound -> {
@@ -211,7 +227,10 @@ class TemplateListViewModel(
         }
     }
 
-    fun renameTemplate(templateId: String, name: String) {
+    fun renameTemplate(
+        templateId: String,
+        name: String,
+    ) {
         val trimmedName = name.trim()
         if (trimmedName.isEmpty()) {
             viewModelScope.launch {
@@ -231,7 +250,7 @@ class TemplateListViewModel(
                 settingsStore.saveTemplate(renamedTemplate)
                 emitEvent(
                     TemplateListEventOwner.LIBRARY,
-                    TemplateListEvent.TemplateRenamed(renamedTemplate)
+                    TemplateListEvent.TemplateRenamed(renamedTemplate),
                 )
             } catch (e: CancellationException) {
                 throw e
@@ -265,7 +284,7 @@ class TemplateListViewModel(
             try {
                 val template = settingsStore.getTemplate(templateId)
                 val name = template?.name ?: resourceProvider.getString(R.string.label_template)
-                
+
                 settingsStore.deleteTemplate(templateId)
                 _uiState.update { it.copy(showDeleteConfirmation = null) }
                 emitEvent(TemplateListEventOwner.LIBRARY, TemplateListEvent.TemplateDeleted(name))
@@ -288,7 +307,7 @@ class TemplateListViewModel(
                 settingsStore.saveTemplate(duplicate)
                 emitEvent(
                     TemplateListEventOwner.LIBRARY,
-                    TemplateListEvent.TemplateDuplicated(duplicate)
+                    TemplateListEvent.TemplateDuplicated(duplicate),
                 )
             } catch (e: CancellationException) {
                 throw e
@@ -298,7 +317,7 @@ class TemplateListViewModel(
             }
         }
     }
-    
+
     /**
      * Duplicate a template and immediately open it for editing.
      * This is the recommended flow for customizing the default template.
@@ -310,7 +329,7 @@ class TemplateListViewModel(
                 settingsStore.saveTemplate(duplicate)
                 emitEvent(
                     TemplateListEventOwner.LIBRARY,
-                    TemplateListEvent.TemplateDuplicated(duplicate, openEditor = true)
+                    TemplateListEvent.TemplateDuplicated(duplicate, openEditor = true),
                 )
             } catch (e: CancellationException) {
                 throw e
@@ -320,7 +339,7 @@ class TemplateListViewModel(
             }
         }
     }
-    
+
     /**
      * Update the search query for filtering templates.
      */
@@ -330,11 +349,12 @@ class TemplateListViewModel(
 
     fun updateTagFilter(tag: String) {
         _uiState.update { current ->
-            val newSelectedTags = if (tag in current.selectedTags) {
-                current.selectedTags - tag
-            } else {
-                current.selectedTags + tag
-            }
+            val newSelectedTags =
+                if (tag in current.selectedTags) {
+                    current.selectedTags - tag
+                } else {
+                    current.selectedTags + tag
+                }
             current.copy(selectedTags = newSelectedTags)
         }
     }
@@ -346,12 +366,18 @@ class TemplateListViewModel(
     fun dismissTemplateLimitWarning() {
         _uiState.update { it.copy(warningDismissed = true) }
     }
-    
-    private suspend fun emitEvent(owner: TemplateListEventOwner, event: TemplateListEvent) {
-        _events.emit(OwnedTemplateListEvent(owner, event))
+
+    private suspend fun emitEvent(
+        owner: TemplateListEventOwner,
+        event: TemplateListEvent,
+    ) {
+        events.emit(OwnedTemplateListEvent(owner, event))
     }
 
-    private suspend fun emitError(owner: TemplateListEventOwner, messageResId: Int) {
+    private suspend fun emitError(
+        owner: TemplateListEventOwner,
+        messageResId: Int,
+    ) {
         emitEvent(owner, TemplateListEvent.Error(resourceProvider.getString(messageResId)))
     }
 }

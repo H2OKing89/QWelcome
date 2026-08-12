@@ -14,7 +14,7 @@ import kotlin.math.max
 @Composable
 fun Modifier.cyberGrid(
     gridColor: Color = MaterialTheme.colorScheme.primary,
-    cellSize: Dp = 24.dp
+    cellSize: Dp = 24.dp,
 ): Modifier {
     val isDark = LocalDarkTheme.current
     val alpha = if (isDark) 0.06f else 0.03f
@@ -28,7 +28,7 @@ fun Modifier.cyberGrid(
                 color = gridColor.copy(alpha = alpha),
                 start = Offset(x, 0f),
                 end = Offset(x, size.height),
-                strokeWidth = 0.5f
+                strokeWidth = 0.5f,
             )
             x += gridSpacing
         }
@@ -39,7 +39,7 @@ fun Modifier.cyberGrid(
                 color = gridColor.copy(alpha = alpha),
                 start = Offset(0f, y),
                 end = Offset(size.width, y),
-                strokeWidth = 0.5f
+                strokeWidth = 0.5f,
             )
             y += gridSpacing
         }
@@ -49,7 +49,7 @@ fun Modifier.cyberGrid(
 @Composable
 fun Modifier.cyberScanlines(
     lineColor: Color = MaterialTheme.colorScheme.primary,
-    lineSpacing: Dp = 4.dp
+    lineSpacing: Dp = 4.dp,
 ): Modifier {
     val isDark = LocalDarkTheme.current
     val alpha = if (isDark) 0.04f else 0.02f
@@ -62,7 +62,7 @@ fun Modifier.cyberScanlines(
                 color = lineColor.copy(alpha = alpha),
                 start = Offset(0f, y),
                 end = Offset(size.width, y),
-                strokeWidth = 1f
+                strokeWidth = 1f,
             )
             y += spacing
         }

@@ -5,11 +5,15 @@
     <ID>ConstructorParameterNaming:UpdateChecker.kt:GitHubAsset$val browser_download_url: String</ID>
     <ID>ConstructorParameterNaming:UpdateChecker.kt:GitHubRelease$val html_url: String</ID>
     <ID>ConstructorParameterNaming:UpdateChecker.kt:GitHubRelease$val tag_name: String</ID>
+    <ID>LongMethod:ContentEditorDialog.kt:@Composable internal fun ContentEditorField</ID>
     <ID>LongMethod:ContentEditorDialog.kt:@OptIn(ExperimentalLayoutApi::class) @Composable internal fun ContentEditorDialog</ID>
     <ID>LongMethod:ExportService.kt:ExportService$suspend fun exportTemplatePack: ExportResult</ID>
+    <ID>LongMethod:ImportViewModel.kt:ImportViewModel$fun onImportConfirmed</ID>
     <ID>LongMethod:MainActivity.kt:MainActivity$override fun onCreate</ID>
     <ID>LongMethod:QrCodeBottomSheet.kt:@Composable fun QrCodeBottomSheet</ID>
     <ID>LongMethod:SettingsViewModel.kt:SettingsViewModel$private suspend fun monitorDownload</ID>
+    <ID>LongMethod:TemplateCard.kt:@Suppress("FunctionNaming", "LongParameterList") @Composable private fun TemplateCardHeader</ID>
+    <ID>LongMethod:TemplateVariablesSheet.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun TemplateVariablesSheet</ID>
     <ID>MagicNumber:CustomerIntakeViewModel.kt:CustomerIntakeViewModel.Companion$10</ID>
     <ID>MagicNumber:CustomerIntakeViewModel.kt:CustomerIntakeViewModel.Companion$11</ID>
     <ID>MagicNumber:CyberpunkBackdrop.kt:0xFF05030A</ID>
@@ -24,17 +28,7 @@
     <ID>MagicNumber:SoundManager.kt:SoundManager$50</ID>
     <ID>MagicNumber:Template.kt:Template.Companion$8</ID>
     <ID>MagicNumber:UpdateChecker.kt:UpdateChecker$10_000</ID>
-    <ID>MatchingDeclarationName:Color.kt:CyberColors</ID>
-    <ID>MaxLineLength:CustomerIntakeScreen.kt:Icon(Icons.Filled.PersonAdd, contentDescription = stringResource(R.string.content_desc_new_customer))</ID>
-    <ID>MaxLineLength:CustomerIntakeScreen.kt:Icon(Icons.Filled.Settings, contentDescription = stringResource(R.string.content_desc_settings))</ID>
-    <ID>MaxLineLength:CustomerIntakeViewModel.kt:CustomerIntakeViewModel$val customerNameError = if (currentState.customerName.isBlank()) resourceProvider.getString(R.string.error_name_empty) else null</ID>
-    <ID>MaxLineLength:ImportExportRepository.kt:ImportWarning.NewerVersion$override fun toString</ID>
-    <ID>MaxLineLength:MessageTemplateTest.kt:MessageTemplateTest$val template = "Hi {{ customer_name }}, your WiFi is {{ ssid }} with password {{ password }}. Account: {{ account_number }}"</ID>
-    <ID>MaxLineLength:Navigator.kt:AndroidNavigator$context</ID>
     <ID>MaxLineLength:PreferencesToProtoMigration.kt:PreferencesToProtoMigration$"Template migration failed; preserving legacy preferences for manual recovery. JSON length: ${e.rawTemplatesJson.length}"</ID>
-    <ID>MaxLineLength:WifiQrGenerator.kt:WifiQrGenerator$WifiValidationRules.isPasswordTooShort(password) -&gt; ValidationResult.Error(R.string.error_password_too_short)</ID>
-    <ID>NewLineAtEndOfFile:Color.kt:com.kingpaging.qwelcome.ui.theme.Color.kt</ID>
-    <ID>NewLineAtEndOfFile:CustomerIntakeUiState.kt:com.kingpaging.qwelcome.ui.CustomerIntakeUiState.kt</ID>
     <ID>ReturnCount:ExportService.kt:ExportService$suspend fun exportFullBackup: ExportResult</ID>
     <ID>ReturnCount:ExportService.kt:ExportService$suspend fun exportTemplatePack: ExportResult</ID>
     <ID>ReturnCount:ExportViewModel.kt:ExportViewModel$private fun resolveRecentShareTarget: RecentShareTargetUi?</ID>
@@ -55,7 +49,6 @@
     <ID>TooGenericExceptionCaught:SoundManager.kt:SoundManager$e: Exception</ID>
     <ID>TooGenericExceptionCaught:TemplateListViewModel.kt:TemplateListViewModel$e: Exception</ID>
     <ID>TooGenericExceptionCaught:UpdateChecker.kt:UpdateChecker$e: Exception</ID>
-    <ID>TooGenericExceptionThrown:QrCodeBottomSheet.kt:throw Exception("Failed to create cache directory")</ID>
     <ID>TooManyFunctions:CustomerIntakeViewModel.kt:CustomerIntakeViewModel : ViewModel</ID>
     <ID>TooManyFunctions:ExportViewModel.kt:ExportViewModel : ViewModel</ID>
     <ID>TooManyFunctions:GitHubAppUpdater.kt:GitHubAppUpdater : AppUpdater</ID>

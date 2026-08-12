@@ -32,7 +32,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun CustomerIntakeRoute(
     onOpenSettings: () -> Unit,
-    onOpenTemplates: () -> Unit = {}
+    onOpenTemplates: () -> Unit = {},
 ) {
     val customerIntakeViewModel = LocalCustomerIntakeViewModel.current
     val templateListViewModel = LocalTemplateListViewModel.current
@@ -53,40 +53,43 @@ fun CustomerIntakeRoute(
         customerIntakeViewModel.uiEvent
             .flowWithLifecycle(lifecycleOwner.lifecycle, Lifecycle.State.STARTED)
             .collect { event ->
-            when (event) {
-                is UiEvent.CopySuccess -> {
-                    copySuccessResetJob?.cancel()
-                    copySuccess = true
-                    copySuccessResetJob = launch {
-                        delay(COPY_SUCCESS_DURATION_MILLIS)
-                        copySuccess = false
+                when (event) {
+                    is UiEvent.CopySuccess -> {
+                        copySuccessResetJob?.cancel()
+                        copySuccess = true
+                        copySuccessResetJob =
+                            launch {
+                                delay(COPY_SUCCESS_DURATION_MILLIS)
+                                copySuccess = false
+                            }
                     }
-                }
-                is UiEvent.ShowToast -> {
-                    Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
-                }
-                is UiEvent.ValidationFailed -> {
-                    soundPlayer.playBeep()
-                    formFocusTargets.firstInvalid(customerIntakeViewModel.uiState.value)?.let { target ->
-                        target.focusRequester.requestFocus()
-                        target.bringIntoViewRequester.bringIntoView()
+                    is UiEvent.ShowToast -> {
+                        Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
                     }
-                }
-                is UiEvent.ActionFailed -> soundPlayer.playBeep()
-                is UiEvent.RateLimitExceeded -> {
-                    soundPlayer.playBeep()
-                    Toast.makeText(
-                        context,
-                        resources.getString(R.string.toast_rate_limit),
-                        Toast.LENGTH_LONG
-                    ).show()
+                    is UiEvent.ValidationFailed -> {
+                        soundPlayer.playBeep()
+                        formFocusTargets.firstInvalid(customerIntakeViewModel.uiState.value)?.let { target ->
+                            target.focusRequester.requestFocus()
+                            target.bringIntoViewRequester.bringIntoView()
+                        }
+                    }
+                    is UiEvent.ActionFailed -> soundPlayer.playBeep()
+                    is UiEvent.RateLimitExceeded -> {
+                        soundPlayer.playBeep()
+                        Toast
+                            .makeText(
+                                context,
+                                resources.getString(R.string.toast_rate_limit),
+                                Toast.LENGTH_LONG,
+                            ).show()
+                    }
                 }
             }
-        }
     }
 
     LaunchedEffect(templateListViewModel, lifecycleOwner) {
-        templateListViewModel.eventsFor(TemplateListEventOwner.INTAKE)
+        templateListViewModel
+            .eventsFor(TemplateListEventOwner.INTAKE)
             .flowWithLifecycle(lifecycleOwner.lifecycle, Lifecycle.State.STARTED)
             .collect { event ->
                 val message = event.toTemplateErrorMessage(context) ?: return@collect
@@ -101,45 +104,47 @@ fun CustomerIntakeRoute(
         snackbarHostState = snackbarHostState,
         formFocusTargets = formFocusTargets,
         copySuccess = copySuccess,
-        actions = CustomerIntakeActions(
-            onDismissQr = { customerIntakeViewModel.setShowQrSheet(false) },
-            onClearForm = {
-                val undoToken = customerIntakeViewModel.clearFormWithUndo()
-                scope.launch {
-                    var undoRestored = false
-                    try {
-                        val result = snackbarHostState.showSnackbar(
-                            message = resources.getString(R.string.toast_form_cleared),
-                            actionLabel = resources.getString(R.string.action_undo)
-                        )
-                        if (result == SnackbarResult.ActionPerformed) {
-                            undoRestored = customerIntakeViewModel.undoClearForm(undoToken)
-                        }
-                    } finally {
-                        if (!undoRestored) {
-                            customerIntakeViewModel.discardClearFormUndo(undoToken)
+        actions =
+            CustomerIntakeActions(
+                onDismissQr = { customerIntakeViewModel.setShowQrSheet(false) },
+                onClearForm = {
+                    val undoToken = customerIntakeViewModel.clearFormWithUndo()
+                    scope.launch {
+                        var undoRestored = false
+                        try {
+                            val result =
+                                snackbarHostState.showSnackbar(
+                                    message = resources.getString(R.string.toast_form_cleared),
+                                    actionLabel = resources.getString(R.string.action_undo),
+                                )
+                            if (result == SnackbarResult.ActionPerformed) {
+                                undoRestored = customerIntakeViewModel.undoClearForm(undoToken)
+                            }
+                        } finally {
+                            if (!undoRestored) {
+                                customerIntakeViewModel.discardClearFormUndo(undoToken)
+                            }
                         }
                     }
-                }
-            },
-            onTemplateSelected = {
-                templateListViewModel.setActiveTemplate(it, TemplateListEventOwner.INTAKE)
-            },
-            onCustomerNameChanged = customerIntakeViewModel::onCustomerNameChanged,
-            onCustomerPhoneChanged = customerIntakeViewModel::onCustomerPhoneChanged,
-            onSsidChanged = customerIntakeViewModel::onSsidChanged,
-            onSecurityTypeChanged = customerIntakeViewModel::onSecurityTypeChanged,
-            onHiddenNetworkChanged = customerIntakeViewModel::onHiddenNetworkChanged,
-            onOpenNetworkChanged = customerIntakeViewModel::onOpenNetworkChanged,
-            onPasswordChanged = customerIntakeViewModel::onPasswordChanged,
-            onAccountNumberChanged = customerIntakeViewModel::onAccountNumberChanged,
-            onSmsClick = { customerIntakeViewModel.onSmsClicked(navigator) },
-            onShareClick = { customerIntakeViewModel.onShareClicked(navigator) },
-            onCopyClick = { customerIntakeViewModel.onCopyClicked(navigator) },
-            onShowQr = { customerIntakeViewModel.setShowQrSheet(true) }
-        ),
+                },
+                onTemplateSelected = {
+                    templateListViewModel.setActiveTemplate(it, TemplateListEventOwner.INTAKE)
+                },
+                onCustomerNameChanged = customerIntakeViewModel::onCustomerNameChanged,
+                onCustomerPhoneChanged = customerIntakeViewModel::onCustomerPhoneChanged,
+                onSsidChanged = customerIntakeViewModel::onSsidChanged,
+                onSecurityTypeChanged = customerIntakeViewModel::onSecurityTypeChanged,
+                onHiddenNetworkChanged = customerIntakeViewModel::onHiddenNetworkChanged,
+                onOpenNetworkChanged = customerIntakeViewModel::onOpenNetworkChanged,
+                onPasswordChanged = customerIntakeViewModel::onPasswordChanged,
+                onAccountNumberChanged = customerIntakeViewModel::onAccountNumberChanged,
+                onSmsClick = { customerIntakeViewModel.onSmsClicked(navigator) },
+                onShareClick = { customerIntakeViewModel.onShareClicked(navigator) },
+                onCopyClick = { customerIntakeViewModel.onCopyClicked(navigator) },
+                onShowQr = { customerIntakeViewModel.setShowQrSheet(true) },
+            ),
         onOpenSettings = onOpenSettings,
-        onOpenTemplates = onOpenTemplates
+        onOpenTemplates = onOpenTemplates,
     )
 }
 

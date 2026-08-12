@@ -6,7 +6,7 @@ package com.kingpaging.qwelcome.data
 data class TechProfile(
     val name: String = "",
     val title: String = "",
-    val dept: String = ""
+    val dept: String = "",
 ) {
     companion object
 }

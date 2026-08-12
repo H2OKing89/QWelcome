@@ -6,7 +6,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class TemplateEditorStateTest {
-
     @Test
     fun `normalizeTemplateTag trims whitespace and caps length at 32 characters`() {
         assertEquals("residential", normalizeTemplateTag("  residential  "))

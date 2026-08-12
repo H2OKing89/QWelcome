@@ -67,7 +67,7 @@ internal fun TemplateTagFilterSheet(
     selectedTags: Set<String>,
     onToggle: (String) -> Unit,
     onClear: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -75,13 +75,14 @@ internal fun TemplateTagFilterSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         containerColor = MaterialTheme.colorScheme.surface,
-        contentColor = MaterialTheme.colorScheme.onSurface
+        contentColor = MaterialTheme.colorScheme.onSurface,
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .navigationBarsPadding()
-                .padding(bottom = 12.dp)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(bottom = 12.dp),
         ) {
             SheetHeader(
                 title = stringResource(R.string.title_filter_tags),
@@ -90,25 +91,26 @@ internal fun TemplateTagFilterSheet(
                         Text(stringResource(R.string.action_clear))
                     }
                 },
-                onDismiss = onDismiss
+                onDismiss = onDismiss,
             )
             LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(max = 480.dp)
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 480.dp),
             ) {
                 item(key = "all_tags") {
                     TagFilterRow(
                         label = stringResource(R.string.label_all_tags),
                         selected = selectedTags.isEmpty(),
-                        onSelect = onClear
+                        onSelect = onClear,
                     )
                 }
                 items(allTags.sorted(), key = { it }) { tag ->
                     TagFilterRow(
                         label = tag,
                         selected = tag in selectedTags,
-                        onSelect = { onToggle(tag) }
+                        onSelect = { onToggle(tag) },
                     )
                 }
             }
@@ -121,60 +123,66 @@ internal fun TemplateTagFilterSheet(
 @Composable
 internal fun TemplatePreviewSheet(
     template: Template,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val missingPlaceholders = remember(template.content) {
-        Template.findMissingPlaceholders(template.content)
-    }
+    val missingPlaceholders =
+        remember(template.content) {
+            Template.findMissingPlaceholders(template.content)
+        }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         containerColor = MaterialTheme.colorScheme.surface,
-        contentColor = MaterialTheme.colorScheme.onSurface
+        contentColor = MaterialTheme.colorScheme.onSurface,
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .navigationBarsPadding()
-                .padding(bottom = 16.dp)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .navigationBarsPadding()
+                    .padding(bottom = 16.dp),
         ) {
             SheetHeader(
                 title = template.name,
-                onDismiss = onDismiss
+                onDismiss = onDismiss,
             )
             Text(
-                text = template.tags.ifEmpty { listOf(stringResource(R.string.text_no_tags)) }
-                    .joinToString(" • "),
+                text =
+                    template.tags
+                        .ifEmpty { listOf(stringResource(R.string.text_no_tags)) }
+                        .joinToString(" • "),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.secondary,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(horizontal = 24.dp)
+                modifier = Modifier.padding(horizontal = 24.dp),
             )
             if (missingPlaceholders.isNotEmpty()) {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 24.dp, vertical = 12.dp),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp, vertical = 12.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Icon(
                         imageVector = Icons.Default.Warning,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(18.dp),
                     )
                     Text(
-                        text = stringResource(
-                            R.string.error_template_missing_placeholders,
-                            missingPlaceholders.joinToString(", ")
-                        ),
+                        text =
+                            stringResource(
+                                R.string.error_template_missing_placeholders,
+                                missingPlaceholders.joinToString(", "),
+                            ),
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error
+                        color = MaterialTheme.colorScheme.error,
                     )
                 }
             }
@@ -184,14 +192,15 @@ internal fun TemplatePreviewSheet(
                     text = template.content,
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(horizontal = 24.dp)
+                    modifier = Modifier.padding(horizontal = 24.dp),
                 )
             }
             TextButton(
                 onClick = onDismiss,
-                modifier = Modifier
-                    .align(Alignment.End)
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                modifier =
+                    Modifier
+                        .align(Alignment.End)
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
             ) {
                 Text(stringResource(R.string.action_close))
             }
@@ -203,15 +212,16 @@ internal fun TemplatePreviewSheet(
 internal fun RenameTemplateDialog(
     template: Template,
     onRename: (String) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
     var name by rememberSaveable(template.id) { mutableStateOf(template.name) }
     val trimmedName = name.trim()
     val canRename = trimmedName.isNotEmpty() && trimmedName != template.name
     val nameCodePointCount = name.codePointCount(0, name.length)
-    val shouldShowSupportingText = name.isBlank() ||
-        trimmedName == template.name ||
-        nameCodePointCount >= MAX_TEMPLATE_NAME_LENGTH
+    val shouldShowSupportingText =
+        name.isBlank() ||
+            trimmedName == template.name ||
+            nameCodePointCount >= MAX_TEMPLATE_NAME_LENGTH
     val nameDescription = stringResource(R.string.content_desc_rename_template_name)
     val submit = {
         if (canRename) {
@@ -231,22 +241,24 @@ internal fun RenameTemplateDialog(
                 label = { Text(stringResource(R.string.label_name)) },
                 singleLine = true,
                 isError = name.isBlank(),
-                supportingText = if (shouldShowSupportingText) {
-                    {
-                        RenameSupportingText(
-                            nameIsBlank = name.isBlank(),
-                            nameIsUnchanged = trimmedName == template.name,
-                            nameCodePointCount = nameCodePointCount
-                        )
-                    }
-                } else {
-                    null
-                },
+                supportingText =
+                    if (shouldShowSupportingText) {
+                        {
+                            RenameSupportingText(
+                                nameIsBlank = name.isBlank(),
+                                nameIsUnchanged = trimmedName == template.name,
+                                nameCodePointCount = nameCodePointCount,
+                            )
+                        }
+                    } else {
+                        null
+                    },
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 keyboardActions = KeyboardActions(onDone = { submit() }),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .semantics { contentDescription = nameDescription }
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .semantics { contentDescription = nameDescription },
             )
         },
         confirmButton = {
@@ -258,7 +270,7 @@ internal fun RenameTemplateDialog(
             TextButton(onClick = onDismiss) {
                 Text(stringResource(R.string.action_cancel))
             }
-        }
+        },
     )
 }
 
@@ -266,24 +278,25 @@ internal fun RenameTemplateDialog(
 private fun RenameSupportingText(
     nameIsBlank: Boolean,
     nameIsUnchanged: Boolean,
-    nameCodePointCount: Int
+    nameCodePointCount: Int,
 ) {
     when {
         nameIsBlank -> Text(stringResource(R.string.error_name_required))
-        else -> Column {
-            if (nameIsUnchanged) {
-                Text(stringResource(R.string.hint_name_unchanged))
-            }
-            if (nameCodePointCount >= MAX_TEMPLATE_NAME_LENGTH) {
-                Text(
-                    stringResource(
-                        R.string.text_template_name_character_count,
-                        nameCodePointCount,
-                        MAX_TEMPLATE_NAME_LENGTH
+        else ->
+            Column {
+                if (nameIsUnchanged) {
+                    Text(stringResource(R.string.hint_name_unchanged))
+                }
+                if (nameCodePointCount >= MAX_TEMPLATE_NAME_LENGTH) {
+                    Text(
+                        stringResource(
+                            R.string.text_template_name_character_count,
+                            nameCodePointCount,
+                            MAX_TEMPLATE_NAME_LENGTH,
+                        ),
                     )
-                )
+                }
             }
-        }
     }
 }
 
@@ -291,13 +304,14 @@ private fun RenameSupportingText(
 private fun SheetHeader(
     title: String,
     onDismiss: () -> Unit,
-    action: @Composable (() -> Unit)? = null
+    action: @Composable (() -> Unit)? = null,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(start = 24.dp, end = 8.dp, bottom = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(start = 24.dp, end = 8.dp, bottom = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
             text = title,
@@ -305,44 +319,43 @@ private fun SheetHeader(
             color = MaterialTheme.colorScheme.primary,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f),
         )
         action?.invoke()
         IconButton(onClick = onDismiss) {
             Icon(
                 imageVector = Icons.Default.Close,
-                contentDescription = stringResource(R.string.action_close)
+                contentDescription = stringResource(R.string.action_close),
             )
         }
     }
 }
 
-
 @Composable
 private fun TagFilterRow(
     label: String,
     selected: Boolean,
-    onSelect: () -> Unit
+    onSelect: () -> Unit,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(52.dp)
-            .toggleable(
-                value = selected,
-                role = Role.Checkbox,
-                onValueChange = { onSelect() }
-            )
-            .padding(horizontal = 16.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .height(52.dp)
+                .toggleable(
+                    value = selected,
+                    role = Role.Checkbox,
+                    onValueChange = { onSelect() },
+                ).padding(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Checkbox(checked = selected, onCheckedChange = null)
         Text(
             text = label,
             style = MaterialTheme.typography.bodyLarge,
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis
+            overflow = TextOverflow.Ellipsis,
         )
     }
 }

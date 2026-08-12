@@ -13,18 +13,17 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.data.Template
 import com.kingpaging.qwelcome.ui.theme.CyberpunkTheme
-import com.kingpaging.qwelcome.viewmodel.export.ExportUiState
 import com.kingpaging.qwelcome.viewmodel.export.ExportType
-import java.util.concurrent.atomic.AtomicBoolean
+import com.kingpaging.qwelcome.viewmodel.export.ExportUiState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.util.concurrent.atomic.AtomicBoolean
 
 @RunWith(AndroidJUnit4::class)
 class ExportScreenTest {
-
     @get:Rule
     val composeRule = createComposeRule()
 
@@ -34,7 +33,7 @@ class ExportScreenTest {
             CyberpunkTheme {
                 ExportScreen(
                     uiState = ExportUiState(),
-                    actions = exportActions()
+                    actions = exportActions(),
                 )
             }
         }
@@ -50,9 +49,10 @@ class ExportScreenTest {
             CyberpunkTheme {
                 ExportScreen(
                     uiState = ExportUiState(),
-                    actions = exportActions(
-                        onTemplatePackRequested = { callbackInvoked.set(true) }
-                    )
+                    actions =
+                        exportActions(
+                            onTemplatePackRequested = { callbackInvoked.set(true) },
+                        ),
                 )
             }
         }
@@ -73,7 +73,7 @@ class ExportScreenTest {
                     icon = Icons.Default.Backup,
                     iconTint = Color.Red,
                     isLoading = true,
-                    onClick = {}
+                    onClick = {},
                 )
             }
         }
@@ -88,18 +88,19 @@ class ExportScreenTest {
         composeRule.setContent {
             CyberpunkTheme {
                 ExportTemplateSelectionDialog(
-                    templates = listOf(
-                        Template(
-                            id = "service-welcome",
-                            name = "Service Welcome",
-                            content = "Welcome to your new service"
-                        )
-                    ),
+                    templates =
+                        listOf(
+                            Template(
+                                id = "service-welcome",
+                                name = "Service Welcome",
+                                content = "Welcome to your new service",
+                            ),
+                        ),
                     selectedIds = emptySet(),
                     onToggleTemplate = { selectedTemplateIds += it },
                     onToggleSelectAll = {},
                     onDismiss = {},
-                    onExport = {}
+                    onExport = {},
                 )
             }
         }
@@ -125,7 +126,7 @@ class ExportScreenTest {
                     onShareToPackageRequested = {},
                     onCopy = { copyInvoked.set(true) },
                     onShareRequested = {},
-                    onSaveToFileRequested = {}
+                    onSaveToFileRequested = {},
                 )
             }
         }
@@ -136,19 +137,18 @@ class ExportScreenTest {
         assertTrue(copyInvoked.get())
     }
 
-    private fun exportActions(
-        onTemplatePackRequested: () -> Unit = {}
-    ) = ExportActions(
-        onBack = {},
-        onTemplatePackRequested = onTemplatePackRequested,
-        onFullBackupRequested = {},
-        onShareToPackageRequested = {},
-        onCopy = {},
-        onShareRequested = {},
-        onSaveToFileRequested = {},
-        onToggleTemplateSelection = {},
-        onToggleSelectAll = {},
-        onDismissTemplateSelection = {},
-        onExportSelectedTemplates = {}
-    )
+    private fun exportActions(onTemplatePackRequested: () -> Unit = {}) =
+        ExportActions(
+            onBack = {},
+            onTemplatePackRequested = onTemplatePackRequested,
+            onFullBackupRequested = {},
+            onShareToPackageRequested = {},
+            onCopy = {},
+            onShareRequested = {},
+            onSaveToFileRequested = {},
+            onToggleTemplateSelection = {},
+            onToggleSelectAll = {},
+            onDismissTemplateSelection = {},
+            onExportSelectedTemplates = {},
+        )
 }

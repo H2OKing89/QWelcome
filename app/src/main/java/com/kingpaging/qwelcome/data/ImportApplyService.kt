@@ -3,22 +3,21 @@ package com.kingpaging.qwelcome.data
 import android.util.Log
 import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.util.ResourceProvider
-import java.io.IOException
 import kotlinx.serialization.SerializationException
+import java.io.IOException
 
 private const val TAG = "ImportApplyService"
 
 @Suppress("TooGenericExceptionCaught")
 internal class ImportApplyService(
     private val settingsStore: SettingsStore,
-    private val resourceProvider: ResourceProvider
+    private val resourceProvider: ResourceProvider,
 ) {
-
     suspend fun applyTemplatePack(
         pack: TemplatePack,
-        resolutions: Map<String, ConflictResolution> = emptyMap()
-    ): ImportApplyResult {
-        return try {
+        resolutions: Map<String, ConflictResolution> = emptyMap(),
+    ): ImportApplyResult =
+        try {
             val resolved = resolveTemplates(pack.templates, resolutions)
             val templatesToSave = resolved.templates
             settingsStore.saveTemplates(templatesToSave)
@@ -39,42 +38,43 @@ internal class ImportApplyService(
             Log.e(TAG, "Failed to apply template pack", e)
             ImportApplyResult.Error(resourceProvider.getString(R.string.error_import_failed, e.message ?: ""))
         }
-    }
 
     suspend fun applyFullBackup(
         backup: FullBackup,
         importTechProfile: Boolean = false,
         importDefaultTemplate: Boolean = true,
-        resolutions: Map<String, ConflictResolution> = emptyMap()
-    ): ImportApplyResult {
-        return try {
+        resolutions: Map<String, ConflictResolution> = emptyMap(),
+    ): ImportApplyResult =
+        try {
             val resolved = resolveTemplates(backup.templates, resolutions)
             val templatesToSave = resolved.templates
-            val techProfile = if (importTechProfile) {
-                TechProfile(
-                    name = backup.techProfile.name,
-                    title = backup.techProfile.title,
-                    dept = backup.techProfile.getDepartment()
-                )
-            } else {
-                null
-            }
-            val activeTemplateId = if (importDefaultTemplate) {
-                val requestedDefaultId = backup.getEffectiveDefaultTemplateId() ?: DEFAULT_TEMPLATE_ID
-                resolved.idMap[requestedDefaultId] ?: requestedDefaultId
-            } else {
-                null
-            }
+            val techProfile =
+                if (importTechProfile) {
+                    TechProfile(
+                        name = backup.techProfile.name,
+                        title = backup.techProfile.title,
+                        dept = backup.techProfile.getDepartment(),
+                    )
+                } else {
+                    null
+                }
+            val activeTemplateId =
+                if (importDefaultTemplate) {
+                    val requestedDefaultId = backup.getEffectiveDefaultTemplateId() ?: DEFAULT_TEMPLATE_ID
+                    resolved.idMap[requestedDefaultId] ?: requestedDefaultId
+                } else {
+                    null
+                }
 
             settingsStore.restoreFullBackup(
                 templates = templatesToSave,
                 techProfile = techProfile,
-                activeTemplateId = activeTemplateId
+                activeTemplateId = activeTemplateId,
             )
 
             ImportApplyResult.Success(
                 templatesImported = templatesToSave.size,
-                techProfileImported = importTechProfile
+                techProfileImported = importTechProfile,
             )
         } catch (e: kotlin.coroutines.cancellation.CancellationException) {
             throw e
@@ -92,38 +92,38 @@ internal class ImportApplyService(
             Log.e(TAG, "Failed to apply full backup", e)
             ImportApplyResult.Error(resourceProvider.getString(R.string.error_import_failed, e.message ?: ""))
         }
-    }
 
     private data class ResolvedTemplates(
         val templates: List<Template>,
-        val idMap: Map<String, String>
+        val idMap: Map<String, String>,
     )
 
     private fun resolveTemplates(
         templates: List<Template>,
-        resolutions: Map<String, ConflictResolution>
+        resolutions: Map<String, ConflictResolution>,
     ): ResolvedTemplates {
         val idMap = mutableMapOf<String, String>()
-        val resolvedTemplates = templates.mapNotNull { template ->
-            when (resolutions[template.id]) {
-                ConflictResolution.KEEP_EXISTING -> {
-                    idMap[template.id] = template.id
-                    null
-                }
-                ConflictResolution.SAVE_AS_COPY -> {
-                    val copy = template.duplicate()
-                    idMap[template.id] = copy.id
-                    copy
-                }
-                ConflictResolution.REPLACE, null -> {
-                    idMap[template.id] = template.id
-                    template
+        val resolvedTemplates =
+            templates.mapNotNull { template ->
+                when (resolutions[template.id]) {
+                    ConflictResolution.KEEP_EXISTING -> {
+                        idMap[template.id] = template.id
+                        null
+                    }
+                    ConflictResolution.SAVE_AS_COPY -> {
+                        val copy = template.duplicate()
+                        idMap[template.id] = copy.id
+                        copy
+                    }
+                    ConflictResolution.REPLACE, null -> {
+                        idMap[template.id] = template.id
+                        template
+                    }
                 }
             }
-        }
         return ResolvedTemplates(
             templates = resolvedTemplates,
-            idMap = idMap
+            idMap = idMap,
         )
     }
 }

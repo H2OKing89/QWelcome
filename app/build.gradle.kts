@@ -1,7 +1,7 @@
-import java.util.Properties
+import dev.detekt.gradle.extensions.DetektExtension
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
-import dev.detekt.gradle.extensions.DetektExtension
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
@@ -13,24 +13,28 @@ plugins {
     alias(libs.plugins.detekt)
 }
 
-val versionProps = rootProject.file("version.properties").inputStream().use { stream ->
-    Properties().apply { load(stream) }
-}
+val versionProps =
+    rootProject.file("version.properties").inputStream().use { stream ->
+        Properties().apply { load(stream) }
+    }
 
 android {
     namespace = "com.kingpaging.qwelcome"
-    compileSdk = 36
+    // androidx.lifecycle 2.11.0 requires compiling against API 37+
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.kingpaging.qwelcome"
         minSdk = 26
         targetSdk = 36
-        versionCode = requireNotNull(versionProps.getProperty("VERSION_CODE")) {
-            "VERSION_CODE missing from version.properties"
-        }.toInt()
-        versionName = requireNotNull(versionProps.getProperty("VERSION_NAME")) {
-            "VERSION_NAME missing from version.properties"
-        }
+        versionCode =
+            requireNotNull(versionProps.getProperty("VERSION_CODE")) {
+                "VERSION_CODE missing from version.properties"
+            }.toInt()
+        versionName =
+            requireNotNull(versionProps.getProperty("VERSION_NAME")) {
+                "VERSION_NAME missing from version.properties"
+            }
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -39,13 +43,14 @@ android {
         create("release") {
             // Read from environment variables (CI) or local properties
             val envKeystorePath = System.getenv("KEYSTORE_FILE")
-            val keystoreFile = when {
-                // CI: use environment variable path (relative to root project)
-                envKeystorePath != null -> rootProject.file(envKeystorePath)
-                // Local: check for keystore in root project
-                else -> rootProject.file("qwelcome-release.keystore")
-            }
-            
+            val keystoreFile =
+                when {
+                    // CI: use environment variable path (relative to root project)
+                    envKeystorePath != null -> rootProject.file(envKeystorePath)
+                    // Local: check for keystore in root project
+                    else -> rootProject.file("qwelcome-release.keystore")
+                }
+
             if (keystoreFile.exists()) {
                 storeFile = keystoreFile
                 storePassword = System.getenv("KEYSTORE_PASSWORD") ?: ""
@@ -62,7 +67,7 @@ android {
             signingConfig = signingConfigs.findByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                "proguard-rules.pro",
             )
         }
     }

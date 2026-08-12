@@ -14,7 +14,7 @@ fun NeonDiscardDialog(
     message: String,
     onDiscard: () -> Unit,
     onKeepEditing: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     AlertDialog(
         modifier = modifier.imePadding(),
@@ -23,20 +23,20 @@ fun NeonDiscardDialog(
         title = {
             Text(
                 text = stringResource(R.string.dialog_discard_changes_title),
-                color = MaterialTheme.colorScheme.secondary
+                color = MaterialTheme.colorScheme.secondary,
             )
         },
         text = {
             Text(
                 text = message,
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurface,
             )
         },
         confirmButton = {
             NeonButton(
                 onClick = onDiscard,
                 glowColor = MaterialTheme.colorScheme.error,
-                style = NeonButtonStyle.PRIMARY
+                style = NeonButtonStyle.PRIMARY,
             ) {
                 Text(stringResource(R.string.action_discard))
             }
@@ -45,10 +45,10 @@ fun NeonDiscardDialog(
             NeonButton(
                 onClick = onKeepEditing,
                 glowColor = MaterialTheme.colorScheme.secondary,
-                style = NeonButtonStyle.TERTIARY
+                style = NeonButtonStyle.TERTIARY,
             ) {
                 Text(stringResource(R.string.action_keep_editing))
             }
-        }
+        },
     )
 }

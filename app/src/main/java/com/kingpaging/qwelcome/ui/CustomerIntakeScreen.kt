@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.relocation.BringIntoViewRequester
-import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -26,15 +25,14 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.ui.components.CyberpunkBackdrop
 import com.kingpaging.qwelcome.ui.components.NeonTopAppBar
-import com.kingpaging.qwelcome.ui.components.QrCodeBottomSheet
 import com.kingpaging.qwelcome.ui.components.QWelcomeHeader
+import com.kingpaging.qwelcome.ui.components.QrCodeBottomSheet
 import com.kingpaging.qwelcome.util.WifiQrGenerator
 import com.kingpaging.qwelcome.util.rememberHapticFeedback
 import com.kingpaging.qwelcome.viewmodel.templates.TemplateListUiState
@@ -51,14 +49,15 @@ internal class CustomerFormFocusTargets {
     val password = FormFieldFocusTarget()
     val accountNumber = FormFieldFocusTarget()
 
-    fun firstInvalid(uiState: CustomerIntakeUiState): FormFieldFocusTarget? = when {
-        uiState.customerNameError != null -> customerName
-        uiState.customerPhoneError != null -> customerPhone
-        uiState.ssidError != null -> ssid
-        uiState.passwordError != null -> password
-        uiState.accountNumberError != null -> accountNumber
-        else -> null
-    }
+    fun firstInvalid(uiState: CustomerIntakeUiState): FormFieldFocusTarget? =
+        when {
+            uiState.customerNameError != null -> customerName
+            uiState.customerPhoneError != null -> customerPhone
+            uiState.ssidError != null -> ssid
+            uiState.passwordError != null -> password
+            uiState.accountNumberError != null -> accountNumber
+            else -> null
+        }
 }
 
 internal data class CustomerIntakeActions(
@@ -76,7 +75,7 @@ internal data class CustomerIntakeActions(
     val onSmsClick: () -> Unit,
     val onShareClick: () -> Unit,
     val onCopyClick: () -> Unit,
-    val onShowQr: () -> Unit
+    val onShowQr: () -> Unit,
 )
 
 @Suppress("FunctionNaming", "LongMethod", "LongParameterList")
@@ -89,7 +88,7 @@ internal fun CustomerIntakeScreen(
     copySuccess: Boolean,
     actions: CustomerIntakeActions,
     onOpenSettings: () -> Unit,
-    onOpenTemplates: () -> Unit = {}
+    onOpenTemplates: () -> Unit = {},
 ) {
     val hapticFeedback = rememberHapticFeedback()
     var passwordVisible by rememberSaveable { mutableStateOf(false) }
@@ -104,7 +103,7 @@ internal fun CustomerIntakeScreen(
             isOpenNetwork = uiState.isOpenNetwork,
             securityType = uiState.securityType,
             isHiddenNetwork = uiState.isHiddenNetwork,
-            onDismiss = actions.onDismissQr
+            onDismiss = actions.onDismissQr,
         )
     }
 
@@ -121,27 +120,34 @@ internal fun CustomerIntakeScreen(
                             hapticFeedback()
                             actions.onClearForm()
                         }) {
-                            Icon(Icons.Filled.PersonAdd, contentDescription = stringResource(R.string.content_desc_new_customer))
+                            Icon(
+                                Icons.Filled.PersonAdd,
+                                contentDescription = stringResource(R.string.content_desc_new_customer),
+                            )
                         }
                         IconButton(onClick = {
                             hapticFeedback()
                             onOpenSettings()
                         }) {
-                            Icon(Icons.Filled.Settings, contentDescription = stringResource(R.string.content_desc_settings))
+                            Icon(
+                                Icons.Filled.Settings,
+                                contentDescription = stringResource(R.string.content_desc_settings),
+                            )
                         }
                     },
-                    actionIconContentColor = MaterialTheme.colorScheme.onBackground
+                    actionIconContentColor = MaterialTheme.colorScheme.onBackground,
                 )
-            }
+            },
         ) { innerPadding ->
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .verticalScroll(rememberScrollState())
-                    .imePadding()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp) // Top-aligned with spacing feels more like a tool
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
+                        .verticalScroll(rememberScrollState())
+                        .imePadding()
+                        .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp), // Top-aligned with spacing feels more like a tool
             ) {
                 CustomerIntakeTemplateSelector(
                     templateUiState = templateUiState,
@@ -156,7 +162,7 @@ internal fun CustomerIntakeScreen(
                         hapticFeedback()
                         templateDropdownExpanded = false
                         onOpenTemplates()
-                    }
+                    },
                 )
 
                 CustomerFormFields(
@@ -193,7 +199,7 @@ internal fun CustomerIntakeScreen(
                         hapticFeedback()
                         passwordVisible = !passwordVisible
                     },
-                    onAccountNumberChanged = actions.onAccountNumberChanged
+                    onAccountNumberChanged = actions.onAccountNumberChanged,
                 )
 
                 CustomerIntakeActionButtonRow(
@@ -209,7 +215,7 @@ internal fun CustomerIntakeScreen(
                     onCopyClick = {
                         hapticFeedback()
                         actions.onCopyClick()
-                    }
+                    },
                 )
 
                 CustomerIntakeQrCodeSection(
@@ -218,7 +224,7 @@ internal fun CustomerIntakeScreen(
                     onShowQrClick = {
                         hapticFeedback()
                         actions.onShowQr()
-                    }
+                    },
                 )
             }
         }

@@ -39,12 +39,12 @@ internal fun ImportConfirmStep(
     isLoading: Boolean,
     validationResult: ImportValidationResult,
     onConfirm: () -> Unit,
-    onCancel: () -> Unit
+    onCancel: () -> Unit,
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
     ) {
         Text(stringResource(R.string.title_ready_to_import), style = MaterialTheme.typography.titleLarge)
         ImportValidationSummary(validationResult)
@@ -59,7 +59,7 @@ private fun ImportValidationSummary(validationResult: ImportValidationResult) {
         Text(
             stringResource(R.string.text_import_overwrite_warning),
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
         )
         HorizontalDivider(Modifier.padding(vertical = 8.dp))
         ImportValidationDetails(validationResult)
@@ -71,18 +71,23 @@ private fun ImportValidationDetails(validationResult: ImportValidationResult) {
     when (validationResult) {
         is ImportValidationResult.ValidTemplatePack -> ImportTemplatePackDetails(validationResult)
         is ImportValidationResult.ValidFullBackup -> ImportFullBackupDetails(validationResult)
-        is ImportValidationResult.Invalid -> Text(
-            stringResource(R.string.error_invalid_import_data),
-            color = MaterialTheme.colorScheme.error,
-            style = MaterialTheme.typography.bodyMedium
-        )
+        is ImportValidationResult.Invalid ->
+            Text(
+                stringResource(R.string.error_invalid_import_data),
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodyMedium,
+            )
     }
 }
 
 @Composable
 private fun ImportTemplatePackDetails(result: ImportValidationResult.ValidTemplatePack) {
     InfoRow(stringResource(R.string.label_backup_type), stringResource(R.string.export_type_template_pack))
-    InfoRow(stringResource(R.string.label_template_count), result.pack.templates.size.toString())
+    InfoRow(
+        stringResource(R.string.label_template_count),
+        result.pack.templates.size
+            .toString(),
+    )
     InfoRow(stringResource(R.string.label_tech_profile), stringResource(R.string.label_not_included))
     ImportConflictInfo(result.hasConflicts, result.conflicts.size)
 }
@@ -90,17 +95,24 @@ private fun ImportTemplatePackDetails(result: ImportValidationResult.ValidTempla
 @Composable
 private fun ImportFullBackupDetails(result: ImportValidationResult.ValidFullBackup) {
     InfoRow(stringResource(R.string.label_backup_type), stringResource(R.string.export_type_full_backup))
-    InfoRow(stringResource(R.string.label_template_count), result.backup.templates.size.toString())
+    InfoRow(
+        stringResource(R.string.label_template_count),
+        result.backup.templates.size
+            .toString(),
+    )
     InfoRow(stringResource(R.string.label_tech_profile), stringResource(R.string.label_included))
     ImportConflictInfo(result.hasConflicts, result.conflicts.size)
 }
 
 @Composable
-private fun ImportConflictInfo(hasConflicts: Boolean, count: Int) {
+private fun ImportConflictInfo(
+    hasConflicts: Boolean,
+    count: Int,
+) {
     if (hasConflicts) {
         InfoRow(
             stringResource(R.string.label_conflicts),
-            pluralStringResource(R.plurals.import_conflicts, count, count)
+            pluralStringResource(R.plurals.import_conflicts, count, count),
         )
     }
 }
@@ -109,7 +121,7 @@ private fun ImportConflictInfo(hasConflicts: Boolean, count: Int) {
 private fun ImportConfirmationActions(
     isLoading: Boolean,
     onConfirm: () -> Unit,
-    onCancel: () -> Unit
+    onCancel: () -> Unit,
 ) {
     if (isLoading) {
         CircularProgressIndicator(color = MaterialTheme.colorScheme.secondary)
@@ -117,7 +129,7 @@ private fun ImportConfirmationActions(
             stringResource(R.string.status_importing),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-            modifier = Modifier.padding(top = 8.dp)
+            modifier = Modifier.padding(top = 8.dp),
         )
     } else {
         ImportConfirmationButtons(onConfirm, onCancel)
@@ -125,28 +137,31 @@ private fun ImportConfirmationActions(
 }
 
 @Composable
-private fun ImportConfirmationButtons(onConfirm: () -> Unit, onCancel: () -> Unit) {
+private fun ImportConfirmationButtons(
+    onConfirm: () -> Unit,
+    onCancel: () -> Unit,
+) {
     Row(
         horizontalArrangement = Arrangement.spacedBy(16.dp),
-        modifier = Modifier.fillMaxWidth(CONFIRMATION_BUTTON_WIDTH_FRACTION)
+        modifier = Modifier.fillMaxWidth(CONFIRMATION_BUTTON_WIDTH_FRACTION),
     ) {
         NeonButton(
             onClick = onCancel,
             modifier = Modifier.weight(1f),
             style = NeonButtonStyle.TERTIARY,
-            glowColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            glowColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
         ) {
             Text(stringResource(R.string.action_cancel))
         }
         NeonButton(
             onClick = onConfirm,
             modifier = Modifier.weight(1f),
-            glowColor = LocalCyberColors.current.success
+            glowColor = LocalCyberColors.current.success,
         ) {
             Icon(
                 Icons.Default.Check,
                 contentDescription = stringResource(R.string.content_desc_confirm_import),
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier.size(20.dp),
             )
             Spacer(Modifier.width(8.dp))
             Text(stringResource(R.string.action_confirm))
@@ -155,12 +170,16 @@ private fun ImportConfirmationButtons(onConfirm: () -> Unit, onCancel: () -> Uni
 }
 
 @Composable
-private fun InfoRow(label: String, value: String) {
+private fun InfoRow(
+    label: String,
+    value: String,
+) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Text(label, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
         Text(value, style = MaterialTheme.typography.bodyMedium)

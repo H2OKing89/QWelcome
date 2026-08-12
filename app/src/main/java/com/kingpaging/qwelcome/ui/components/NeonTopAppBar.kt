@@ -37,18 +37,19 @@ fun NeonTopAppBar(
     containerColor: Color = Color.Transparent,
     titleContentColor: Color = MaterialTheme.colorScheme.onBackground,
     navigationIconContentColor: Color = MaterialTheme.colorScheme.onBackground,
-    actionIconContentColor: Color = MaterialTheme.colorScheme.onBackground
+    actionIconContentColor: Color = MaterialTheme.colorScheme.onBackground,
 ) {
     TopAppBar(
         title = title,
         modifier = modifier,
         navigationIcon = navigationIcon,
         actions = actions,
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = containerColor,
-            titleContentColor = titleContentColor,
-            navigationIconContentColor = navigationIconContentColor,
-            actionIconContentColor = actionIconContentColor
-        )
+        colors =
+            TopAppBarDefaults.topAppBarColors(
+                containerColor = containerColor,
+                titleContentColor = titleContentColor,
+                navigationIconContentColor = navigationIconContentColor,
+                actionIconContentColor = actionIconContentColor,
+            ),
     )
 }

@@ -51,42 +51,44 @@ internal fun TemplateLibraryControls(
     onQueryChange: (String) -> Unit,
     onClearSearch: () -> Unit,
     onOpenTags: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         TemplateSearchField(
             query = query,
             onQueryChange = onQueryChange,
             onClear = onClearSearch,
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f),
         )
         OutlinedButton(
             onClick = onOpenTags,
             enabled = hasTags,
             shape = RoundedCornerShape(8.dp),
             contentPadding = PaddingValues(horizontal = 8.dp),
-            modifier = Modifier
-                .widthIn(min = 128.dp)
-                .height(52.dp)
+            modifier =
+                Modifier
+                    .widthIn(min = 128.dp)
+                    .height(52.dp),
         ) {
             Icon(
                 imageVector = Icons.Default.FilterList,
                 contentDescription = null,
-                modifier = Modifier.size(18.dp)
+                modifier = Modifier.size(18.dp),
             )
             Text(
-                text = if (selectedTagCount == 0) {
-                    stringResource(R.string.label_tags)
-                } else {
-                    stringResource(R.string.label_tags_selected, selectedTagCount)
-                },
+                text =
+                    if (selectedTagCount == 0) {
+                        stringResource(R.string.label_tags)
+                    } else {
+                        stringResource(R.string.label_tags_selected, selectedTagCount)
+                    },
                 modifier = Modifier.padding(start = 6.dp),
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }
@@ -98,7 +100,7 @@ internal fun TemplateSearchField(
     query: String,
     onQueryChange: (String) -> Unit,
     onClear: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
@@ -110,10 +112,11 @@ internal fun TemplateSearchField(
     BasicTextField(
         value = query,
         onValueChange = onQueryChange,
-        modifier = modifier
-            .fillMaxWidth()
-            .height(52.dp)
-            .semantics { contentDescription = searchDescription },
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .height(52.dp)
+                .semantics { contentDescription = searchDescription },
         singleLine = true,
         textStyle = MaterialTheme.typography.bodyLarge.copy(color = colors.onSurface),
         cursorBrush = SolidColor(colors.primary),
@@ -123,29 +126,32 @@ internal fun TemplateSearchField(
         decorationBox = { innerTextField ->
             Surface(
                 shape = RoundedCornerShape(8.dp),
-                color = if (isDark) {
-                    colors.surface.copy(alpha = 0.72f)
-                } else {
-                    colors.surface
-                },
-                border = BorderStroke(
-                    width = if (isFocused) 1.5.dp else 1.dp,
-                    color = if (isFocused) colors.primary else colors.outlineVariant
-                )
+                color =
+                    if (isDark) {
+                        colors.surface.copy(alpha = 0.72f)
+                    } else {
+                        colors.surface
+                    },
+                border =
+                    BorderStroke(
+                        width = if (isFocused) 1.5.dp else 1.dp,
+                        color = if (isFocused) colors.primary else colors.outlineVariant,
+                    ),
             ) {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp)
-                        .padding(start = 14.dp),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .height(52.dp)
+                            .padding(start = 14.dp),
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Icon(
                         imageVector = Icons.Default.Search,
                         contentDescription = null,
                         tint = colors.onSurfaceVariant,
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(20.dp),
                     )
                     Box(modifier = Modifier.weight(1f)) {
                         if (query.isEmpty()) {
@@ -154,7 +160,7 @@ internal fun TemplateSearchField(
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = colors.onSurfaceVariant,
                                 maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
+                                overflow = TextOverflow.Ellipsis,
                             )
                         }
                         innerTextField()
@@ -164,12 +170,12 @@ internal fun TemplateSearchField(
                             Icon(
                                 imageVector = Icons.Default.Close,
                                 contentDescription = stringResource(R.string.content_desc_clear_search),
-                                tint = colors.onSurfaceVariant
+                                tint = colors.onSurfaceVariant,
                             )
                         }
                     }
                 }
             }
-        }
+        },
     )
 }
