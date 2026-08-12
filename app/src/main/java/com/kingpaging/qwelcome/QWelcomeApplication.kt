@@ -1,16 +1,13 @@
 package com.kingpaging.qwelcome
 
 import android.app.Application
-import android.os.Build
 import android.util.Log
-import androidx.compose.ui.ComposeUiFlags
-import androidx.compose.ui.ExperimentalComposeUiApi
-import com.google.firebase.crashlytics.FirebaseCrashlytics
-import com.kingpaging.qwelcome.di.AppContainer
-import com.kingpaging.qwelcome.util.SoundManager
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
+import com.google.firebase.crashlytics.FirebaseCrashlytics
+import com.kingpaging.qwelcome.di.AppContainer
+import com.kingpaging.qwelcome.util.SoundManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -24,47 +21,40 @@ import kotlinx.coroutines.launch
  * - Firebase Crashlytics configuration
  */
 class QWelcomeApplication : Application() {
-
     val appContainer: AppContainer by lazy { AppContainer(this) }
 
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    private val appLifecycleObserver = object : DefaultLifecycleObserver {
-        override fun onStart(owner: LifecycleOwner) {
-            try {
-                SoundManager.restart()
-            } catch (e: Exception) {
-                Log.e(TAG, "appLifecycleObserver: SoundManager.restart() failed", e)
-                FirebaseCrashlytics.getInstance().apply {
-                    log("SoundManager.restart() failed in appLifecycleObserver")
-                    recordException(e)
+    private val appLifecycleObserver =
+        object : DefaultLifecycleObserver {
+            override fun onStart(owner: LifecycleOwner) {
+                try {
+                    SoundManager.restart()
+                } catch (e: Exception) {
+                    Log.e(TAG, "appLifecycleObserver: SoundManager.restart() failed", e)
+                    FirebaseCrashlytics.getInstance().apply {
+                        log("SoundManager.restart() failed in appLifecycleObserver")
+                        recordException(e)
+                    }
+                }
+            }
+
+            override fun onStop(owner: LifecycleOwner) {
+                try {
+                    SoundManager.shutdown()
+                } catch (e: Exception) {
+                    Log.e(TAG, "appLifecycleObserver: SoundManager.shutdown() failed", e)
+                    FirebaseCrashlytics.getInstance().apply {
+                        log("SoundManager.shutdown() failed in appLifecycleObserver")
+                        recordException(e)
+                    }
                 }
             }
         }
 
-        override fun onStop(owner: LifecycleOwner) {
-            try {
-                SoundManager.shutdown()
-            } catch (e: Exception) {
-                Log.e(TAG, "appLifecycleObserver: SoundManager.shutdown() failed", e)
-                FirebaseCrashlytics.getInstance().apply {
-                    log("SoundManager.shutdown() failed in appLifecycleObserver")
-                    recordException(e)
-                }
-            }
-        }
-    }
-
-    @OptIn(ExperimentalComposeUiApi::class)
     override fun onCreate() {
         super.onCreate()
         clearQrShareCache()
-
-        // Work around Android 15+ debug log spam from Compose ARR setRequestedFrameRate calls.
-        // Keep ARR enabled in release builds.
-        if (BuildConfig.DEBUG && Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
-            ComposeUiFlags.isAdaptiveRefreshRateEnabled = false
-        }
 
         // Keep collection disabled until the persisted preference is available.
         val crashlytics = FirebaseCrashlytics.getInstance()
@@ -74,7 +64,8 @@ class QWelcomeApplication : Application() {
         applicationScope.launch {
             appContainer.settingsStore.privacySettingsFlow.collect { settings ->
                 crashlytics.isCrashlyticsCollectionEnabled =
-                    !BuildConfig.DEBUG && settings.crashReportingEnabled
+                    !BuildConfig.DEBUG &&
+                    settings.crashReportingEnabled
             }
         }
 

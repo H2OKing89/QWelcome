@@ -34,21 +34,23 @@ internal fun ImportCompleteStep(onDone: () -> Unit) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(bottom = 64.dp)
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(bottom = 64.dp),
     ) {
         Box(
             contentAlignment = Alignment.Center,
-            modifier = Modifier
-                .size(128.dp)
-                .clip(CircleShape)
+            modifier =
+                Modifier
+                    .size(128.dp)
+                    .clip(CircleShape),
         ) {
             Icon(
                 imageVector = Icons.Default.CheckCircle,
                 contentDescription = stringResource(R.string.content_desc_success),
                 tint = LocalCyberColors.current.success,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
             )
         }
         Spacer(Modifier.height(24.dp))
@@ -57,13 +59,13 @@ internal fun ImportCompleteStep(onDone: () -> Unit) {
             stringResource(R.string.text_import_complete_description),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
-            modifier = Modifier.padding(top = 8.dp)
+            modifier = Modifier.padding(top = 8.dp),
         )
         Spacer(Modifier.height(32.dp))
         NeonButton(
             onClick = onDone,
             modifier = Modifier.fillMaxWidth(DONE_BUTTON_WIDTH_FRACTION),
-            glowColor = MaterialTheme.colorScheme.secondary
+            glowColor = MaterialTheme.colorScheme.secondary,
         ) {
             Text(stringResource(R.string.action_done))
         }

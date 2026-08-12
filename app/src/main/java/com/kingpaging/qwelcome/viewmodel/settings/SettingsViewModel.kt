@@ -34,28 +34,27 @@ private const val TAG = "SettingsViewModel"
 class SettingsViewModel(
     private val store: SettingsStore,
     private val resourceProvider: ResourceProvider,
-    private val appUpdater: AppUpdater
+    private val appUpdater: AppUpdater,
 ) : ViewModel() {
-
     val techProfile: StateFlow<TechProfile> =
         store.techProfileFlow.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
-            initialValue = TechProfile()
+            initialValue = TechProfile(),
         )
 
     val privacySettings: StateFlow<PrivacySettings?> =
         store.privacySettingsFlow.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
-            initialValue = null
+            initialValue = null,
         )
 
     val activeTemplate: StateFlow<Template> =
         store.activeTemplateFlow.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
-            initialValue = Template(name = "Default", content = store.defaultTemplateContent)
+            initialValue = Template(name = "Default", content = store.defaultTemplateContent),
         )
 
     // One-shot settings events (toasts + intents)
@@ -73,8 +72,8 @@ class SettingsViewModel(
                 Log.e(TAG, "Failed to save tech profile", e)
                 _settingsEvents.emit(
                     SettingsEvent.ShowToastError(
-                        resourceProvider.getString(R.string.toast_failed_save_profile)
-                    )
+                        resourceProvider.getString(R.string.toast_failed_save_profile),
+                    ),
                 )
             }
         }
@@ -98,8 +97,8 @@ class SettingsViewModel(
                 Log.e(TAG, "Failed to save privacy settings", e)
                 _settingsEvents.emit(
                     SettingsEvent.ShowToastError(
-                        resourceProvider.getString(R.string.toast_failed_save_privacy_settings)
-                    )
+                        resourceProvider.getString(R.string.toast_failed_save_privacy_settings),
+                    ),
                 )
             }
         }
@@ -135,8 +134,8 @@ class SettingsViewModel(
             viewModelScope.launch {
                 _settingsEvents.emit(
                     SettingsEvent.ShowToastError(
-                        resourceProvider.getString(R.string.toast_check_cooldown, remainingSeconds)
-                    )
+                        resourceProvider.getString(R.string.toast_check_cooldown, remainingSeconds),
+                    ),
                 )
             }
             return
@@ -149,14 +148,15 @@ class SettingsViewModel(
 
             when (val result = appUpdater.checkForUpdate(currentVersion)) {
                 is UpdateCheckResult.UpdateAvailable -> {
-                    _updateState.value = UpdateState.Available(
-                        version = result.latestVersion,
-                        downloadUrl = result.downloadUrl,
-                        releaseNotes = result.releaseNotes,
-                        assetName = result.assetName,
-                        assetSizeBytes = result.assetSizeBytes,
-                        sha256Hex = result.sha256Hex
-                    )
+                    _updateState.value =
+                        UpdateState.Available(
+                            version = result.latestVersion,
+                            downloadUrl = result.downloadUrl,
+                            releaseNotes = result.releaseNotes,
+                            assetName = result.assetName,
+                            assetSizeBytes = result.assetSizeBytes,
+                            sha256Hex = result.sha256Hex,
+                        )
                 }
                 is UpdateCheckResult.UpToDate -> {
                     _updateState.value = UpdateState.UpToDate
@@ -167,14 +167,15 @@ class SettingsViewModel(
                     _showDownloadConfirmDialog.value = false
                 }
                 is UpdateCheckResult.RateLimited -> {
-                    val message = if (result.retryAfterSeconds != null) {
-                        resourceProvider.getString(
-                            R.string.toast_rate_limited_retry,
-                            result.retryAfterSeconds
-                        )
-                    } else {
-                        resourceProvider.getString(R.string.toast_rate_limited)
-                    }
+                    val message =
+                        if (result.retryAfterSeconds != null) {
+                            resourceProvider.getString(
+                                R.string.toast_rate_limited_retry,
+                                result.retryAfterSeconds,
+                            )
+                        } else {
+                            resourceProvider.getString(R.string.toast_rate_limited)
+                        }
                     _updateState.value = UpdateState.Error(message)
                     _showDownloadConfirmDialog.value = false
                 }
@@ -205,20 +206,19 @@ class SettingsViewModel(
 
     fun retryInstallAfterPermission() {
         val state = _updateState.value
-        val (version, apkPath) = when (state) {
-            is UpdateState.ReadyToInstall -> state.version to state.apkPath
-            is UpdateState.PermissionRequired -> state.version to state.apkPath
-            else -> return
-        }
+        val (version, apkPath) =
+            when (state) {
+                is UpdateState.ReadyToInstall -> state.version to state.apkPath
+                is UpdateState.PermissionRequired -> state.version to state.apkPath
+                else -> return
+            }
 
         viewModelScope.launch {
             beginInstall(version, apkPath)
         }
     }
 
-    fun openUnknownSourcesSettingsIntent(): Intent {
-        return appUpdater.createUnknownSourcesSettingsIntent()
-    }
+    fun openUnknownSourcesSettingsIntent(): Intent = appUpdater.createUnknownSourcesSettingsIntent()
 
     /** Dismiss update notification */
     fun dismissUpdate() {
@@ -243,62 +243,67 @@ class SettingsViewModel(
 
     private suspend fun monitorDownload(
         available: UpdateState.Available,
-        downloadId: Long
+        downloadId: Long,
     ) {
-        _updateState.value = UpdateState.DownloadQueued(
-            version = available.version,
-            downloadId = downloadId
-        )
+        _updateState.value =
+            UpdateState.DownloadQueued(
+                version = available.version,
+                downloadId = downloadId,
+            )
 
         while (true) {
-            val status = try {
-                appUpdater.getDownloadStatus(downloadId)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                _updateState.value = UpdateState.Error(updaterErrorMessage(e))
-                return
-            }
+            val status =
+                try {
+                    appUpdater.getDownloadStatus(downloadId)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    _updateState.value = UpdateState.Error(updaterErrorMessage(e))
+                    return
+                }
 
             when (status) {
                 is DownloadStatus.InProgress -> {
-                    _updateState.value = if (status.bytesDownloaded <= 0L) {
-                        UpdateState.DownloadQueued(
-                            version = available.version,
-                            downloadId = downloadId
-                        )
-                    } else {
-                        UpdateState.Downloading(
-                            version = available.version,
-                            bytesDownloaded = status.bytesDownloaded,
-                            totalBytes = status.totalBytes
-                        )
-                    }
+                    _updateState.value =
+                        if (status.bytesDownloaded <= 0L) {
+                            UpdateState.DownloadQueued(
+                                version = available.version,
+                                downloadId = downloadId,
+                            )
+                        } else {
+                            UpdateState.Downloading(
+                                version = available.version,
+                                bytesDownloaded = status.bytesDownloaded,
+                                totalBytes = status.totalBytes,
+                            )
+                        }
                     delay(DOWNLOAD_POLL_INTERVAL_MS)
                 }
                 is DownloadStatus.Succeeded -> {
                     _updateState.value = UpdateState.Verifying(available.version)
-                    val verifyResult = try {
-                        appUpdater.verifyDownloadedApk(
-                            apkPath = status.apkPath,
-                            update = available.toUpdateAvailable()
-                        )
-                    } catch (e: CancellationException) {
-                        throw e
-                    } catch (e: Exception) {
-                        _updateState.value = UpdateState.Error(updaterErrorMessage(e))
-                        return
-                    }
+                    val verifyResult =
+                        try {
+                            appUpdater.verifyDownloadedApk(
+                                apkPath = status.apkPath,
+                                update = available.toUpdateAvailable(),
+                            )
+                        } catch (e: CancellationException) {
+                            throw e
+                        } catch (e: Exception) {
+                            _updateState.value = UpdateState.Error(updaterErrorMessage(e))
+                            return
+                        }
 
                     when (verifyResult) {
                         is VerificationResult.Failed -> {
                             _updateState.value = UpdateState.Error(verifyResult.message)
                         }
                         is VerificationResult.Success -> {
-                            _updateState.value = UpdateState.ReadyToInstall(
-                                version = available.version,
-                                apkPath = verifyResult.apkPath
-                            )
+                            _updateState.value =
+                                UpdateState.ReadyToInstall(
+                                    version = available.version,
+                                    apkPath = verifyResult.apkPath,
+                                )
                         }
                     }
                     return
@@ -311,7 +316,10 @@ class SettingsViewModel(
         }
     }
 
-    private suspend fun beginInstall(version: String, apkPath: String) {
+    private suspend fun beginInstall(
+        version: String,
+        apkPath: String,
+    ) {
         try {
             if (!appUpdater.canRequestPackageInstalls()) {
                 _updateState.value = UpdateState.PermissionRequired(version, apkPath)
@@ -320,9 +328,10 @@ class SettingsViewModel(
 
             val installIntent = appUpdater.createInstallIntent(apkPath)
             if (installIntent == null) {
-                _updateState.value = UpdateState.Error(
-                    resourceProvider.getString(R.string.error_update_install_unavailable)
-                )
+                _updateState.value =
+                    UpdateState.Error(
+                        resourceProvider.getString(R.string.error_update_install_unavailable),
+                    )
                 return
             }
 
@@ -335,16 +344,15 @@ class SettingsViewModel(
         }
     }
 
-    private fun UpdateState.Available.toUpdateAvailable(): UpdateCheckResult.UpdateAvailable {
-        return UpdateCheckResult.UpdateAvailable(
+    private fun UpdateState.Available.toUpdateAvailable(): UpdateCheckResult.UpdateAvailable =
+        UpdateCheckResult.UpdateAvailable(
             latestVersion = version,
             downloadUrl = downloadUrl,
             releaseNotes = releaseNotes,
             assetName = assetName,
             assetSizeBytes = assetSizeBytes,
-            sha256Hex = sha256Hex
+            sha256Hex = sha256Hex,
         )
-    }
 
     companion object {
         internal const val COOLDOWN_SECONDS = 60
@@ -360,28 +368,54 @@ class SettingsViewModel(
 /** State for update checking UI */
 sealed class UpdateState {
     object Idle : UpdateState()
+
     object Checking : UpdateState()
+
     object UpToDate : UpdateState()
+
     object Dismissed : UpdateState()
+
     data class Available(
         val version: String,
         val downloadUrl: String,
         val releaseNotes: String,
         val assetName: String,
         val assetSizeBytes: Long,
-        val sha256Hex: String
+        val sha256Hex: String,
     ) : UpdateState()
-    data class DownloadQueued(val version: String, val downloadId: Long) : UpdateState()
+
+    data class DownloadQueued(
+        val version: String,
+        val downloadId: Long,
+    ) : UpdateState()
+
     data class Downloading(
         val version: String,
         val bytesDownloaded: Long,
-        val totalBytes: Long?
+        val totalBytes: Long?,
     ) : UpdateState()
-    data class Verifying(val version: String) : UpdateState()
-    data class ReadyToInstall(val version: String, val apkPath: String) : UpdateState()
-    data class PermissionRequired(val version: String, val apkPath: String) : UpdateState()
-    data class Installing(val version: String) : UpdateState()
-    data class Error(val message: String) : UpdateState()
+
+    data class Verifying(
+        val version: String,
+    ) : UpdateState()
+
+    data class ReadyToInstall(
+        val version: String,
+        val apkPath: String,
+    ) : UpdateState()
+
+    data class PermissionRequired(
+        val version: String,
+        val apkPath: String,
+    ) : UpdateState()
+
+    data class Installing(
+        val version: String,
+    ) : UpdateState()
+
+    data class Error(
+        val message: String,
+    ) : UpdateState()
 }
 
 /** One-shot events emitted by [SettingsViewModel]. */
@@ -390,11 +424,17 @@ sealed class SettingsEvent {
     data object ProfileSaved : SettingsEvent()
 
     /** Informational toast without sound. */
-    data class ShowToast(val message: String) : SettingsEvent()
+    data class ShowToast(
+        val message: String,
+    ) : SettingsEvent()
 
     /** Error toast that should play an error beep in UI. */
-    data class ShowToastError(val message: String) : SettingsEvent()
+    data class ShowToastError(
+        val message: String,
+    ) : SettingsEvent()
 
     /** Launch an external Android intent (installer/settings). */
-    data class LaunchIntent(val intent: Intent) : SettingsEvent()
+    data class LaunchIntent(
+        val intent: Intent,
+    ) : SettingsEvent()
 }

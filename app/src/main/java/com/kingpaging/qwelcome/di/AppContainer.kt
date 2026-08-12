@@ -1,7 +1,7 @@
 package com.kingpaging.qwelcome.di
 
-import android.content.Context
 import android.content.ContentResolver
+import android.content.Context
 import android.content.pm.PackageManager
 import com.kingpaging.qwelcome.data.AppUpdater
 import com.kingpaging.qwelcome.data.GitHubAppUpdater
@@ -10,7 +10,9 @@ import com.kingpaging.qwelcome.data.SettingsStore
 import com.kingpaging.qwelcome.util.AndroidResourceProvider
 import com.kingpaging.qwelcome.util.ResourceProvider
 
-class AppContainer(context: Context) {
+class AppContainer(
+    context: Context,
+) {
     private val applicationContext = context.applicationContext
 
     val settingsStore: SettingsStore by lazy {

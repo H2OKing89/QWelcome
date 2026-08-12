@@ -11,5 +11,5 @@ data class SettingsUiState(
     val activeTemplate: Template,
     val updateState: UpdateState,
     val showDownloadConfirmDialog: Boolean,
-    val currentVersion: String
+    val currentVersion: String,
 )

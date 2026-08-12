@@ -27,6 +27,32 @@ Audit date: 2026-08-10
 
 These numbers are indicators, not targets by themselves. A long file is a problem only when it mixes responsibilities or makes changes difficult to understand and test.
 
+## Post-Merge Review
+
+Review date: 2026-08-11
+
+The maintainability overhaul was merged into `master` and verified with the full local gate: unit tests, instrumentation-test compilation, Ktlint, Detekt, Android lint, and debug assembly. Hosted CI also passed build, lint, instrumentation smoke, CodeQL, and dependency review.
+
+The 2026-08-10 baseline remains an historical audit snapshot. At this review, the workspace contained 100 production Kotlin files totaling 14,904 lines, 18 unit-test files, and 16 instrumentation-test files.
+
+### Findings
+
+- No blocking production defects were identified in the merged route, persistence, export, dependency-construction, or CI changes.
+- Replayed Export and Import events are explicitly consumed by their routes. Template-editor events use `MutableSharedFlow` with `replay = 0`, so they cannot replay when returning to that destination and do not need a replay-cache reset.
+- Export and Import screen and ViewModel tests cover most behavior, but the route boundary lacks direct tests for lifecycle restarts, activity-result cancellation, URI handoff, and duplicate-effect prevention.
+- A broad connected-test run on the API 36 Samsung can lose Compose test hierarchies after many tests in one instrumentation process. Fresh class-level runs passed Customer Intake (6/6) and Template List (21/21), so this is a physical-device/UTP batching limitation rather than a confirmed application regression. Emulator CI remains green.
+- Editor text ownership remains a deliberate two-way synchronization between `TextFieldState` and ViewModel `contentText`. It is working but still carries more synchronization complexity than a single authoritative representation.
+
+### Recommended Next
+
+1. Add Export and Import route integration tests covering file-picker cancellation, successful URI handoff, lifecycle restart, and one-shot effect consumption.
+2. Complete P4 event standardization: document each feature flow's replay and drop behavior, retain state for restorable outcomes, and reserve effects for transient UI and external intents.
+3. Decide whether editor text synchronization should remain as-is or move to a single persisted text owner; preserve placeholder insertion, selection, IME, and restoration behavior with focused tests.
+4. Add a release-build/R8 smoke test for typed-route serialization, QR generation, and import/export serialization.
+5. Investigate the Protobuf Gradle plugin's Gradle 10 compatibility warning when a compatible upgrade is available.
+6. Keep broad Samsung Compose validation in fresh class batches until the UTP/device issue is resolved; continue using emulator CI as the merge gate.
+7. Evaluate destination-scoping the remaining activity-scoped feature ViewModels, starting with Import and Export; preserve their intended reset and restoration semantics before changing their lifetimes.
+
 ## Principles
 
 1. Prefer incremental refactoring over a rewrite.
@@ -441,6 +467,16 @@ The release workflow now verifies that a `vX.Y.Z` tag matches `VERSION_NAME`, re
 - [x] Add Dependabot.
 - [x] Harden release version verification.
 - [x] Add architecture, dependency-update, and troubleshooting guides.
+
+### Milestone 7: Feature ViewModel lifetime reassessment (Candidate)
+
+Five feature ViewModels are constructed at the activity and provided through `CompositionLocals`, while the template editor is already destination-scoped with a navigation `ViewModelStoreOwner`. This is an opportunity to reduce eager construction and make feature state lifetime more explicit, but it is not a mechanical replacement: Import currently resets on cancellation, Export retains an unused reset method, and Customer Intake reads template state from `TemplateListViewModel`.
+
+- [ ] Define the desired restoration and cancellation behavior for Import and Export before moving either from activity scope. Start with these independent routes as a focused pilot, using the template editor's destination-scoped creation pattern.
+- [ ] Verify route lifecycle, activity-result, process-restoration, and one-shot-effect behavior with focused tests for each migrated feature.
+- [ ] Define a focused template-selection boundary for Customer Intake before changing its scope; do not retain its dependency on the full Template Library ViewModel by accident.
+- [ ] Update `CLAUDE.md` after the scoping decision so contributor guidance accurately distinguishes activity-scoped and destination-scoped ViewModels, and remove its obsolete singleton/reset-for-testing description.
+- [ ] Keep the current package layout unless a concrete ownership or build-time problem justifies a feature-first reorganization.
 
 ## Verification Commands
 

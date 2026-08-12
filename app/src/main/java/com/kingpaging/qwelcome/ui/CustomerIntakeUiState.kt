@@ -5,11 +5,11 @@ import com.kingpaging.qwelcome.util.WifiQrGenerator
 
 /**
  * UI state for the Customer Intake form.
- * 
+ *
  * This class represents the current state of the form including user input
  * and validation error messages. It is distinct from [CustomerData] which
  * represents validated, ready-to-use customer information.
- * 
+ *
  * Use [toCustomerData] to convert validated UI state to a CustomerData instance.
  * Use [isValid] to check if the form is ready for submission.
  */
@@ -31,18 +31,18 @@ data class CustomerIntakeUiState(
     /** Whether the QR code bottom sheet is currently shown */
     val showQrSheet: Boolean = false,
 ) {
-
     /** True when the WiFi fields are valid enough to generate a QR code. */
     val qrEnabled: Boolean
-        get() = if (isOpenNetwork) {
-            ssid.isNotBlank() && ssidError == null
-        } else {
-            ssid.isNotBlank() &&
-                ssidError == null &&
-                password.isNotBlank() &&
-                password.length >= WifiQrGenerator.MIN_PASSWORD_LENGTH &&
-                passwordError == null
-        }
+        get() =
+            if (isOpenNetwork) {
+                ssid.isNotBlank() && ssidError == null
+            } else {
+                ssid.isNotBlank() &&
+                    ssidError == null &&
+                    password.isNotBlank() &&
+                    password.length >= WifiQrGenerator.MIN_PASSWORD_LENGTH &&
+                    passwordError == null
+            }
 
     /**
      * Returns true if all form fields pass validation (no errors present).
@@ -54,36 +54,40 @@ data class CustomerIntakeUiState(
      * For open networks, password errors are ignored since passwords aren't required.
      */
     val isValid: Boolean
-        get() = customerNameError == null &&
+        get() =
+            customerNameError == null &&
                 customerPhoneError == null &&
                 ssidError == null &&
                 (isOpenNetwork || passwordError == null) &&
                 accountNumberError == null
 
     val hasCustomerData: Boolean
-        get() = customerName.isNotBlank() ||
-            customerPhone.isNotBlank() ||
-            ssid.isNotBlank() ||
-            password.isNotBlank() ||
-            accountNumber.isNotBlank()
+        get() =
+            customerName.isNotBlank() ||
+                customerPhone.isNotBlank() ||
+                ssid.isNotBlank() ||
+                password.isNotBlank() ||
+                accountNumber.isNotBlank()
+
     /**
      * Converts the UI state to a [CustomerData] instance.
-     * 
+     *
      * This mapper function bridges the UI layer (CustomerIntakeUiState) and
      * the data layer (CustomerData), applying transformations like title case
      * formatting to the customer name.
-     * 
+     *
      * Note: This should only be called after validation has passed, as it does
      * not perform any validation itself.
-     * 
+     *
      * @return A CustomerData instance with the current form values
      */
-    fun toCustomerData(): CustomerData = CustomerData(
-        customerName = customerName,
-        customerPhone = customerPhone,
-        ssid = ssid,
-        password = password,
-        accountNumber = accountNumber,
-        isOpenNetwork = isOpenNetwork
-    )
+    fun toCustomerData(): CustomerData =
+        CustomerData(
+            customerName = customerName,
+            customerPhone = customerPhone,
+            ssid = ssid,
+            password = password,
+            accountNumber = accountNumber,
+            isOpenNetwork = isOpenNetwork,
+        )
 }

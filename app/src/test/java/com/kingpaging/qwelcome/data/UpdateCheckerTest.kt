@@ -6,10 +6,10 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class UpdateCheckerTest {
-
     @Test
     fun `parseUpdateResponse with valid apk digest returns UpdateAvailable`() {
-        val response = """
+        val response =
+            """
             {
               "tag_name": "v3.0.0",
               "html_url": "https://github.com/H2OKing89/QWelcome/releases/tag/v3.0.0",
@@ -23,7 +23,7 @@ class UpdateCheckerTest {
                 }
               ]
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val result = UpdateChecker.parseUpdateResponse(response, currentVersionName = "2.5.0")
         assertTrue(result is UpdateCheckResult.UpdateAvailable)
@@ -37,7 +37,8 @@ class UpdateCheckerTest {
 
     @Test
     fun `parseUpdateResponse missing digest returns Error`() {
-        val response = """
+        val response =
+            """
             {
               "tag_name": "v3.0.0",
               "html_url": "https://github.com/H2OKing89/QWelcome/releases/tag/v3.0.0",
@@ -49,7 +50,7 @@ class UpdateCheckerTest {
                 }
               ]
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val result = UpdateChecker.parseUpdateResponse(response, currentVersionName = "2.5.0")
         assertTrue(result is UpdateCheckResult.Error)
@@ -58,7 +59,8 @@ class UpdateCheckerTest {
 
     @Test
     fun `parseUpdateResponse with untrusted host returns Error`() {
-        val response = """
+        val response =
+            """
             {
               "tag_name": "v3.0.0",
               "html_url": "https://github.com/H2OKing89/QWelcome/releases/tag/v3.0.0",
@@ -71,7 +73,7 @@ class UpdateCheckerTest {
                 }
               ]
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val result = UpdateChecker.parseUpdateResponse(response, currentVersionName = "2.5.0")
         assertTrue(result is UpdateCheckResult.Error)
@@ -80,7 +82,8 @@ class UpdateCheckerTest {
 
     @Test
     fun `parseUpdateResponse when already up to date returns UpToDate`() {
-        val response = """
+        val response =
+            """
             {
               "tag_name": "v2.5.0",
               "html_url": "https://github.com/H2OKing89/QWelcome/releases/tag/v2.5.0",
@@ -93,7 +96,7 @@ class UpdateCheckerTest {
                 }
               ]
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val result = UpdateChecker.parseUpdateResponse(response, currentVersionName = "2.5.0")
         assertTrue(result is UpdateCheckResult.UpToDate)
@@ -101,12 +104,14 @@ class UpdateCheckerTest {
 
     @Test
     fun `extractSha256Hex accepts valid hash and rejects malformed`() {
-        val valid = UpdateChecker.extractSha256Hex(
-            "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
-        )
-        val validUpperPrefix = UpdateChecker.extractSha256Hex(
-            "SHA256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-        )
+        val valid =
+            UpdateChecker.extractSha256Hex(
+                "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+            )
+        val validUpperPrefix =
+            UpdateChecker.extractSha256Hex(
+                "SHA256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            )
         val invalid = UpdateChecker.extractSha256Hex("sha256:not-a-hash")
 
         assertEquals("dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd", valid)
@@ -116,14 +121,15 @@ class UpdateCheckerTest {
 
     @Test
     fun `parseUpdateResponse with empty assets returns Error`() {
-        val response = """
+        val response =
+            """
             {
               "tag_name": "v3.0.0",
               "html_url": "https://github.com/H2OKing89/QWelcome/releases/tag/v3.0.0",
               "body": "Release notes",
               "assets": []
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val result = UpdateChecker.parseUpdateResponse(response, currentVersionName = "2.5.0")
         assertTrue(result is UpdateCheckResult.Error)
@@ -132,7 +138,8 @@ class UpdateCheckerTest {
 
     @Test
     fun `parseUpdateResponse with only non-apk assets returns Error`() {
-        val response = """
+        val response =
+            """
             {
               "tag_name": "v3.0.0",
               "html_url": "https://github.com/H2OKing89/QWelcome/releases/tag/v3.0.0",
@@ -150,7 +157,7 @@ class UpdateCheckerTest {
                 }
               ]
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val result = UpdateChecker.parseUpdateResponse(response, currentVersionName = "2.5.0")
         assertTrue(result is UpdateCheckResult.Error)

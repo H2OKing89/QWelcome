@@ -24,7 +24,7 @@ data class Template(
     val modifiedAt: String = createdAt,
     val slug: String? = null,
     val sortOrder: Int = 0,
-    val tags: List<String> = emptyList()
+    val tags: List<String> = emptyList(),
 ) {
     companion object {
         /**
@@ -32,15 +32,15 @@ data class Template(
          * These are essential for the app's core functionality.
          */
         val REQUIRED_PLACEHOLDERS = setOf("{{ customer_name }}", "{{ ssid }}")
-        
+
         // Regex patterns for flexible placeholder matching (tolerates whitespace)
         private val PATTERN_CUSTOMER_NAME = Regex("""\{\{\s*customer_name\s*\}\}""")
         private val PATTERN_SSID = Regex("""\{\{\s*ssid\s*\}\}""")
-        
+
         /**
          * Validates template content and returns a list of missing required placeholders.
          * Uses regex to tolerate whitespace variations like {{customer_name}} or {{ customer_name }}.
-         * 
+         *
          * @return List of canonical placeholder strings that are missing (empty if all present)
          */
         fun findMissingPlaceholders(content: String): List<String> {
@@ -53,36 +53,37 @@ data class Template(
             }
             return missing
         }
-        
+
         /**
          * Checks if template content has all required placeholders.
          */
-        fun hasRequiredPlaceholders(content: String): Boolean = 
-            findMissingPlaceholders(content).isEmpty()
-        
+        fun hasRequiredPlaceholders(content: String): Boolean = findMissingPlaceholders(content).isEmpty()
+
         /**
          * Regex pattern to match any placeholder with flexible whitespace.
          * Captures the placeholder name (e.g., "customer_name", "ssid").
          */
         private val PLACEHOLDER_PATTERN = Regex("""\{\{\s*(\w+)\s*\}\}""")
-        
+
         /**
          * Normalizes placeholder whitespace to canonical form: {{ name }}
          * This ensures templates saved with {{name}} or {{  name  }} are
          * stored as {{ name }} so applyPlaceholders() replacement works.
          */
-        fun normalizeContent(content: String): String {
-            return PLACEHOLDER_PATTERN.replace(content) { match ->
+        fun normalizeContent(content: String): String =
+            PLACEHOLDER_PATTERN.replace(content) { match ->
                 "{{ ${match.groupValues[1]} }}"
             }
-        }
-        
+
         /**
          * Create a template from just name and content (common use case).
          * Auto-generates a slug from the name for readability.
          * Normalizes placeholder whitespace for consistent storage.
          */
-        fun create(name: String, content: String): Template {
+        fun create(
+            name: String,
+            content: String,
+        ): Template {
             val now = currentIsoTimestamp()
             return Template(
                 id = UUID.randomUUID().toString(),
@@ -90,7 +91,7 @@ data class Template(
                 content = normalizeContent(content),
                 createdAt = now,
                 modifiedAt = now,
-                slug = generateSlug(name)
+                slug = generateSlug(name),
             )
         }
 
@@ -106,12 +107,14 @@ data class Template(
          * Reserved slugs get a UUID suffix appended.
          */
         private fun generateSlug(name: String): String {
-            val cleaned = name.lowercase()
-                .replace(Regex("[^a-z0-9]+"), "_")
-                .replace(Regex("_+"), "_") // Collapse consecutive underscores
-                .trim('_')
-                .take(50) // Limit length
-            
+            val cleaned =
+                name
+                    .lowercase()
+                    .replace(Regex("[^a-z0-9]+"), "_")
+                    .replace(Regex("_+"), "_") // Collapse consecutive underscores
+                    .trim('_')
+                    .take(50) // Limit length
+
             return when {
                 // Fallback if slug is empty (e.g., name was "!!!" or "🎉🎉🎉")
                 cleaned.isEmpty() -> "template_${UUID.randomUUID().toString().take(8)}"
@@ -124,32 +127,31 @@ data class Template(
         /**
          * Returns current timestamp in ISO-8601 format.
          */
-        private fun currentIsoTimestamp(): String {
-            return java.time.Instant.now().toString()
-        }
+        private fun currentIsoTimestamp(): String =
+            java.time.Instant
+                .now()
+                .toString()
     }
 
     /**
      * Create a copy with updated modification timestamp.
      */
-    fun withUpdatedContent(newContent: String): Template {
-        return copy(
+    fun withUpdatedContent(newContent: String): Template =
+        copy(
             content = newContent,
-            modifiedAt = currentIsoTimestamp()
+            modifiedAt = currentIsoTimestamp(),
         )
-    }
 
     /**
      * Create a copy with updated name, slug, and modification timestamp.
      * Always regenerates the slug to keep it consistent with the name.
      */
-    fun withUpdatedName(newName: String): Template {
-        return copy(
+    fun withUpdatedName(newName: String): Template =
+        copy(
             name = newName,
             slug = generateSlug(newName),
-            modifiedAt = currentIsoTimestamp()
+            modifiedAt = currentIsoTimestamp(),
         )
-    }
 
     /**
      * Create a copy as a duplicate with new ID, timestamps, and slug.
@@ -161,7 +163,7 @@ data class Template(
             name = newName,
             slug = generateSlug(newName),
             createdAt = now,
-            modifiedAt = now
+            modifiedAt = now,
         )
     }
 }

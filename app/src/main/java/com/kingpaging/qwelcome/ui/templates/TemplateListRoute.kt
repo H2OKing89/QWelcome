@@ -27,7 +27,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun TemplateListRoute(
     onBack: () -> Unit,
-    onOpenEditor: (String) -> Unit
+    onOpenEditor: (String) -> Unit,
 ) {
     val viewModel = LocalTemplateListViewModel.current
     val soundPlayer = LocalSoundPlayer.current
@@ -38,7 +38,7 @@ fun TemplateListRoute(
         viewModel = viewModel,
         soundPlayer = soundPlayer,
         snackbarHostState = snackbarHostState,
-        onOpenEditor = onOpenEditor
+        onOpenEditor = onOpenEditor,
     )
 
     TemplateListScreen(
@@ -56,7 +56,7 @@ fun TemplateListRoute(
         onSetActiveTemplate = viewModel::setActiveTemplate,
         onDuplicateAndEdit = viewModel::duplicateAndEdit,
         onDuplicateTemplate = viewModel::duplicateTemplate,
-        onShowDeleteConfirmation = viewModel::showDeleteConfirmation
+        onShowDeleteConfirmation = viewModel::showDeleteConfirmation,
     )
 }
 
@@ -66,7 +66,7 @@ private fun CollectTemplateListEffects(
     viewModel: TemplateListViewModel,
     soundPlayer: SoundPlayer,
     snackbarHostState: SnackbarHostState,
-    onOpenEditor: (String) -> Unit
+    onOpenEditor: (String) -> Unit,
 ) {
     val context = LocalContext.current
     val currentOnOpenEditor by rememberUpdatedState(onOpenEditor)
@@ -86,11 +86,12 @@ private fun CollectTemplateListEffects(
             if (event.shouldBeep()) {
                 soundPlayer.playBeep()
             }
-            val result = snackbarHostState.showSnackbar(
-                message = snackbar.message,
-                actionLabel = snackbar.actionLabel,
-                duration = snackbar.duration
-            )
+            val result =
+                snackbarHostState.showSnackbar(
+                    message = snackbar.message,
+                    actionLabel = snackbar.actionLabel,
+                    duration = snackbar.duration,
+                )
             if (result == SnackbarResult.ActionPerformed) {
                 event.performSnackbarAction(viewModel, currentOnOpenEditor)
             }
@@ -101,43 +102,48 @@ private fun CollectTemplateListEffects(
 private data class TemplateSnackbar(
     val message: String,
     val actionLabel: String? = null,
-    val duration: SnackbarDuration = SnackbarDuration.Short
+    val duration: SnackbarDuration = SnackbarDuration.Short,
 )
 
-private fun TemplateListEvent.toSnackbar(
-    context: Context
-): TemplateSnackbar? = when (this) {
-    is TemplateListEvent.Error -> TemplateSnackbar(
-        message = checkNotNull(toTemplateErrorMessage(context)),
-        duration = SnackbarDuration.Long
-    )
-    is TemplateListEvent.TemplateDeleted -> TemplateSnackbar(
-        context.getString(R.string.toast_template_deleted, name)
-    )
-    is TemplateListEvent.TemplateDuplicated -> TemplateSnackbar(
-        context.getString(R.string.toast_template_duplicated, template.name)
-    )
-    is TemplateListEvent.ActiveTemplateChanged -> TemplateSnackbar(
-        message = context.getString(R.string.toast_template_active, template.name),
-        actionLabel = context.getString(R.string.action_undo),
-        duration = SnackbarDuration.Long
-    )
-    is TemplateListEvent.TemplateSelectionBlocked -> TemplateSnackbar(
-        message = checkNotNull(toTemplateErrorMessage(context)),
-        actionLabel = context.getString(R.string.action_fix),
-        duration = SnackbarDuration.Long
-    )
-    is TemplateListEvent.TemplateRenamed -> TemplateSnackbar(
-        context.getString(R.string.toast_template_renamed, template.name)
-    )
-}
+private fun TemplateListEvent.toSnackbar(context: Context): TemplateSnackbar? =
+    when (this) {
+        is TemplateListEvent.Error ->
+            TemplateSnackbar(
+                message = checkNotNull(toTemplateErrorMessage(context)),
+                duration = SnackbarDuration.Long,
+            )
+        is TemplateListEvent.TemplateDeleted ->
+            TemplateSnackbar(
+                context.getString(R.string.toast_template_deleted, name),
+            )
+        is TemplateListEvent.TemplateDuplicated ->
+            TemplateSnackbar(
+                context.getString(R.string.toast_template_duplicated, template.name),
+            )
+        is TemplateListEvent.ActiveTemplateChanged ->
+            TemplateSnackbar(
+                message = context.getString(R.string.toast_template_active, template.name),
+                actionLabel = context.getString(R.string.action_undo),
+                duration = SnackbarDuration.Long,
+            )
+        is TemplateListEvent.TemplateSelectionBlocked ->
+            TemplateSnackbar(
+                message = checkNotNull(toTemplateErrorMessage(context)),
+                actionLabel = context.getString(R.string.action_fix),
+                duration = SnackbarDuration.Long,
+            )
+        is TemplateListEvent.TemplateRenamed ->
+            TemplateSnackbar(
+                context.getString(R.string.toast_template_renamed, template.name),
+            )
+    }
 
 private fun TemplateListEvent.shouldBeep(): Boolean =
     this is TemplateListEvent.Error || this is TemplateListEvent.TemplateSelectionBlocked
 
 private fun TemplateListEvent.performSnackbarAction(
     viewModel: TemplateListViewModel,
-    onOpenEditor: (String) -> Unit
+    onOpenEditor: (String) -> Unit,
 ) {
     when (this) {
         is TemplateListEvent.ActiveTemplateChanged -> viewModel.undoTemplateSelection(change)

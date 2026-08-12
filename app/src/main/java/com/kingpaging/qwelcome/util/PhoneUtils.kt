@@ -43,7 +43,7 @@ object PhoneUtils {
      */
     fun normalize(phone: String): String? {
         if (!isValid(phone)) return null
-        
+
         val digits = phone.replace(nonDigitRegex, "")
 
         return when (digits.length) {

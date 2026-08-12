@@ -14,7 +14,6 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class ImportScreenTest {
-
     @get:Rule
     val composeRule = createComposeRule()
 
@@ -29,7 +28,7 @@ class ImportScreenTest {
                     onOpenFile = {},
                     onPaste = {},
                     onConfirm = {},
-                    onCancel = {}
+                    onCancel = {},
                 )
             }
         }

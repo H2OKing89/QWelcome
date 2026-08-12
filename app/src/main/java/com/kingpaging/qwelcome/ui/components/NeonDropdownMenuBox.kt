@@ -37,14 +37,14 @@ fun NeonDropdownMenuBox(
     selectedText: String,
     label: @Composable () -> Unit,
     modifier: Modifier = Modifier,
-    menuContent: @Composable ColumnScope.() -> Unit
+    menuContent: @Composable ColumnScope.() -> Unit,
 ) {
     val isDark = LocalDarkTheme.current
 
     ExposedDropdownMenuBox(
         expanded = expanded,
         onExpandedChange = onExpandedChange,
-        modifier = modifier
+        modifier = modifier,
     ) {
         OutlinedTextField(
             value = selectedText,
@@ -52,23 +52,26 @@ fun NeonDropdownMenuBox(
             readOnly = true,
             label = label,
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = MaterialTheme.colorScheme.secondary,
-                unfocusedBorderColor = MaterialTheme.colorScheme.secondary.copy(
-                    alpha = if (isDark) 0.45f else 0.28f
+            colors =
+                OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.secondary,
+                    unfocusedBorderColor =
+                        MaterialTheme.colorScheme.secondary.copy(
+                            alpha = if (isDark) 0.45f else 0.28f,
+                        ),
+                    focusedLabelColor = MaterialTheme.colorScheme.secondary,
+                    unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
                 ),
-                focusedLabelColor = MaterialTheme.colorScheme.secondary,
-                unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
-            ),
-            modifier = Modifier
-                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
-                .fillMaxWidth()
+            modifier =
+                Modifier
+                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+                    .fillMaxWidth(),
         )
 
         ExposedDropdownMenu(
             expanded = expanded,
             onDismissRequest = { onExpandedChange(false) },
-            content = menuContent
+            content = menuContent,
         )
     }
 }

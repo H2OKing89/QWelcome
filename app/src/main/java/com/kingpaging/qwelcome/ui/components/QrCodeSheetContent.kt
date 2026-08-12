@@ -6,7 +6,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -43,12 +42,12 @@ private const val MASKED_PASSWORD_DISPLAY = "********"
 internal data class QrCodeNetworkDetails(
     val ssid: String,
     val isOpenNetwork: Boolean,
-    val securityType: WifiQrGenerator.SecurityType
+    val securityType: WifiQrGenerator.SecurityType,
 )
 
 internal data class QrCodeSheetActions(
     val onRequestSave: () -> Unit,
-    val onShare: () -> Unit
+    val onShare: () -> Unit,
 )
 
 @Composable
@@ -57,7 +56,7 @@ internal fun ColumnScope.QrCodeSheetContent(
     network: QrCodeNetworkDetails,
     isSaving: Boolean,
     isSharing: Boolean,
-    actions: QrCodeSheetActions
+    actions: QrCodeSheetActions,
 ) {
     QrCodeSheetHeader()
     Spacer(Modifier.height(16.dp))
@@ -74,13 +73,13 @@ private fun QrCodeSheetHeader() {
     Text(
         text = stringResource(R.string.title_wifi_qr_code),
         style = MaterialTheme.typography.headlineSmall,
-        color = MaterialTheme.colorScheme.primary
+        color = MaterialTheme.colorScheme.primary,
     )
     Spacer(Modifier.height(4.dp))
     Text(
         text = stringResource(R.string.text_scan_to_connect_automatically),
         style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
     )
 }
 
@@ -89,17 +88,18 @@ private fun QrCodePreview(qrPainter: Painter) {
     val cyberColors = LocalCyberColors.current
 
     Box(
-        modifier = Modifier
-            .size(240.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .background(cyberColors.qrCodeBackground)
-            .padding(12.dp),
-        contentAlignment = Alignment.Center
+        modifier =
+            Modifier
+                .size(240.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(cyberColors.qrCodeBackground)
+                .padding(12.dp),
+        contentAlignment = Alignment.Center,
     ) {
         Image(
             painter = qrPainter,
             contentDescription = stringResource(R.string.content_desc_wifi_qr_code),
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize(),
         )
     }
 }
@@ -109,14 +109,14 @@ private fun QrCodeNetworkSummary(network: QrCodeNetworkDetails) {
     NeonPanel(modifier = Modifier.fillMaxWidth()) {
         Text(
             stringResource(R.string.label_network),
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
         )
         Text(
             network.ssid,
             color = MaterialTheme.colorScheme.primary,
             fontWeight = FontWeight.Medium,
             maxLines = 2,
-            overflow = TextOverflow.Ellipsis
+            overflow = TextOverflow.Ellipsis,
         )
         Spacer(Modifier.height(4.dp))
         QrCodeSecuritySummary(network)
@@ -127,33 +127,34 @@ private fun QrCodeNetworkSummary(network: QrCodeNetworkDetails) {
 private fun QrCodeSecuritySummary(network: QrCodeNetworkDetails) {
     Text(
         stringResource(R.string.label_security),
-        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
     )
     Text(
-        text = when {
-            network.isOpenNetwork -> stringResource(R.string.label_open_no_password)
-            network.securityType == WifiQrGenerator.SecurityType.WPA3_SAE -> {
-                stringResource(R.string.security_wpa3_sae)
-            }
-            else -> stringResource(R.string.security_wpa2)
-        },
+        text =
+            when {
+                network.isOpenNetwork -> stringResource(R.string.label_open_no_password)
+                network.securityType == WifiQrGenerator.SecurityType.WPA3_SAE -> {
+                    stringResource(R.string.security_wpa3_sae)
+                }
+                else -> stringResource(R.string.security_wpa2)
+            },
         color = MaterialTheme.colorScheme.tertiary,
         fontWeight = FontWeight.Medium,
         maxLines = 2,
-        overflow = TextOverflow.Ellipsis
+        overflow = TextOverflow.Ellipsis,
     )
     if (!network.isOpenNetwork) {
         Spacer(Modifier.height(4.dp))
         Text(
             stringResource(R.string.label_wifi_password),
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
         )
         Text(
             MASKED_PASSWORD_DISPLAY,
             color = MaterialTheme.colorScheme.secondary,
             fontWeight = FontWeight.Medium,
             maxLines = 2,
-            overflow = TextOverflow.Ellipsis
+            overflow = TextOverflow.Ellipsis,
         )
     }
 }
@@ -162,11 +163,11 @@ private fun QrCodeSecuritySummary(network: QrCodeNetworkDetails) {
 private fun QrCodeActionRow(
     isSaving: Boolean,
     isSharing: Boolean,
-    actions: QrCodeSheetActions
+    actions: QrCodeSheetActions,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         QrSaveAction(isSaving, isSharing, actions.onRequestSave)
         QrShareAction(isSaving, isSharing, actions.onShare)
@@ -177,24 +178,24 @@ private fun QrCodeActionRow(
 private fun RowScope.QrSaveAction(
     isSaving: Boolean,
     isSharing: Boolean,
-    onRequestSave: () -> Unit
+    onRequestSave: () -> Unit,
 ) {
     NeonCyanButton(
         onClick = onRequestSave,
         enabled = !isSaving && !isSharing,
-        modifier = Modifier.weight(1f)
+        modifier = Modifier.weight(1f),
     ) {
         if (isSaving) {
             CircularProgressIndicator(
                 modifier = Modifier.size(18.dp),
                 strokeWidth = 2.dp,
-                color = MaterialTheme.colorScheme.onPrimary
+                color = MaterialTheme.colorScheme.onPrimary,
             )
         } else {
             Icon(
                 Icons.Default.Download,
                 contentDescription = stringResource(R.string.action_save),
-                modifier = Modifier.size(18.dp)
+                modifier = Modifier.size(18.dp),
             )
         }
         Spacer(Modifier.width(8.dp))
@@ -206,24 +207,24 @@ private fun RowScope.QrSaveAction(
 private fun RowScope.QrShareAction(
     isSaving: Boolean,
     isSharing: Boolean,
-    onShare: () -> Unit
+    onShare: () -> Unit,
 ) {
     NeonMagentaButton(
         onClick = onShare,
         enabled = !isSaving && !isSharing,
-        modifier = Modifier.weight(1f)
+        modifier = Modifier.weight(1f),
     ) {
         if (isSharing) {
             CircularProgressIndicator(
                 modifier = Modifier.size(18.dp),
                 strokeWidth = 2.dp,
-                color = MaterialTheme.colorScheme.onPrimary
+                color = MaterialTheme.colorScheme.onPrimary,
             )
         } else {
             Icon(
                 Icons.Default.Share,
                 contentDescription = stringResource(R.string.action_share),
-                modifier = Modifier.size(18.dp)
+                modifier = Modifier.size(18.dp),
             )
         }
         Spacer(Modifier.width(8.dp))

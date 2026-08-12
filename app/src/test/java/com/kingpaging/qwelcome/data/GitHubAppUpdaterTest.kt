@@ -13,17 +13,16 @@ import io.mockk.unmockkStatic
 import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import org.junit.After
-import org.junit.Before
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import java.io.File
 
 class GitHubAppUpdaterTest {
-
     @get:Rule
     val tempFolder = TemporaryFolder()
 
@@ -84,233 +83,247 @@ class GitHubAppUpdaterTest {
     }
 
     @Test
-    fun `enqueueDownload returns Started with download id`() = runTest {
-        val downloadManager = mockk<DownloadManager>(relaxed = true)
-        val updater = createUpdater(downloadManager = downloadManager)
-        val downloadsDir = tempFolder.newFolder("downloads")
+    fun `enqueueDownload returns Started with download id`() =
+        runTest {
+            val downloadManager = mockk<DownloadManager>(relaxed = true)
+            val updater = createUpdater(downloadManager = downloadManager)
+            val downloadsDir = tempFolder.newFolder("downloads")
 
-        every { downloadManager.enqueue(any()) } returns 42L
+            every { downloadManager.enqueue(any()) } returns 42L
 
-        val context = mockk<Context>()
-        every { context.applicationContext } returns context
-        every { context.packageManager } returns mockk(relaxed = true)
-        every { context.packageName } returns "com.kingpaging.qwelcome"
-        every { context.getSystemService(Context.DOWNLOAD_SERVICE) } returns downloadManager
-        every { context.getExternalFilesDir(any()) } returns downloadsDir
+            val context = mockk<Context>()
+            every { context.applicationContext } returns context
+            every { context.packageManager } returns mockk(relaxed = true)
+            every { context.packageName } returns "com.kingpaging.qwelcome"
+            every { context.getSystemService(Context.DOWNLOAD_SERVICE) } returns downloadManager
+            every { context.getExternalFilesDir(any()) } returns downloadsDir
 
-        val testUpdater = GitHubAppUpdater(context)
-        val update = UpdateCheckResult.UpdateAvailable(
-            latestVersion = "3.0.0",
-            downloadUrl = "https://github.com/H2OKing89/QWelcome/releases/download/v3.0.0/QWelcome-v3.0.0.apk",
-            releaseNotes = "notes",
-            assetName = "QWelcome-v3.0.0.apk",
-            assetSizeBytes = 1000L,
-            sha256Hex = "a".repeat(64)
-        )
+            val testUpdater = GitHubAppUpdater(context)
+            val update =
+                UpdateCheckResult.UpdateAvailable(
+                    latestVersion = "3.0.0",
+                    downloadUrl = "https://github.com/H2OKing89/QWelcome/releases/download/v3.0.0/QWelcome-v3.0.0.apk",
+                    releaseNotes = "notes",
+                    assetName = "QWelcome-v3.0.0.apk",
+                    assetSizeBytes = 1000L,
+                    sha256Hex = "a".repeat(64),
+                )
 
-        val result = testUpdater.enqueueDownload(update)
-        assertTrue(result is DownloadEnqueueResult.Started)
-        assertEquals(42L, (result as DownloadEnqueueResult.Started).downloadId)
-        verify { downloadManager.enqueue(any()) }
-    }
-
-    @Test
-    fun `enqueueDownload uses a regular-file destination for blank or dot asset names`() = runTest {
-        val downloadManager = mockk<DownloadManager>(relaxed = true)
-        val downloadsDir = tempFolder.newFolder("downloads-invalid-asset-name")
-        every { downloadManager.enqueue(any()) } returns 42L
-        val updater = createUpdater(downloadManager = downloadManager, externalFilesDir = downloadsDir)
-
-        listOf("", ".").forEach { assetName ->
-            val update = UpdateCheckResult.UpdateAvailable(
-                latestVersion = "3.0.0",
-                downloadUrl = "https://github.com/H2OKing89/QWelcome/releases/download/v3.0.0/QWelcome.apk",
-                releaseNotes = "notes",
-                assetName = assetName,
-                assetSizeBytes = 1000L,
-                sha256Hex = "a".repeat(64)
-            )
-
-            val result = updater.enqueueDownload(update) as DownloadEnqueueResult.Started
-            val destination = File(result.apkPath)
-            assertTrue(destination.name.isNotEmpty())
-            assertFalse(destination.name == "." || destination.name == "..")
-            assertEquals(File(downloadsDir, "updates"), destination.parentFile)
+            val result = testUpdater.enqueueDownload(update)
+            assertTrue(result is DownloadEnqueueResult.Started)
+            assertEquals(42L, (result as DownloadEnqueueResult.Started).downloadId)
+            verify { downloadManager.enqueue(any()) }
         }
-    }
 
     @Test
-    fun `getDownloadStatus returns InProgress for running download`() = runTest {
-        val downloadManager = mockk<DownloadManager>(relaxed = true)
-        val cursor = mockk<Cursor>(relaxed = true)
-        every { cursor.moveToFirst() } returns true
-        every { cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS) } returns 0
-        every { cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR) } returns 1
-        every { cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES) } returns 2
-        every { cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_REASON) } returns 3
-        every { cursor.getInt(0) } returns DownloadManager.STATUS_RUNNING
-        every { cursor.getLong(1) } returns 500L
-        every { cursor.getLong(2) } returns 1000L
-        every { cursor.getInt(3) } returns 0
-        every { cursor.close() } just io.mockk.Runs
-        every { downloadManager.query(any()) } returns cursor
+    fun `enqueueDownload uses a regular-file destination for blank or dot asset names`() =
+        runTest {
+            val downloadManager = mockk<DownloadManager>(relaxed = true)
+            val downloadsDir = tempFolder.newFolder("downloads-invalid-asset-name")
+            every { downloadManager.enqueue(any()) } returns 42L
+            val updater = createUpdater(downloadManager = downloadManager, externalFilesDir = downloadsDir)
 
-        val updater = createUpdater(downloadManager = downloadManager)
-        val status = updater.getDownloadStatus(1L)
-        assertTrue(status is DownloadStatus.InProgress)
-        assertEquals(500L, (status as DownloadStatus.InProgress).bytesDownloaded)
-        assertEquals(1000L, status.totalBytes)
-    }
+            listOf("", ".").forEach { assetName ->
+                val update =
+                    UpdateCheckResult.UpdateAvailable(
+                        latestVersion = "3.0.0",
+                        downloadUrl = "https://github.com/H2OKing89/QWelcome/releases/download/v3.0.0/QWelcome.apk",
+                        releaseNotes = "notes",
+                        assetName = assetName,
+                        assetSizeBytes = 1000L,
+                        sha256Hex = "a".repeat(64),
+                    )
 
-    @Test
-    fun `getDownloadStatus returns Failed for failed download`() = runTest {
-        val downloadManager = mockk<DownloadManager>(relaxed = true)
-        val cursor = mockk<Cursor>(relaxed = true)
-        every { cursor.moveToFirst() } returns true
-        every { cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS) } returns 0
-        every { cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR) } returns 1
-        every { cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES) } returns 2
-        every { cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_REASON) } returns 3
-        every { cursor.getInt(0) } returns DownloadManager.STATUS_FAILED
-        every { cursor.getLong(1) } returns 0L
-        every { cursor.getLong(2) } returns -1L
-        every { cursor.getInt(3) } returns DownloadManager.ERROR_INSUFFICIENT_SPACE
-        every { cursor.close() } just io.mockk.Runs
-        every { downloadManager.query(any()) } returns cursor
-
-        val updater = createUpdater(downloadManager = downloadManager)
-        val status = updater.getDownloadStatus(1L)
-        assertTrue(status is DownloadStatus.Failed)
-    }
+                val result = updater.enqueueDownload(update) as DownloadEnqueueResult.Started
+                val destination = File(result.apkPath)
+                assertTrue(destination.name.isNotEmpty())
+                assertFalse(destination.name == "." || destination.name == "..")
+                assertEquals(File(downloadsDir, "updates"), destination.parentFile)
+            }
+        }
 
     @Test
-    fun `enqueueDownload fails fast when existing destination cannot be deleted`() = runTest {
-        val downloadManager = mockk<DownloadManager>(relaxed = true)
-        val downloadsDir = tempFolder.newFolder("downloads-delete-fail")
-        val updatesDir = File(downloadsDir, "updates")
-        updatesDir.mkdirs()
-        val destination = File(updatesDir, "QWelcome-v3.0.0.apk")
-        destination.mkdirs()
-        File(destination, "nested").writeText("cannot delete non-empty directory")
+    fun `getDownloadStatus returns InProgress for running download`() =
+        runTest {
+            val downloadManager = mockk<DownloadManager>(relaxed = true)
+            val cursor = mockk<Cursor>(relaxed = true)
+            every { cursor.moveToFirst() } returns true
+            every { cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS) } returns 0
+            every { cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR) } returns 1
+            every { cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES) } returns 2
+            every { cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_REASON) } returns 3
+            every { cursor.getInt(0) } returns DownloadManager.STATUS_RUNNING
+            every { cursor.getLong(1) } returns 500L
+            every { cursor.getLong(2) } returns 1000L
+            every { cursor.getInt(3) } returns 0
+            every { cursor.close() } just io.mockk.Runs
+            every { downloadManager.query(any()) } returns cursor
 
-        val updater = createUpdater(downloadManager = downloadManager, externalFilesDir = downloadsDir)
-        val update = UpdateCheckResult.UpdateAvailable(
-            latestVersion = "3.0.0",
-            downloadUrl = "https://github.com/H2OKing89/QWelcome/releases/download/v3.0.0/QWelcome-v3.0.0.apk",
-            releaseNotes = "notes",
-            assetName = "QWelcome-v3.0.0.apk",
-            assetSizeBytes = 1000L,
-            sha256Hex = "a".repeat(64)
-        )
-
-        val result = updater.enqueueDownload(update)
-        assertTrue(result is DownloadEnqueueResult.Failed)
-        assertTrue((result as DownloadEnqueueResult.Failed).message.contains("replace existing"))
-        verify(exactly = 0) { downloadManager.enqueue(any()) }
-    }
+            val updater = createUpdater(downloadManager = downloadManager)
+            val status = updater.getDownloadStatus(1L)
+            assertTrue(status is DownloadStatus.InProgress)
+            assertEquals(500L, (status as DownloadStatus.InProgress).bytesDownloaded)
+            assertEquals(1000L, status.totalBytes)
+        }
 
     @Test
-    fun `download path tracking is cleared after successful status`() = runTest {
-        val downloadManager = mockk<DownloadManager>(relaxed = true)
-        val cursor = mockk<Cursor>(relaxed = true)
-        val downloadsDir = tempFolder.newFolder("downloads-success")
+    fun `getDownloadStatus returns Failed for failed download`() =
+        runTest {
+            val downloadManager = mockk<DownloadManager>(relaxed = true)
+            val cursor = mockk<Cursor>(relaxed = true)
+            every { cursor.moveToFirst() } returns true
+            every { cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS) } returns 0
+            every { cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR) } returns 1
+            every { cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES) } returns 2
+            every { cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_REASON) } returns 3
+            every { cursor.getInt(0) } returns DownloadManager.STATUS_FAILED
+            every { cursor.getLong(1) } returns 0L
+            every { cursor.getLong(2) } returns -1L
+            every { cursor.getInt(3) } returns DownloadManager.ERROR_INSUFFICIENT_SPACE
+            every { cursor.close() } just io.mockk.Runs
+            every { downloadManager.query(any()) } returns cursor
 
-        every { downloadManager.enqueue(any()) } returns 7L
-        every { downloadManager.query(any()) } returns cursor
-        every { cursor.moveToFirst() } returns true
-        every { cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS) } returns 0
-        every { cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR) } returns 1
-        every { cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES) } returns 2
-        every { cursor.getInt(0) } returns DownloadManager.STATUS_SUCCESSFUL
-        every { cursor.getLong(1) } returns 100L
-        every { cursor.getLong(2) } returns 100L
-        every { cursor.getColumnIndex(DownloadManager.COLUMN_LOCAL_URI) } returns -1
-        every { cursor.close() } just io.mockk.Runs
-
-        val updater = createUpdater(downloadManager = downloadManager, externalFilesDir = downloadsDir)
-        val update = UpdateCheckResult.UpdateAvailable(
-            latestVersion = "3.0.0",
-            downloadUrl = "https://github.com/H2OKing89/QWelcome/releases/download/v3.0.0/QWelcome-v3.0.0.apk",
-            releaseNotes = "notes",
-            assetName = "QWelcome-v3.0.0.apk",
-            assetSizeBytes = 1000L,
-            sha256Hex = "a".repeat(64)
-        )
-
-        updater.enqueueDownload(update)
-        assertEquals(1, updater.trackedDownloadCount())
-        val status = updater.getDownloadStatus(7L)
-        assertTrue(status is DownloadStatus.Succeeded)
-        assertEquals(0, updater.trackedDownloadCount())
-    }
+            val updater = createUpdater(downloadManager = downloadManager)
+            val status = updater.getDownloadStatus(1L)
+            assertTrue(status is DownloadStatus.Failed)
+        }
 
     @Test
-    fun `download path tracking is cleared after failed status`() = runTest {
-        val downloadManager = mockk<DownloadManager>(relaxed = true)
-        val cursor = mockk<Cursor>(relaxed = true)
-        val downloadsDir = tempFolder.newFolder("downloads-failed")
+    fun `enqueueDownload fails fast when existing destination cannot be deleted`() =
+        runTest {
+            val downloadManager = mockk<DownloadManager>(relaxed = true)
+            val downloadsDir = tempFolder.newFolder("downloads-delete-fail")
+            val updatesDir = File(downloadsDir, "updates")
+            updatesDir.mkdirs()
+            val destination = File(updatesDir, "QWelcome-v3.0.0.apk")
+            destination.mkdirs()
+            File(destination, "nested").writeText("cannot delete non-empty directory")
 
-        every { downloadManager.enqueue(any()) } returns 11L
-        every { downloadManager.query(any()) } returns cursor
-        every { cursor.moveToFirst() } returns true
-        every { cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS) } returns 0
-        every { cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR) } returns 1
-        every { cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES) } returns 2
-        every { cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_REASON) } returns 3
-        every { cursor.getInt(0) } returns DownloadManager.STATUS_FAILED
-        every { cursor.getLong(1) } returns 0L
-        every { cursor.getLong(2) } returns -1L
-        every { cursor.getInt(3) } returns DownloadManager.ERROR_UNKNOWN
-        every { cursor.close() } just io.mockk.Runs
+            val updater = createUpdater(downloadManager = downloadManager, externalFilesDir = downloadsDir)
+            val update =
+                UpdateCheckResult.UpdateAvailable(
+                    latestVersion = "3.0.0",
+                    downloadUrl = "https://github.com/H2OKing89/QWelcome/releases/download/v3.0.0/QWelcome-v3.0.0.apk",
+                    releaseNotes = "notes",
+                    assetName = "QWelcome-v3.0.0.apk",
+                    assetSizeBytes = 1000L,
+                    sha256Hex = "a".repeat(64),
+                )
 
-        val updater = createUpdater(downloadManager = downloadManager, externalFilesDir = downloadsDir)
-        val update = UpdateCheckResult.UpdateAvailable(
-            latestVersion = "3.0.0",
-            downloadUrl = "https://github.com/H2OKing89/QWelcome/releases/download/v3.0.0/QWelcome-v3.0.0.apk",
-            releaseNotes = "notes",
-            assetName = "QWelcome-v3.0.0.apk",
-            assetSizeBytes = 1000L,
-            sha256Hex = "a".repeat(64)
-        )
-
-        updater.enqueueDownload(update)
-        assertEquals(1, updater.trackedDownloadCount())
-        val status = updater.getDownloadStatus(11L)
-        assertTrue(status is DownloadStatus.Failed)
-        assertEquals(0, updater.trackedDownloadCount())
-    }
+            val result = updater.enqueueDownload(update)
+            assertTrue(result is DownloadEnqueueResult.Failed)
+            assertTrue((result as DownloadEnqueueResult.Failed).message.contains("replace existing"))
+            verify(exactly = 0) { downloadManager.enqueue(any()) }
+        }
 
     @Test
-    fun `download path tracking is cleared when download is missing`() = runTest {
-        val downloadManager = mockk<DownloadManager>(relaxed = true)
-        val cursor = mockk<Cursor>(relaxed = true)
-        val downloadsDir = tempFolder.newFolder("downloads-missing")
+    fun `download path tracking is cleared after successful status`() =
+        runTest {
+            val downloadManager = mockk<DownloadManager>(relaxed = true)
+            val cursor = mockk<Cursor>(relaxed = true)
+            val downloadsDir = tempFolder.newFolder("downloads-success")
 
-        every { downloadManager.enqueue(any()) } returns 13L
-        every { downloadManager.query(any()) } returns cursor
-        every { cursor.moveToFirst() } returns false
-        every { cursor.close() } just io.mockk.Runs
+            every { downloadManager.enqueue(any()) } returns 7L
+            every { downloadManager.query(any()) } returns cursor
+            every { cursor.moveToFirst() } returns true
+            every { cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS) } returns 0
+            every { cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR) } returns 1
+            every { cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES) } returns 2
+            every { cursor.getInt(0) } returns DownloadManager.STATUS_SUCCESSFUL
+            every { cursor.getLong(1) } returns 100L
+            every { cursor.getLong(2) } returns 100L
+            every { cursor.getColumnIndex(DownloadManager.COLUMN_LOCAL_URI) } returns -1
+            every { cursor.close() } just io.mockk.Runs
 
-        val updater = createUpdater(downloadManager = downloadManager, externalFilesDir = downloadsDir)
-        val update = UpdateCheckResult.UpdateAvailable(
-            latestVersion = "3.0.0",
-            downloadUrl = "https://github.com/H2OKing89/QWelcome/releases/download/v3.0.0/QWelcome-v3.0.0.apk",
-            releaseNotes = "notes",
-            assetName = "QWelcome-v3.0.0.apk",
-            assetSizeBytes = 1000L,
-            sha256Hex = "a".repeat(64)
-        )
+            val updater = createUpdater(downloadManager = downloadManager, externalFilesDir = downloadsDir)
+            val update =
+                UpdateCheckResult.UpdateAvailable(
+                    latestVersion = "3.0.0",
+                    downloadUrl = "https://github.com/H2OKing89/QWelcome/releases/download/v3.0.0/QWelcome-v3.0.0.apk",
+                    releaseNotes = "notes",
+                    assetName = "QWelcome-v3.0.0.apk",
+                    assetSizeBytes = 1000L,
+                    sha256Hex = "a".repeat(64),
+                )
 
-        updater.enqueueDownload(update)
-        assertEquals(1, updater.trackedDownloadCount())
-        val status = updater.getDownloadStatus(13L)
-        assertTrue(status is DownloadStatus.Failed)
-        assertEquals(0, updater.trackedDownloadCount())
-    }
+            updater.enqueueDownload(update)
+            assertEquals(1, updater.trackedDownloadCount())
+            val status = updater.getDownloadStatus(7L)
+            assertTrue(status is DownloadStatus.Succeeded)
+            assertEquals(0, updater.trackedDownloadCount())
+        }
+
+    @Test
+    fun `download path tracking is cleared after failed status`() =
+        runTest {
+            val downloadManager = mockk<DownloadManager>(relaxed = true)
+            val cursor = mockk<Cursor>(relaxed = true)
+            val downloadsDir = tempFolder.newFolder("downloads-failed")
+
+            every { downloadManager.enqueue(any()) } returns 11L
+            every { downloadManager.query(any()) } returns cursor
+            every { cursor.moveToFirst() } returns true
+            every { cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS) } returns 0
+            every { cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR) } returns 1
+            every { cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES) } returns 2
+            every { cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_REASON) } returns 3
+            every { cursor.getInt(0) } returns DownloadManager.STATUS_FAILED
+            every { cursor.getLong(1) } returns 0L
+            every { cursor.getLong(2) } returns -1L
+            every { cursor.getInt(3) } returns DownloadManager.ERROR_UNKNOWN
+            every { cursor.close() } just io.mockk.Runs
+
+            val updater = createUpdater(downloadManager = downloadManager, externalFilesDir = downloadsDir)
+            val update =
+                UpdateCheckResult.UpdateAvailable(
+                    latestVersion = "3.0.0",
+                    downloadUrl = "https://github.com/H2OKing89/QWelcome/releases/download/v3.0.0/QWelcome-v3.0.0.apk",
+                    releaseNotes = "notes",
+                    assetName = "QWelcome-v3.0.0.apk",
+                    assetSizeBytes = 1000L,
+                    sha256Hex = "a".repeat(64),
+                )
+
+            updater.enqueueDownload(update)
+            assertEquals(1, updater.trackedDownloadCount())
+            val status = updater.getDownloadStatus(11L)
+            assertTrue(status is DownloadStatus.Failed)
+            assertEquals(0, updater.trackedDownloadCount())
+        }
+
+    @Test
+    fun `download path tracking is cleared when download is missing`() =
+        runTest {
+            val downloadManager = mockk<DownloadManager>(relaxed = true)
+            val cursor = mockk<Cursor>(relaxed = true)
+            val downloadsDir = tempFolder.newFolder("downloads-missing")
+
+            every { downloadManager.enqueue(any()) } returns 13L
+            every { downloadManager.query(any()) } returns cursor
+            every { cursor.moveToFirst() } returns false
+            every { cursor.close() } just io.mockk.Runs
+
+            val updater = createUpdater(downloadManager = downloadManager, externalFilesDir = downloadsDir)
+            val update =
+                UpdateCheckResult.UpdateAvailable(
+                    latestVersion = "3.0.0",
+                    downloadUrl = "https://github.com/H2OKing89/QWelcome/releases/download/v3.0.0/QWelcome-v3.0.0.apk",
+                    releaseNotes = "notes",
+                    assetName = "QWelcome-v3.0.0.apk",
+                    assetSizeBytes = 1000L,
+                    sha256Hex = "a".repeat(64),
+                )
+
+            updater.enqueueDownload(update)
+            assertEquals(1, updater.trackedDownloadCount())
+            val status = updater.getDownloadStatus(13L)
+            assertTrue(status is DownloadStatus.Failed)
+            assertEquals(0, updater.trackedDownloadCount())
+        }
 
     private fun createUpdater(
         downloadManager: DownloadManager? = null,
-        externalFilesDir: File? = tempFolder.root
+        externalFilesDir: File? = tempFolder.root,
     ): GitHubAppUpdater {
         val context = mockk<Context>()
         val packageManager = mockk<PackageManager>(relaxed = true)

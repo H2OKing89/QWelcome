@@ -4,9 +4,9 @@ import android.content.Context
 import android.util.Log
 import com.kingpaging.qwelcome.R
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.catch
 import java.io.IOException
 
 private const val TAG = "SettingsStore"
@@ -21,43 +21,46 @@ data class TemplateSelectionChange(
     val selectedTemplateId: String,
     val selectedLastUsedAt: Long,
     val previousActiveTemplateId: String,
-    val previousSelectedLastUsedAt: Long?
+    val previousSelectedLastUsedAt: Long?,
 )
 
 sealed interface TemplateSelectionResult {
     data class Selected(
         val template: Template,
-        val change: TemplateSelectionChange
+        val change: TemplateSelectionChange,
     ) : TemplateSelectionResult
 
-    data class AlreadyActive(val template: Template) : TemplateSelectionResult
+    data class AlreadyActive(
+        val template: Template,
+    ) : TemplateSelectionResult
 
     data class Blocked(
         val template: Template,
-        val missingPlaceholders: List<String>
+        val missingPlaceholders: List<String>,
     ) : TemplateSelectionResult
 
-    data class NotFound(val templateId: String) : TemplateSelectionResult
+    data class NotFound(
+        val templateId: String,
+    ) : TemplateSelectionResult
 }
 
 /**
  * Catches [IOException] on a [Flow] of [UserPreferences], logging the error and emitting a default instance.
  * Other exceptions are rethrown. Reduces duplication across DataStore flows.
  */
-private fun Flow<UserPreferences>.catchIoException(
-    errorMessage: String
-): Flow<UserPreferences> = catch { exception ->
-    if (exception is IOException) {
-        Log.e(TAG, errorMessage, exception)
-        emit(UserPreferences.getDefaultInstance())
-    } else {
-        throw exception
+private fun Flow<UserPreferences>.catchIoException(errorMessage: String): Flow<UserPreferences> =
+    catch { exception ->
+        if (exception is IOException) {
+            Log.e(TAG, errorMessage, exception)
+            emit(UserPreferences.getDefaultInstance())
+        } else {
+            throw exception
+        }
     }
-}
 
 private fun mergeTemplates(
     existingTemplates: List<TemplateProto>,
-    templates: List<Template>
+    templates: List<Template>,
 ): List<TemplateProto> {
     val mergedTemplates = existingTemplates.toMutableList()
     for (template in templates) {
@@ -71,37 +74,37 @@ private fun mergeTemplates(
     return mergedTemplates
 }
 
-internal fun Flow<UserPreferences>.readPrivacySettings(): Flow<PrivacySettings> = map { preferences ->
-    PrivacySettings.fromProto(preferences.privacySettings)
-}.catch { exception ->
-    if (exception is IOException) {
-        Log.e(TAG, "Error reading privacy settings.", exception)
-        emit(
-            PrivacySettings(
-                crashReportingEnabled = false,
-                screenCaptureProtectionEnabled = true
+internal fun Flow<UserPreferences>.readPrivacySettings(): Flow<PrivacySettings> =
+    map { preferences ->
+        PrivacySettings.fromProto(preferences.privacySettings)
+    }.catch { exception ->
+        if (exception is IOException) {
+            Log.e(TAG, "Error reading privacy settings.", exception)
+            emit(
+                PrivacySettings(
+                    crashReportingEnabled = false,
+                    screenCaptureProtectionEnabled = true,
+                ),
             )
-        )
-    } else {
-        throw exception
+        } else {
+            throw exception
+        }
     }
-}
 
 /**
  * Manages app settings and template storage using Proto DataStore.
  */
 class SettingsStore(
     private val context: Context,
-    private val currentTimeMillis: () -> Long = System::currentTimeMillis
+    private val currentTimeMillis: () -> Long = System::currentTimeMillis,
 ) {
-
     /** The default template that ships with the app */
     private val builtInDefaultTemplate: Template by lazy {
         Template(
             id = DEFAULT_TEMPLATE_ID,
             name = "Default",
             content = context.getString(R.string.welcome_template),
-            sortOrder = Int.MIN_VALUE  // Pin built-in default at top
+            sortOrder = Int.MIN_VALUE, // Pin built-in default at top
         )
     }
 
@@ -117,7 +120,8 @@ class SettingsStore(
 
     suspend fun savePrivacySettings(settings: PrivacySettings) {
         dataStore.updateData { preferences ->
-            preferences.toBuilder()
+            preferences
+                .toBuilder()
                 .setPrivacySettings(settings.toProto())
                 .build()
         }
@@ -125,7 +129,8 @@ class SettingsStore(
 
     suspend fun updatePrivacySettings(transform: (PrivacySettings) -> PrivacySettings) {
         dataStore.updateData { preferences ->
-            preferences.toBuilder()
+            preferences
+                .toBuilder()
                 .setPrivacySettings(transform(PrivacySettings.fromProto(preferences.privacySettings)).toProto())
                 .build()
         }
@@ -133,13 +138,15 @@ class SettingsStore(
 
     // ========== Tech Profile ==========
 
-    val techProfileFlow: Flow<TechProfile> = dataStore.data
-        .catchIoException("Error reading tech profile.")
-        .map { preferences -> TechProfile.fromProto(preferences.techProfile) }
+    val techProfileFlow: Flow<TechProfile> =
+        dataStore.data
+            .catchIoException("Error reading tech profile.")
+            .map { preferences -> TechProfile.fromProto(preferences.techProfile) }
 
     suspend fun saveTechProfile(profile: TechProfile) {
         dataStore.updateData { preferences ->
-            preferences.toBuilder()
+            preferences
+                .toBuilder()
                 .setTechProfile(profile.toProto())
                 .build()
         }
@@ -149,36 +156,45 @@ class SettingsStore(
 
     // ========== Templates ==========
 
-    val userTemplatesFlow: Flow<List<Template>> = dataStore.data
-        .catchIoException("Error reading user templates.")
-        .map { prefs -> prefs.templatesList.map { Template.fromProto(it) } }
+    val userTemplatesFlow: Flow<List<Template>> =
+        dataStore.data
+            .catchIoException("Error reading user templates.")
+            .map { prefs -> prefs.templatesList.map { Template.fromProto(it) } }
 
-    val allTemplatesFlow: Flow<List<Template>> = userTemplatesFlow.map { userTemplates ->
-        listOf(builtInDefaultTemplate) + userTemplates
-    }
-
-    val activeTemplateIdFlow: Flow<String> = dataStore.data
-        .catchIoException("Error reading active template ID.")
-        .map { prefs -> prefs.activeTemplateId.ifEmpty { DEFAULT_TEMPLATE_ID } }
-
-    val templateLastUsedFlow: Flow<Map<String, Long>> = dataStore.data
-        .catchIoException("Error reading template usage history.")
-        .map { prefs -> prefs.templateLastUsedEpochMillisMap }
-
-    val activeTemplateFlow: Flow<Template> = dataStore.data
-        .catchIoException("Error reading active template.")
-        .map { prefs ->
-            val activeId = prefs.activeTemplateId.ifEmpty { DEFAULT_TEMPLATE_ID }
-            if (activeId == DEFAULT_TEMPLATE_ID) {
-                builtInDefaultTemplate
-            } else {
-                prefs.templatesList.find { it.id == activeId }?.let { Template.fromProto(it) } ?: builtInDefaultTemplate
-            }
+    val allTemplatesFlow: Flow<List<Template>> =
+        userTemplatesFlow.map { userTemplates ->
+            listOf(builtInDefaultTemplate) + userTemplates
         }
 
-    val recentSharePackagesFlow: Flow<List<String>> = dataStore.data
-        .catchIoException("Error reading recent share packages.")
-        .map { prefs -> prefs.recentSharePackagesList }
+    val activeTemplateIdFlow: Flow<String> =
+        dataStore.data
+            .catchIoException("Error reading active template ID.")
+            .map { prefs -> prefs.activeTemplateId.ifEmpty { DEFAULT_TEMPLATE_ID } }
+
+    val templateLastUsedFlow: Flow<Map<String, Long>> =
+        dataStore.data
+            .catchIoException("Error reading template usage history.")
+            .map { prefs -> prefs.templateLastUsedEpochMillisMap }
+
+    val activeTemplateFlow: Flow<Template> =
+        dataStore.data
+            .catchIoException("Error reading active template.")
+            .map { prefs ->
+                val activeId = prefs.activeTemplateId.ifEmpty { DEFAULT_TEMPLATE_ID }
+                if (activeId == DEFAULT_TEMPLATE_ID) {
+                    builtInDefaultTemplate
+                } else {
+                    prefs.templatesList
+                        .find { it.id == activeId }
+                        ?.let { Template.fromProto(it) }
+                        ?: builtInDefaultTemplate
+                }
+            }
+
+    val recentSharePackagesFlow: Flow<List<String>> =
+        dataStore.data
+            .catchIoException("Error reading recent share packages.")
+            .map { prefs -> prefs.recentSharePackagesList }
 
     suspend fun getUserTemplates(): List<Template> = userTemplatesFlow.first()
 
@@ -197,79 +213,88 @@ class SettingsStore(
         var selectionResult: TemplateSelectionResult? = null
         dataStore.updateData { preferences ->
             val template = preferences.findTemplate(templateId)
-            val missingPlaceholders = template?.let {
-                Template.findMissingPlaceholders(it.content)
-            }.orEmpty()
-            selectionResult = when {
-                template == null -> TemplateSelectionResult.NotFound(templateId)
-                missingPlaceholders.isNotEmpty() -> {
-                    TemplateSelectionResult.Blocked(
-                        template = template,
-                        missingPlaceholders = missingPlaceholders
-                    )
+            val missingPlaceholders =
+                template
+                    ?.let {
+                        Template.findMissingPlaceholders(it.content)
+                    }.orEmpty()
+            selectionResult =
+                when {
+                    template == null -> TemplateSelectionResult.NotFound(templateId)
+                    missingPlaceholders.isNotEmpty() -> {
+                        TemplateSelectionResult.Blocked(
+                            template = template,
+                            missingPlaceholders = missingPlaceholders,
+                        )
+                    }
+                    preferences.activeTemplateId.ifEmpty { DEFAULT_TEMPLATE_ID } == templateId -> {
+                        TemplateSelectionResult.AlreadyActive(template)
+                    }
+                    else -> {
+                        val previousTimestamp = preferences.templateLastUsedEpochMillisMap[templateId]
+                        val selectedAt =
+                            nextTemplateUseTimestamp(
+                                now = currentTimeMillis(),
+                                existingTimestamps = preferences.templateLastUsedEpochMillisMap.values,
+                            )
+                        val change =
+                            TemplateSelectionChange(
+                                selectedTemplateId = templateId,
+                                selectedLastUsedAt = selectedAt,
+                                previousActiveTemplateId =
+                                    preferences.activeTemplateId.ifEmpty {
+                                        DEFAULT_TEMPLATE_ID
+                                    },
+                                previousSelectedLastUsedAt = previousTimestamp,
+                            )
+                        TemplateSelectionResult.Selected(template, change)
+                    }
                 }
-                preferences.activeTemplateId.ifEmpty { DEFAULT_TEMPLATE_ID } == templateId -> {
-                    TemplateSelectionResult.AlreadyActive(template)
-                }
-                else -> {
-                    val previousTimestamp = preferences.templateLastUsedEpochMillisMap[templateId]
-                    val selectedAt = nextTemplateUseTimestamp(
-                        now = currentTimeMillis(),
-                        existingTimestamps = preferences.templateLastUsedEpochMillisMap.values
-                    )
-                    val change = TemplateSelectionChange(
-                        selectedTemplateId = templateId,
-                        selectedLastUsedAt = selectedAt,
-                        previousActiveTemplateId = preferences.activeTemplateId.ifEmpty {
-                            DEFAULT_TEMPLATE_ID
-                        },
-                        previousSelectedLastUsedAt = previousTimestamp
-                    )
-                    TemplateSelectionResult.Selected(template, change)
-                }
-            }
 
-            val selected = selectionResult as? TemplateSelectionResult.Selected
-                ?: return@updateData preferences
-            preferences.toBuilder()
+            val selected =
+                selectionResult as? TemplateSelectionResult.Selected
+                    ?: return@updateData preferences
+            preferences
+                .toBuilder()
                 .setActiveTemplateId(selected.template.id)
                 .putTemplateLastUsedEpochMillis(
                     selected.template.id,
-                    selected.change.selectedLastUsedAt
-                )
-                .build()
+                    selected.change.selectedLastUsedAt,
+                ).build()
         }
         return checkNotNull(selectionResult)
     }
 
     suspend fun undoTemplateSelection(change: TemplateSelectionChange): Boolean {
         var restoredPreferences: UserPreferences? = null
-        val updatedPreferences = dataStore.updateData { preferences ->
-            restoredPreferences = null
-            val activeTemplateId = preferences.activeTemplateId.ifEmpty { DEFAULT_TEMPLATE_ID }
-            val selectedLastUsedAt = preferences.templateLastUsedEpochMillisMap[change.selectedTemplateId]
-            if (activeTemplateId != change.selectedTemplateId ||
-                selectedLastUsedAt != change.selectedLastUsedAt
-            ) {
-                return@updateData preferences
-            }
-
-            val restoredActiveTemplateId = preferences.resolveValidTemplateId(
-                change.previousActiveTemplateId
-            )
-            preferences.toBuilder()
-                .setActiveTemplateId(restoredActiveTemplateId)
-                .apply {
-                    val previousTimestamp = change.previousSelectedLastUsedAt
-                    if (previousTimestamp == null) {
-                        removeTemplateLastUsedEpochMillis(change.selectedTemplateId)
-                    } else {
-                        putTemplateLastUsedEpochMillis(change.selectedTemplateId, previousTimestamp)
-                    }
+        val updatedPreferences =
+            dataStore.updateData { preferences ->
+                restoredPreferences = null
+                val activeTemplateId = preferences.activeTemplateId.ifEmpty { DEFAULT_TEMPLATE_ID }
+                val selectedLastUsedAt = preferences.templateLastUsedEpochMillisMap[change.selectedTemplateId]
+                if (activeTemplateId != change.selectedTemplateId ||
+                    selectedLastUsedAt != change.selectedLastUsedAt
+                ) {
+                    return@updateData preferences
                 }
-                .build()
-                .also { restoredPreferences = it }
-        }
+
+                val restoredActiveTemplateId =
+                    preferences.resolveValidTemplateId(
+                        change.previousActiveTemplateId,
+                    )
+                preferences
+                    .toBuilder()
+                    .setActiveTemplateId(restoredActiveTemplateId)
+                    .apply {
+                        val previousTimestamp = change.previousSelectedLastUsedAt
+                        if (previousTimestamp == null) {
+                            removeTemplateLastUsedEpochMillis(change.selectedTemplateId)
+                        } else {
+                            putTemplateLastUsedEpochMillis(change.selectedTemplateId, previousTimestamp)
+                        }
+                    }.build()
+                    .also { restoredPreferences = it }
+            }
         return updatedPreferences == restoredPreferences
     }
 
@@ -277,7 +302,8 @@ class SettingsStore(
         var restoredTemplateId = DEFAULT_TEMPLATE_ID
         dataStore.updateData { preferences ->
             restoredTemplateId = preferences.resolveValidTemplateId(templateId)
-            preferences.toBuilder()
+            preferences
+                .toBuilder()
                 .setActiveTemplateId(restoredTemplateId)
                 .build()
         }
@@ -288,7 +314,11 @@ class SettingsStore(
         require(template.id != DEFAULT_TEMPLATE_ID) { "Cannot modify the default template" }
         dataStore.updateData { prefs ->
             val newTemplates = prefs.templatesList.filterNot { it.id == template.id } + template.toProto()
-            prefs.toBuilder().clearTemplates().addAllTemplates(newTemplates).build()
+            prefs
+                .toBuilder()
+                .clearTemplates()
+                .addAllTemplates(newTemplates)
+                .build()
         }
     }
 
@@ -297,7 +327,8 @@ class SettingsStore(
         if (validTemplates.isEmpty()) return
 
         dataStore.updateData { prefs ->
-            prefs.toBuilder()
+            prefs
+                .toBuilder()
                 .clearTemplates()
                 .addAllTemplates(mergeTemplates(prefs.templatesList, validTemplates))
                 .build()
@@ -311,7 +342,7 @@ class SettingsStore(
     suspend fun restoreFullBackup(
         templates: List<Template>,
         techProfile: TechProfile?,
-        activeTemplateId: String?
+        activeTemplateId: String?,
     ) {
         val validTemplates = templates.filter { it.id != DEFAULT_TEMPLATE_ID }
         dataStore.updateData { preferences ->
@@ -319,7 +350,7 @@ class SettingsStore(
 
             if (validTemplates.isNotEmpty()) {
                 builder.clearTemplates().addAllTemplates(
-                    mergeTemplates(preferences.templatesList, validTemplates)
+                    mergeTemplates(preferences.templatesList, validTemplates),
                 )
             }
 
@@ -329,8 +360,9 @@ class SettingsStore(
 
             if (activeTemplateId != null) {
                 val updatedPreferences = builder.build()
-                val requestedTemplateExists = activeTemplateId == DEFAULT_TEMPLATE_ID ||
-                    updatedPreferences.templatesList.any { it.id == activeTemplateId }
+                val requestedTemplateExists =
+                    activeTemplateId == DEFAULT_TEMPLATE_ID ||
+                        updatedPreferences.templatesList.any { it.id == activeTemplateId }
                 if (requestedTemplateExists) {
                     builder.activeTemplateId = updatedPreferences.resolveValidTemplateId(activeTemplateId)
                 }
@@ -357,9 +389,11 @@ class SettingsStore(
     suspend fun recordRecentSharePackage(packageName: String) {
         if (packageName.isBlank()) return
         dataStore.updateData { prefs ->
-            val deduped = (listOf(packageName) + prefs.recentSharePackagesList.filterNot { it == packageName })
-                .take(MAX_RECENT_SHARE_TARGETS)
-            prefs.toBuilder()
+            val deduped =
+                (listOf(packageName) + prefs.recentSharePackagesList.filterNot { it == packageName })
+                    .take(MAX_RECENT_SHARE_TARGETS)
+            prefs
+                .toBuilder()
                 .clearRecentSharePackages()
                 .addAllRecentSharePackages(deduped)
                 .build()
@@ -368,7 +402,8 @@ class SettingsStore(
 
     suspend fun resetToDefaultTemplate() {
         dataStore.updateData { prefs ->
-            prefs.toBuilder()
+            prefs
+                .toBuilder()
                 .clearTemplates()
                 .clearTemplateLastUsedEpochMillis()
                 .setActiveTemplateId(DEFAULT_TEMPLATE_ID)
@@ -376,10 +411,11 @@ class SettingsStore(
         }
     }
 
-    private fun UserPreferences.findTemplate(templateId: String): Template? = when (templateId) {
-        DEFAULT_TEMPLATE_ID -> builtInDefaultTemplate
-        else -> templatesList.firstOrNull { it.id == templateId }?.let { Template.fromProto(it) }
-    }
+    private fun UserPreferences.findTemplate(templateId: String): Template? =
+        when (templateId) {
+            DEFAULT_TEMPLATE_ID -> builtInDefaultTemplate
+            else -> templatesList.firstOrNull { it.id == templateId }?.let { Template.fromProto(it) }
+        }
 
     private fun UserPreferences.resolveValidTemplateId(templateId: String): String =
         findTemplate(templateId)
@@ -390,7 +426,7 @@ class SettingsStore(
 
 internal fun nextTemplateUseTimestamp(
     now: Long,
-    existingTimestamps: Collection<Long>
+    existingTimestamps: Collection<Long>,
 ): Long {
     val latestTimestamp = existingTimestamps.maxOrNull() ?: 0L
     return if (latestTimestamp == Long.MAX_VALUE) {

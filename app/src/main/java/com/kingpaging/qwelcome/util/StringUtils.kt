@@ -9,8 +9,9 @@ object StringUtils {
      */
     fun toTitleCase(input: String): String {
         if (input.isBlank()) return input
-        
-        return input.lowercase()
+
+        return input
+            .lowercase()
             .split(" ")
             .joinToString(" ") { word ->
                 word.split("-").joinToString("-") { part ->

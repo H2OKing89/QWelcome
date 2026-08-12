@@ -9,15 +9,14 @@ import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.data.ImportValidationResult
 import com.kingpaging.qwelcome.data.TemplatePack
 import com.kingpaging.qwelcome.ui.theme.CyberpunkTheme
-import java.util.concurrent.atomic.AtomicBoolean
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.util.concurrent.atomic.AtomicBoolean
 
 @RunWith(AndroidJUnit4::class)
 class ImportConfirmStepTest {
-
     @get:Rule
     val composeRule = createComposeRule()
 
@@ -29,13 +28,14 @@ class ImportConfirmStepTest {
             CyberpunkTheme {
                 ImportConfirmStep(
                     isLoading = false,
-                    validationResult = ImportValidationResult.ValidTemplatePack(
-                        pack = TemplatePack(templates = emptyList()),
-                        conflicts = emptyList(),
-                        warnings = emptyList()
-                    ),
+                    validationResult =
+                        ImportValidationResult.ValidTemplatePack(
+                            pack = TemplatePack(templates = emptyList()),
+                            conflicts = emptyList(),
+                            warnings = emptyList(),
+                        ),
                     onConfirm = { confirmInvoked.set(true) },
-                    onCancel = {}
+                    onCancel = {},
                 )
             }
         }

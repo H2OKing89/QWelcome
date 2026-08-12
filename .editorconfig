@@ -1,0 +1,10 @@
+root = true
+
+[*.{kt,kts}]
+max_line_length = 120
+# Composable functions use PascalCase by convention (Jetpack Compose style guide).
+ktlint_function_naming_ignore_when_annotated_with = Composable
+# Wildcard imports are used intentionally for Compose Material3/Foundation APIs.
+ktlint_standard_no-wildcard-imports = disabled
+# `import_pkg` is a deliberate package name (avoids the `import` reserved keyword).
+ktlint_standard_package-name = disabled

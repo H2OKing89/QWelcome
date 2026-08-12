@@ -1,12 +1,12 @@
 package com.kingpaging.qwelcome.navigation
 
+import android.app.PendingIntent
 import android.content.ActivityNotFoundException
 import android.content.ClipData
 import android.content.ClipDescription
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
-import android.app.PendingIntent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
@@ -17,10 +17,10 @@ import com.kingpaging.qwelcome.R
 
 /**
  * Abstraction for navigation and intent-based actions.
- * 
+ *
  * This interface decouples the ViewModel from Android's Context-dependent
  * operations, improving testability and following clean architecture principles.
- * 
+ *
  * In production, use [AndroidNavigator] which delegates to the actual Android APIs.
  * In tests, provide a mock implementation to verify behavior without side effects.
  */
@@ -31,8 +31,11 @@ interface Navigator {
      * @param phoneNumber The recipient's phone number (E.164 format recommended)
      * @param message The message body to pre-fill
      */
-    fun openSms(phoneNumber: String, message: String)
-    
+    fun openSms(
+        phoneNumber: String,
+        message: String,
+    )
+
     /**
      * Opens the system share sheet with the given text content.
      * @param message The text content to share
@@ -42,7 +45,7 @@ interface Navigator {
     fun shareText(
         message: String,
         chooserTitle: String = "Share via...",
-        subject: String? = null
+        subject: String? = null,
     )
 
     /**
@@ -53,16 +56,19 @@ interface Navigator {
         packageName: String,
         message: String,
         subject: String? = null,
-        chooserTitle: String = "Share via..."
+        chooserTitle: String = "Share via...",
     )
-    
+
     /**
      * Copies text to the system clipboard.
      * @param label A user-visible label for the clipboard data
      * @param text The text content to copy
      * @return true if the operation succeeded, false if it failed
      */
-    fun copyToClipboard(label: String, text: String): Boolean
+    fun copyToClipboard(
+        label: String,
+        text: String,
+    ): Boolean
 }
 
 private const val TAG = "AndroidNavigator"
@@ -73,30 +79,38 @@ private const val TAG = "AndroidNavigator"
  * @param context Application context for starting activities and accessing system services.
  *                Using application context avoids memory leaks.
  */
-class AndroidNavigator(private val context: Context) : Navigator {
-
-    override fun openSms(phoneNumber: String, message: String) {
+class AndroidNavigator(
+    private val context: Context,
+) : Navigator {
+    override fun openSms(
+        phoneNumber: String,
+        message: String,
+    ) {
         val smsUri = Uri.fromParts("smsto", phoneNumber, null)
-        val intent = Intent(Intent.ACTION_SENDTO, smsUri).apply {
-            putExtra("sms_body", message)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
+        val intent =
+            Intent(Intent.ACTION_SENDTO, smsUri).apply {
+                putExtra("sms_body", message)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
 
         try {
             // Check if there's a default handler for SMS intents
-            val hasDefaultHandler = context.packageManager.resolveActivity(
-                intent,
-                PackageManager.MATCH_DEFAULT_ONLY
-            ) != null
+            val hasDefaultHandler =
+                context.packageManager.resolveActivity(
+                    intent,
+                    PackageManager.MATCH_DEFAULT_ONLY,
+                ) != null
 
             if (hasDefaultHandler) {
                 // Launch directly to the default SMS app
                 context.startActivity(intent)
             } else {
                 // No default handler, show chooser
-                context.startActivity(Intent.createChooser(intent, context.getString(R.string.chooser_send_message)).apply {
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                })
+                context.startActivity(
+                    Intent.createChooser(intent, context.getString(R.string.chooser_send_message)).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    },
+                )
             }
         } catch (e: ActivityNotFoundException) {
             Log.e(TAG, "No SMS app available", e)
@@ -113,26 +127,33 @@ class AndroidNavigator(private val context: Context) : Navigator {
         }
     }
 
-    override fun shareText(message: String, chooserTitle: String, subject: String?) {
-        val chooserCallback = PendingIntent.getBroadcast(
-            context,
-            1001,
-            Intent(context, ShareTargetChosenReceiver::class.java),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
-        )
+    override fun shareText(
+        message: String,
+        chooserTitle: String,
+        subject: String?,
+    ) {
+        val chooserCallback =
+            PendingIntent.getBroadcast(
+                context,
+                1001,
+                Intent(context, ShareTargetChosenReceiver::class.java),
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE,
+            )
 
-        val intent = Intent(Intent.ACTION_SEND).apply {
-            type = "text/plain"
-            putExtra(Intent.EXTRA_TEXT, message)
-            if (!subject.isNullOrBlank()) {
-                putExtra(Intent.EXTRA_SUBJECT, subject)
+        val intent =
+            Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(Intent.EXTRA_TEXT, message)
+                if (!subject.isNullOrBlank()) {
+                    putExtra(Intent.EXTRA_SUBJECT, subject)
+                }
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
 
-        val chooserIntent = Intent.createChooser(intent, chooserTitle, chooserCallback.intentSender).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
+        val chooserIntent =
+            Intent.createChooser(intent, chooserTitle, chooserCallback.intentSender).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
 
         try {
             context.startActivity(chooserIntent)
@@ -155,17 +176,18 @@ class AndroidNavigator(private val context: Context) : Navigator {
         packageName: String,
         message: String,
         subject: String?,
-        chooserTitle: String
+        chooserTitle: String,
     ) {
-        val intent = Intent(Intent.ACTION_SEND).apply {
-            type = "text/plain"
-            putExtra(Intent.EXTRA_TEXT, message)
-            if (!subject.isNullOrBlank()) {
-                putExtra(Intent.EXTRA_SUBJECT, subject)
+        val intent =
+            Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(Intent.EXTRA_TEXT, message)
+                if (!subject.isNullOrBlank()) {
+                    putExtra(Intent.EXTRA_SUBJECT, subject)
+                }
+                setPackage(packageName)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
-            setPackage(packageName)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
         try {
             val canHandle = context.packageManager.resolveActivity(intent, 0) != null
             if (canHandle) {
@@ -188,23 +210,29 @@ class AndroidNavigator(private val context: Context) : Navigator {
         }
     }
 
-    override fun copyToClipboard(label: String, text: String): Boolean {
+    override fun copyToClipboard(
+        label: String,
+        text: String,
+    ): Boolean {
         return try {
             val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
             if (clipboard == null) {
                 Log.e(TAG, "Failed to get ClipboardManager")
                 return false
             }
-            val clip = ClipData.newPlainText(label, text).apply {
-                description.extras = PersistableBundle().apply {
-                    val sensitiveKey = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        ClipDescription.EXTRA_IS_SENSITIVE
-                    } else {
-                        "android.content.extra.IS_SENSITIVE"
-                    }
-                    putBoolean(sensitiveKey, true)
+            val clip =
+                ClipData.newPlainText(label, text).apply {
+                    description.extras =
+                        PersistableBundle().apply {
+                            val sensitiveKey =
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                    ClipDescription.EXTRA_IS_SENSITIVE
+                                } else {
+                                    "android.content.extra.IS_SENSITIVE"
+                                }
+                            putBoolean(sensitiveKey, true)
+                        }
                 }
-            }
             clipboard.setPrimaryClip(clip)
             true
         } catch (e: SecurityException) {

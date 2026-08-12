@@ -9,13 +9,13 @@ import org.junit.Test
  * Ensures that old JSON files using "area" field are correctly imported.
  */
 class ExportedTechProfileTest {
-
     private val json = Json { ignoreUnknownKeys = true }
 
     @Test
     fun `deserialize full backup with techProfile`() {
         // This is the exact JSON structure the user is importing
-        val jsonString = """
+        val jsonString =
+            """
             {
                 "schemaVersion": 1,
                 "kind": "full-backup",
@@ -33,7 +33,7 @@ class ExportedTechProfileTest {
                 "settings": null,
                 "defaultTemplateId": null
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val backup = json.decodeFromString<FullBackup>(jsonString)
 
@@ -45,7 +45,8 @@ class ExportedTechProfileTest {
 
     @Test
     fun `deserialize full backup ignores legacy loadout keys`() {
-        val jsonString = """
+        val jsonString =
+            """
             {
                 "schemaVersion": 1,
                 "kind": "full-backup",
@@ -69,7 +70,7 @@ class ExportedTechProfileTest {
                     "defaultTemplateId": "template-1"
                 }
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val backup = json.decodeFromString<FullBackup>(jsonString)
 
@@ -79,13 +80,14 @@ class ExportedTechProfileTest {
 
     @Test
     fun `deserialize with dept field`() {
-        val jsonString = """
+        val jsonString =
+            """
             {
                 "name": "John Doe",
                 "title": "Field Tech",
                 "dept": "Network Services"
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val profile = json.decodeFromString<ExportedTechProfile>(jsonString)
 
@@ -97,13 +99,14 @@ class ExportedTechProfileTest {
 
     @Test
     fun `deserialize with legacy area field`() {
-        val jsonString = """
+        val jsonString =
+            """
             {
                 "name": "Jane Smith",
                 "title": "Installation Technician",
                 "area": "Fiber Services"
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val profile = json.decodeFromString<ExportedTechProfile>(jsonString)
 
@@ -115,14 +118,15 @@ class ExportedTechProfileTest {
 
     @Test
     fun `deserialize with both dept and area prefers dept`() {
-        val jsonString = """
+        val jsonString =
+            """
             {
                 "name": "Bob Johnson",
                 "title": "Senior Tech",
                 "dept": "Network Services",
                 "area": "Fiber Services"
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val profile = json.decodeFromString<ExportedTechProfile>(jsonString)
 
@@ -134,11 +138,12 @@ class ExportedTechProfileTest {
 
     @Test
     fun `deserialize with missing fields uses defaults`() {
-        val jsonString = """
+        val jsonString =
+            """
             {
                 "name": "Alice Williams"
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val profile = json.decodeFromString<ExportedTechProfile>(jsonString)
 
@@ -149,14 +154,15 @@ class ExportedTechProfileTest {
 
     @Test
     fun `deserialize with empty dept falls back to area`() {
-        val jsonString = """
+        val jsonString =
+            """
             {
                 "name": "Charlie Brown",
                 "title": "Technician",
                 "dept": "",
                 "area": "Central Region"
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val profile = json.decodeFromString<ExportedTechProfile>(jsonString)
 

@@ -6,7 +6,9 @@ import com.kingpaging.qwelcome.util.TimeProvider
  * Fake TimeProvider for testing.
  * Allows manual control of elapsed time.
  */
-class FakeTimeProvider(private var currentTime: Long = 0L) : TimeProvider {
+class FakeTimeProvider(
+    private var currentTime: Long = 0L,
+) : TimeProvider {
     override fun elapsedRealtime(): Long = currentTime
 
     /**

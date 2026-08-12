@@ -12,15 +12,14 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.ui.theme.CyberpunkTheme
 import com.kingpaging.qwelcome.util.WifiQrGenerator
-import java.util.concurrent.atomic.AtomicBoolean
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.util.concurrent.atomic.AtomicBoolean
 
 @RunWith(AndroidJUnit4::class)
 class QrCodeSheetContentTest {
-
     @get:Rule
     val composeRule = createComposeRule()
 
@@ -33,17 +32,19 @@ class QrCodeSheetContentTest {
                 Column {
                     QrCodeSheetContent(
                         qrPainter = ColorPainter(Color.Black),
-                        network = QrCodeNetworkDetails(
-                            ssid = "Technician WiFi",
-                            isOpenNetwork = false,
-                            securityType = WifiQrGenerator.SecurityType.WPA2_PSK
-                        ),
+                        network =
+                            QrCodeNetworkDetails(
+                                ssid = "Technician WiFi",
+                                isOpenNetwork = false,
+                                securityType = WifiQrGenerator.SecurityType.WPA2_PSK,
+                            ),
                         isSaving = false,
                         isSharing = false,
-                        actions = QrCodeSheetActions(
-                            onRequestSave = { saveRequested.set(true) },
-                            onShare = {}
-                        )
+                        actions =
+                            QrCodeSheetActions(
+                                onRequestSave = { saveRequested.set(true) },
+                                onShare = {},
+                            ),
                     )
                 }
             }
@@ -62,17 +63,19 @@ class QrCodeSheetContentTest {
                 Column {
                     QrCodeSheetContent(
                         qrPainter = ColorPainter(Color.Black),
-                        network = QrCodeNetworkDetails(
-                            ssid = "Technician WiFi",
-                            isOpenNetwork = false,
-                            securityType = WifiQrGenerator.SecurityType.WPA3_SAE
-                        ),
+                        network =
+                            QrCodeNetworkDetails(
+                                ssid = "Technician WiFi",
+                                isOpenNetwork = false,
+                                securityType = WifiQrGenerator.SecurityType.WPA3_SAE,
+                            ),
                         isSaving = false,
                         isSharing = false,
-                        actions = QrCodeSheetActions(
-                            onRequestSave = {},
-                            onShare = {}
-                        )
+                        actions =
+                            QrCodeSheetActions(
+                                onRequestSave = {},
+                                onShare = {},
+                            ),
                     )
                 }
             }

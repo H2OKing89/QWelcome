@@ -42,12 +42,12 @@ internal fun ImportIdleStep(
     isLoading: Boolean,
     error: String?,
     onOpenFile: () -> Unit,
-    onPaste: () -> Unit
+    onPaste: () -> Unit,
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
     ) {
         ImportIdleIntro()
         Spacer(Modifier.height(16.dp))
@@ -62,19 +62,19 @@ private fun ImportIdleIntro() {
         imageVector = Icons.Default.UploadFile,
         contentDescription = stringResource(R.string.content_desc_import_data),
         modifier = Modifier.size(64.dp),
-        tint = MaterialTheme.colorScheme.secondary
+        tint = MaterialTheme.colorScheme.secondary,
     )
     Text(
         stringResource(R.string.title_import_intro),
         style = MaterialTheme.typography.titleLarge,
         textAlign = TextAlign.Center,
-        color = MaterialTheme.colorScheme.onSurface
+        color = MaterialTheme.colorScheme.onSurface,
     )
     Text(
         stringResource(R.string.text_import_intro_description),
         style = MaterialTheme.typography.bodyMedium,
         textAlign = TextAlign.Center,
-        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
     )
 }
 
@@ -82,7 +82,7 @@ private fun ImportIdleIntro() {
 private fun ImportSourceActions(
     isLoading: Boolean,
     onOpenFile: () -> Unit,
-    onPaste: () -> Unit
+    onPaste: () -> Unit,
 ) {
     if (isLoading) {
         ImportDecodingIndicator()
@@ -98,21 +98,24 @@ private fun ImportDecodingIndicator() {
         stringResource(R.string.status_decoding),
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-        modifier = Modifier.padding(top = 8.dp)
+        modifier = Modifier.padding(top = 8.dp),
     )
 }
 
 @Composable
-private fun ImportSourceButtons(onOpenFile: () -> Unit, onPaste: () -> Unit) {
+private fun ImportSourceButtons(
+    onOpenFile: () -> Unit,
+    onPaste: () -> Unit,
+) {
     NeonButton(
         onClick = onOpenFile,
         modifier = Modifier.fillMaxWidth(SOURCE_BUTTON_WIDTH_FRACTION),
-        glowColor = MaterialTheme.colorScheme.secondary
+        glowColor = MaterialTheme.colorScheme.secondary,
     ) {
         Icon(
             Icons.Default.UploadFile,
             contentDescription = stringResource(R.string.content_desc_select_file_to_import),
-            modifier = Modifier.size(20.dp)
+            modifier = Modifier.size(20.dp),
         )
         Spacer(Modifier.width(8.dp))
         Text(stringResource(R.string.action_select_file))
@@ -122,12 +125,12 @@ private fun ImportSourceButtons(onOpenFile: () -> Unit, onPaste: () -> Unit) {
         onClick = onPaste,
         modifier = Modifier.fillMaxWidth(SOURCE_BUTTON_WIDTH_FRACTION),
         style = NeonButtonStyle.SECONDARY,
-        glowColor = MaterialTheme.colorScheme.tertiary
+        glowColor = MaterialTheme.colorScheme.tertiary,
     ) {
         Icon(
             Icons.Default.FileCopy,
             contentDescription = stringResource(R.string.content_desc_paste_from_clipboard),
-            modifier = Modifier.size(20.dp)
+            modifier = Modifier.size(20.dp),
         )
         Spacer(Modifier.width(8.dp))
         Text(stringResource(R.string.action_paste_from_clipboard))
@@ -148,12 +151,12 @@ private fun ImportIdleError(error: String?) {
                     Icons.Default.Info,
                     contentDescription = stringResource(R.string.content_desc_error),
                     tint = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.padding(end = 8.dp)
+                    modifier = Modifier.padding(end = 8.dp),
                 )
                 Text(
                     text = retainedErrorMessage.orEmpty(),
                     color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodyMedium
+                    style = MaterialTheme.typography.bodyMedium,
                 )
             }
         }

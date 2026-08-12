@@ -6,7 +6,6 @@ import androidx.lifecycle.viewModelScope
 import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.data.MessageTemplate
 import com.kingpaging.qwelcome.data.SettingsStore
-import com.kingpaging.qwelcome.data.TechProfile
 import com.kingpaging.qwelcome.data.Template
 import com.kingpaging.qwelcome.navigation.Navigator
 import com.kingpaging.qwelcome.ui.CustomerIntakeUiState
@@ -14,8 +13,10 @@ import com.kingpaging.qwelcome.util.PhoneUtils
 import com.kingpaging.qwelcome.util.ResourceProvider
 import com.kingpaging.qwelcome.util.SystemTimeProvider
 import com.kingpaging.qwelcome.util.TimeProvider
-import com.kingpaging.qwelcome.util.WifiValidationRules
 import com.kingpaging.qwelcome.util.WifiQrGenerator
+import com.kingpaging.qwelcome.util.WifiValidationRules
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -24,19 +25,23 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /** One-shot UI events emitted by the ViewModel */
 sealed class UiEvent {
-    data class ShowToast(val message: String) : UiEvent()
+    data class ShowToast(
+        val message: String,
+    ) : UiEvent()
+
     /** Emitted when message is successfully copied to clipboard - triggers visual feedback */
     data object CopySuccess : UiEvent()
+
     /** Emitted when user action is blocked by validation or other issue */
     data object ValidationFailed : UiEvent()
+
     /** Emitted when an action fails after button press */
     data object ActionFailed : UiEvent()
+
     data object RateLimitExceeded : UiEvent()
 }
 
@@ -45,9 +50,8 @@ class CustomerIntakeViewModel(
     private val settingsStore: SettingsStore,
     private val resourceProvider: ResourceProvider,
     private val timeProvider: TimeProvider = SystemTimeProvider(),
-    private val enableForegroundInactivityTimer: Boolean = true
+    private val enableForegroundInactivityTimer: Boolean = true,
 ) : ViewModel() {
-
     companion object {
         private const val AUTO_CLEAR_TIMEOUT_MINUTES = 10
         private const val AUTO_CLEAR_TIMEOUT_MS = AUTO_CLEAR_TIMEOUT_MINUTES * 60 * 1000L
@@ -65,22 +69,32 @@ class CustomerIntakeViewModel(
          * @param resourceProvider Provider to access string resources for error messages.
          * @return Error message string, or null if valid.
          */
-        fun validatePhoneNumber(phone: String, progressiveMode: Boolean, resourceProvider: ResourceProvider): String? {
+        fun validatePhoneNumber(
+            phone: String,
+            progressiveMode: Boolean,
+            resourceProvider: ResourceProvider,
+        ): String? {
             val digits = phone.replace(NON_DIGIT_REGEX, "")
             val invalidPhoneError = resourceProvider.getString(R.string.error_phone_invalid)
             return when {
                 phone.isEmpty() -> null // Don't show error for empty (handled at submit)
                 digits.length < 10 -> {
-                    if (progressiveMode) resourceProvider.getString(R.string.error_phone_partial, digits.length)
-                    else invalidPhoneError
+                    if (progressiveMode) {
+                        resourceProvider.getString(R.string.error_phone_partial, digits.length)
+                    } else {
+                        invalidPhoneError
+                    }
                 }
                 digits.length == 10 || digits.length == 11 -> {
                     validateNanpRules(digits, progressiveMode, invalidPhoneError, resourceProvider)
                 }
                 else -> {
                     // digits.length > 11
-                    if (progressiveMode) resourceProvider.getString(R.string.error_phone_too_many_digits, digits.length)
-                    else invalidPhoneError
+                    if (progressiveMode) {
+                        resourceProvider.getString(R.string.error_phone_too_many_digits, digits.length)
+                    } else {
+                        invalidPhoneError
+                    }
                 }
             }
         }
@@ -93,7 +107,7 @@ class CustomerIntakeViewModel(
             digits: String,
             progressiveMode: Boolean,
             invalidPhoneError: String,
-            resourceProvider: ResourceProvider
+            resourceProvider: ResourceProvider,
         ): String? {
             // Check NANP rules: area code and exchange must start with 2-9
             val areaStart = if (digits.length == 11) 1 else 0
@@ -101,16 +115,25 @@ class CustomerIntakeViewModel(
             val exchange = digits.substring(areaStart + 3, areaStart + 6)
             return when {
                 digits.length == 11 && digits[0] != '1' -> {
-                    if (progressiveMode) resourceProvider.getString(R.string.error_phone_us_start)
-                    else invalidPhoneError
+                    if (progressiveMode) {
+                        resourceProvider.getString(R.string.error_phone_us_start)
+                    } else {
+                        invalidPhoneError
+                    }
                 }
                 areaCode[0] !in '2'..'9' -> {
-                    if (progressiveMode) resourceProvider.getString(R.string.error_phone_area_code, areaCode[0])
-                    else invalidPhoneError
+                    if (progressiveMode) {
+                        resourceProvider.getString(R.string.error_phone_area_code, areaCode[0])
+                    } else {
+                        invalidPhoneError
+                    }
                 }
                 exchange[0] !in '2'..'9' -> {
-                    if (progressiveMode) resourceProvider.getString(R.string.error_phone_exchange, exchange[0])
-                    else invalidPhoneError
+                    if (progressiveMode) {
+                        resourceProvider.getString(R.string.error_phone_exchange, exchange[0])
+                    } else {
+                        invalidPhoneError
+                    }
                 }
                 else -> null // Valid!
             }
@@ -231,14 +254,16 @@ class CustomerIntakeViewModel(
 
     fun onPasswordChanged(password: String) {
         // Real-time validation feedback for WiFi password (WPA/WPA2: 8-63 chars)
-        val error = when {
-            password.isEmpty() -> null // Don't show error for empty (show on submit)
-            WifiValidationRules.isPasswordTooShort(password) -> resourceProvider.getString(
-                R.string.error_password_partial,
-                password.length
-            )
-            else -> getWifiErrorMessage(WifiQrGenerator.validatePassword(password))
-        }
+        val error =
+            when {
+                password.isEmpty() -> null // Don't show error for empty (show on submit)
+                WifiValidationRules.isPasswordTooShort(password) ->
+                    resourceProvider.getString(
+                        R.string.error_password_partial,
+                        password.length,
+                    )
+                else -> getWifiErrorMessage(WifiQrGenerator.validatePassword(password))
+            }
         updateState { it.copy(password = password, passwordError = error) }
         recordUserActivity()
     }
@@ -258,7 +283,7 @@ class CustomerIntakeViewModel(
                 isOpenNetwork = isOpen,
                 // Clear password and error when switching to open network
                 password = if (isOpen) "" else state.password,
-                passwordError = null
+                passwordError = null,
             )
         }
         recordUserActivity()
@@ -284,10 +309,11 @@ class CustomerIntakeViewModel(
 
     private fun scheduleInactivityClear(delayMillis: Long) {
         inactivityJob?.cancel()
-        inactivityJob = viewModelScope.launch {
-            delay(delayMillis)
-            checkInactivityTimeout()
-        }
+        inactivityJob =
+            viewModelScope.launch {
+                delay(delayMillis)
+                checkInactivityTimeout()
+            }
     }
 
     internal fun checkInactivityTimeout() {
@@ -318,61 +344,64 @@ class CustomerIntakeViewModel(
      * Handles SMS button click - validates inputs and sends SMS via Navigator.
      * @param navigator The Navigator instance for launching intents (injected for testability)
      */
-    fun onSmsClicked(navigator: Navigator) = viewModelScope.launch {
-        recordUserActivity()
-        if (!checkRateLimit()) return@launch
-        val activeTemplate = settingsStore.activeTemplateFlow.first()
-        if (!validateInputs(requirePhone = true, activeTemplate = activeTemplate)) {
-            _uiEvent.emit(UiEvent.ValidationFailed)
-            return@launch
+    fun onSmsClicked(navigator: Navigator) =
+        viewModelScope.launch {
+            recordUserActivity()
+            if (!checkRateLimit()) return@launch
+            val activeTemplate = settingsStore.activeTemplateFlow.first()
+            if (!validateInputs(requirePhone = true, activeTemplate = activeTemplate)) {
+                _uiEvent.emit(UiEvent.ValidationFailed)
+                return@launch
+            }
+            val message = generateMessage(activeTemplate)
+            val normalizedPhone = PhoneUtils.normalize(_uiState.value.customerPhone)
+            if (normalizedPhone != null) {
+                navigator.openSms(normalizedPhone, message)
+            }
         }
-        val message = generateMessage(activeTemplate)
-        val normalizedPhone = PhoneUtils.normalize(_uiState.value.customerPhone)
-        if (normalizedPhone != null) {
-            navigator.openSms(normalizedPhone, message)
-        }
-    }
 
     /**
      * Handles Share button click - validates inputs and opens share sheet via Navigator.
      * Phone number is NOT required for sharing (only SMS needs it).
      * @param navigator The Navigator instance for launching intents (injected for testability)
      */
-    fun onShareClicked(navigator: Navigator) = viewModelScope.launch {
-        recordUserActivity()
-        if (!checkRateLimit()) return@launch
-        val activeTemplate = settingsStore.activeTemplateFlow.first()
-        if (!validateInputs(requirePhone = false, activeTemplate = activeTemplate)) {
-            _uiEvent.emit(UiEvent.ValidationFailed)
-            return@launch
+    fun onShareClicked(navigator: Navigator) =
+        viewModelScope.launch {
+            recordUserActivity()
+            if (!checkRateLimit()) return@launch
+            val activeTemplate = settingsStore.activeTemplateFlow.first()
+            if (!validateInputs(requirePhone = false, activeTemplate = activeTemplate)) {
+                _uiEvent.emit(UiEvent.ValidationFailed)
+                return@launch
+            }
+            val message = generateMessage(activeTemplate)
+            navigator.shareText(message)
         }
-        val message = generateMessage(activeTemplate)
-        navigator.shareText(message)
-    }
 
     /**
      * Handles Copy button click - validates inputs and copies to clipboard via Navigator.
      * Phone number is NOT required for copying (only SMS needs it).
      * @param navigator The Navigator instance for launching intents (injected for testability)
      */
-    fun onCopyClicked(navigator: Navigator) = viewModelScope.launch {
-        recordUserActivity()
-        if (!checkRateLimit()) return@launch
-        val activeTemplate = settingsStore.activeTemplateFlow.first()
-        if (!validateInputs(requirePhone = false, activeTemplate = activeTemplate)) {
-            _uiEvent.emit(UiEvent.ValidationFailed)
-            return@launch
+    fun onCopyClicked(navigator: Navigator) =
+        viewModelScope.launch {
+            recordUserActivity()
+            if (!checkRateLimit()) return@launch
+            val activeTemplate = settingsStore.activeTemplateFlow.first()
+            if (!validateInputs(requirePhone = false, activeTemplate = activeTemplate)) {
+                _uiEvent.emit(UiEvent.ValidationFailed)
+                return@launch
+            }
+            val message = generateMessage(activeTemplate)
+            val success = navigator.copyToClipboard("Customer Message", message)
+            if (success) {
+                _uiEvent.emit(UiEvent.CopySuccess)
+                _uiEvent.emit(UiEvent.ShowToast(resourceProvider.getString(R.string.toast_copied_to_clipboard)))
+            } else {
+                _uiEvent.emit(UiEvent.ActionFailed)
+                _uiEvent.emit(UiEvent.ShowToast(resourceProvider.getString(R.string.toast_copy_failed)))
+            }
         }
-        val message = generateMessage(activeTemplate)
-        val success = navigator.copyToClipboard("Customer Message", message)
-        if (success) {
-            _uiEvent.emit(UiEvent.CopySuccess)
-            _uiEvent.emit(UiEvent.ShowToast(resourceProvider.getString(R.string.toast_copied_to_clipboard)))
-        } else {
-            _uiEvent.emit(UiEvent.ActionFailed)
-            _uiEvent.emit(UiEvent.ShowToast(resourceProvider.getString(R.string.toast_copy_failed)))
-        }
-    }
 
     /**
      * Validates form inputs before sending/sharing/copying.
@@ -380,44 +409,62 @@ class CustomerIntakeViewModel(
      * @param activeTemplate The template snapshot to validate against, resolved once by the caller
      * so validation and message generation stay consistent even if the active template changes mid-action.
      */
-    private fun validateInputs(requirePhone: Boolean, activeTemplate: Template): Boolean {
+    private fun validateInputs(
+        requirePhone: Boolean,
+        activeTemplate: Template,
+    ): Boolean {
         val currentState = _uiState.value
-        val requiresPassword = MessageTemplate.usesPlaceholder(
-            activeTemplate.content,
-            MessageTemplate.KEY_PASSWORD
-        )
-        val requiresAccountNumber = MessageTemplate.usesPlaceholder(
-            activeTemplate.content,
-            MessageTemplate.KEY_ACCOUNT_NUMBER
-        )
+        val requiresPassword =
+            MessageTemplate.usesPlaceholder(
+                activeTemplate.content,
+                MessageTemplate.KEY_PASSWORD,
+            )
+        val requiresAccountNumber =
+            MessageTemplate.usesPlaceholder(
+                activeTemplate.content,
+                MessageTemplate.KEY_ACCOUNT_NUMBER,
+            )
 
         // Calculate all errors at once
-        val customerNameError = if (currentState.customerName.isBlank()) resourceProvider.getString(R.string.error_name_empty) else null
-
-        val customerPhoneError = if (requirePhone) {
-            when {
-                currentState.customerPhone.isBlank() -> resourceProvider.getString(R.string.error_phone_empty)
-                else -> validatePhoneNumber(currentState.customerPhone, progressiveMode = false, resourceProvider)
+        val customerNameError =
+            if (currentState.customerName.isBlank()) {
+                resourceProvider.getString(
+                    R.string.error_name_empty,
+                )
+            } else {
+                null
             }
-        } else null
 
-        val ssidError = when {
-            currentState.ssid.isBlank() -> resourceProvider.getString(R.string.error_ssid_empty)
-            else -> getWifiErrorMessage(WifiQrGenerator.validateSsid(currentState.ssid))
-        }
+        val customerPhoneError =
+            if (requirePhone) {
+                when {
+                    currentState.customerPhone.isBlank() -> resourceProvider.getString(R.string.error_phone_empty)
+                    else -> validatePhoneNumber(currentState.customerPhone, progressiveMode = false, resourceProvider)
+                }
+            } else {
+                null
+            }
+
+        val ssidError =
+            when {
+                currentState.ssid.isBlank() -> resourceProvider.getString(R.string.error_ssid_empty)
+                else -> getWifiErrorMessage(WifiQrGenerator.validateSsid(currentState.ssid))
+            }
 
         // Skip password validation for open networks
-        val passwordError = if (!requiresPassword || currentState.isOpenNetwork) {
-            null // Open networks don't require passwords
-        } else {
-            getWifiErrorMessage(WifiQrGenerator.validatePassword(currentState.password))
-        }
+        val passwordError =
+            if (!requiresPassword || currentState.isOpenNetwork) {
+                null // Open networks don't require passwords
+            } else {
+                getWifiErrorMessage(WifiQrGenerator.validatePassword(currentState.password))
+            }
 
-        val accountNumberError = if (requiresAccountNumber && currentState.accountNumber.isBlank()) {
-            resourceProvider.getString(R.string.error_account_empty)
-        } else {
-            null
-        }
+        val accountNumberError =
+            if (requiresAccountNumber && currentState.accountNumber.isBlank()) {
+                resourceProvider.getString(R.string.error_account_empty)
+            } else {
+                null
+            }
 
         // Batch all error updates into a single state change to minimize recompositions
         updateState { state ->
@@ -426,7 +473,7 @@ class CustomerIntakeViewModel(
                 customerPhoneError = customerPhoneError,
                 ssidError = ssidError,
                 passwordError = passwordError,
-                accountNumberError = accountNumberError
+                accountNumberError = accountNumberError,
             )
         }
 
@@ -456,10 +503,9 @@ class CustomerIntakeViewModel(
         }
     }
 
-    private fun getWifiErrorMessage(result: WifiQrGenerator.ValidationResult): String? {
-        return when (result) {
+    private fun getWifiErrorMessage(result: WifiQrGenerator.ValidationResult): String? =
+        when (result) {
             WifiQrGenerator.ValidationResult.Success -> null
             is WifiQrGenerator.ValidationResult.Error -> resourceProvider.getString(result.messageResId)
         }
-    }
 }

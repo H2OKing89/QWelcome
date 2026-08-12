@@ -9,7 +9,6 @@ import com.kingpaging.qwelcome.data.NEW_TEMPLATE_ID
 import com.kingpaging.qwelcome.data.SettingsStore
 import com.kingpaging.qwelcome.data.Template
 import com.kingpaging.qwelcome.util.ResourceProvider
-import java.time.Instant
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,6 +18,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.Instant
 
 private const val TAG = "TemplateEditorViewModel"
 private const val MAX_TAG_LENGTH = 32
@@ -41,22 +41,29 @@ data class TemplateEditorUiState(
     val nameError: Int? = null,
     val contentError: String? = null,
     val showDiscardDialog: Boolean = false,
-    val isSaveCompleted: Boolean = false
+    val isSaveCompleted: Boolean = false,
 )
 
 sealed class TemplateEditorEvent {
-    data class TemplateCreated(val template: Template) : TemplateEditorEvent()
-    data class TemplateUpdated(val template: Template) : TemplateEditorEvent()
-    data class Error(val message: String) : TemplateEditorEvent()
+    data class TemplateCreated(
+        val template: Template,
+    ) : TemplateEditorEvent()
+
+    data class TemplateUpdated(
+        val template: Template,
+    ) : TemplateEditorEvent()
+
+    data class Error(
+        val message: String,
+    ) : TemplateEditorEvent()
 }
 
 @Suppress("TooManyFunctions", "TooGenericExceptionCaught")
 class TemplateEditorViewModel(
     private val savedStateHandle: SavedStateHandle,
     private val settingsStore: SettingsStore,
-    private val resourceProvider: ResourceProvider
+    private val resourceProvider: ResourceProvider,
 ) : ViewModel() {
-
     private val templateId: String = checkNotNull(savedStateHandle[KEY_TEMPLATE_ID])
 
     private val _uiState = MutableStateFlow(TemplateEditorUiState())
@@ -67,27 +74,29 @@ class TemplateEditorViewModel(
 
     init {
         viewModelScope.launch {
-            val template = if (templateId == NEW_TEMPLATE_ID) {
-                Template(
-                    id = NEW_TEMPLATE_ID,
-                    name = "",
-                    content = settingsStore.defaultTemplateContent
-                )
-            } else {
-                settingsStore.getTemplate(templateId)
-            }
+            val template =
+                if (templateId == NEW_TEMPLATE_ID) {
+                    Template(
+                        id = NEW_TEMPLATE_ID,
+                        name = "",
+                        content = settingsStore.defaultTemplateContent,
+                    )
+                } else {
+                    settingsStore.getTemplate(templateId)
+                }
             val initialContent = savedStateHandle[KEY_CONTENT] ?: template?.content.orEmpty()
-            _uiState.value = TemplateEditorUiState(
-                template = template,
-                isLoading = false,
-                name = savedStateHandle[KEY_NAME] ?: template?.name.orEmpty(),
-                tags = savedStateHandle.get<List<String>>(KEY_TAGS) ?: template?.tags.orEmpty(),
-                newTagInput = savedStateHandle[KEY_NEW_TAG_INPUT] ?: "",
-                contentText = initialContent,
-                contentError = missingPlaceholdersError(Template.findMissingPlaceholders(initialContent)),
-                showDiscardDialog = savedStateHandle[KEY_SHOW_DISCARD_DIALOG] ?: false,
-                isSaveCompleted = savedStateHandle[KEY_SAVE_COMPLETED] ?: false
-            )
+            _uiState.value =
+                TemplateEditorUiState(
+                    template = template,
+                    isLoading = false,
+                    name = savedStateHandle[KEY_NAME] ?: template?.name.orEmpty(),
+                    tags = savedStateHandle.get<List<String>>(KEY_TAGS) ?: template?.tags.orEmpty(),
+                    newTagInput = savedStateHandle[KEY_NEW_TAG_INPUT] ?: "",
+                    contentText = initialContent,
+                    contentError = missingPlaceholdersError(Template.findMissingPlaceholders(initialContent)),
+                    showDiscardDialog = savedStateHandle[KEY_SHOW_DISCARD_DIALOG] ?: false,
+                    isSaveCompleted = savedStateHandle[KEY_SAVE_COMPLETED] ?: false,
+                )
         }
     }
 
@@ -114,7 +123,7 @@ class TemplateEditorViewModel(
         _uiState.update {
             it.copy(
                 contentText = content,
-                contentError = missingPlaceholdersError(Template.findMissingPlaceholders(content))
+                contentError = missingPlaceholdersError(Template.findMissingPlaceholders(content)),
             )
         }
     }
@@ -128,15 +137,21 @@ class TemplateEditorViewModel(
         _uiState.update { it.copy(showDiscardDialog = show) }
     }
 
-    fun createTemplate(name: String, content: String, tags: List<String>) {
+    fun createTemplate(
+        name: String,
+        content: String,
+        tags: List<String>,
+    ) {
         if (!validateContent(content)) return
 
         viewModelScope.launch {
             try {
-                val template = Template.create(
-                    name.trim().take(MAX_TEMPLATE_NAME_LENGTH),
-                    content
-                ).copy(tags = sanitizeTags(tags))
+                val template =
+                    Template
+                        .create(
+                            name.trim().take(MAX_TEMPLATE_NAME_LENGTH),
+                            content,
+                        ).copy(tags = sanitizeTags(tags))
                 settingsStore.saveTemplate(template)
                 _events.emit(TemplateEditorEvent.TemplateCreated(template))
                 markSaveCompleted()
@@ -149,21 +164,27 @@ class TemplateEditorViewModel(
         }
     }
 
-    fun updateTemplate(name: String, content: String, tags: List<String>) {
+    fun updateTemplate(
+        name: String,
+        content: String,
+        tags: List<String>,
+    ) {
         if (!validateContent(content)) return
 
         viewModelScope.launch {
             try {
-                val existing = settingsStore.getTemplate(templateId) ?: run {
-                    emitError(R.string.error_template_update_failed)
-                    return@launch
-                }
-                val updated = existing.copy(
-                    name = name.trim().take(MAX_TEMPLATE_NAME_LENGTH),
-                    content = Template.normalizeContent(content),
-                    tags = sanitizeTags(tags),
-                    modifiedAt = Instant.now().toString()
-                )
+                val existing =
+                    settingsStore.getTemplate(templateId) ?: run {
+                        emitError(R.string.error_template_update_failed)
+                        return@launch
+                    }
+                val updated =
+                    existing.copy(
+                        name = name.trim().take(MAX_TEMPLATE_NAME_LENGTH),
+                        content = Template.normalizeContent(content),
+                        tags = sanitizeTags(tags),
+                        modifiedAt = Instant.now().toString(),
+                    )
                 settingsStore.saveTemplate(updated)
                 _events.emit(TemplateEditorEvent.TemplateUpdated(updated))
                 markSaveCompleted()
@@ -180,20 +201,20 @@ class TemplateEditorViewModel(
         val missingPlaceholders = Template.findMissingPlaceholders(content)
         if (missingPlaceholders.isEmpty()) return true
 
-        val message = resourceProvider.getString(
-            R.string.error_template_required_placeholders_missing,
-            missingPlaceholders.joinToString(", ")
-        )
+        val message =
+            resourceProvider.getString(
+                R.string.error_template_required_placeholders_missing,
+                missingPlaceholders.joinToString(", "),
+            )
         _uiState.update { it.copy(contentError = missingPlaceholdersError(missingPlaceholders)) }
         viewModelScope.launch { _events.emit(TemplateEditorEvent.Error(message)) }
         return false
     }
 
-    private fun missingPlaceholdersError(missingPlaceholders: List<String>): String? {
-        return missingPlaceholders.takeIf { it.isNotEmpty() }?.joinToString(", ") {
+    private fun missingPlaceholdersError(missingPlaceholders: List<String>): String? =
+        missingPlaceholders.takeIf { it.isNotEmpty() }?.joinToString(", ") {
             it.removePrefix("{{ ").removeSuffix(" }}")
         }
-    }
 
     private fun markSaveCompleted() {
         savedStateHandle[KEY_SAVE_COMPLETED] = true
@@ -202,7 +223,8 @@ class TemplateEditorViewModel(
 
     private fun sanitizeTags(tags: List<String>): List<String> {
         val seen = mutableSetOf<String>()
-        return tags.map { it.trim() }
+        return tags
+            .map { it.trim() }
             .filter { it.isNotBlank() }
             .map { it.take(MAX_TAG_LENGTH) }
             .filter { seen.add(it.lowercase()) }

@@ -44,7 +44,7 @@ internal fun ExportTemplateSelectionDialog(
     onToggleTemplate: (String) -> Unit,
     onToggleSelectAll: () -> Unit,
     onDismiss: () -> Unit,
-    onExport: () -> Unit
+    onExport: () -> Unit,
 ) {
     val isDark = LocalDarkTheme.current
     val allSelected = templates.isNotEmpty() && templates.all { it.id in selectedIds }
@@ -54,19 +54,20 @@ internal fun ExportTemplateSelectionDialog(
         Surface(
             shape = RoundedCornerShape(16.dp),
             color = MaterialTheme.colorScheme.surface,
-            tonalElevation = if (isDark) 0.dp else 6.dp
+            tonalElevation = if (isDark) 0.dp else 6.dp,
         ) {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(24.dp)
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp),
             ) {
                 TemplateSelectionDialogHeader()
                 Spacer(Modifier.height(16.dp))
                 SelectAllTemplatesRow(allSelected, onToggleSelectAll)
                 HorizontalDivider(
                     color = MaterialTheme.colorScheme.outlineVariant,
-                    modifier = Modifier.padding(vertical = 8.dp)
+                    modifier = Modifier.padding(vertical = 8.dp),
                 )
                 TemplateSelectionList(templates, selectedIds, onToggleTemplate)
                 Spacer(Modifier.height(16.dp))
@@ -81,38 +82,45 @@ private fun TemplateSelectionDialogHeader() {
     Text(
         text = stringResource(R.string.title_select_templates),
         style = MaterialTheme.typography.titleLarge,
-        color = MaterialTheme.colorScheme.onSurface
+        color = MaterialTheme.colorScheme.onSurface,
     )
 }
 
 @Composable
-private fun SelectAllTemplatesRow(allSelected: Boolean, onToggleSelectAll: () -> Unit) {
+private fun SelectAllTemplatesRow(
+    allSelected: Boolean,
+    onToggleSelectAll: () -> Unit,
+) {
     val haptic = rememberHapticFeedback()
 
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .toggleable(
-                value = allSelected,
-                onValueChange = { haptic(); onToggleSelectAll() },
-                role = Role.Checkbox
-            )
-            .padding(vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .toggleable(
+                    value = allSelected,
+                    onValueChange = {
+                        haptic()
+                        onToggleSelectAll()
+                    },
+                    role = Role.Checkbox,
+                ).padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Checkbox(
             checked = allSelected,
             onCheckedChange = null,
-            colors = CheckboxDefaults.colors(
-                checkedColor = MaterialTheme.colorScheme.primary,
-                uncheckedColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-            )
+            colors =
+                CheckboxDefaults.colors(
+                    checkedColor = MaterialTheme.colorScheme.primary,
+                    uncheckedColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                ),
         )
         Spacer(Modifier.width(8.dp))
         Text(
             text = stringResource(R.string.action_select_all),
             style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurface
+            color = MaterialTheme.colorScheme.onSurface,
         )
     }
 }
@@ -121,18 +129,19 @@ private fun SelectAllTemplatesRow(allSelected: Boolean, onToggleSelectAll: () ->
 private fun TemplateSelectionList(
     templates: List<Template>,
     selectedIds: Set<String>,
-    onToggleTemplate: (String) -> Unit
+    onToggleTemplate: (String) -> Unit,
 ) {
     LazyColumn(
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(max = 300.dp)
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .heightIn(max = 300.dp),
     ) {
         items(templates, key = { it.id }) { template ->
             TemplateSelectionItem(
                 template = template,
                 isSelected = template.id in selectedIds,
-                onToggle = { onToggleTemplate(template.id) }
+                onToggle = { onToggleTemplate(template.id) },
             )
         }
     }
@@ -142,16 +151,16 @@ private fun TemplateSelectionList(
 private fun TemplateSelectionActions(
     selectedCount: Int,
     onDismiss: () -> Unit,
-    onExport: () -> Unit
+    onExport: () -> Unit,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.End
+        horizontalArrangement = Arrangement.End,
     ) {
         NeonButton(
             onClick = onDismiss,
             glowColor = MaterialTheme.colorScheme.primary,
-            style = NeonButtonStyle.TERTIARY
+            style = NeonButtonStyle.TERTIARY,
         ) {
             Text(stringResource(R.string.action_cancel))
         }
@@ -160,13 +169,14 @@ private fun TemplateSelectionActions(
             onClick = onExport,
             enabled = selectedCount > 0,
             glowColor = MaterialTheme.colorScheme.primary,
-            style = NeonButtonStyle.PRIMARY
+            style = NeonButtonStyle.PRIMARY,
         ) {
-            val templateCountText = pluralStringResource(
-                R.plurals.template_count,
-                selectedCount,
-                selectedCount
-            )
+            val templateCountText =
+                pluralStringResource(
+                    R.plurals.template_count,
+                    selectedCount,
+                    selectedCount,
+                )
             Text(stringResource(R.string.action_export_count, templateCountText))
         }
     }
@@ -176,27 +186,31 @@ private fun TemplateSelectionActions(
 private fun TemplateSelectionItem(
     template: Template,
     isSelected: Boolean,
-    onToggle: () -> Unit
+    onToggle: () -> Unit,
 ) {
     val haptic = rememberHapticFeedback()
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .toggleable(
-                value = isSelected,
-                onValueChange = { haptic(); onToggle() },
-                role = Role.Checkbox
-            )
-            .padding(vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .toggleable(
+                    value = isSelected,
+                    onValueChange = {
+                        haptic()
+                        onToggle()
+                    },
+                    role = Role.Checkbox,
+                ).padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Checkbox(
             checked = isSelected,
             onCheckedChange = null,
-            colors = CheckboxDefaults.colors(
-                checkedColor = MaterialTheme.colorScheme.secondary,
-                uncheckedColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-            )
+            colors =
+                CheckboxDefaults.colors(
+                    checkedColor = MaterialTheme.colorScheme.secondary,
+                    uncheckedColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                ),
         )
         Spacer(Modifier.width(8.dp))
         Column(modifier = Modifier.weight(1f)) {
@@ -205,19 +219,20 @@ private fun TemplateSelectionItem(
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
             Text(
                 text = formatTemplatePreview(template.content),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }
 }
 
-private fun formatTemplatePreview(content: String, maxChars: Int = 60): String {
-    return content.replace("\n", " ").take(maxChars)
-}
+private fun formatTemplatePreview(
+    content: String,
+    maxChars: Int = 60,
+): String = content.replace("\n", " ").take(maxChars)

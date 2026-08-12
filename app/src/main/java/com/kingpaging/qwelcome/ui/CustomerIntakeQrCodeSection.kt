@@ -31,59 +31,62 @@ import com.kingpaging.qwelcome.util.WifiQrGenerator
 internal fun CustomerIntakeQrCodeSection(
     uiState: CustomerIntakeUiState,
     enabled: Boolean,
-    onShowQrClick: () -> Unit
+    onShowQrClick: () -> Unit,
 ) {
-    val qrHint = when {
-        uiState.ssidError != null -> uiState.ssidError
-        !uiState.isOpenNetwork && uiState.passwordError != null -> uiState.passwordError
-        uiState.isOpenNetwork && uiState.ssid.isBlank() -> stringResource(R.string.hint_qr_enter_ssid_open)
-        uiState.isOpenNetwork && uiState.ssid.isNotBlank() ->
-            stringResource(R.string.hint_qr_open_network, uiState.ssid)
-        uiState.ssid.isBlank() && uiState.password.isBlank() -> stringResource(R.string.hint_qr_enter_both)
-        uiState.ssid.isBlank() -> stringResource(R.string.hint_qr_enter_ssid)
-        uiState.password.length < WifiQrGenerator.MIN_PASSWORD_LENGTH ->
-            stringResource(R.string.hint_qr_password_length, uiState.password.length)
-        else -> uiState.ssid
-    }
+    val qrHint =
+        when {
+            uiState.ssidError != null -> uiState.ssidError
+            !uiState.isOpenNetwork && uiState.passwordError != null -> uiState.passwordError
+            uiState.isOpenNetwork && uiState.ssid.isBlank() -> stringResource(R.string.hint_qr_enter_ssid_open)
+            uiState.isOpenNetwork && uiState.ssid.isNotBlank() ->
+                stringResource(R.string.hint_qr_open_network, uiState.ssid)
+            uiState.ssid.isBlank() && uiState.password.isBlank() -> stringResource(R.string.hint_qr_enter_both)
+            uiState.ssid.isBlank() -> stringResource(R.string.hint_qr_enter_ssid)
+            uiState.password.length < WifiQrGenerator.MIN_PASSWORD_LENGTH ->
+                stringResource(R.string.hint_qr_password_length, uiState.password.length)
+            else -> uiState.ssid
+        }
 
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(
-            modifier = Modifier
-                .weight(1f)
-                .semantics(mergeDescendants = true) {}
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .semantics(mergeDescendants = true) {},
         ) {
             Text(
                 stringResource(R.string.header_wifi_qr),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.semantics { heading() }
+                modifier = Modifier.semantics { heading() },
             )
             Text(
                 qrHint,
                 style = MaterialTheme.typography.bodySmall,
-                color = if (enabled) {
-                    MaterialTheme.colorScheme.tertiary
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                },
+                color =
+                    if (enabled) {
+                        MaterialTheme.colorScheme.tertiary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                    },
                 maxLines = 2,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
         }
         NeonButton(
             onClick = onShowQrClick,
             glowColor = MaterialTheme.colorScheme.tertiary,
             style = NeonButtonStyle.TERTIARY,
-            enabled = enabled
+            enabled = enabled,
         ) {
             Icon(
                 Icons.Filled.QrCode2,
                 contentDescription = null,
-                modifier = Modifier.size(18.dp)
+                modifier = Modifier.size(18.dp),
             )
             Spacer(Modifier.width(6.dp))
             Text(stringResource(R.string.action_show_qr))

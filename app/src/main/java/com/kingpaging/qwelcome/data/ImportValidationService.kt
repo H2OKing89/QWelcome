@@ -13,14 +13,13 @@ private const val TEMPLATE_CONTENT_WARNING_LENGTH = 2000
 internal class ImportValidationService(
     private val settingsStore: SettingsStore,
     private val resourceProvider: ResourceProvider,
-    private val json: Json
+    private val json: Json,
 ) {
-
     suspend fun validateImport(jsonString: String): ImportValidationResult {
         val trimmedJson = jsonString.trim()
         if (trimmedJson.isBlank()) {
             return ImportValidationResult.Invalid(
-                resourceProvider.getString(R.string.error_import_empty_input)
+                resourceProvider.getString(R.string.error_import_empty_input),
             )
         }
 
@@ -28,65 +27,68 @@ internal class ImportValidationService(
         val maxSizeLabel = formatBytesAsMb(MAX_IMPORT_SIZE_BYTES.toLong())
         if (trimmedJson.length > MAX_IMPORT_SIZE_BYTES) {
             return ImportValidationResult.Invalid(
-                resourceProvider.getString(R.string.error_import_too_large, maxSizeLabel)
+                resourceProvider.getString(R.string.error_import_too_large, maxSizeLabel),
             )
         }
         val preciseSize = trimmedJson.toByteArray(Charsets.UTF_8).size
         if (preciseSize > MAX_IMPORT_SIZE_BYTES) {
             return ImportValidationResult.Invalid(
-                resourceProvider.getString(R.string.error_import_too_large, maxSizeLabel)
+                resourceProvider.getString(R.string.error_import_too_large, maxSizeLabel),
             )
         }
 
-        val metadata = try {
-            json.decodeFromString<ExportMetadata>(trimmedJson)
-        } catch (e: SerializationException) {
-            Log.e(TAG, "Failed to parse export metadata", e)
-            return ImportValidationResult.Invalid(
-                resourceProvider.getString(R.string.error_import_invalid_json_format, e.message ?: "")
-            )
-        }
+        val metadata =
+            try {
+                json.decodeFromString<ExportMetadata>(trimmedJson)
+            } catch (e: SerializationException) {
+                Log.e(TAG, "Failed to parse export metadata", e)
+                return ImportValidationResult.Invalid(
+                    resourceProvider.getString(R.string.error_import_invalid_json_format, e.message ?: ""),
+                )
+            }
 
         val warnings = mutableListOf<ImportWarning>()
         if (metadata.schemaVersion > MAX_SUPPORTED_SCHEMA_VERSION) {
             warnings.add(
                 ImportWarning.NewerVersion(
                     importVersion = metadata.schemaVersion,
-                    supportedVersion = MAX_SUPPORTED_SCHEMA_VERSION
-                )
+                    supportedVersion = MAX_SUPPORTED_SCHEMA_VERSION,
+                ),
             )
         }
 
         return when (metadata.kind) {
             ExportKind.TEMPLATE_PACK -> parseTemplatePack(trimmedJson, warnings)
             ExportKind.FULL_BACKUP -> parseFullBackup(trimmedJson, warnings)
-            else -> ImportValidationResult.Invalid(
-                resourceProvider.getString(R.string.error_import_unknown_export_kind, metadata.kind)
-            )
+            else ->
+                ImportValidationResult.Invalid(
+                    resourceProvider.getString(R.string.error_import_unknown_export_kind, metadata.kind),
+                )
         }
     }
 
     private suspend fun parseTemplatePack(
         jsonString: String,
-        warnings: MutableList<ImportWarning>
+        warnings: MutableList<ImportWarning>,
     ): ImportValidationResult {
-        val pack = try {
-            json.decodeFromString<TemplatePack>(jsonString)
-        } catch (e: SerializationException) {
-            Log.e(TAG, "Failed to parse template pack", e)
-            return ImportValidationResult.Invalid(
-                resourceProvider.getString(
-                    R.string.error_import_invalid_template_pack_format,
-                    e.message ?: ""
+        val pack =
+            try {
+                json.decodeFromString<TemplatePack>(jsonString)
+            } catch (e: SerializationException) {
+                Log.e(TAG, "Failed to parse template pack", e)
+                return ImportValidationResult.Invalid(
+                    resourceProvider.getString(
+                        R.string.error_import_invalid_template_pack_format,
+                        e.message ?: "",
+                    ),
                 )
-            )
-        }
+            }
 
         warnings.addAll(validateTemplates(pack.templates))
 
         if (pack.templates.isEmpty()) {
             return ImportValidationResult.Invalid(
-                resourceProvider.getString(R.string.error_import_template_pack_empty)
+                resourceProvider.getString(R.string.error_import_template_pack_empty),
             )
         }
 
@@ -96,27 +98,28 @@ internal class ImportValidationService(
         return ImportValidationResult.ValidTemplatePack(
             pack = pack,
             conflicts = conflicts,
-            warnings = warnings
+            warnings = warnings,
         )
     }
 
     private suspend fun parseFullBackup(
         jsonString: String,
-        warnings: MutableList<ImportWarning>
+        warnings: MutableList<ImportWarning>,
     ): ImportValidationResult {
-        val backup = try {
-            json.decodeFromString<FullBackup>(jsonString)
-        } catch (e: SerializationException) {
-            Log.e(TAG, "Failed to parse full backup", e)
-            return ImportValidationResult.Invalid(
-                resourceProvider.getString(R.string.error_import_invalid_backup_format, e.message ?: "")
-            )
-        }
+        val backup =
+            try {
+                json.decodeFromString<FullBackup>(jsonString)
+            } catch (e: SerializationException) {
+                Log.e(TAG, "Failed to parse full backup", e)
+                return ImportValidationResult.Invalid(
+                    resourceProvider.getString(R.string.error_import_invalid_backup_format, e.message ?: ""),
+                )
+            }
 
         warnings.addAll(validateTemplates(backup.templates))
         if (backup.templates.isEmpty()) {
             return ImportValidationResult.Invalid(
-                resourceProvider.getString(R.string.error_import_template_pack_empty)
+                resourceProvider.getString(R.string.error_import_template_pack_empty),
             )
         }
 
@@ -126,7 +129,7 @@ internal class ImportValidationService(
         return ImportValidationResult.ValidFullBackup(
             backup = backup,
             conflicts = conflicts,
-            warnings = warnings
+            warnings = warnings,
         )
     }
 
@@ -148,8 +151,8 @@ internal class ImportValidationService(
                 warnings.add(
                     ImportWarning.LongContent(
                         templateName = template.name,
-                        length = template.content.length
-                    )
+                        length = template.content.length,
+                    ),
                 )
             }
 
@@ -158,8 +161,8 @@ internal class ImportValidationService(
                 warnings.add(
                     ImportWarning.MissingPlaceholders(
                         templateName = template.name,
-                        placeholders = missingPlaceholders
-                    )
+                        placeholders = missingPlaceholders,
+                    ),
                 )
             }
         }
@@ -169,7 +172,7 @@ internal class ImportValidationService(
 
     private fun detectConflicts(
         importTemplates: List<Template>,
-        existingTemplates: List<Template>
+        existingTemplates: List<Template>,
     ): List<TemplateConflict> {
         val existingIds = existingTemplates.associateBy { it.id }
         return importTemplates.mapNotNull { importTemplate ->
@@ -177,7 +180,7 @@ internal class ImportValidationService(
             if (existing != null) {
                 TemplateConflict(
                     importedTemplate = importTemplate,
-                    existingTemplate = existing
+                    existingTemplate = existing,
                 )
             } else {
                 null

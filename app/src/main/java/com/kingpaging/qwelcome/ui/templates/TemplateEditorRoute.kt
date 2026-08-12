@@ -19,7 +19,7 @@ import kotlinx.coroutines.flow.map
 @Composable
 fun TemplateEditorRoute(
     viewModel: TemplateEditorViewModel,
-    onBack: () -> Unit
+    onBack: () -> Unit,
 ) {
     val soundPlayer = LocalSoundPlayer.current
     val context = LocalContext.current
@@ -30,14 +30,15 @@ fun TemplateEditorRoute(
     val template = editorUiState.template
 
     val hasNavigatedBack = remember { mutableStateOf(false) }
-    val safeNavigate: () -> Unit = remember(onBack) {
-        {
-            if (!hasNavigatedBack.value) {
-                hasNavigatedBack.value = true
-                onBack()
+    val safeNavigate: () -> Unit =
+        remember(onBack) {
+            {
+                if (!hasNavigatedBack.value) {
+                    hasNavigatedBack.value = true
+                    onBack()
+                }
             }
         }
-    }
 
     if (!editorUiState.isLoading && template == null) {
         LaunchedEffect(Unit) { safeNavigate() }
@@ -48,30 +49,33 @@ fun TemplateEditorRoute(
     LaunchedEffect(eventEmission) {
         eventEmission?.event?.let { event ->
             when (event) {
-                    is TemplateEditorEvent.TemplateCreated -> {
-                        Toast.makeText(
+                is TemplateEditorEvent.TemplateCreated -> {
+                    Toast
+                        .makeText(
                             context,
                             context.getString(R.string.toast_template_created, event.template.name),
-                            Toast.LENGTH_SHORT
+                            Toast.LENGTH_SHORT,
                         ).show()
-                    }
+                }
 
-                    is TemplateEditorEvent.TemplateUpdated -> {
-                        Toast.makeText(
+                is TemplateEditorEvent.TemplateUpdated -> {
+                    Toast
+                        .makeText(
                             context,
                             context.getString(R.string.toast_template_updated, event.template.name),
-                            Toast.LENGTH_SHORT
+                            Toast.LENGTH_SHORT,
                         ).show()
-                    }
+                }
 
-                    is TemplateEditorEvent.Error -> {
-                        soundPlayer.playBeep()
-                        Toast.makeText(
+                is TemplateEditorEvent.Error -> {
+                    soundPlayer.playBeep()
+                    Toast
+                        .makeText(
                             context,
                             event.message,
-                            Toast.LENGTH_LONG
+                            Toast.LENGTH_LONG,
                         ).show()
-                    }
+                }
             }
         }
     }
@@ -92,6 +96,6 @@ fun TemplateEditorRoute(
         onNewTagInputChange = viewModel::updateNewTagInput,
         onContentChange = viewModel::updateContent,
         onNameErrorChange = viewModel::setNameError,
-        onToggleDiscardDialog = viewModel::toggleDiscardDialog
+        onToggleDiscardDialog = viewModel::toggleDiscardDialog,
     )
 }

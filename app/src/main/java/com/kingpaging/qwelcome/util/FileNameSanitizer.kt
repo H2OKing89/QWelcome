@@ -5,7 +5,10 @@ internal const val FALLBACK_FILE_NAME = "unknown_network"
 internal const val UPDATE_FALLBACK_FILE_NAME = "download.apk"
 private const val MAX_FILE_NAME_LENGTH = 255
 
-internal fun sanitizeFileName(name: String, fallbackFileName: String = FALLBACK_FILE_NAME): String {
+internal fun sanitizeFileName(
+    name: String,
+    fallbackFileName: String = FALLBACK_FILE_NAME,
+): String {
     if (name.isBlank() || name.all { it == '.' }) return fallbackFileName
 
     val sanitized = name.replace(UNSAFE_FILENAME_CHARACTERS, "_").replace("..", "_")
@@ -21,11 +24,12 @@ private fun truncateFileName(name: String): String {
     val base = if (dotIndex > 0) name.substring(0, dotIndex) else name
 
     // Cap an oversized extension too, so the combined result never exceeds the limit.
-    val extension = if (rawExtension.length >= MAX_FILE_NAME_LENGTH) {
-        rawExtension.take(MAX_FILE_NAME_LENGTH)
-    } else {
-        rawExtension
-    }
+    val extension =
+        if (rawExtension.length >= MAX_FILE_NAME_LENGTH) {
+            rawExtension.take(MAX_FILE_NAME_LENGTH)
+        } else {
+            rawExtension
+        }
     val maxBaseLength = (MAX_FILE_NAME_LENGTH - extension.length).coerceAtLeast(0)
     return base.take(maxBaseLength) + extension
 }

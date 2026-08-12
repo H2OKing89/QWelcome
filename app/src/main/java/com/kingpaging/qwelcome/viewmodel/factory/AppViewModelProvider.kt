@@ -18,24 +18,28 @@ import com.kingpaging.qwelcome.viewmodel.templates.TemplateListViewModel
  * Dependency lifetime and construction are owned by [AppContainer]. This factory only
  * adapts that graph to Android's ViewModel creation APIs.
  */
-class AppViewModelProvider(private val container: AppContainer) : ViewModelProvider.Factory {
-
+class AppViewModelProvider(
+    private val container: AppContainer,
+) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
-    override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {
-        return when {
+    override fun <T : ViewModel> create(
+        modelClass: Class<T>,
+        extras: CreationExtras,
+    ): T =
+        when {
             modelClass.isAssignableFrom(CustomerIntakeViewModel::class.java) -> {
                 val savedStateHandle = extras.createSavedStateHandle()
                 CustomerIntakeViewModel(
                     savedStateHandle = savedStateHandle,
                     settingsStore = container.settingsStore,
-                    resourceProvider = container.resourceProvider
+                    resourceProvider = container.resourceProvider,
                 ) as T
             }
             modelClass.isAssignableFrom(SettingsViewModel::class.java) -> {
                 SettingsViewModel(
                     store = container.settingsStore,
                     resourceProvider = container.resourceProvider,
-                    appUpdater = container.appUpdater
+                    appUpdater = container.appUpdater,
                 ) as T
             }
             modelClass.isAssignableFrom(ExportViewModel::class.java) -> {
@@ -43,29 +47,28 @@ class AppViewModelProvider(private val container: AppContainer) : ViewModelProvi
                     repository = container.importExportRepository,
                     settingsStore = container.settingsStore,
                     packageManager = container.packageManager,
-                    contentResolver = container.contentResolver
+                    contentResolver = container.contentResolver,
                 ) as T
             }
             modelClass.isAssignableFrom(ImportViewModel::class.java) -> {
                 ImportViewModel(
                     container.importExportRepository,
-                    container.resourceProvider
+                    container.resourceProvider,
                 ) as T
             }
             modelClass.isAssignableFrom(TemplateListViewModel::class.java) -> {
                 TemplateListViewModel(
                     container.settingsStore,
-                    container.resourceProvider
+                    container.resourceProvider,
                 ) as T
             }
             modelClass.isAssignableFrom(TemplateEditorViewModel::class.java) -> {
                 TemplateEditorViewModel(
                     savedStateHandle = extras.createSavedStateHandle(),
                     settingsStore = container.settingsStore,
-                    resourceProvider = container.resourceProvider
+                    resourceProvider = container.resourceProvider,
                 ) as T
             }
             else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
         }
-    }
 }

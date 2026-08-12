@@ -48,46 +48,49 @@ object ExportKind {
 data class TemplatePack(
     val schemaVersion: Int = EXPORT_SCHEMA_VERSION,
     val kind: String = ExportKind.TEMPLATE_PACK,
-    val exportedAt: String = java.time.Instant.now().toString(),
+    val exportedAt: String =
+        java.time.Instant
+            .now()
+            .toString(),
     val appVersion: String = "1.0.0",
     val templates: List<Template>,
     val defaults: ExportDefaults = ExportDefaults(),
     // Legacy field for backward compatibility - prefer defaults.defaultTemplateId
     @Deprecated("Use defaults.defaultTemplateId instead", ReplaceWith("defaults.defaultTemplateId"))
-    val defaultTemplateId: String? = null
+    val defaultTemplateId: String? = null,
 ) {
     init {
         require(kind == ExportKind.TEMPLATE_PACK) {
             "TemplatePack kind must be '${ExportKind.TEMPLATE_PACK}', got '$kind'"
         }
     }
-    
+
     /**
      * Get the effective default template ID, checking both new and legacy locations.
      */
     @Suppress("DEPRECATION")
-    fun getEffectiveDefaultTemplateId(): String? {
-        return defaults.defaultTemplateId ?: defaultTemplateId
-    }
+    fun getEffectiveDefaultTemplateId(): String? = defaults.defaultTemplateId ?: defaultTemplateId
 
     companion object {
         /**
          * Create a template pack from a list of templates.
          */
         fun create(
-            templates: List<Template>, 
+            templates: List<Template>,
             appVersion: String = "1.0.0",
-            defaultTemplateId: String? = null
-        ): TemplatePack {
-            return TemplatePack(
+            defaultTemplateId: String? = null,
+        ): TemplatePack =
+            TemplatePack(
                 schemaVersion = EXPORT_SCHEMA_VERSION,
                 kind = ExportKind.TEMPLATE_PACK,
-                exportedAt = java.time.Instant.now().toString(),
+                exportedAt =
+                    java.time.Instant
+                        .now()
+                        .toString(),
                 appVersion = appVersion,
                 templates = templates,
-                defaults = ExportDefaults(defaultTemplateId = defaultTemplateId)
+                defaults = ExportDefaults(defaultTemplateId = defaultTemplateId),
             )
-        }
     }
 }
 
@@ -101,7 +104,7 @@ data class ExportedTechProfile(
     val title: String = "",
     @kotlinx.serialization.SerialName("dept") val dept: String = "",
     // Legacy field name for backward compatibility - mapped to dept
-    @kotlinx.serialization.SerialName("area") val area: String = ""
+    @kotlinx.serialization.SerialName("area") val area: String = "",
 ) {
     /**
      * Get the department/area value, preferring dept over legacy area field.
@@ -115,7 +118,7 @@ data class ExportedTechProfile(
  */
 @Serializable
 data class ExportDefaults(
-    val defaultTemplateId: String? = null
+    val defaultTemplateId: String? = null,
 )
 
 /**
@@ -124,7 +127,7 @@ data class ExportDefaults(
  */
 @Serializable
 data class ExportedSettings(
-    val signatureEnabled: Boolean = true
+    val signatureEnabled: Boolean = true,
 )
 
 /**
@@ -155,7 +158,10 @@ data class ExportedSettings(
 data class FullBackup(
     val schemaVersion: Int = EXPORT_SCHEMA_VERSION,
     val kind: String = ExportKind.FULL_BACKUP,
-    val exportedAt: String = java.time.Instant.now().toString(),
+    val exportedAt: String =
+        java.time.Instant
+            .now()
+            .toString(),
     val appVersion: String = "1.0.0",
     val techProfile: ExportedTechProfile,
     val templates: List<Template>,
@@ -163,21 +169,19 @@ data class FullBackup(
     val settings: ExportedSettings? = null,
     // Legacy field for backward compatibility - prefer defaults.defaultTemplateId
     @Deprecated("Use defaults.defaultTemplateId instead", ReplaceWith("defaults.defaultTemplateId"))
-    val defaultTemplateId: String? = null
+    val defaultTemplateId: String? = null,
 ) {
     init {
         require(kind == ExportKind.FULL_BACKUP) {
             "FullBackup kind must be '${ExportKind.FULL_BACKUP}', got '$kind'"
         }
     }
-    
+
     /**
      * Get the effective default template ID, checking both new and legacy locations.
      */
     @Suppress("DEPRECATION")
-    fun getEffectiveDefaultTemplateId(): String? {
-        return defaults.defaultTemplateId ?: defaultTemplateId
-    }
+    fun getEffectiveDefaultTemplateId(): String? = defaults.defaultTemplateId ?: defaultTemplateId
 
     companion object {
         /**
@@ -188,23 +192,26 @@ data class FullBackup(
             templates: List<Template>,
             defaultTemplateId: String? = null,
             appVersion: String = "1.0.0",
-            settings: ExportedSettings? = null
-        ): FullBackup {
-            return FullBackup(
+            settings: ExportedSettings? = null,
+        ): FullBackup =
+            FullBackup(
                 schemaVersion = EXPORT_SCHEMA_VERSION,
                 kind = ExportKind.FULL_BACKUP,
-                exportedAt = java.time.Instant.now().toString(),
+                exportedAt =
+                    java.time.Instant
+                        .now()
+                        .toString(),
                 appVersion = appVersion,
-                techProfile = ExportedTechProfile(
-                    name = techProfile.name,
-                    title = techProfile.title,
-                    dept = techProfile.dept
-                ),
+                techProfile =
+                    ExportedTechProfile(
+                        name = techProfile.name,
+                        title = techProfile.title,
+                        dept = techProfile.dept,
+                    ),
                 templates = templates,
                 defaults = ExportDefaults(defaultTemplateId = defaultTemplateId),
-                settings = settings
+                settings = settings,
             )
-        }
     }
 }
 
@@ -215,14 +222,23 @@ data class FullBackup(
 @Serializable
 data class ExportMetadata(
     val schemaVersion: Int,
-    val kind: String
+    val kind: String,
 )
 
 /**
  * Result of parsing an import string.
  */
 sealed class ImportParseResult {
-    data class TemplatePackResult(val pack: TemplatePack) : ImportParseResult()
-    data class FullBackupResult(val backup: FullBackup) : ImportParseResult()
-    data class Error(val message: String, val cause: Throwable? = null) : ImportParseResult()
+    data class TemplatePackResult(
+        val pack: TemplatePack,
+    ) : ImportParseResult()
+
+    data class FullBackupResult(
+        val backup: FullBackup,
+    ) : ImportParseResult()
+
+    data class Error(
+        val message: String,
+        val cause: Throwable? = null,
+    ) : ImportParseResult()
 }

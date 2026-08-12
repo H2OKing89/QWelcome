@@ -26,18 +26,18 @@ import com.kingpaging.qwelcome.viewmodel.templates.TemplateEditorViewModel
 @Composable
 fun AppNavGraph(
     navController: NavHostController,
-    appContainer: AppContainer
+    appContainer: AppContainer,
 ) {
     NavHost(
         navController = navController,
-        startDestination = Routes.Main
+        startDestination = Routes.Main,
     ) {
         composable<Routes.Main> {
             CustomerIntakeRoute(
                 onOpenSettings = { navController.navigate(Routes.Settings) },
                 onOpenTemplates = {
                     navController.navigate(Routes.TemplateList)
-                }
+                },
             )
         }
 
@@ -48,20 +48,20 @@ fun AppNavGraph(
                 onOpenImport = { navController.navigate(Routes.Import) },
                 onOpenTemplates = {
                     navController.navigate(Routes.TemplateList)
-                }
+                },
             )
         }
 
         composable<Routes.Export> {
             ExportRoute(
-                onBack = { navController.popBackStack() }
+                onBack = { navController.popBackStack() },
             )
         }
 
         composable<Routes.Import> {
             ImportRoute(
                 onBack = { navController.popBackStack() },
-                onImportComplete = { navController.popBackStack() }
+                onImportComplete = { navController.popBackStack() },
             )
         }
 
@@ -73,20 +73,21 @@ fun AppNavGraph(
                 },
                 onOpenEditor = { templateId ->
                     navController.navigate(Routes.TemplateEditor(templateId))
-                }
+                },
             )
         }
 
         composable<Routes.TemplateEditor> {
             // Required because the editor needs the NavBackStackEntry-scoped SavedStateHandle,
             // which the process-wide CompositionLocal cannot provide.
-            val factory = remember(appContainer) {
-                AppViewModelProvider(appContainer)
-            }
+            val factory =
+                remember(appContainer) {
+                    AppViewModelProvider(appContainer)
+                }
             val editorViewModel: TemplateEditorViewModel = viewModel(factory = factory)
             TemplateEditorRoute(
                 viewModel = editorViewModel,
-                onBack = { navController.popBackStack() }
+                onBack = { navController.popBackStack() },
             )
         }
     }
