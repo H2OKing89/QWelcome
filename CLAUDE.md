@@ -31,9 +31,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Architecture Overview
 
-### MVVM with CompositionLocals
+### MVVM with Explicit ViewModel Scopes
 
-ViewModels are provided via `CompositionLocalProvider` in `MainActivity.kt`, **not** passed as parameters:
+`MainActivity.kt` provides the shared `CustomerIntakeViewModel`, `SettingsViewModel`, `TemplateListViewModel`, and `TemplateSelectionViewModel` through `CompositionLocalProvider`:
 
 ```kotlin
 // Access in any composable:
@@ -41,7 +41,7 @@ val viewModel = LocalCustomerIntakeViewModel.current
 val navigator = LocalNavigator.current
 ```
 
-All providers defined in `di/CompositionLocals.kt`.
+`TemplateEditorViewModel`, `ImportViewModel`, and `ExportViewModel` are destination-scoped in `AppNavGraph.kt` and passed directly to their routes. Import and Export intentionally start fresh when their destination is reopened. All shared providers are defined in `di/CompositionLocals.kt`.
 
 ### Data Flow
 
@@ -55,7 +55,7 @@ All providers defined in `di/CompositionLocals.kt`.
 | Class | Purpose |
 |-------|---------|
 | `SettingsStore` | Proto DataStore wrapper for templates, tech profile, settings |
-| `AppViewModelProvider` | Factory with process-wide singleton SettingsStore |
+| `AppViewModelProvider` | Stateless factory backed by the application-owned `AppContainer` |
 | `Template` | Message template with UUID-based ID for conflict detection |
 | `Navigator` | Interface abstracting Android intents for testability |
 
@@ -130,13 +130,10 @@ Custom components: `NeonPanel`, `NeonButton`, `NeonTextField`, `CyberpunkBackdro
 ## Testing
 
 ```kotlin
-// Reset singleton in test setup
-AppViewModelProvider.resetForTesting()
-
 // Mock Navigator for tests
 class FakeNavigator : Navigator { ... }
 
-// Provide in tests via CompositionLocal
+// Provide only shared dependencies in tests via CompositionLocal
 CompositionLocalProvider(LocalNavigator provides FakeNavigator()) { ... }
 ```
 

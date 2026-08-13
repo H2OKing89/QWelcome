@@ -30,15 +30,15 @@ import com.kingpaging.qwelcome.data.protoDataStore
 import com.kingpaging.qwelcome.di.LocalCustomerIntakeViewModel
 import com.kingpaging.qwelcome.di.LocalNavigator
 import com.kingpaging.qwelcome.di.LocalSoundPlayer
-import com.kingpaging.qwelcome.di.LocalTemplateListViewModel
+import com.kingpaging.qwelcome.di.LocalTemplateSelectionViewModel
 import com.kingpaging.qwelcome.testutil.FakeNavigator
 import com.kingpaging.qwelcome.testutil.FakeSoundPlayer
 import com.kingpaging.qwelcome.ui.theme.CyberpunkTheme
 import com.kingpaging.qwelcome.util.AndroidResourceProvider
 import com.kingpaging.qwelcome.util.WifiQrGenerator
 import com.kingpaging.qwelcome.viewmodel.CustomerIntakeViewModel
-import com.kingpaging.qwelcome.viewmodel.templates.TemplateListUiState
-import com.kingpaging.qwelcome.viewmodel.templates.TemplateListViewModel
+import com.kingpaging.qwelcome.viewmodel.templates.TemplateSelectionUiState
+import com.kingpaging.qwelcome.viewmodel.templates.TemplateSelectionViewModel
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertTrue
@@ -56,7 +56,7 @@ class CustomerIntakeScreenTest {
     private val settingsOpened = AtomicBoolean(false)
     private lateinit var appContext: Context
     private lateinit var customerIntakeViewModel: CustomerIntakeViewModel
-    private lateinit var templateListViewModel: TemplateListViewModel
+    private lateinit var templateSelectionViewModel: TemplateSelectionViewModel
     private lateinit var navigator: FakeNavigator
     private lateinit var soundPlayer: FakeSoundPlayer
 
@@ -72,8 +72,8 @@ class CustomerIntakeScreenTest {
                 settingsStore = settingsStore,
                 resourceProvider = AndroidResourceProvider(appContext),
             )
-        templateListViewModel =
-            TemplateListViewModel(
+        templateSelectionViewModel =
+            TemplateSelectionViewModel(
                 settingsStore,
                 AndroidResourceProvider(appContext),
             )
@@ -111,7 +111,7 @@ class CustomerIntakeScreenTest {
             CyberpunkTheme {
                 CustomerIntakeScreen(
                     uiState = CustomerIntakeUiState(customerName = "Supplied customer"),
-                    templateUiState = TemplateListUiState(isLoading = false),
+                    templateUiState = TemplateSelectionUiState(isLoading = false),
                     snackbarHostState = remember { SnackbarHostState() },
                     formFocusTargets = remember { CustomerFormFocusTargets() },
                     copySuccess = false,
@@ -201,7 +201,7 @@ class CustomerIntakeScreenTest {
             CyberpunkTheme {
                 CompositionLocalProvider(
                     LocalCustomerIntakeViewModel provides customerIntakeViewModel,
-                    LocalTemplateListViewModel provides templateListViewModel,
+                    LocalTemplateSelectionViewModel provides templateSelectionViewModel,
                     LocalNavigator provides navigator,
                     LocalSoundPlayer provides soundPlayer,
                 ) {

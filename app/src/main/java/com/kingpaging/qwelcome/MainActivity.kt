@@ -19,23 +19,21 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
 import com.kingpaging.qwelcome.di.AppContainer
 import com.kingpaging.qwelcome.di.LocalCustomerIntakeViewModel
-import com.kingpaging.qwelcome.di.LocalExportViewModel
-import com.kingpaging.qwelcome.di.LocalImportViewModel
 import com.kingpaging.qwelcome.di.LocalNavigator
 import com.kingpaging.qwelcome.di.LocalSettingsViewModel
 import com.kingpaging.qwelcome.di.LocalSoundPlayer
 import com.kingpaging.qwelcome.di.LocalTemplateListViewModel
+import com.kingpaging.qwelcome.di.LocalTemplateSelectionViewModel
 import com.kingpaging.qwelcome.navigation.AndroidNavigator
 import com.kingpaging.qwelcome.navigation.AppNavGraph
 import com.kingpaging.qwelcome.navigation.Navigator
 import com.kingpaging.qwelcome.ui.theme.CyberpunkTheme
 import com.kingpaging.qwelcome.util.SoundManager
 import com.kingpaging.qwelcome.viewmodel.CustomerIntakeViewModel
-import com.kingpaging.qwelcome.viewmodel.export.ExportViewModel
 import com.kingpaging.qwelcome.viewmodel.factory.AppViewModelProvider
-import com.kingpaging.qwelcome.viewmodel.import_pkg.ImportViewModel
 import com.kingpaging.qwelcome.viewmodel.settings.SettingsViewModel
 import com.kingpaging.qwelcome.viewmodel.templates.TemplateListViewModel
+import com.kingpaging.qwelcome.viewmodel.templates.TemplateSelectionViewModel
 
 class MainActivity : ComponentActivity() {
     private lateinit var navigator: Navigator
@@ -67,15 +65,11 @@ class MainActivity : ComponentActivity() {
                 viewModel(
                     factory = appViewModelFactory,
                 )
-            val exportViewModel: ExportViewModel =
-                viewModel(
-                    factory = appViewModelFactory,
-                )
-            val importViewModel: ImportViewModel =
-                viewModel(
-                    factory = appViewModelFactory,
-                )
             val templateListViewModel: TemplateListViewModel =
+                viewModel(
+                    factory = appViewModelFactory,
+                )
+            val templateSelectionViewModel: TemplateSelectionViewModel =
                 viewModel(
                     factory = appViewModelFactory,
                 )
@@ -100,9 +94,8 @@ class MainActivity : ComponentActivity() {
                 CompositionLocalProvider(
                     LocalCustomerIntakeViewModel provides customerIntakeViewModel,
                     LocalSettingsViewModel provides settingsViewModel,
-                    LocalExportViewModel provides exportViewModel,
-                    LocalImportViewModel provides importViewModel,
                     LocalTemplateListViewModel provides templateListViewModel,
+                    LocalTemplateSelectionViewModel provides templateSelectionViewModel,
                     LocalSoundPlayer provides SoundManager,
                     LocalNavigator provides navigator,
                 ) {

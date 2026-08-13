@@ -18,10 +18,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.data.MAX_IMPORT_SIZE_BYTES
 import com.kingpaging.qwelcome.data.formatBytesAsMb
-import com.kingpaging.qwelcome.di.LocalImportViewModel
 import com.kingpaging.qwelcome.di.LocalSoundPlayer
 import com.kingpaging.qwelcome.ui.EventEmission
 import com.kingpaging.qwelcome.viewmodel.import_pkg.ImportEvent
+import com.kingpaging.qwelcome.viewmodel.import_pkg.ImportViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -32,10 +32,10 @@ import java.io.IOException
 @Suppress("CyclomaticComplexMethod", "FunctionNaming", "LongMethod", "TooGenericExceptionCaught")
 @Composable
 fun ImportRoute(
+    viewModel: ImportViewModel,
     onBack: () -> Unit,
     onImportComplete: () -> Unit,
 ) {
-    val viewModel = LocalImportViewModel.current
     val soundPlayer = LocalSoundPlayer.current
     val context = LocalContext.current
     val resources = LocalResources.current

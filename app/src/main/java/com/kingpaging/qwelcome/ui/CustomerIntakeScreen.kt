@@ -35,7 +35,7 @@ import com.kingpaging.qwelcome.ui.components.QWelcomeHeader
 import com.kingpaging.qwelcome.ui.components.QrCodeBottomSheet
 import com.kingpaging.qwelcome.util.WifiQrGenerator
 import com.kingpaging.qwelcome.util.rememberHapticFeedback
-import com.kingpaging.qwelcome.viewmodel.templates.TemplateListUiState
+import com.kingpaging.qwelcome.viewmodel.templates.TemplateSelectionUiState
 
 internal class FormFieldFocusTarget {
     val focusRequester = FocusRequester()
@@ -82,7 +82,7 @@ internal data class CustomerIntakeActions(
 @Composable
 internal fun CustomerIntakeScreen(
     uiState: CustomerIntakeUiState,
-    templateUiState: TemplateListUiState,
+    templateUiState: TemplateSelectionUiState,
     snackbarHostState: SnackbarHostState,
     formFocusTargets: CustomerFormFocusTargets,
     copySuccess: Boolean,

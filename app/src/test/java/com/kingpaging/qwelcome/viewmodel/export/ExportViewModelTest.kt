@@ -360,20 +360,26 @@ class ExportViewModelTest {
         }
 
     @Test
-    fun `reset clears all state`() =
+    fun `file save cancellation allows another file request`() =
         runTest {
             coEvery { mockRepo.exportFullBackup() } returns
                 ExportResult.Success(json = "{}", templateCount = 1)
 
-            vm.exportFullBackup()
-            advanceUntilIdle()
+            vm.events.test {
+                vm.exportFullBackup()
+                advanceUntilIdle()
+                assertTrue(awaitItem() is ExportEvent.ExportSuccess)
 
-            vm.reset()
+                vm.onSaveToFileRequested()
+                advanceUntilIdle()
+                assertTrue(awaitItem() is ExportEvent.RequestFileSave)
 
-            val state = vm.uiState.value
-            assertNull(state.lastExportedJson)
-            assertNull(state.lastExportType)
-            assertFalse(state.isExporting)
+                vm.onFileSaveCancelled()
+
+                vm.onSaveToFileRequested()
+                advanceUntilIdle()
+                assertTrue(awaitItem() is ExportEvent.RequestFileSave)
+            }
         }
 
     @Test

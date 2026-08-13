@@ -23,11 +23,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.ui.components.NeonDropdownMenuBox
-import com.kingpaging.qwelcome.viewmodel.templates.TemplateListUiState
+import com.kingpaging.qwelcome.viewmodel.templates.TemplateSelectionUiState
 
 @Composable
 internal fun CustomerIntakeTemplateSelector(
-    templateUiState: TemplateListUiState,
+    templateUiState: TemplateSelectionUiState,
     expanded: Boolean,
     onExpandedChange: (Boolean) -> Unit,
     onTemplateSelected: (String) -> Unit,

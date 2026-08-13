@@ -110,7 +110,7 @@ class TemplateListViewModelTest {
     @Test
     fun `setActiveTemplate calls store and emits event`() =
         runTest {
-            vm.eventsFor(TemplateListEventOwner.LIBRARY).test {
+            vm.events.test {
                 vm.setActiveTemplate("650e8400-e29b-41d4-a716-446655440001")
                 advanceUntilIdle()
 
@@ -125,7 +125,7 @@ class TemplateListViewModelTest {
     @Test
     fun `duplicateTemplate saves copy and emits TemplateDuplicated event`() =
         runTest {
-            vm.eventsFor(TemplateListEventOwner.LIBRARY).test {
+            vm.events.test {
                 vm.duplicateTemplate(userTemplate)
                 advanceUntilIdle()
 
@@ -139,7 +139,7 @@ class TemplateListViewModelTest {
     @Test
     fun `duplicateAndEdit emits duplicate event flagged to open editor`() =
         runTest {
-            vm.eventsFor(TemplateListEventOwner.LIBRARY).test {
+            vm.events.test {
                 vm.duplicateAndEdit(userTemplate)
                 advanceUntilIdle()
 
@@ -153,7 +153,7 @@ class TemplateListViewModelTest {
     @Test
     fun `duplicateAndEdit emits editor events for rapid requests`() =
         runTest {
-            vm.eventsFor(TemplateListEventOwner.LIBRARY).test {
+            vm.events.test {
                 repeat(3) {
                     vm.duplicateAndEdit(userTemplate)
                 }
@@ -272,7 +272,7 @@ class TemplateListViewModelTest {
                     listOf("{{ customer_name }}", "{{ ssid }}"),
                 )
 
-            vm.eventsFor(TemplateListEventOwner.LIBRARY).test {
+            vm.events.test {
                 vm.setActiveTemplate(invalidTemplate.id)
                 advanceUntilIdle()
 
@@ -294,7 +294,7 @@ class TemplateListViewModelTest {
                 )
             coEvery { mockStore.undoTemplateSelection(change) } returns true
 
-            vm.eventsFor(TemplateListEventOwner.LIBRARY).test {
+            vm.events.test {
                 vm.undoTemplateSelection(change)
                 advanceUntilIdle()
 
@@ -308,7 +308,7 @@ class TemplateListViewModelTest {
         runTest {
             coEvery { mockStore.getTemplate(userTemplate.id) } returns userTemplate.copy(tags = listOf("Install"))
 
-            vm.eventsFor(TemplateListEventOwner.LIBRARY).test {
+            vm.events.test {
                 vm.renameTemplate(userTemplate.id, "  Priority Install  ")
                 advanceUntilIdle()
 

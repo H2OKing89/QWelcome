@@ -13,7 +13,9 @@ import com.kingpaging.qwelcome.ui.import_pkg.ImportRoute
 import com.kingpaging.qwelcome.ui.settings.SettingsRoute
 import com.kingpaging.qwelcome.ui.templates.TemplateEditorRoute
 import com.kingpaging.qwelcome.ui.templates.TemplateListRoute
+import com.kingpaging.qwelcome.viewmodel.export.ExportViewModel
 import com.kingpaging.qwelcome.viewmodel.factory.AppViewModelProvider
+import com.kingpaging.qwelcome.viewmodel.import_pkg.ImportViewModel
 import com.kingpaging.qwelcome.viewmodel.templates.TemplateEditorViewModel
 
 /**
@@ -53,13 +55,25 @@ fun AppNavGraph(
         }
 
         composable<Routes.Export> {
+            val factory =
+                remember(appContainer) {
+                    AppViewModelProvider(appContainer)
+                }
+            val exportViewModel: ExportViewModel = viewModel(factory = factory)
             ExportRoute(
+                viewModel = exportViewModel,
                 onBack = { navController.popBackStack() },
             )
         }
 
         composable<Routes.Import> {
+            val factory =
+                remember(appContainer) {
+                    AppViewModelProvider(appContainer)
+                }
+            val importViewModel: ImportViewModel = viewModel(factory = factory)
             ImportRoute(
+                viewModel = importViewModel,
                 onBack = { navController.popBackStack() },
                 onImportComplete = { navController.popBackStack() },
             )
