@@ -36,7 +36,7 @@ class TemplateSelectionViewModelTest {
         )
     private val invalidTemplate =
         Template(
-            id = "invalid-template",
+            id = "650e8400-e29b-41d4-a716-446655440002",
             name = "Invalid",
             content = "Hello",
         )
