@@ -11,6 +11,7 @@ import com.kingpaging.qwelcome.viewmodel.import_pkg.ImportViewModel
 import com.kingpaging.qwelcome.viewmodel.settings.SettingsViewModel
 import com.kingpaging.qwelcome.viewmodel.templates.TemplateEditorViewModel
 import com.kingpaging.qwelcome.viewmodel.templates.TemplateListViewModel
+import com.kingpaging.qwelcome.viewmodel.templates.TemplateSelectionViewModel
 
 /**
  * Provides ViewModels with shared dependencies.
@@ -58,6 +59,12 @@ class AppViewModelProvider(
             }
             modelClass.isAssignableFrom(TemplateListViewModel::class.java) -> {
                 TemplateListViewModel(
+                    container.settingsStore,
+                    container.resourceProvider,
+                ) as T
+            }
+            modelClass.isAssignableFrom(TemplateSelectionViewModel::class.java) -> {
+                TemplateSelectionViewModel(
                     container.settingsStore,
                     container.resourceProvider,
                 ) as T

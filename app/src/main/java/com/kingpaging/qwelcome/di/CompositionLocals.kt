@@ -4,10 +4,8 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import com.kingpaging.qwelcome.navigation.Navigator
 import com.kingpaging.qwelcome.util.SoundPlayer
 import com.kingpaging.qwelcome.viewmodel.CustomerIntakeViewModel
-import com.kingpaging.qwelcome.viewmodel.export.ExportViewModel
-import com.kingpaging.qwelcome.viewmodel.import_pkg.ImportViewModel
 import com.kingpaging.qwelcome.viewmodel.settings.SettingsViewModel
-import com.kingpaging.qwelcome.viewmodel.templates.TemplateListViewModel
+import com.kingpaging.qwelcome.viewmodel.templates.TemplateSelectionViewModel
 
 /*
  * CompositionLocal providers for dependency injection in Compose.
@@ -54,30 +52,12 @@ val LocalSettingsViewModel =
     }
 
 /**
- * Provides the ExportViewModel throughout the composition.
+ * Provides the focused template-selection state used by Customer Intake.
  * Throws if accessed before being provided (fail-fast for configuration errors).
  */
-val LocalExportViewModel =
-    staticCompositionLocalOf<ExportViewModel> {
-        error("ExportViewModel not provided. Wrap your composable with CompositionLocalProvider.")
-    }
-
-/**
- * Provides the ImportViewModel throughout the composition.
- * Throws if accessed before being provided (fail-fast for configuration errors).
- */
-val LocalImportViewModel =
-    staticCompositionLocalOf<ImportViewModel> {
-        error("ImportViewModel not provided. Wrap your composable with CompositionLocalProvider.")
-    }
-
-/**
- * Provides the TemplateListViewModel throughout the composition.
- * Throws if accessed before being provided (fail-fast for configuration errors).
- */
-val LocalTemplateListViewModel =
-    staticCompositionLocalOf<TemplateListViewModel> {
-        error("TemplateListViewModel not provided. Wrap your composable with CompositionLocalProvider.")
+val LocalTemplateSelectionViewModel =
+    staticCompositionLocalOf<TemplateSelectionViewModel> {
+        error("TemplateSelectionViewModel not provided. Wrap your composable with CompositionLocalProvider.")
     }
 
 /**

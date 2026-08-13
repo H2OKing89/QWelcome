@@ -45,6 +45,19 @@ Treat Kotlin, the Kotlin Compose plugin, Android Gradle Plugin, Gradle wrapper, 
 
 The Compose BOM controls the versions of Compose UI, foundation, Material 3, testing, and tooling artifacts. Update the BOM first, retain versionless Compose dependency declarations, and run both lint and connected tests because API or rendering changes can affect Compose behavior.
 
+### AndroidX Test
+
+Keep the `androidx.test.services:test-services` utility APK aligned with the `androidx.test.services:storage` version pulled transitively by AndroidX Test Runner. Verify the resolved storage version after updating JUnit, Espresso, Compose test libraries, or AGP:
+
+```bash
+./gradlew :app:dependencyInsight \
+  --dependency androidx.test.services:storage \
+  --configuration debugAndroidTestRuntimeClasspath \
+  --single-path
+```
+
+Run a connected test after changing this group. Without the matching utility APK in `androidTestUtil`, AGP's Unified Test Platform attempts to grant an app-op before `androidx.test.services` has a device UID.
+
 ### Proto and DataStore
 
 The repository uses the `com.google.protobuf` Gradle plugin and a checked-in `.proto` schema. For a major schema or plugin change:

@@ -20,22 +20,25 @@ flowchart TD
 
     Activity[MainActivity] --> ActivityFactory[AppViewModelProvider]
     Container -. supplies dependencies .-> ActivityFactory
-    ActivityFactory --> ActivityViewModels[Activity-scoped feature ViewModels]
+    ActivityFactory --> ActivityViewModels[Activity-scoped shared ViewModels]
 
-    NavGraph[AppNavGraph] --> EditorFactory[AppViewModelProvider]
-    Container -. supplies dependencies .-> EditorFactory
-    EditorFactory --> Editor[Destination-scoped TemplateEditorViewModel]
+    NavGraph[AppNavGraph] --> DestinationFactory[AppViewModelProvider]
+    Container -. supplies dependencies .-> DestinationFactory
+    DestinationFactory --> DestinationViewModels[Destination-scoped feature ViewModels]
 ```
 
 `AppViewModelProvider` is a stateless adapter from `AppContainer` to Android's `ViewModelProvider.Factory` API. `MainActivity` creates it and uses it to create these Activity-scoped ViewModels:
 
 - `CustomerIntakeViewModel`
 - `SettingsViewModel`
-- `ExportViewModel`
-- `ImportViewModel`
-- `TemplateListViewModel`
+- `TemplateSelectionViewModel`
 
-`AppNavGraph` creates its own factory and `TemplateEditorViewModel` at the template-editor destination. That scope gives the ViewModel the navigation back-stack entry's `SavedStateHandle`, which is required to restore the selected template or the `NEW_TEMPLATE_ID` creation sentinel.
+`AppNavGraph` creates its own factory for destination-scoped ViewModels:
+
+- `TemplateEditorViewModel` receives the navigation back-stack entry's `SavedStateHandle` to restore the selected template or `NEW_TEMPLATE_ID` creation sentinel.
+- `TemplateListViewModel` keeps library state while the editor is above its back-stack entry. After the library is popped or the process is recreated, persisted templates reload from `SettingsStore` while transient search and tag filters start fresh.
+- `ImportViewModel` and `ExportViewModel` intentionally start fresh when their routes are reopened or recreated after process loss, so staged import data, export results, selections, and pending file actions do not outlive their destination.
+- Import and Export picker effects replay only until their route handles them. The route clears each replayed effect in `finally`, preventing lifecycle STOP/START transitions from launching the same external picker twice.
 
 Use `applicationContext` for process-scoped dependencies and callback work that can outlive its callback. `MainActivity` retains its Activity context for UI operations. `ShareTargetChosenReceiver` passes `context.applicationContext` to `SettingsStore` before its asynchronous work continues.
 
@@ -54,9 +57,9 @@ flowchart LR
 ```
 
 - Screens render plain UI state and callbacks. They do not obtain ViewModels themselves.
-- Routes obtain the Activity-scoped ViewModels through `CompositionLocal`s, collect state with `collectAsStateWithLifecycle()`, and handle one-shot effects.
-- `MainActivity` provides the shared feature ViewModels, `Navigator`, and `SoundPlayer` through `CompositionLocalProvider`.
-- `TemplateEditorRoute` is the exception by design: the navigation graph supplies its destination-scoped ViewModel directly.
+- Routes obtain shared Activity-scoped ViewModels through `CompositionLocal`s or receive destination-scoped ViewModels directly from `AppNavGraph`, then collect state with `collectAsStateWithLifecycle()` and handle one-shot effects.
+- `MainActivity` provides the shared `CustomerIntakeViewModel`, `SettingsViewModel`, `TemplateSelectionViewModel`, `Navigator`, and `SoundPlayer` through `CompositionLocalProvider`.
+- `TemplateListRoute`, `TemplateEditorRoute`, `ImportRoute`, and `ExportRoute` receive destination-scoped ViewModels directly from the navigation graph.
 - Persistent UI state belongs in a `StateFlow`. Transient actions such as snackbars and external intents use feature-specific `SharedFlow` effects.
 
 Navigation routes are type-safe Kotlin serialization types in `navigation/Routes.kt`. `Routes.TemplateEditor(templateId)` carries editor identity in the route, rather than storing it in the template-list state.
@@ -89,6 +92,6 @@ Template rules are enforced at the data boundary:
 
 - [QWelcomeApplication](../app/src/main/java/com/kingpaging/qwelcome/QWelcomeApplication.kt) initializes process-wide behavior.
 - [AppContainer](../app/src/main/java/com/kingpaging/qwelcome/di/AppContainer.kt) defines process dependencies.
-- [MainActivity](../app/src/main/java/com/kingpaging/qwelcome/MainActivity.kt) owns Activity-scoped ViewModels and CompositionLocals.
-- [AppNavGraph](../app/src/main/java/com/kingpaging/qwelcome/navigation/AppNavGraph.kt) owns navigation and the editor destination scope.
+- [MainActivity](../app/src/main/java/com/kingpaging/qwelcome/MainActivity.kt) owns the shared Activity-scoped ViewModels and CompositionLocals.
+- [AppNavGraph](../app/src/main/java/com/kingpaging/qwelcome/navigation/AppNavGraph.kt) owns navigation and destination-scoped feature ViewModels.
 - [SettingsStore](../app/src/main/java/com/kingpaging/qwelcome/data/SettingsStore.kt) owns persistence operations.

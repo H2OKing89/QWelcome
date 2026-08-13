@@ -14,11 +14,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.di.LocalSoundPlayer
-import com.kingpaging.qwelcome.di.LocalTemplateListViewModel
 import com.kingpaging.qwelcome.ui.EventEmission
 import com.kingpaging.qwelcome.util.SoundPlayer
 import com.kingpaging.qwelcome.viewmodel.templates.TemplateListEvent
-import com.kingpaging.qwelcome.viewmodel.templates.TemplateListEventOwner
 import com.kingpaging.qwelcome.viewmodel.templates.TemplateListViewModel
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -26,10 +24,10 @@ import kotlinx.coroutines.launch
 @Suppress("FunctionNaming")
 @Composable
 fun TemplateListRoute(
+    viewModel: TemplateListViewModel,
     onBack: () -> Unit,
     onOpenEditor: (String) -> Unit,
 ) {
-    val viewModel = LocalTemplateListViewModel.current
     val soundPlayer = LocalSoundPlayer.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -72,7 +70,7 @@ private fun CollectTemplateListEffects(
     val currentOnOpenEditor by rememberUpdatedState(onOpenEditor)
     val scope = rememberCoroutineScope()
     val eventEmission by remember(viewModel) {
-        viewModel.eventsFor(TemplateListEventOwner.LIBRARY).map(::EventEmission)
+        viewModel.events.map(::EventEmission)
     }.collectAsStateWithLifecycle(initialValue = null)
 
     LaunchedEffect(eventEmission) {

@@ -52,6 +52,7 @@ The 2026-08-10 baseline remains an historical audit snapshot. At this review, th
 5. Investigate the Protobuf Gradle plugin's Gradle 10 compatibility warning when a compatible upgrade is available.
 6. Keep broad Samsung Compose validation in fresh class batches until the UTP/device issue is resolved; continue using emulator CI as the merge gate.
 7. Evaluate destination-scoping the remaining activity-scoped feature ViewModels, starting with Import and Export; preserve their intended reset and restoration semantics before changing their lifetimes.
+8. Establish a theme-token boundary for mode-specific visual effects, complete the branded Material typography scale, and add JVM contrast checks before considering additional themes or a user preference.
 
 ## Principles
 
@@ -468,15 +469,40 @@ The release workflow now verifies that a `vX.Y.Z` tag matches `VERSION_NAME`, re
 - [x] Harden release version verification.
 - [x] Add architecture, dependency-update, and troubleshooting guides.
 
-### Milestone 7: Feature ViewModel lifetime reassessment (Candidate)
+### Milestone 7: Feature ViewModel lifetime reassessment (Complete 2026-08-12)
 
-Five feature ViewModels are constructed at the activity and provided through `CompositionLocals`, while the template editor is already destination-scoped with a navigation `ViewModelStoreOwner`. This is an opportunity to reduce eager construction and make feature state lifetime more explicit, but it is not a mechanical replacement: Import currently resets on cancellation, Export retains an unused reset method, and Customer Intake reads template state from `TemplateListViewModel`.
+Import, Export, Template Library, and Template Editor are destination-scoped with a navigation `ViewModelStoreOwner`, while Customer Intake, Settings, and focused template selection remain activity-scoped. The lifetime split is now explicit, but further migration is not mechanical: Customer Intake has lifecycle-sensitive form state, and Settings participates in activity-level screen-capture protection.
 
-- [ ] Define the desired restoration and cancellation behavior for Import and Export before moving either from activity scope. Start with these independent routes as a focused pilot, using the template editor's destination-scoped creation pattern.
-- [ ] Verify route lifecycle, activity-result, process-restoration, and one-shot-effect behavior with focused tests for each migrated feature.
-- [ ] Define a focused template-selection boundary for Customer Intake before changing its scope; do not retain its dependency on the full Template Library ViewModel by accident.
-- [ ] Update `CLAUDE.md` after the scoping decision so contributor guidance accurately distinguishes activity-scoped and destination-scoped ViewModels, and remove its obsolete singleton/reset-for-testing description.
-- [ ] Keep the current package layout unless a concrete ownership or build-time problem justifies a feature-first reorganization.
+- [x] Define the desired restoration and cancellation behavior for Import and Export: both start fresh when reopened, so staged imports, export results, selections, pending file actions, and transient effects end with their destination.
+- [x] Cover Export document-picker cancellation at the Route boundary: a cancelled picker clears the pending export and allows a second save request.
+- [x] Cover Import file-picker URI handoff at the Route boundary: a selected `content://` URI is read, validated, and presented for confirmation.
+- [x] Verify route lifecycle, activity-result, process-restoration, and one-shot-effect behavior with focused tests for each migrated feature. Import and Export picker effects survive a stopped route, are consumed exactly once after resume, and do not relaunch on a second lifecycle restart. Fresh ViewModel tests define the intentional process-loss reset contract.
+- [x] Define a focused template-selection boundary for Customer Intake: `TemplateSelectionViewModel` owns only selectable templates, active selection, and selection feedback, while `TemplateListViewModel` remains library-only.
+- [x] Destination-scope `TemplateListViewModel`: preserve the same library instance while Template Editor is above it, then create a fresh instance after the library is popped and reopened.
+- [x] Cover both Template Library lifetime cases with focused navigation instrumentation tests on the physical Samsung test device.
+- [x] Retain Customer Intake, Settings, and focused template selection at activity scope: Intake has explicit pause/resume behavior, Settings drives activity-level screen-capture protection, and template selection is shared with Intake.
+- [x] Update `CLAUDE.md` after the scoping decision so contributor guidance accurately distinguishes activity-scoped and destination-scoped ViewModels, and removes its obsolete singleton/reset-for-testing description.
+- [x] Keep the current package layout; this reassessment found no concrete ownership or build-time problem that justifies a feature-first reorganization.
+
+### Milestone 8: Theme tokens and outdoor readability (Candidate)
+
+Fourteen production files currently read `LocalDarkTheme`, with components deciding mode-specific glow, borders, elevation, opacity, and backdrop presentation themselves. That works for the current light/dark pair but makes another visual theme a cross-component migration. `CyberpunkTheme` also supplies no Material `shapes` set; its `CyberTypography` defines six of Material 3's twelve styles; and `CyberpunkBackdrop` duplicates palette literals instead of consuming theme values.
+
+- [ ] Delete the unused `CyberColors` object and deprecated `CyberScheme` accessor after confirming no external source-set or documentation dependency remains.
+- [ ] Define theme-owned effect tokens for the visual decisions now selected by `if (isDark)`, then migrate one component family at a time so components consume tokens rather than theme mode. Keep standard colors in `MaterialTheme.colorScheme` and semantic extras in `LocalCyberColors`.
+- [ ] Define all twelve Material 3 typography styles with the app's display and body font families. Preserve the existing dark-mode text-glow intent through the theme layer, and avoid broad text-size changes as part of this correction.
+- [ ] Introduce a shared Material `Shapes` set only after specifying the intended corner language. Replace repeated shape literals incrementally; do not use a bulk replacement to force unrelated controls into one shape.
+- [ ] Move backdrop palette and grid-effect values to theme-owned tokens so they cannot drift from the active color scheme. Consider a spacing scale only where repeated layout values show an actual consistency or density problem.
+- [ ] Add pure JVM contrast-ratio tests for text/background and semantic color pairs in every supported scheme. Use failures to tune tokens rather than relying only on visual inspection.
+- [ ] Validate whether technicians need a persistent System/Light/Dark preference for outdoor readability before extending the Proto schema and Settings UI. If adopted, persist the preference, retain a system default, and test migration plus theme selection.
+
+**Acceptance criteria:**
+
+- Adding a supported visual theme does not require individual components to branch on a light/dark boolean for presentation.
+- Every Material typography slot uses an intentional Q Welcome text style.
+- Backdrop colors and effects derive from the active theme rather than duplicate palette literals.
+- Every supported scheme has automated contrast checks for its defined semantic pairs.
+- A persisted theme override exists only after the product decision and migration behavior are explicitly defined.
 
 ## Verification Commands
 
@@ -512,3 +538,8 @@ Run device tests when an emulator or device is available:
 - 2026-08-10: Completed Milestone 4 by splitting reusable component families and Settings, Export, Import, and QR-sheet presentation into focused UI components with Compose coverage.
 - 2026-08-10: Completed Milestone 5 by introducing an application-owned `AppContainer`, removing static provider state and test resets, and retaining manual dependency construction after reassessing Hilt.
 - 2026-08-10: Completed Milestone 6 with emulator smoke and full-suite automation, focused Detekt conventions and baseline pruning, weekly Dependabot updates, fail-fast release metadata checks, and contributor architecture, dependency, and troubleshooting guides.
+- 2026-08-12: Started Milestone 7 by destination-scoping Import and Export, defining fresh-on-return behavior, and removing their Activity `CompositionLocal` providers.
+- 2026-08-12: Added Samsung-verified navigation scope coverage and Export document-picker cancellation coverage for the destination-scoped routes.
+- 2026-08-12: Added Samsung-verified Import file-picker URI handoff coverage with an instrumentation-only content provider fixture.
+- 2026-08-12: Added exact one-shot picker-launch assertions and split Customer Intake template selection from Template Library state, with focused unit and Samsung instrumentation coverage.
+- 2026-08-12: Completed Milestone 7 by destination-scoping Template Library, verifying retained/recreated back-stack lifetimes, proving picker effects survive one lifecycle restart without duplicate launches, and defining fresh process-recreation state contracts.

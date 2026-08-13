@@ -56,6 +56,8 @@ adb devices
 
 CI runs a focused emulator smoke suite on pull requests and pushes, while scheduled or manually dispatched runs execute the full suite. Test reports are uploaded as workflow artifacts after every CI test job.
 
+Connected tests install `androidx.test.services:test-services` temporarily through the `androidTestUtil` configuration. AGP's Unified Test Platform grants this package `MANAGE_EXTERNAL_STORAGE` during setup and removes the utility APK during cleanup. Keep its version aligned with the `androidx.test.services:storage` version resolved by AndroidX Test Runner. If the dependency is removed or mismatched, physical-device runs can print `No UID for androidx.test.services in user 0` before otherwise successful tests.
+
 If an individual Compose test is unstable on a physical device, run its class in a fresh instrumentation process before treating it as a code regression. The Gradle task supports test filtering:
 
 ```bash

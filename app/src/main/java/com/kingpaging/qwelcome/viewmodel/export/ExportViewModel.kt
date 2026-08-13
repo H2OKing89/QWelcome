@@ -359,18 +359,6 @@ class ExportViewModel(
         _events.resetReplayCache()
     }
 
-    /**
-     * Reset the ViewModel state when entering the screen.
-     * Clears any stale events from the replay cache.
-     */
-    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-    fun reset() {
-        val recentTargets = _uiState.value.recentShareTargets
-        _uiState.value = ExportUiState(recentShareTargets = recentTargets)
-        pendingFileExport.value = null
-        clearReplayedEvent()
-    }
-
     private fun observeRecentShareTargets() {
         viewModelScope.launch(Dispatchers.IO) {
             settingsStore.recentSharePackagesFlow.collect { packages ->

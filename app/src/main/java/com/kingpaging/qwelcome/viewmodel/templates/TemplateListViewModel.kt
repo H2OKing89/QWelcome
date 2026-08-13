@@ -11,14 +11,13 @@ import com.kingpaging.qwelcome.data.TemplateSelectionChange
 import com.kingpaging.qwelcome.data.TemplateSelectionResult
 import com.kingpaging.qwelcome.util.ResourceProvider
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -109,16 +108,6 @@ sealed class TemplateListEvent {
     ) : TemplateListEvent()
 }
 
-enum class TemplateListEventOwner {
-    INTAKE,
-    LIBRARY,
-}
-
-private data class OwnedTemplateListEvent(
-    val owner: TemplateListEventOwner,
-    val event: TemplateListEvent,
-)
-
 /**
  * ViewModel for the template list/management screen.
  * Handles CRUD operations for templates.
@@ -130,12 +119,8 @@ class TemplateListViewModel(
     private val _uiState = MutableStateFlow(TemplateListUiState())
     val uiState: StateFlow<TemplateListUiState> = _uiState.asStateFlow()
 
-    private val events = MutableSharedFlow<OwnedTemplateListEvent>(replay = 0, extraBufferCapacity = 1)
-
-    fun eventsFor(owner: TemplateListEventOwner): Flow<TemplateListEvent> =
-        events
-            .filter { it.owner == owner }
-            .map { it.event }
+    private val _events = MutableSharedFlow<TemplateListEvent>(extraBufferCapacity = 1)
+    val events: SharedFlow<TemplateListEvent> = _events.asSharedFlow()
 
     init {
         // Combine templates and active template ID into UI state
@@ -178,22 +163,17 @@ class TemplateListViewModel(
     /**
      * Set the active template.
      */
-    fun setActiveTemplate(
-        templateId: String,
-        eventOwner: TemplateListEventOwner = TemplateListEventOwner.LIBRARY,
-    ) {
+    fun setActiveTemplate(templateId: String) {
         viewModelScope.launch {
             try {
                 when (val result = settingsStore.setActiveTemplate(templateId)) {
                     is TemplateSelectionResult.Selected -> {
                         emitEvent(
-                            eventOwner,
                             TemplateListEvent.ActiveTemplateChanged(result.template, result.change),
                         )
                     }
                     is TemplateSelectionResult.Blocked -> {
                         emitEvent(
-                            eventOwner,
                             TemplateListEvent.TemplateSelectionBlocked(
                                 result.template,
                                 result.missingPlaceholders,
@@ -201,7 +181,7 @@ class TemplateListViewModel(
                         )
                     }
                     is TemplateSelectionResult.NotFound -> {
-                        emitError(eventOwner, R.string.error_template_not_found)
+                        emitError(R.string.error_template_not_found)
                     }
                     is TemplateSelectionResult.AlreadyActive -> Unit
                 }
@@ -209,7 +189,7 @@ class TemplateListViewModel(
                 throw e
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to set active template", e)
-                emitError(eventOwner, R.string.error_template_select_failed)
+                emitError(R.string.error_template_select_failed)
             }
         }
     }
@@ -222,7 +202,7 @@ class TemplateListViewModel(
                 throw e
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to undo template selection", e)
-                emitError(TemplateListEventOwner.LIBRARY, R.string.error_template_undo_failed)
+                emitError(R.string.error_template_undo_failed)
             }
         }
     }
@@ -234,7 +214,7 @@ class TemplateListViewModel(
         val trimmedName = name.trim()
         if (trimmedName.isEmpty()) {
             viewModelScope.launch {
-                emitError(TemplateListEventOwner.LIBRARY, R.string.error_name_required)
+                emitError(R.string.error_name_required)
             }
             return
         }
@@ -243,20 +223,19 @@ class TemplateListViewModel(
             try {
                 val template = settingsStore.getTemplate(templateId)
                 if (template == null || template.id == DEFAULT_TEMPLATE_ID) {
-                    emitError(TemplateListEventOwner.LIBRARY, R.string.error_template_cannot_rename)
+                    emitError(R.string.error_template_cannot_rename)
                     return@launch
                 }
                 val renamedTemplate = template.withUpdatedName(trimmedName.take(MAX_TEMPLATE_NAME_LENGTH))
                 settingsStore.saveTemplate(renamedTemplate)
                 emitEvent(
-                    TemplateListEventOwner.LIBRARY,
                     TemplateListEvent.TemplateRenamed(renamedTemplate),
                 )
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to rename template", e)
-                emitError(TemplateListEventOwner.LIBRARY, R.string.error_template_rename_failed)
+                emitError(R.string.error_template_rename_failed)
             }
         }
     }
@@ -287,12 +266,12 @@ class TemplateListViewModel(
 
                 settingsStore.deleteTemplate(templateId)
                 _uiState.update { it.copy(showDeleteConfirmation = null) }
-                emitEvent(TemplateListEventOwner.LIBRARY, TemplateListEvent.TemplateDeleted(name))
+                emitEvent(TemplateListEvent.TemplateDeleted(name))
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to delete template", e)
-                emitError(TemplateListEventOwner.LIBRARY, R.string.error_template_delete_failed)
+                emitError(R.string.error_template_delete_failed)
             }
         }
     }
@@ -306,14 +285,13 @@ class TemplateListViewModel(
                 val duplicate = template.duplicate()
                 settingsStore.saveTemplate(duplicate)
                 emitEvent(
-                    TemplateListEventOwner.LIBRARY,
                     TemplateListEvent.TemplateDuplicated(duplicate),
                 )
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to duplicate template", e)
-                emitError(TemplateListEventOwner.LIBRARY, R.string.error_template_duplicate_failed)
+                emitError(R.string.error_template_duplicate_failed)
             }
         }
     }
@@ -328,14 +306,13 @@ class TemplateListViewModel(
                 val duplicate = template.duplicate()
                 settingsStore.saveTemplate(duplicate)
                 emitEvent(
-                    TemplateListEventOwner.LIBRARY,
                     TemplateListEvent.TemplateDuplicated(duplicate, openEditor = true),
                 )
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to duplicate template", e)
-                emitError(TemplateListEventOwner.LIBRARY, R.string.error_template_duplicate_failed)
+                emitError(R.string.error_template_duplicate_failed)
             }
         }
     }
@@ -367,17 +344,8 @@ class TemplateListViewModel(
         _uiState.update { it.copy(warningDismissed = true) }
     }
 
-    private suspend fun emitEvent(
-        owner: TemplateListEventOwner,
-        event: TemplateListEvent,
-    ) {
-        events.emit(OwnedTemplateListEvent(owner, event))
-    }
+    private suspend fun emitEvent(event: TemplateListEvent) = _events.emit(event)
 
-    private suspend fun emitError(
-        owner: TemplateListEventOwner,
-        messageResId: Int,
-    ) {
-        emitEvent(owner, TemplateListEvent.Error(resourceProvider.getString(messageResId)))
-    }
+    private suspend fun emitError(messageResId: Int) =
+        emitEvent(TemplateListEvent.Error(resourceProvider.getString(messageResId)))
 }

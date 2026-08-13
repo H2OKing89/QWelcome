@@ -15,19 +15,21 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kingpaging.qwelcome.R
-import com.kingpaging.qwelcome.di.LocalExportViewModel
 import com.kingpaging.qwelcome.di.LocalNavigator
 import com.kingpaging.qwelcome.di.LocalSoundPlayer
 import com.kingpaging.qwelcome.ui.EventEmission
 import com.kingpaging.qwelcome.viewmodel.export.ExportEvent
 import com.kingpaging.qwelcome.viewmodel.export.ExportType
+import com.kingpaging.qwelcome.viewmodel.export.ExportViewModel
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 @Suppress("CyclomaticComplexMethod", "FunctionNaming", "LongMethod")
 @Composable
-fun ExportRoute(onBack: () -> Unit) {
-    val viewModel = LocalExportViewModel.current
+fun ExportRoute(
+    viewModel: ExportViewModel,
+    onBack: () -> Unit,
+) {
     val soundPlayer = LocalSoundPlayer.current
     val context = LocalContext.current
     val resources = LocalResources.current

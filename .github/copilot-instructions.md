@@ -3,7 +3,7 @@
 Android app for fiber technicians to send WiFi welcome messages. Kotlin + Jetpack Compose + Material3.
 
 ## Big Picture
-- MVVM + CompositionLocals: ViewModels are provided in `MainActivity.kt` via `CompositionLocalProvider`, not passed as parameters. Access with `LocalXxxViewModel.current` from `di/CompositionLocals.kt`.
+- MVVM with explicit scopes: shared ViewModels are provided by `MainActivity.kt` through `CompositionLocalProvider`; destination-scoped ViewModels are created in `AppNavGraph.kt` and passed directly to routes.
 - Layers: `ui/` (stateless Compose screens) → `viewmodel/` (StateFlow state + SharedFlow events) → `data/` (DataStore, repositories).
 - Navigation uses type-safe routes in `navigation/Routes.kt` and graph in `navigation/AppNavGraph.kt`. Intent actions are abstracted behind `navigation/Navigator.kt` for testability.
 - Persistence is Proto DataStore via `data/SettingsStore` and `proto/src/main/proto/user_preferences.proto` (migration handled internally).

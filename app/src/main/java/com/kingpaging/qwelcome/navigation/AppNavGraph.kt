@@ -2,6 +2,7 @@ package com.kingpaging.qwelcome.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -13,8 +14,11 @@ import com.kingpaging.qwelcome.ui.import_pkg.ImportRoute
 import com.kingpaging.qwelcome.ui.settings.SettingsRoute
 import com.kingpaging.qwelcome.ui.templates.TemplateEditorRoute
 import com.kingpaging.qwelcome.ui.templates.TemplateListRoute
+import com.kingpaging.qwelcome.viewmodel.export.ExportViewModel
 import com.kingpaging.qwelcome.viewmodel.factory.AppViewModelProvider
+import com.kingpaging.qwelcome.viewmodel.import_pkg.ImportViewModel
 import com.kingpaging.qwelcome.viewmodel.templates.TemplateEditorViewModel
+import com.kingpaging.qwelcome.viewmodel.templates.TemplateListViewModel
 
 /**
  * Main navigation graph for the app using Jetpack Navigation Compose.
@@ -53,20 +57,26 @@ fun AppNavGraph(
         }
 
         composable<Routes.Export> {
+            val exportViewModel: ExportViewModel = destinationViewModel(appContainer)
             ExportRoute(
+                viewModel = exportViewModel,
                 onBack = { navController.popBackStack() },
             )
         }
 
         composable<Routes.Import> {
+            val importViewModel: ImportViewModel = destinationViewModel(appContainer)
             ImportRoute(
+                viewModel = importViewModel,
                 onBack = { navController.popBackStack() },
                 onImportComplete = { navController.popBackStack() },
             )
         }
 
         composable<Routes.TemplateList> {
+            val templateListViewModel: TemplateListViewModel = destinationViewModel(appContainer)
             TemplateListRoute(
+                viewModel = templateListViewModel,
                 onBack = {
                     // Navigate back to the origin screen
                     navController.popBackStack()
@@ -80,15 +90,17 @@ fun AppNavGraph(
         composable<Routes.TemplateEditor> {
             // Required because the editor needs the NavBackStackEntry-scoped SavedStateHandle,
             // which the process-wide CompositionLocal cannot provide.
-            val factory =
-                remember(appContainer) {
-                    AppViewModelProvider(appContainer)
-                }
-            val editorViewModel: TemplateEditorViewModel = viewModel(factory = factory)
+            val editorViewModel: TemplateEditorViewModel = destinationViewModel(appContainer)
             TemplateEditorRoute(
                 viewModel = editorViewModel,
                 onBack = { navController.popBackStack() },
             )
         }
     }
+}
+
+@Composable
+private inline fun <reified VM : ViewModel> destinationViewModel(appContainer: AppContainer): VM {
+    val factory = remember(appContainer) { AppViewModelProvider(appContainer) }
+    return viewModel(factory = factory)
 }

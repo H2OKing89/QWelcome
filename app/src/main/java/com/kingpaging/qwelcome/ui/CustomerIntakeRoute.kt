@@ -20,10 +20,9 @@ import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.di.LocalCustomerIntakeViewModel
 import com.kingpaging.qwelcome.di.LocalNavigator
 import com.kingpaging.qwelcome.di.LocalSoundPlayer
-import com.kingpaging.qwelcome.di.LocalTemplateListViewModel
-import com.kingpaging.qwelcome.ui.templates.toTemplateErrorMessage
+import com.kingpaging.qwelcome.di.LocalTemplateSelectionViewModel
 import com.kingpaging.qwelcome.viewmodel.UiEvent
-import com.kingpaging.qwelcome.viewmodel.templates.TemplateListEventOwner
+import com.kingpaging.qwelcome.viewmodel.templates.TemplateSelectionEvent
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -35,14 +34,14 @@ fun CustomerIntakeRoute(
     onOpenTemplates: () -> Unit = {},
 ) {
     val customerIntakeViewModel = LocalCustomerIntakeViewModel.current
-    val templateListViewModel = LocalTemplateListViewModel.current
+    val templateSelectionViewModel = LocalTemplateSelectionViewModel.current
     val navigator = LocalNavigator.current
     val soundPlayer = LocalSoundPlayer.current
     val context = LocalContext.current
     val resources = LocalResources.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val uiState by customerIntakeViewModel.uiState.collectAsStateWithLifecycle()
-    val templateUiState by templateListViewModel.uiState.collectAsStateWithLifecycle()
+    val templateUiState by templateSelectionViewModel.uiState.collectAsStateWithLifecycle()
     val formFocusTargets = remember { CustomerFormFocusTargets() }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -87,12 +86,21 @@ fun CustomerIntakeRoute(
             }
     }
 
-    LaunchedEffect(templateListViewModel, lifecycleOwner) {
-        templateListViewModel
-            .eventsFor(TemplateListEventOwner.INTAKE)
+    LaunchedEffect(templateSelectionViewModel, lifecycleOwner) {
+        templateSelectionViewModel
+            .events
             .flowWithLifecycle(lifecycleOwner.lifecycle, Lifecycle.State.STARTED)
             .collect { event ->
-                val message = event.toTemplateErrorMessage(context) ?: return@collect
+                val message =
+                    when (event) {
+                        is TemplateSelectionEvent.Error -> event.message
+                        is TemplateSelectionEvent.SelectionBlocked ->
+                            resources.getString(
+                                R.string.error_template_cannot_use,
+                                event.template.name,
+                                event.missingPlaceholders.joinToString(", "),
+                            )
+                    }
                 soundPlayer.playBeep()
                 snackbarHostState.showSnackbar(message)
             }
@@ -128,7 +136,7 @@ fun CustomerIntakeRoute(
                     }
                 },
                 onTemplateSelected = {
-                    templateListViewModel.setActiveTemplate(it, TemplateListEventOwner.INTAKE)
+                    templateSelectionViewModel.selectTemplate(it)
                 },
                 onCustomerNameChanged = customerIntakeViewModel::onCustomerNameChanged,
                 onCustomerPhoneChanged = customerIntakeViewModel::onCustomerPhoneChanged,
