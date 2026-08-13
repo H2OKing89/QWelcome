@@ -22,7 +22,6 @@ import com.kingpaging.qwelcome.di.LocalCustomerIntakeViewModel
 import com.kingpaging.qwelcome.di.LocalNavigator
 import com.kingpaging.qwelcome.di.LocalSettingsViewModel
 import com.kingpaging.qwelcome.di.LocalSoundPlayer
-import com.kingpaging.qwelcome.di.LocalTemplateListViewModel
 import com.kingpaging.qwelcome.di.LocalTemplateSelectionViewModel
 import com.kingpaging.qwelcome.navigation.AndroidNavigator
 import com.kingpaging.qwelcome.navigation.AppNavGraph
@@ -32,7 +31,6 @@ import com.kingpaging.qwelcome.util.SoundManager
 import com.kingpaging.qwelcome.viewmodel.CustomerIntakeViewModel
 import com.kingpaging.qwelcome.viewmodel.factory.AppViewModelProvider
 import com.kingpaging.qwelcome.viewmodel.settings.SettingsViewModel
-import com.kingpaging.qwelcome.viewmodel.templates.TemplateListViewModel
 import com.kingpaging.qwelcome.viewmodel.templates.TemplateSelectionViewModel
 
 class MainActivity : ComponentActivity() {
@@ -65,10 +63,6 @@ class MainActivity : ComponentActivity() {
                 viewModel(
                     factory = appViewModelFactory,
                 )
-            val templateListViewModel: TemplateListViewModel =
-                viewModel(
-                    factory = appViewModelFactory,
-                )
             val templateSelectionViewModel: TemplateSelectionViewModel =
                 viewModel(
                     factory = appViewModelFactory,
@@ -94,7 +88,6 @@ class MainActivity : ComponentActivity() {
                 CompositionLocalProvider(
                     LocalCustomerIntakeViewModel provides customerIntakeViewModel,
                     LocalSettingsViewModel provides settingsViewModel,
-                    LocalTemplateListViewModel provides templateListViewModel,
                     LocalTemplateSelectionViewModel provides templateSelectionViewModel,
                     LocalSoundPlayer provides SoundManager,
                     LocalNavigator provides navigator,

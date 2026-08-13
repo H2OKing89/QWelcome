@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.io.IOException
 
 private const val TAG = "TemplateSelectionViewModel"
 
@@ -91,7 +92,7 @@ class TemplateSelectionViewModel(
                 }
             } catch (exception: CancellationException) {
                 throw exception
-            } catch (exception: Exception) {
+            } catch (exception: IOException) {
                 Log.e(TAG, "Failed to select template", exception)
                 _events.emit(
                     TemplateSelectionEvent.Error(

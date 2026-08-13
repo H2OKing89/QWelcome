@@ -95,7 +95,7 @@ fun CustomerIntakeRoute(
                     when (event) {
                         is TemplateSelectionEvent.Error -> event.message
                         is TemplateSelectionEvent.SelectionBlocked ->
-                            context.getString(
+                            resources.getString(
                                 R.string.error_template_cannot_use,
                                 event.template.name,
                                 event.missingPlaceholders.joinToString(", "),

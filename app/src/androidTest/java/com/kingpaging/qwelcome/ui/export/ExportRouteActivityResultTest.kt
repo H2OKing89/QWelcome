@@ -10,6 +10,7 @@ import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.espresso.intent.Intents.init
 import androidx.test.espresso.intent.Intents.intended
@@ -92,5 +93,31 @@ class ExportRouteActivityResultTest {
         composeRule.waitForIdle()
 
         intended(hasAction(Intent.ACTION_CREATE_DOCUMENT), times(2))
+    }
+
+    @Test
+    fun stoppedRoute_consumesPendingPickerRequestOnlyOnceAfterRestart() {
+        intending(hasAction(Intent.ACTION_CREATE_DOCUMENT))
+            .respondWith(ActivityResult(Activity.RESULT_CANCELED, null))
+
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        composeRule.onNodeWithText(context.getString(R.string.export_type_full_backup)).performClick()
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule
+                .onAllNodesWithText(context.getString(R.string.action_save_to_file))
+                .fetchSemanticsNodes()
+                .isNotEmpty()
+        }
+
+        composeRule.activityRule.scenario.moveToState(Lifecycle.State.CREATED)
+        exportViewModel.onSaveToFileRequested()
+        composeRule.activityRule.scenario.moveToState(Lifecycle.State.RESUMED)
+        composeRule.waitForIdle()
+
+        composeRule.activityRule.scenario.moveToState(Lifecycle.State.CREATED)
+        composeRule.activityRule.scenario.moveToState(Lifecycle.State.RESUMED)
+        composeRule.waitForIdle()
+
+        intended(hasAction(Intent.ACTION_CREATE_DOCUMENT), times(1))
     }
 }

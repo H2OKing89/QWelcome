@@ -469,17 +469,20 @@ The release workflow now verifies that a `vX.Y.Z` tag matches `VERSION_NAME`, re
 - [x] Harden release version verification.
 - [x] Add architecture, dependency-update, and troubleshooting guides.
 
-### Milestone 7: Feature ViewModel lifetime reassessment (Candidate)
+### Milestone 7: Feature ViewModel lifetime reassessment (Complete 2026-08-12)
 
-Import and Export are destination-scoped with a navigation `ViewModelStoreOwner`, while Customer Intake, Settings, Template Library, and focused template selection remain activity-scoped. The lifetime split is now explicit, but further migration is not mechanical: Customer Intake has lifecycle-sensitive form state, and Settings/Template Library have intentionally shared state.
+Import, Export, Template Library, and Template Editor are destination-scoped with a navigation `ViewModelStoreOwner`, while Customer Intake, Settings, and focused template selection remain activity-scoped. The lifetime split is now explicit, but further migration is not mechanical: Customer Intake has lifecycle-sensitive form state, and Settings participates in activity-level screen-capture protection.
 
 - [x] Define the desired restoration and cancellation behavior for Import and Export: both start fresh when reopened, so staged imports, export results, selections, pending file actions, and transient effects end with their destination.
 - [x] Cover Export document-picker cancellation at the Route boundary: a cancelled picker clears the pending export and allows a second save request.
 - [x] Cover Import file-picker URI handoff at the Route boundary: a selected `content://` URI is read, validated, and presented for confirmation.
-- [ ] Verify route lifecycle, activity-result, process-restoration, and one-shot-effect behavior with focused tests for each migrated feature.
+- [x] Verify route lifecycle, activity-result, process-restoration, and one-shot-effect behavior with focused tests for each migrated feature. Import and Export picker effects survive a stopped route, are consumed exactly once after resume, and do not relaunch on a second lifecycle restart. Fresh ViewModel tests define the intentional process-loss reset contract.
 - [x] Define a focused template-selection boundary for Customer Intake: `TemplateSelectionViewModel` owns only selectable templates, active selection, and selection feedback, while `TemplateListViewModel` remains library-only.
+- [x] Destination-scope `TemplateListViewModel`: preserve the same library instance while Template Editor is above it, then create a fresh instance after the library is popped and reopened.
+- [x] Cover both Template Library lifetime cases with focused navigation instrumentation tests on the physical Samsung test device.
+- [x] Retain Customer Intake, Settings, and focused template selection at activity scope: Intake has explicit pause/resume behavior, Settings drives activity-level screen-capture protection, and template selection is shared with Intake.
 - [x] Update `CLAUDE.md` after the scoping decision so contributor guidance accurately distinguishes activity-scoped and destination-scoped ViewModels, and removes its obsolete singleton/reset-for-testing description.
-- [ ] Keep the current package layout unless a concrete ownership or build-time problem justifies a feature-first reorganization.
+- [x] Keep the current package layout; this reassessment found no concrete ownership or build-time problem that justifies a feature-first reorganization.
 
 ### Milestone 8: Theme tokens and outdoor readability (Candidate)
 
@@ -539,3 +542,4 @@ Run device tests when an emulator or device is available:
 - 2026-08-12: Added Samsung-verified navigation scope coverage and Export document-picker cancellation coverage for the destination-scoped routes.
 - 2026-08-12: Added Samsung-verified Import file-picker URI handoff coverage with an instrumentation-only content provider fixture.
 - 2026-08-12: Added exact one-shot picker-launch assertions and split Customer Intake template selection from Template Library state, with focused unit and Samsung instrumentation coverage.
+- 2026-08-12: Completed Milestone 7 by destination-scoping Template Library, verifying retained/recreated back-stack lifetimes, proving picker effects survive one lifecycle restart without duplicate launches, and defining fresh process-recreation state contracts.

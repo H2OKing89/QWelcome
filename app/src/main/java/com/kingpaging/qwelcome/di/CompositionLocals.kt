@@ -5,7 +5,6 @@ import com.kingpaging.qwelcome.navigation.Navigator
 import com.kingpaging.qwelcome.util.SoundPlayer
 import com.kingpaging.qwelcome.viewmodel.CustomerIntakeViewModel
 import com.kingpaging.qwelcome.viewmodel.settings.SettingsViewModel
-import com.kingpaging.qwelcome.viewmodel.templates.TemplateListViewModel
 import com.kingpaging.qwelcome.viewmodel.templates.TemplateSelectionViewModel
 
 /*
@@ -50,15 +49,6 @@ val LocalCustomerIntakeViewModel =
 val LocalSettingsViewModel =
     staticCompositionLocalOf<SettingsViewModel> {
         error("SettingsViewModel not provided. Wrap your composable with CompositionLocalProvider.")
-    }
-
-/**
- * Provides the TemplateListViewModel throughout the composition.
- * Throws if accessed before being provided (fail-fast for configuration errors).
- */
-val LocalTemplateListViewModel =
-    staticCompositionLocalOf<TemplateListViewModel> {
-        error("TemplateListViewModel not provided. Wrap your composable with CompositionLocalProvider.")
     }
 
 /**

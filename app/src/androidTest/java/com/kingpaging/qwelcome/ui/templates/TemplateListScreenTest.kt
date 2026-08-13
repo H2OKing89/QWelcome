@@ -15,7 +15,6 @@ import com.kingpaging.qwelcome.data.Template
 import com.kingpaging.qwelcome.data.UserPreferences
 import com.kingpaging.qwelcome.data.protoDataStore
 import com.kingpaging.qwelcome.di.LocalSoundPlayer
-import com.kingpaging.qwelcome.di.LocalTemplateListViewModel
 import com.kingpaging.qwelcome.testutil.FakeSoundPlayer
 import com.kingpaging.qwelcome.ui.theme.CyberpunkTheme
 import com.kingpaging.qwelcome.util.AndroidResourceProvider
@@ -575,10 +574,10 @@ class TemplateListScreenTest {
         composeRule.setContent {
             CyberpunkTheme {
                 CompositionLocalProvider(
-                    LocalTemplateListViewModel provides viewModel,
                     LocalSoundPlayer provides soundPlayer,
                 ) {
                     TemplateListRoute(
+                        viewModel = viewModel,
                         onBack = {},
                         onOpenEditor = { openedTemplateId.set(it) },
                     )

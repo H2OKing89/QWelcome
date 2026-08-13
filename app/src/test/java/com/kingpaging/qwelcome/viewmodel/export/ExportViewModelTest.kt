@@ -59,6 +59,27 @@ class ExportViewModelTest {
     }
 
     @Test
+    fun `new destination instance does not restore staged export`() =
+        runTest {
+            vm.onTemplatePackRequested()
+            advanceUntilIdle()
+            assertTrue(vm.uiState.value.showTemplateSelectionDialog)
+
+            val restoredViewModel =
+                ExportViewModel(
+                    mockRepo,
+                    mockStore,
+                    contentResolver = mockContentResolver,
+                )
+            advanceUntilIdle()
+
+            val restoredState = restoredViewModel.uiState.value
+            assertFalse(restoredState.showTemplateSelectionDialog)
+            assertTrue(restoredState.selectedTemplateIds.isEmpty())
+            assertNull(restoredState.lastExportedJson)
+        }
+
+    @Test
     fun `onTemplatePackRequested loads templates and shows dialog`() =
         runTest {
             vm.onTemplatePackRequested()

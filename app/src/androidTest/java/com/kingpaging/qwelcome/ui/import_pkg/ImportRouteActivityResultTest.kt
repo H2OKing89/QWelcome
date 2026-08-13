@@ -12,6 +12,7 @@ import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.espresso.intent.Intents.init
 import androidx.test.espresso.intent.Intents.intended
@@ -89,6 +90,23 @@ class ImportRouteActivityResultTest {
         }
 
         composeRule.onNodeWithText(context.getString(R.string.title_ready_to_import)).assertIsDisplayed()
+        intended(hasAction(Intent.ACTION_GET_CONTENT), times(1))
+    }
+
+    @Test
+    fun stoppedRoute_consumesPendingPickerRequestOnlyOnceAfterRestart() {
+        intending(hasAction(Intent.ACTION_GET_CONTENT))
+            .respondWith(ActivityResult(Activity.RESULT_CANCELED, null))
+
+        composeRule.activityRule.scenario.moveToState(Lifecycle.State.CREATED)
+        importViewModel.onOpenFileRequest()
+        composeRule.activityRule.scenario.moveToState(Lifecycle.State.RESUMED)
+        composeRule.waitForIdle()
+
+        composeRule.activityRule.scenario.moveToState(Lifecycle.State.CREATED)
+        composeRule.activityRule.scenario.moveToState(Lifecycle.State.RESUMED)
+        composeRule.waitForIdle()
+
         intended(hasAction(Intent.ACTION_GET_CONTENT), times(1))
     }
 }

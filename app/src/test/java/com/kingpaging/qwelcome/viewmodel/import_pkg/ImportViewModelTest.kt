@@ -60,6 +60,21 @@ class ImportViewModelTest {
     }
 
     @Test
+    fun `new destination instance does not restore staged import`() =
+        runTest {
+            coEvery { mockRepo.validateImport(any()) } returns validResult
+            vm.onJsonContentReceived("{}")
+            advanceUntilIdle()
+            assertTrue(vm.uiState.value.step is ImportStep.Validated)
+
+            val restoredViewModel = ImportViewModel(mockRepo, FakeResourceProvider())
+
+            assertEquals(ImportStep.Idle, restoredViewModel.uiState.value.step)
+            assertNull(restoredViewModel.uiState.value.error)
+            assertEquals(false, restoredViewModel.uiState.value.isImporting)
+        }
+
+    @Test
     fun `valid JSON transitions to Validated step`() =
         runTest {
             coEvery { mockRepo.validateImport(any()) } returns validResult

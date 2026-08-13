@@ -33,7 +33,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### MVVM with Explicit ViewModel Scopes
 
-`MainActivity.kt` provides the shared `CustomerIntakeViewModel`, `SettingsViewModel`, `TemplateListViewModel`, and `TemplateSelectionViewModel` through `CompositionLocalProvider`:
+`MainActivity.kt` provides the shared `CustomerIntakeViewModel`, `SettingsViewModel`, and `TemplateSelectionViewModel` through `CompositionLocalProvider`:
 
 ```kotlin
 // Access in any composable:
@@ -41,7 +41,7 @@ val viewModel = LocalCustomerIntakeViewModel.current
 val navigator = LocalNavigator.current
 ```
 
-`TemplateEditorViewModel`, `ImportViewModel`, and `ExportViewModel` are destination-scoped in `AppNavGraph.kt` and passed directly to their routes. Import and Export intentionally start fresh when their destination is reopened. All shared providers are defined in `di/CompositionLocals.kt`.
+`TemplateListViewModel`, `TemplateEditorViewModel`, `ImportViewModel`, and `ExportViewModel` are destination-scoped in `AppNavGraph.kt` and passed directly to their routes. Template List keeps its state while the Editor is above it; after the library is removed or the process is recreated, persisted templates reload but transient filters start fresh. Import and Export intentionally start fresh when their destination is reopened or recreated after process loss. All shared providers are defined in `di/CompositionLocals.kt`.
 
 ### Data Flow
 

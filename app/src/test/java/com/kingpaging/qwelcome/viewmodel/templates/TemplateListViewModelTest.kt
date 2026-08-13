@@ -83,6 +83,22 @@ class TemplateListViewModelTest {
         }
 
     @Test
+    fun `new destination instance reloads persisted templates without transient filters`() =
+        runTest {
+            advanceUntilIdle()
+            vm.updateSearchQuery("Custom")
+            vm.updateTagFilter("Install")
+
+            val restoredViewModel = TemplateListViewModel(mockStore, resourceProvider)
+            advanceUntilIdle()
+
+            val state = restoredViewModel.uiState.value
+            assertEquals(listOf(defaultTemplate, userTemplate), state.templates)
+            assertEquals("", state.searchQuery)
+            assertTrue(state.selectedTags.isEmpty())
+        }
+
+    @Test
     fun `init propagates non-empty template recency`() =
         runTest {
             val recency = mapOf(userTemplate.id to 123L)
