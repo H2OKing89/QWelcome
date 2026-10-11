@@ -23,7 +23,7 @@ jobs:
         persist-credentials: false
 
     - name: Set up JDK 17
-      uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+      uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
       with:
         java-version: '17'
         distribution: 'temurin'
@@ -41,7 +41,7 @@ jobs:
       run: ./gradlew assembleDebug
 
     - name: Upload APK artifact
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
         name: app-debug
         path: app/build/outputs/apk/debug/app-debug.apk
@@ -57,7 +57,7 @@ jobs:
         persist-credentials: false
 
     - name: Set up JDK 17
-      uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+      uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
       with:
         java-version: '17'
         distribution: 'temurin'
@@ -78,7 +78,7 @@ jobs:
       run: ./gradlew lint
 
     - name: Upload lint report
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       if: always()
       with:
         name: lint-report
@@ -97,7 +97,7 @@ jobs:
         persist-credentials: false
 
     - name: Set up JDK 17
-      uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+      uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
       with:
         java-version: '17'
         distribution: 'temurin'
@@ -135,7 +135,7 @@ jobs:
           done
 
     - name: Upload instrumentation smoke reports
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       if: always()
       with:
         name: instrumentation-smoke-reports
@@ -158,7 +158,7 @@ jobs:
         persist-credentials: false
 
     - name: Set up JDK 17
-      uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+      uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
       with:
         java-version: '17'
         distribution: 'temurin'
@@ -189,7 +189,7 @@ jobs:
           ./gradlew :app:connectedDebugAndroidTest
 
     - name: Upload full instrumentation reports
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       if: always()
       with:
         name: instrumentation-full-reports
