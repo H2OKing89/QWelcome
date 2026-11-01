@@ -96,7 +96,7 @@ internal fun ContentEditorDialog(
                     title = {
                         Text(
                             text = stringResource(R.string.label_message),
-                            color = MaterialTheme.colorScheme.secondary,
+                            color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.testTag(TEMPLATE_CONTENT_LABEL_TEST_TAG),
                         )
                     },
@@ -108,7 +108,7 @@ internal fun ContentEditorDialog(
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = stringResource(R.string.content_desc_back),
-                                tint = MaterialTheme.colorScheme.secondary,
+                                tint = MaterialTheme.colorScheme.primary,
                             )
                         }
                     },
@@ -195,7 +195,7 @@ internal fun ContentEditorField(
                 if (hasContentError) {
                     MaterialTheme.colorScheme.error
                 } else {
-                    MaterialTheme.colorScheme.secondary
+                    MaterialTheme.colorScheme.primary
                 },
             unfocusedBorderColor =
                 if (hasContentError) {
@@ -203,12 +203,12 @@ internal fun ContentEditorField(
                 } else {
                     MaterialTheme.colorScheme.outline
                 },
-            cursorColor = MaterialTheme.colorScheme.secondary,
+            cursorColor = MaterialTheme.colorScheme.primary,
             focusedLabelColor =
                 if (hasContentError) {
                     MaterialTheme.colorScheme.error
                 } else {
-                    MaterialTheme.colorScheme.secondary
+                    MaterialTheme.colorScheme.primary
                 },
             unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -229,7 +229,7 @@ internal fun ContentEditorField(
             ),
         cursorBrush =
             androidx.compose.ui.graphics
-                .SolidColor(MaterialTheme.colorScheme.secondary),
+                .SolidColor(MaterialTheme.colorScheme.primary),
         interactionSource = contentInteractionSource,
         decorator = { innerTextField ->
             OutlinedTextFieldDefaults.DecorationBox(

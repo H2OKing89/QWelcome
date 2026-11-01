@@ -1,0 +1,18 @@
+<resources>
+    <string name="settings_profile_title">Technician profile</string>
+    <string name="settings_profile_edit">Edit profile</string>
+    <string name="settings_profile_setup">Set up your profile</string>
+    <string name="settings_profile_setup_hint">Add the details used in your message signature.</string>
+    <string name="settings_profile_saved">Profile saved</string>
+    <string name="settings_privacy_title">Privacy &amp; protection</string>
+    <string name="settings_privacy_summary">Control diagnostics and screen capture.</string>
+    <string name="settings_backup_title">Backup &amp; restore</string>
+    <string name="settings_backup_summary">Save your setup or restore a backup.</string>
+    <string name="settings_updates_title">About &amp; updates</string>
+    <string name="settings_templates_title">Message templates</string>
+    <string name="settings_workspace_heading">Your workspace</string>
+    <string name="settings_app_heading">App preferences</string>
+    <string name="settings_update_available_summary">Version %1$s is available</string>
+    <string name="settings_update_ready_summary">An update is ready to install</string>
+    <string name="settings_update_error_summary">Update needs attention</string>
+</resources>

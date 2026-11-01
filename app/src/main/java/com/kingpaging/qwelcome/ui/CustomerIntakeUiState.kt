@@ -25,13 +25,15 @@ data class CustomerIntakeUiState(
     val passwordError: String? = null,
     val accountNumber: String = "",
     val accountNumberError: String? = null,
-    /** When true, password validation is skipped (for open/guest networks) */
-    val isOpenNetwork: Boolean = false,
-    val securityType: WifiQrGenerator.SecurityType = WifiQrGenerator.SecurityType.WPA2_PSK,
+    val securityType: WifiQrGenerator.SecurityType = WifiQrGenerator.DEFAULT_SECURITY_TYPE,
     val isHiddenNetwork: Boolean = false,
     /** Whether the QR code bottom sheet is currently shown */
     val showQrSheet: Boolean = false,
 ) {
+    /** Security selection is the single source of truth for password requirements. */
+    val isOpenNetwork: Boolean
+        get() = securityType == WifiQrGenerator.SecurityType.OPEN
+
     /** True when the WiFi fields are valid enough to generate a QR code. */
     val qrEnabled: Boolean
         get() =

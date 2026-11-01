@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -35,8 +34,6 @@ import com.kingpaging.qwelcome.ui.components.NeonButton
 import com.kingpaging.qwelcome.ui.components.NeonButtonStyle
 import com.kingpaging.qwelcome.ui.components.NeonPanel
 
-private const val SOURCE_BUTTON_WIDTH_FRACTION = 0.8f
-
 @Composable
 internal fun ImportIdleStep(
     isLoading: Boolean,
@@ -50,7 +47,6 @@ internal fun ImportIdleStep(
         modifier = Modifier.fillMaxWidth(),
     ) {
         ImportIdleIntro()
-        Spacer(Modifier.height(16.dp))
         ImportSourceActions(isLoading, onOpenFile, onPaste)
         ImportIdleError(error)
     }
@@ -61,7 +57,7 @@ private fun ImportIdleIntro() {
     Icon(
         imageVector = Icons.Default.UploadFile,
         contentDescription = stringResource(R.string.content_desc_import_data),
-        modifier = Modifier.size(64.dp),
+        modifier = Modifier.size(48.dp),
         tint = MaterialTheme.colorScheme.secondary,
     )
     Text(
@@ -74,7 +70,7 @@ private fun ImportIdleIntro() {
         stringResource(R.string.text_import_intro_description),
         style = MaterialTheme.typography.bodyMedium,
         textAlign = TextAlign.Center,
-        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
 }
 
@@ -97,7 +93,7 @@ private fun ImportDecodingIndicator() {
     Text(
         stringResource(R.string.status_decoding),
         style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(top = 8.dp),
     )
 }
@@ -109,8 +105,7 @@ private fun ImportSourceButtons(
 ) {
     NeonButton(
         onClick = onOpenFile,
-        modifier = Modifier.fillMaxWidth(SOURCE_BUTTON_WIDTH_FRACTION),
-        glowColor = MaterialTheme.colorScheme.secondary,
+        modifier = Modifier.fillMaxWidth(),
     ) {
         Icon(
             Icons.Default.UploadFile,
@@ -123,9 +118,8 @@ private fun ImportSourceButtons(
 
     NeonButton(
         onClick = onPaste,
-        modifier = Modifier.fillMaxWidth(SOURCE_BUTTON_WIDTH_FRACTION),
+        modifier = Modifier.fillMaxWidth(),
         style = NeonButtonStyle.SECONDARY,
-        glowColor = MaterialTheme.colorScheme.tertiary,
     ) {
         Icon(
             Icons.Default.FileCopy,
@@ -145,7 +139,7 @@ private fun ImportIdleError(error: String?) {
     }
 
     AnimatedVisibility(visible = error != null) {
-        NeonPanel(modifier = Modifier.padding(top = 24.dp)) {
+        NeonPanel {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     Icons.Default.Info,

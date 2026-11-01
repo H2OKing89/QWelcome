@@ -4,8 +4,8 @@ package com.kingpaging.qwelcome.ui.templates
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -13,8 +13,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
 import com.kingpaging.qwelcome.R
 
 @Composable
@@ -24,12 +27,7 @@ internal fun TemplateEditorTopBar(
     onBack: () -> Unit,
     onSave: () -> Unit,
 ) {
-    val saveIconTint =
-        if (canSave) {
-            MaterialTheme.colorScheme.secondary
-        } else {
-            MaterialTheme.colorScheme.secondary.copy(alpha = 0.38f)
-        }
+    val saveLabel = stringResource(if (isNew) R.string.action_create else R.string.action_save)
 
     TopAppBar(
         title = {
@@ -40,7 +38,9 @@ internal fun TemplateEditorTopBar(
                     } else {
                         stringResource(R.string.title_edit_template)
                     },
-                color = MaterialTheme.colorScheme.secondary,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
         },
         navigationIcon = {
@@ -48,25 +48,18 @@ internal fun TemplateEditorTopBar(
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = stringResource(R.string.content_desc_back),
-                    tint = MaterialTheme.colorScheme.secondary,
                 )
             }
         },
         actions = {
-            IconButton(
+            FilledTonalButton(
                 onClick = onSave,
                 enabled = canSave,
+                modifier = Modifier.semantics { contentDescription = saveLabel },
             ) {
-                Icon(
-                    imageVector = Icons.Default.Check,
-                    contentDescription =
-                        stringResource(
-                            if (isNew) R.string.action_create else R.string.action_save,
-                        ),
-                    tint = saveIconTint,
-                )
+                Text(saveLabel)
             }
         },
-        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+        colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
     )
 }

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="strings_qr_artwork_title">Connect to Wi-Fi</string>
+    <string name="strings_qr_artwork_instruction">Scan with your phone’s camera to connect.</string>
+    <string name="strings_qr_artwork_network_label">NETWORK NAME</string>
+    <string name="strings_qr_artwork_password_label">PASSWORD</string>
+    <string name="strings_qr_artwork_open_password">No password</string>
+    <string name="strings_qr_artwork_accessibility">WiFi sign. Network: %1$s. Password: %2$s.</string>
+    <string name="strings_qr_artwork_loading">Preparing your WiFi sign…</string>
+    <string name="strings_qr_artwork_failed">The sign preview could not be prepared. You can try saving or sharing it again.</string>
+    <string name="strings_qr_artwork_save_warning">This image prints the WiFi network details, including the password for protected networks. Pictures/QWelcome may be backed up to your photo service.</string>
+</resources>

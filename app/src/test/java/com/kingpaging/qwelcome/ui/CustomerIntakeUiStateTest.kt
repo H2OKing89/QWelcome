@@ -1,5 +1,6 @@
 package com.kingpaging.qwelcome.ui
 
+import com.kingpaging.qwelcome.util.WifiQrGenerator
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -40,8 +41,25 @@ class CustomerIntakeUiStateTest {
         assertFalse(valid.copy(password = " ".repeat(8)).qrEnabled)
         assertFalse(valid.copy(password = "short").qrEnabled)
         assertFalse(valid.copy(ssid = "界".repeat(11)).qrEnabled)
-        assertTrue(valid.copy(password = "", isOpenNetwork = true).qrEnabled)
-        assertFalse(valid.copy(ssid = "", isOpenNetwork = true).qrEnabled)
+        assertTrue(valid.copy(password = "", securityType = WifiQrGenerator.SecurityType.OPEN).qrEnabled)
+        assertFalse(valid.copy(ssid = "", securityType = WifiQrGenerator.SecurityType.OPEN).qrEnabled)
+    }
+
+    @Test
+    fun `default security is mixed personal and open state follows the selected mode`() {
+        assertEquals(
+            WifiQrGenerator.SecurityType.WPA2_WPA3_PERSONAL,
+            CustomerIntakeUiState().securityType,
+        )
+        WifiQrGenerator.SecurityType.entries.forEach { mode ->
+            val state = CustomerIntakeUiState(ssid = "WiFi", password = "password123", securityType = mode)
+            val isOpen = mode == WifiQrGenerator.SecurityType.OPEN
+            assertEquals(isOpen, state.isOpenNetwork)
+            assertTrue(state.qrEnabled)
+            assertEquals(isOpen, state.copy(password = "").qrEnabled)
+            assertEquals(isOpen, state.copy(passwordError = "Invalid password").isValid)
+            assertFalse(state.copy(ssid = "").qrEnabled)
+        }
     }
 
     @Test
@@ -53,7 +71,7 @@ class CustomerIntakeUiStateTest {
                 ssid = "UPPERCASE_WIFI",
                 password = "SECRET_password",
                 accountNumber = "ACC-001",
-                isOpenNetwork = true,
+                securityType = WifiQrGenerator.SecurityType.OPEN,
             ).toCustomerData()
 
         assertEquals("Jane Doe", data.customerName)

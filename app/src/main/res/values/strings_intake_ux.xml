@@ -1,0 +1,8 @@
+<resources>
+    <string name="intake_customer_section">Customer details</string>
+    <string name="intake_wifi_section">WiFi details</string>
+    <string name="intake_new_customer">New customer</string>
+    <string name="intake_new_customer_compact">New</string>
+    <string name="intake_required">Required</string>
+    <string name="intake_phone_for_sms">For SMS</string>
+</resources>

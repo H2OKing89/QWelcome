@@ -45,6 +45,14 @@ internal class SettingsProfileDraft(
 
     fun toProfile(): TechProfile = profile
 
+    fun resetTo(profile: TechProfile) {
+        baseline = profile
+        this.profile = profile
+        nameEdited = false
+        titleEdited = false
+        departmentEdited = false
+    }
+
     fun updatePersisted(profile: TechProfile) {
         if (baseline == profile) return
         this.profile =

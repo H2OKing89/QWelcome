@@ -1,9 +1,17 @@
 package com.kingpaging.qwelcome.ui
 
 import android.content.Context
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertCountEquals
@@ -18,8 +26,11 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.SavedStateHandle
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -98,8 +109,14 @@ class CustomerIntakeScreenTest {
 
         composeRule.onNodeWithText(context.getString(R.string.label_customer_name)).assertIsDisplayed()
         composeRule.onNodeWithText(context.getString(R.string.label_customer_phone)).assertIsDisplayed()
-        composeRule.onNodeWithText(context.getString(R.string.label_wifi_ssid)).assertIsDisplayed()
-        composeRule.onNodeWithText(context.getString(R.string.label_wifi_password)).assertIsDisplayed()
+        composeRule
+            .onNode(editableFieldWithLabel(context.getString(R.string.label_wifi_ssid)))
+            .performScrollTo()
+            .assertIsDisplayed()
+        composeRule
+            .onNode(editableFieldWithLabel(context.getString(R.string.label_wifi_password)))
+            .performScrollTo()
+            .assertIsDisplayed()
         composeRule.onNodeWithContentDescription(context.getString(R.string.content_desc_settings)).assertIsDisplayed()
 
         composeRule.onNodeWithText(context.getString(R.string.action_show_qr)).assertIsNotEnabled()
@@ -147,15 +164,14 @@ class CustomerIntakeScreenTest {
         setScreenContent()
         val context = appContext
 
-        composeRule.onAllNodesWithText(context.getString(R.string.label_open_network)).assertCountEquals(0)
         composeRule.onAllNodesWithText(context.getString(R.string.label_hidden_network)).assertCountEquals(0)
         composeRule.onAllNodesWithText(context.getString(R.string.label_wifi_security)).assertCountEquals(0)
 
         composeRule
             .onNodeWithText(context.getString(R.string.label_advanced_wifi_options))
+            .performScrollTo()
             .performClick()
 
-        composeRule.onAllNodesWithText(context.getString(R.string.label_open_network)).assertCountEquals(1)
         composeRule.onAllNodesWithText(context.getString(R.string.label_hidden_network)).assertCountEquals(1)
         composeRule.onAllNodesWithText(context.getString(R.string.label_wifi_security)).assertCountEquals(1)
     }
@@ -167,7 +183,6 @@ class CustomerIntakeScreenTest {
 
         composeRule
             .onNodeWithText(context.getString(R.string.action_sms))
-            .performScrollTo()
             .performClick()
 
         composeRule.waitUntil(timeoutMillis = 5_000) {
@@ -183,6 +198,55 @@ class CustomerIntakeScreenTest {
     }
 
     @Test
+    fun pinnedActions_remainVisibleAfterScrollingToWifiQr() {
+        setSuppliedScreenContent()
+
+        composeRule.onNodeWithText(appContext.getString(R.string.action_show_qr)).performScrollTo()
+
+        assertPinnedActionsDisplayed()
+    }
+
+    @Test
+    fun keyboardNext_followsCustomerThenWifiOrderAndKeepsActionsVisible() {
+        val keyboardVisible = AtomicBoolean(false)
+        setSuppliedScreenContent(onKeyboardVisibility = { keyboardVisible.set(it) })
+        val fieldLabels =
+            listOf(
+                R.string.label_customer_name,
+                R.string.label_customer_phone,
+                R.string.label_account_number,
+                R.string.label_wifi_ssid,
+                R.string.label_wifi_password,
+            )
+        composeRule
+            .onNode(editableFieldWithLabel(appContext.getString(fieldLabels.first())))
+            .performScrollTo()
+            .performClick()
+        composeRule.waitUntil(timeoutMillis = 5_000) { keyboardVisible.get() }
+
+        fieldLabels.zipWithNext().forEach { (current, next) ->
+            composeRule.onNode(editableFieldWithLabel(appContext.getString(current))).performImeAction()
+            composeRule.onNode(editableFieldWithLabel(appContext.getString(next))).assertIsFocused()
+            assertPinnedActionsDisplayed()
+        }
+    }
+
+    @Test
+    fun compactScreenWithDoubleTextSize_keepsPinnedActionsUsable() {
+        val smsRequested = AtomicBoolean(false)
+        setSuppliedScreenContent(
+            fontScale = 2f,
+            actions = noOpCustomerIntakeActions().copy(onSmsClick = { smsRequested.set(true) }),
+        )
+
+        composeRule.onNodeWithText(appContext.getString(R.string.action_show_qr)).performScrollTo()
+        assertPinnedActionsDisplayed()
+        composeRule.onNodeWithText(appContext.getString(R.string.action_sms)).performClick()
+
+        assertTrue(smsRequested.get())
+    }
+
+    @Test
     fun settings_button_invokes_callback() {
         setScreenContent()
         val context = appContext
@@ -195,6 +259,39 @@ class CustomerIntakeScreenTest {
     }
 
     private fun editableFieldWithLabel(label: String): SemanticsMatcher = hasSetTextAction() and hasText(label)
+
+    private fun assertPinnedActionsDisplayed() {
+        listOf(R.string.action_sms, R.string.action_share, R.string.action_copy).forEach { label ->
+            composeRule.onNodeWithText(appContext.getString(label)).assertIsDisplayed()
+        }
+    }
+
+    private fun setSuppliedScreenContent(
+        fontScale: Float = 1f,
+        onKeyboardVisibility: (Boolean) -> Unit = {},
+        actions: CustomerIntakeActions = noOpCustomerIntakeActions(),
+    ) {
+        composeRule.setContent {
+            val density = LocalDensity.current.density
+            CompositionLocalProvider(LocalDensity provides Density(density, fontScale)) {
+                val keyboardVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
+                SideEffect { onKeyboardVisibility(keyboardVisible) }
+                CyberpunkTheme {
+                    Box(modifier = Modifier.width(320.dp).height(560.dp)) {
+                        CustomerIntakeScreen(
+                            uiState = CustomerIntakeUiState(),
+                            templateUiState = TemplateSelectionUiState(isLoading = false),
+                            snackbarHostState = remember { SnackbarHostState() },
+                            formFocusTargets = remember { CustomerFormFocusTargets() },
+                            copySuccess = false,
+                            actions = actions,
+                            onOpenSettings = {},
+                        )
+                    }
+                }
+            }
+        }
+    }
 
     private fun setScreenContent() {
         composeRule.setContent {
@@ -225,7 +322,6 @@ class CustomerIntakeScreenTest {
             onSsidChanged = {},
             onSecurityTypeChanged = { _: WifiQrGenerator.SecurityType -> },
             onHiddenNetworkChanged = {},
-            onOpenNetworkChanged = {},
             onPasswordChanged = {},
             onAccountNumberChanged = {},
             onSmsClick = {},

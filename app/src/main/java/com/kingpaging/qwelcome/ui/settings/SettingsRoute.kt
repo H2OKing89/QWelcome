@@ -42,7 +42,7 @@ fun SettingsRoute(
     val updateState by viewModel.updateState.collectAsStateWithLifecycle()
     val showDownloadConfirmDialog by viewModel.showDownloadConfirmDialog.collectAsStateWithLifecycle()
     val noBrowserMessage = stringResource(R.string.toast_no_browser)
-    val currentOnBack by rememberUpdatedState(onBack)
+    val profileSavedMessage by rememberUpdatedState(stringResource(R.string.settings_profile_saved))
     val installerLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
             viewModel.onInstallerReturned()
@@ -65,7 +65,7 @@ fun SettingsRoute(
         lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
             viewModel.settingsEvents.collect { event ->
                 when (event) {
-                    SettingsEvent.ProfileSaved -> currentOnBack()
+                    SettingsEvent.ProfileSaved -> showToast(context, profileSavedMessage)
                     is SettingsEvent.ShowToast -> showToast(context, event.message)
                     is SettingsEvent.ShowToastError -> {
                         soundPlayer.playBeep()

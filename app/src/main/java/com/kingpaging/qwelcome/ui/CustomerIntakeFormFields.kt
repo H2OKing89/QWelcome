@@ -3,11 +3,14 @@
 package com.kingpaging.qwelcome.ui
 
 import androidx.annotation.StringRes
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExpandLess
@@ -25,10 +28,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -39,6 +45,7 @@ import com.kingpaging.qwelcome.ui.components.NeonButtonStyle
 import com.kingpaging.qwelcome.ui.components.NeonDropdownMenuBox
 import com.kingpaging.qwelcome.ui.components.NeonOutlinedField
 import com.kingpaging.qwelcome.ui.components.NeonPanel
+import com.kingpaging.qwelcome.ui.components.displayLabelResource
 import com.kingpaging.qwelcome.util.WifiQrGenerator
 
 @Composable
@@ -57,19 +64,36 @@ internal fun CustomerFormFields(
     onSecurityTypeChanged: (WifiQrGenerator.SecurityType) -> Unit,
     isHiddenNetwork: Boolean,
     onHiddenNetworkChanged: (Boolean) -> Unit,
-    onOpenNetworkChanged: (Boolean) -> Unit,
     onPasswordChanged: (String) -> Unit,
     onPasswordVisibilityToggle: () -> Unit,
     onAccountNumberChanged: (String) -> Unit,
+    requiresAccount: Boolean = false,
+    requiresPassword: Boolean = false,
 ) {
-    NeonPanel(
-        modifier = Modifier.semantics(mergeDescendants = true) {},
-    ) {
+    NeonPanel {
+        Text(
+            stringResource(R.string.intake_customer_section),
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.semantics { heading() },
+        )
         CustomerContactFields(
             uiState = uiState,
             focusTargets = focusTargets,
             onCustomerNameChanged = onCustomerNameChanged,
             onCustomerPhoneChanged = onCustomerPhoneChanged,
+        )
+        AccountNumberField(
+            uiState = uiState,
+            focusTargets = focusTargets,
+            onAccountNumberChanged = onAccountNumberChanged,
+            required = requiresAccount,
+        )
+    }
+    NeonPanel {
+        Text(
+            stringResource(R.string.intake_wifi_section),
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.semantics { heading() },
         )
         WifiCredentialFields(
             uiState = uiState,
@@ -78,10 +102,9 @@ internal fun CustomerFormFields(
             onSsidChanged = onSsidChanged,
             onPasswordChanged = onPasswordChanged,
             onPasswordVisibilityToggle = onPasswordVisibilityToggle,
+            requiresPassword = requiresPassword,
         )
         AdvancedWifiOptions(
-            isOpenNetwork = uiState.isOpenNetwork,
-            onOpenNetworkChanged = onOpenNetworkChanged,
             isHiddenNetwork = isHiddenNetwork,
             onHiddenNetworkChanged = onHiddenNetworkChanged,
             securityType = securityType,
@@ -90,11 +113,6 @@ internal fun CustomerFormFields(
             securityDropdownExpanded = securityDropdownExpanded,
             onSecurityDropdownExpandedChange = onSecurityDropdownExpandedChange,
             onSecurityTypeChanged = onSecurityTypeChanged,
-        )
-        AccountNumberField(
-            uiState = uiState,
-            focusTargets = focusTargets,
-            onAccountNumberChanged = onAccountNumberChanged,
         )
     }
 }
@@ -109,9 +127,11 @@ private fun CustomerContactFields(
     NeonOutlinedField(
         value = uiState.customerName,
         onValueChange = onCustomerNameChanged,
-        label = { Text(stringResource(R.string.label_customer_name)) },
+        label = { IntakeFieldLabel(R.string.label_customer_name, required = true) },
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+        keyboardActions = KeyboardActions(onNext = { focusTargets.customerPhone.focusRequester.requestFocus() }),
         isError = uiState.customerNameError != null,
-        supportingText = { uiState.customerNameError?.let { Text(it) } },
+        supportingText = if (uiState.customerNameError != null) ({ Text(uiState.customerNameError) }) else null,
         modifier =
             Modifier
                 .focusRequester(focusTargets.customerName.focusRequester)
@@ -121,10 +141,17 @@ private fun CustomerContactFields(
     NeonOutlinedField(
         value = uiState.customerPhone,
         onValueChange = onCustomerPhoneChanged,
-        label = { Text(stringResource(R.string.label_customer_phone)) },
+        label = {
+            IntakeFieldLabel(
+                R.string.label_customer_phone,
+                required = false,
+                hint = stringResource(R.string.intake_phone_for_sms),
+            )
+        },
         isError = uiState.customerPhoneError != null,
-        supportingText = { uiState.customerPhoneError?.let { Text(it) } },
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+        supportingText = if (uiState.customerPhoneError != null) ({ Text(uiState.customerPhoneError) }) else null,
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone, imeAction = ImeAction.Next),
+        keyboardActions = KeyboardActions(onNext = { focusTargets.accountNumber.focusRequester.requestFocus() }),
         modifier =
             Modifier
                 .focusRequester(focusTargets.customerPhone.focusRequester)
@@ -140,14 +167,25 @@ private fun WifiCredentialFields(
     onSsidChanged: (String) -> Unit,
     onPasswordChanged: (String) -> Unit,
     onPasswordVisibilityToggle: () -> Unit,
+    requiresPassword: Boolean,
 ) {
+    val focusManager = LocalFocusManager.current
     NeonOutlinedField(
         value = uiState.ssid,
         onValueChange = onSsidChanged,
-        keyboardOptions = KeyboardOptions(autoCorrectEnabled = false),
-        label = { Text(stringResource(R.string.label_wifi_ssid)) },
+        keyboardOptions =
+            KeyboardOptions(
+                autoCorrectEnabled = false,
+                imeAction = if (uiState.isOpenNetwork) ImeAction.Done else ImeAction.Next,
+            ),
+        keyboardActions =
+            KeyboardActions(
+                onNext = { focusTargets.password.focusRequester.requestFocus() },
+                onDone = { focusManager.clearFocus() },
+            ),
+        label = { IntakeFieldLabel(R.string.label_wifi_ssid, required = true) },
         isError = uiState.ssidError != null,
-        supportingText = { uiState.ssidError?.let { Text(it) } },
+        supportingText = if (uiState.ssidError != null) ({ Text(uiState.ssidError) }) else null,
         modifier =
             Modifier
                 .focusRequester(focusTargets.ssid.focusRequester)
@@ -159,6 +197,7 @@ private fun WifiCredentialFields(
         passwordVisible = passwordVisible,
         onPasswordChanged = onPasswordChanged,
         onPasswordVisibilityToggle = onPasswordVisibilityToggle,
+        required = requiresPassword && !uiState.isOpenNetwork,
     )
 }
 
@@ -169,21 +208,28 @@ private fun WifiPasswordField(
     passwordVisible: Boolean,
     onPasswordChanged: (String) -> Unit,
     onPasswordVisibilityToggle: () -> Unit,
+    required: Boolean,
 ) {
+    val focusManager = LocalFocusManager.current
     NeonOutlinedField(
         value = if (uiState.isOpenNetwork) "" else uiState.password,
         onValueChange = onPasswordChanged,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, autoCorrectEnabled = false),
-        label = { Text(stringResource(R.string.label_wifi_password)) },
+        keyboardOptions =
+            KeyboardOptions(
+                keyboardType = KeyboardType.Password,
+                autoCorrectEnabled = false,
+                imeAction = ImeAction.Done,
+            ),
+        keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+        label = { IntakeFieldLabel(R.string.label_wifi_password, required = required) },
         enabled = !uiState.isOpenNetwork,
         isError = uiState.passwordError != null,
-        supportingText = {
-            if (uiState.isOpenNetwork) {
-                Text(stringResource(R.string.hint_password_disabled))
-            } else {
-                uiState.passwordError?.let { Text(it) }
-            }
-        },
+        supportingText =
+            when {
+                uiState.isOpenNetwork -> ({ Text(stringResource(R.string.hint_password_disabled)) })
+                uiState.passwordError != null -> ({ Text(uiState.passwordError) })
+                else -> null
+            },
         visualTransformation =
             if (passwordVisible) {
                 VisualTransformation.None
@@ -213,8 +259,6 @@ private fun WifiPasswordField(
 
 @Composable
 private fun AdvancedWifiOptions(
-    isOpenNetwork: Boolean,
-    onOpenNetworkChanged: (Boolean) -> Unit,
     isHiddenNetwork: Boolean,
     onHiddenNetworkChanged: (Boolean) -> Unit,
     securityType: WifiQrGenerator.SecurityType,
@@ -248,8 +292,6 @@ private fun AdvancedWifiOptions(
 
     if (expanded) {
         AdvancedWifiOptionsSection(
-            isOpenNetwork = isOpenNetwork,
-            onOpenNetworkChanged = onOpenNetworkChanged,
             isHiddenNetwork = isHiddenNetwork,
             onHiddenNetworkChanged = onHiddenNetworkChanged,
             securityType = securityType,
@@ -262,8 +304,6 @@ private fun AdvancedWifiOptions(
 
 @Composable
 private fun AdvancedWifiOptionsSection(
-    isOpenNetwork: Boolean,
-    onOpenNetworkChanged: (Boolean) -> Unit,
     isHiddenNetwork: Boolean,
     onHiddenNetworkChanged: (Boolean) -> Unit,
     securityType: WifiQrGenerator.SecurityType,
@@ -271,25 +311,17 @@ private fun AdvancedWifiOptionsSection(
     onSecurityDropdownExpandedChange: (Boolean) -> Unit,
     onSecurityTypeChanged: (WifiQrGenerator.SecurityType) -> Unit,
 ) {
-    NetworkOptionToggle(
-        value = isOpenNetwork,
-        onValueChange = onOpenNetworkChanged,
-        labelResource = R.string.label_open_network,
+    SecurityTypeSelector(
+        securityType = securityType,
+        expanded = securityDropdownExpanded,
+        onExpandedChange = onSecurityDropdownExpandedChange,
+        onSecurityTypeChanged = onSecurityTypeChanged,
     )
     NetworkOptionToggle(
         value = isHiddenNetwork,
         onValueChange = onHiddenNetworkChanged,
         labelResource = R.string.label_hidden_network,
     )
-
-    if (!isOpenNetwork) {
-        SecurityTypeSelector(
-            securityType = securityType,
-            expanded = securityDropdownExpanded,
-            onExpandedChange = onSecurityDropdownExpandedChange,
-            onSecurityTypeChanged = onSecurityTypeChanged,
-        )
-    }
 }
 
 @Composable
@@ -337,31 +369,44 @@ private fun SecurityTypeSelector(
     NeonDropdownMenuBox(
         expanded = expanded,
         onExpandedChange = onExpandedChange,
-        selectedText =
-            stringResource(
-                if (securityType == WifiQrGenerator.SecurityType.WPA2_PSK) {
-                    R.string.security_wpa2
-                } else {
-                    R.string.security_wpa3_sae
-                },
-            ),
+        selectedText = stringResource(securityType.displayLabelResource()),
         label = { Text(stringResource(R.string.label_wifi_security)) },
         modifier = Modifier.fillMaxWidth(),
     ) {
-        DropdownMenuItem(
-            text = { Text(stringResource(R.string.security_wpa2)) },
-            onClick = {
-                onSecurityTypeChanged(WifiQrGenerator.SecurityType.WPA2_PSK)
-                onExpandedChange(false)
-            },
-        )
-        DropdownMenuItem(
-            text = { Text(stringResource(R.string.security_wpa3_sae)) },
-            onClick = {
-                onSecurityTypeChanged(WifiQrGenerator.SecurityType.WPA3_SAE)
-                onExpandedChange(false)
-            },
-        )
+        listOf(
+            WifiQrGenerator.SecurityType.OPEN,
+            WifiQrGenerator.SecurityType.WPA2_PSK,
+            WifiQrGenerator.SecurityType.WPA_WPA2_PERSONAL,
+            WifiQrGenerator.SecurityType.WPA3_SAE,
+            WifiQrGenerator.SecurityType.WPA2_WPA3_PERSONAL,
+        ).forEach { option ->
+            DropdownMenuItem(
+                text = { Text(stringResource(option.displayLabelResource())) },
+                onClick = {
+                    onSecurityTypeChanged(option)
+                    onExpandedChange(false)
+                },
+            )
+        }
+    }
+}
+
+@Composable
+private fun IntakeFieldLabel(
+    @StringRes labelResource: Int,
+    required: Boolean,
+    hint: String? = null,
+) {
+    val supportingLabel = if (required) stringResource(R.string.intake_required) else hint
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(stringResource(labelResource))
+        if (supportingLabel != null) {
+            Text(
+                supportingLabel,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
     }
 }
 
@@ -370,14 +415,16 @@ private fun AccountNumberField(
     uiState: CustomerIntakeUiState,
     focusTargets: CustomerFormFocusTargets,
     onAccountNumberChanged: (String) -> Unit,
+    required: Boolean,
 ) {
     NeonOutlinedField(
         value = uiState.accountNumber,
         onValueChange = onAccountNumberChanged,
-        label = { Text(stringResource(R.string.label_account_number)) },
+        label = { IntakeFieldLabel(R.string.label_account_number, required = required) },
         isError = uiState.accountNumberError != null,
-        supportingText = { uiState.accountNumberError?.let { Text(it) } },
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        supportingText = if (uiState.accountNumberError != null) ({ Text(uiState.accountNumberError) }) else null,
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
+        keyboardActions = KeyboardActions(onNext = { focusTargets.ssid.focusRequester.requestFocus() }),
         modifier =
             Modifier
                 .focusRequester(focusTargets.accountNumber.focusRequester)

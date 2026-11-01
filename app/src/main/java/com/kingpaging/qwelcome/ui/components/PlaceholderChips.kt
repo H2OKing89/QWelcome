@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.FlowRowOverflow
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -43,7 +44,7 @@ fun PlaceholderChip(
 ) {
     val isDark = LocalDarkTheme.current
     val colorScheme = MaterialTheme.colorScheme
-    val chipColor = if (isRequired) colorScheme.secondary else colorScheme.tertiary
+    val chipColor = if (isRequired) colorScheme.primary else colorScheme.onSurfaceVariant
 
     Surface(
         modifier = modifier,
@@ -119,7 +120,7 @@ fun InteractivePlaceholderChip(
 ) {
     val isDark = LocalDarkTheme.current
     val colorScheme = MaterialTheme.colorScheme
-    val chipColor = colorScheme.secondary
+    val chipColor = colorScheme.primary
     val haptic = LocalHapticFeedback.current
     val containerAlpha =
         if (isRequired) {
@@ -127,17 +128,17 @@ fun InteractivePlaceholderChip(
         } else {
             if (isDark) 0.12f else 0.08f
         }
-    val borderAlpha = if (isRequired) 1f else 0.6f
-    val borderWidth = if (isRequired) 1.5.dp else 1.dp
-    val textAlpha = if (isRequired) 1f else 0.8f
+    val borderAlpha = if (isRequired) 0.7f else 0.3f
+    val borderWidth = 1.dp
+    val textAlpha = 1f
 
     Surface(
         onClick = {
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             onClick()
         },
-        modifier = modifier,
-        shape = RoundedCornerShape(6.dp),
+        modifier = modifier.defaultMinSize(minHeight = 48.dp),
+        shape = RoundedCornerShape(12.dp),
         color = chipColor.copy(alpha = containerAlpha),
         border =
             BorderStroke(
@@ -147,9 +148,9 @@ fun InteractivePlaceholderChip(
     ) {
         Text(
             text = PlaceholderLabels.getShortLabel(placeholder),
-            style = MaterialTheme.typography.labelSmall,
+            style = MaterialTheme.typography.labelMedium,
             color = chipColor.copy(alpha = textAlpha),
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp),
         )
     }
 }

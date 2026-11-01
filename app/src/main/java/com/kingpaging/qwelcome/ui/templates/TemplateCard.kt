@@ -9,6 +9,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -36,6 +37,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -55,7 +57,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.data.Template
-import com.kingpaging.qwelcome.ui.theme.LocalDarkTheme
 import com.kingpaging.qwelcome.util.rememberHapticFeedback
 
 private val PreviewWhitespace = Regex("\\s+")
@@ -81,7 +82,6 @@ internal fun TemplateCard(
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val isDark = LocalDarkTheme.current
     val colors = MaterialTheme.colorScheme
     val useDescription = stringResource(R.string.content_desc_use_named_template, template.name)
     val previewDescription = stringResource(R.string.content_desc_preview_named_template, template.name)
@@ -96,10 +96,9 @@ internal fun TemplateCard(
     val isHovered by interactionSource.collectIsHoveredAsState()
     val containerColor =
         when {
-            isPressed -> colors.primaryContainer.copy(alpha = if (isDark) 0.36f else 0.55f)
-            isFocused || isHovered -> colors.surfaceVariant.copy(alpha = if (isDark) 0.82f else 0.65f)
-            isDark -> colors.surface.copy(alpha = 0.72f)
-            else -> colors.surface
+            isPressed || isActive -> colors.primaryContainer
+            isFocused || isHovered -> colors.surfaceContainerHigh
+            else -> colors.surfaceContainer
         }
 
     Card(
@@ -118,7 +117,7 @@ internal fun TemplateCard(
                     onClick = onSelect,
                     onLongClick = onPreview,
                 ),
-        shape = RoundedCornerShape(8.dp),
+        shape = RoundedCornerShape(18.dp),
         colors =
             CardDefaults.cardColors(
                 containerColor = containerColor,
@@ -129,9 +128,9 @@ internal fun TemplateCard(
                 width = if (isActive) 1.5.dp else 0.5.dp,
                 color =
                     if (isActive || isFocused) {
-                        colors.primary.copy(alpha = 0.9f)
+                        colors.primary
                     } else {
-                        colors.outlineVariant.copy(alpha = if (isDark) 0.45f else 0.75f)
+                        colors.outlineVariant
                     },
             ),
     ) {
@@ -139,7 +138,7 @@ internal fun TemplateCard(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
         ) {
             TemplateCardHeader(
                 template = template,
@@ -155,12 +154,37 @@ internal fun TemplateCard(
 
             Text(
                 text = preview,
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodyMedium,
                 color = colors.onSurfaceVariant,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(top = 6.dp),
+                modifier = Modifier.padding(top = 8.dp),
             )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (isActive) {
+                    Text(
+                        text = stringResource(R.string.ux_template_active),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = colors.primary,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                TextButton(onClick = onPreview) {
+                    Icon(
+                        imageVector = Icons.Default.Visibility,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Text(
+                        text = stringResource(R.string.ux_template_view_message),
+                        modifier = Modifier.padding(start = 8.dp),
+                    )
+                }
+            }
         }
     }
 }
@@ -377,9 +401,9 @@ private fun TemplateTagMetadata(tags: List<String>) {
         style = MaterialTheme.typography.labelSmall,
         color =
             if (tags.isEmpty()) {
-                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                MaterialTheme.colorScheme.onSurfaceVariant
             } else {
-                MaterialTheme.colorScheme.secondary
+                MaterialTheme.colorScheme.onSurfaceVariant
             },
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,

@@ -17,8 +17,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
@@ -63,7 +65,7 @@ internal fun TemplateNameField(
         value = name,
         onValueChange = onNameChange,
         label = { Text(stringResource(R.string.label_name)) },
-        accentColor = MaterialTheme.colorScheme.secondary,
+        accentColor = MaterialTheme.colorScheme.primary,
         isError = nameError != null,
         supportingText = nameError?.let { { Text(stringResource(it)) } },
         singleLine = true,
@@ -165,15 +167,15 @@ internal fun TemplateTagsSummary(
     Surface(
         onClick = onOpen,
         modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.small,
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surfaceContainer,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
     ) {
         Row(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                    .padding(16.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -183,7 +185,7 @@ internal fun TemplateTagsSummary(
             ) {
                 Text(
                     text = stringResource(R.string.label_tags),
-                    style = MaterialTheme.typography.labelMedium,
+                    style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
@@ -195,8 +197,13 @@ internal fun TemplateTagsSummary(
                         },
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = stringResource(R.string.ux_template_tags_help),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             Icon(
@@ -244,9 +251,10 @@ internal fun TemplateTagsSheet(
             modifier =
                 Modifier
                     .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
                     .navigationBarsPadding()
                     .imePadding()
-                    .padding(horizontal = 20.dp)
+                    .padding(horizontal = 16.dp)
                     .padding(bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
@@ -322,8 +330,8 @@ internal fun MessageContentLauncher(
 ) {
     Surface(
         onClick = onOpenEditor,
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
-        shape = MaterialTheme.shapes.small,
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        shape = MaterialTheme.shapes.large,
         border =
             BorderStroke(
                 width = 1.dp,
@@ -340,10 +348,15 @@ internal fun MessageContentLauncher(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(12.dp),
+                    .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             MessagePreviewHeader()
+            Text(
+                text = stringResource(R.string.ux_template_message_help),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
 
             Text(
                 text = contentText.ifBlank { stringResource(R.string.hint_template_empty_content) },
@@ -352,9 +365,9 @@ internal fun MessageContentLauncher(
                     if (contentText.isBlank()) {
                         MaterialTheme.colorScheme.onSurfaceVariant
                     } else {
-                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f)
+                        MaterialTheme.colorScheme.onSurface
                     },
-                maxLines = 4,
+                maxLines = 6,
                 overflow = TextOverflow.Ellipsis,
             )
 
@@ -383,7 +396,7 @@ private fun MessagePreviewHeader() {
     ) {
         Text(
             text = stringResource(R.string.label_message),
-            style = MaterialTheme.typography.labelMedium,
+            style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Row(

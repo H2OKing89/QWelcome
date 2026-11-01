@@ -137,6 +137,44 @@ class WifiQrGeneratorTest {
     // ========== WiFi String Generation Tests ==========
 
     @Test
+    fun `all five security modes encode scanner compatible hidden network payloads`() {
+        val expected =
+            mapOf(
+                WifiQrGenerator.SecurityType.OPEN to "WIFI:T:nopass;S:MyNetwork;H:true;;",
+                WifiQrGenerator.SecurityType.WPA2_PSK to "WIFI:T:WPA;S:MyNetwork;P:password123;H:true;;",
+                WifiQrGenerator.SecurityType.WPA_WPA2_PERSONAL to "WIFI:T:WPA;S:MyNetwork;P:password123;H:true;;",
+                WifiQrGenerator.SecurityType.WPA3_SAE to "WIFI:T:SAE;S:MyNetwork;P:password123;H:true;;",
+                WifiQrGenerator.SecurityType.WPA2_WPA3_PERSONAL to "WIFI:T:WPA;S:MyNetwork;P:password123;H:true;;",
+            )
+        assertEquals(WifiQrGenerator.SecurityType.entries.toSet(), expected.keys)
+        expected.forEach { (mode, payload) ->
+            assertEquals(
+                payload,
+                WifiQrGenerator.generateWifiString("MyNetwork", "password123", mode, isHidden = true),
+            )
+        }
+        assertEquals(
+            WifiQrGenerator.SecurityType.WPA2_WPA3_PERSONAL,
+            WifiQrGenerator.DEFAULT_SECURITY_TYPE,
+        )
+    }
+
+    @Test
+    fun `only open mode skips password validation and never encodes a password`() {
+        listOf("", "short", "ignored-password").forEach { password ->
+            assertEquals(
+                "WIFI:T:nopass;S:Guest;;",
+                WifiQrGenerator.generateWifiString("Guest", password, WifiQrGenerator.SecurityType.OPEN),
+            )
+        }
+        WifiQrGenerator.SecurityType.entries.filterNot { it == WifiQrGenerator.SecurityType.OPEN }.forEach { mode ->
+            assertThrows(IllegalArgumentException::class.java) {
+                WifiQrGenerator.generateWifiString("Guest", "short", mode)
+            }
+        }
+    }
+
+    @Test
     fun `generateWifiString produces correct format`() {
         val result = WifiQrGenerator.generateWifiString("MyNetwork", "password123")
         assertEquals("WIFI:T:WPA;S:MyNetwork;P:password123;;", result)

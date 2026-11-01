@@ -1,5 +1,14 @@
 package com.kingpaging.qwelcome.ui
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PersonAdd
@@ -10,16 +19,26 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.dp
 import com.kingpaging.qwelcome.R
+import com.kingpaging.qwelcome.data.MessageTemplate
 import com.kingpaging.qwelcome.ui.components.CenteredFormColumn
 import com.kingpaging.qwelcome.ui.components.CyberpunkBackdrop
 import com.kingpaging.qwelcome.ui.components.NeonTopAppBar
@@ -28,6 +47,8 @@ import com.kingpaging.qwelcome.ui.components.QrCodeBottomSheet
 import com.kingpaging.qwelcome.util.WifiQrGenerator
 import com.kingpaging.qwelcome.util.rememberHapticFeedback
 import com.kingpaging.qwelcome.viewmodel.templates.TemplateSelectionUiState
+
+private const val COMPACT_HEADER_FONT_SCALE = 1.5f
 
 internal class FormFieldFocusTarget {
     val focusRequester = FocusRequester()
@@ -45,9 +66,9 @@ internal class CustomerFormFocusTargets {
         when {
             uiState.customerNameError != null -> customerName
             uiState.customerPhoneError != null -> customerPhone
+            uiState.accountNumberError != null -> accountNumber
             uiState.ssidError != null -> ssid
             uiState.passwordError != null -> password
-            uiState.accountNumberError != null -> accountNumber
             else -> null
         }
 }
@@ -61,7 +82,6 @@ internal data class CustomerIntakeActions(
     val onSsidChanged: (String) -> Unit,
     val onSecurityTypeChanged: (WifiQrGenerator.SecurityType) -> Unit,
     val onHiddenNetworkChanged: (Boolean) -> Unit,
-    val onOpenNetworkChanged: (Boolean) -> Unit,
     val onPasswordChanged: (String) -> Unit,
     val onAccountNumberChanged: (String) -> Unit,
     val onSmsClick: () -> Unit,
@@ -83,6 +103,9 @@ internal fun CustomerIntakeScreen(
     onOpenTemplates: () -> Unit = {},
 ) {
     val hapticFeedback = rememberHapticFeedback()
+    val activeTemplate = templateUiState.templates.find { it.id == templateUiState.activeTemplateId }
+    val templateContent = activeTemplate?.content.orEmpty()
+    val compactHeader = LocalDensity.current.fontScale >= COMPACT_HEADER_FONT_SCALE
     var passwordVisible by rememberSaveable { mutableStateOf(false) }
     var advancedWifiOptionsExpanded by rememberSaveable { mutableStateOf(false) }
     var securityDropdownExpanded by remember { mutableStateOf(false) }
@@ -101,20 +124,31 @@ internal fun CustomerIntakeScreen(
 
     CyberpunkBackdrop {
         Scaffold(
-            // Intentional: keep scaffold transparent so the cyberpunk backdrop remains visible.
+            modifier = Modifier.imePadding(),
             containerColor = Color.Transparent,
             snackbarHost = { SnackbarHost(snackbarHostState) },
             topBar = {
                 NeonTopAppBar(
                     title = { QWelcomeHeader() },
                     actions = {
-                        IconButton(onClick = {
-                            hapticFeedback()
-                            actions.onClearForm()
-                        }) {
-                            Icon(
-                                Icons.Filled.PersonAdd,
-                                contentDescription = stringResource(R.string.content_desc_new_customer),
+                        val newCustomerDescription = stringResource(R.string.content_desc_new_customer)
+                        TextButton(
+                            onClick = {
+                                hapticFeedback()
+                                actions.onClearForm()
+                            },
+                            modifier = Modifier.semantics { contentDescription = newCustomerDescription },
+                        ) {
+                            Icon(Icons.Filled.PersonAdd, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text(
+                                stringResource(
+                                    if (compactHeader) {
+                                        R.string.intake_new_customer_compact
+                                    } else {
+                                        R.string.intake_new_customer
+                                    },
+                                ),
                             )
                         }
                         IconButton(onClick = {
@@ -129,6 +163,38 @@ internal fun CustomerIntakeScreen(
                     },
                     actionIconContentColor = MaterialTheme.colorScheme.onBackground,
                 )
+            },
+            bottomBar = {
+                Surface(color = MaterialTheme.colorScheme.surface, tonalElevation = 2.dp) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().navigationBarsPadding(),
+                        contentAlignment = Alignment.TopCenter,
+                    ) {
+                        Box(
+                            modifier =
+                                Modifier
+                                    .widthIn(max = 720.dp)
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                        ) {
+                            CustomerIntakeActionButtonRow(
+                                copySuccess = copySuccess,
+                                onSmsClick = {
+                                    hapticFeedback()
+                                    actions.onSmsClick()
+                                },
+                                onShareClick = {
+                                    hapticFeedback()
+                                    actions.onShareClick()
+                                },
+                                onCopyClick = {
+                                    hapticFeedback()
+                                    actions.onCopyClick()
+                                },
+                            )
+                        }
+                    }
+                }
             },
         ) { innerPadding ->
             CenteredFormColumn(padding = innerPadding) {
@@ -173,32 +239,15 @@ internal fun CustomerIntakeScreen(
                         hapticFeedback()
                         actions.onHiddenNetworkChanged(it)
                     },
-                    onOpenNetworkChanged = {
-                        hapticFeedback()
-                        actions.onOpenNetworkChanged(it)
-                    },
                     onPasswordChanged = actions.onPasswordChanged,
                     onPasswordVisibilityToggle = {
                         hapticFeedback()
                         passwordVisible = !passwordVisible
                     },
                     onAccountNumberChanged = actions.onAccountNumberChanged,
-                )
-
-                CustomerIntakeActionButtonRow(
-                    copySuccess = copySuccess,
-                    onSmsClick = {
-                        hapticFeedback()
-                        actions.onSmsClick()
-                    },
-                    onShareClick = {
-                        hapticFeedback()
-                        actions.onShareClick()
-                    },
-                    onCopyClick = {
-                        hapticFeedback()
-                        actions.onCopyClick()
-                    },
+                    requiresAccount =
+                        MessageTemplate.usesPlaceholder(templateContent, MessageTemplate.KEY_ACCOUNT_NUMBER),
+                    requiresPassword = MessageTemplate.usesPlaceholder(templateContent, MessageTemplate.KEY_PASSWORD),
                 )
 
                 CustomerIntakeQrCodeSection(

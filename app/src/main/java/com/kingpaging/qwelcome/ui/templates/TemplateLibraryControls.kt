@@ -5,10 +5,11 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
@@ -40,7 +41,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.kingpaging.qwelcome.R
-import com.kingpaging.qwelcome.ui.theme.LocalDarkTheme
 
 @Suppress("FunctionNaming")
 @Composable
@@ -53,43 +53,53 @@ internal fun TemplateLibraryControls(
     onOpenTags: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Row(
+    Column(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         TemplateSearchField(
             query = query,
             onQueryChange = onQueryChange,
             onClear = onClearSearch,
-            modifier = Modifier.weight(1f),
         )
-        OutlinedButton(
-            onClick = onOpenTags,
-            enabled = hasTags,
-            shape = RoundedCornerShape(8.dp),
-            contentPadding = PaddingValues(horizontal = 8.dp),
-            modifier =
-                Modifier
-                    .widthIn(min = 128.dp)
-                    .height(52.dp),
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(
-                imageVector = Icons.Default.FilterList,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp),
-            )
             Text(
-                text =
-                    if (selectedTagCount == 0) {
-                        stringResource(R.string.label_tags)
-                    } else {
-                        stringResource(R.string.label_tags_selected, selectedTagCount)
-                    },
-                modifier = Modifier.padding(start = 6.dp),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
+                text = stringResource(R.string.ux_template_library_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.weight(1f),
             )
+            OutlinedButton(
+                onClick = onOpenTags,
+                enabled = hasTags,
+                shape = RoundedCornerShape(12.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+                modifier =
+                    Modifier
+                        .widthIn(min = 88.dp)
+                        .heightIn(min = 48.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.FilterList,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                )
+                Text(
+                    text =
+                        if (selectedTagCount == 0) {
+                            stringResource(R.string.label_tags)
+                        } else {
+                            stringResource(R.string.label_tags_selected, selectedTagCount)
+                        },
+                    modifier = Modifier.padding(start = 6.dp),
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
     }
 }
@@ -104,7 +114,6 @@ internal fun TemplateSearchField(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
-    val isDark = LocalDarkTheme.current
     val colors = MaterialTheme.colorScheme
     val searchDescription = stringResource(R.string.content_desc_search_templates)
     val focusManager = LocalFocusManager.current
@@ -115,7 +124,7 @@ internal fun TemplateSearchField(
         modifier =
             modifier
                 .fillMaxWidth()
-                .height(52.dp)
+                .heightIn(min = 56.dp)
                 .semantics { contentDescription = searchDescription },
         singleLine = true,
         textStyle = MaterialTheme.typography.bodyLarge.copy(color = colors.onSurface),
@@ -125,13 +134,8 @@ internal fun TemplateSearchField(
         keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
         decorationBox = { innerTextField ->
             Surface(
-                shape = RoundedCornerShape(8.dp),
-                color =
-                    if (isDark) {
-                        colors.surface.copy(alpha = 0.72f)
-                    } else {
-                        colors.surface
-                    },
+                shape = RoundedCornerShape(16.dp),
+                color = colors.surfaceContainer,
                 border =
                     BorderStroke(
                         width = if (isFocused) 1.5.dp else 1.dp,
@@ -142,7 +146,7 @@ internal fun TemplateSearchField(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .height(52.dp)
+                            .heightIn(min = 56.dp)
                             .padding(start = 14.dp),
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                     verticalAlignment = Alignment.CenterVertically,

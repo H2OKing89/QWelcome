@@ -5,10 +5,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
@@ -20,6 +24,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -152,7 +157,7 @@ fun TemplateListScreen(
                     title = {
                         Text(
                             text = stringResource(R.string.title_templates),
-                            color = MaterialTheme.colorScheme.primary,
+                            color = MaterialTheme.colorScheme.onSurface,
                         )
                     },
                     navigationIcon = {
@@ -168,18 +173,22 @@ fun TemplateListScreen(
                         }
                     },
                     actions = {
-                        IconButton(onClick = {
+                        FilledTonalButton(onClick = {
                             haptic()
                             onOpenEditor(NEW_TEMPLATE_ID)
                         }) {
                             Icon(
                                 imageVector = Icons.Default.Add,
                                 contentDescription = stringResource(R.string.action_new_template),
-                                tint = MaterialTheme.colorScheme.secondary,
+                                modifier = Modifier.size(18.dp),
+                            )
+                            Text(
+                                text = stringResource(R.string.ux_template_new_short),
+                                modifier = Modifier.padding(start = 6.dp),
                             )
                         }
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
                 )
             },
         ) { padding ->
@@ -216,6 +225,10 @@ fun TemplateListScreen(
                         Modifier
                             .fillMaxSize()
                             .padding(padding)
+                            .consumeWindowInsets(padding)
+                            .imePadding()
+                            .wrapContentWidth(Alignment.CenterHorizontally)
+                            .widthIn(max = 720.dp)
                             .padding(horizontal = 16.dp),
                 ) {
                     TemplateLibraryControls(
@@ -240,8 +253,8 @@ fun TemplateListScreen(
                                 .weight(1f)
                                 .testTag(TEMPLATE_LIST_TEST_TAG),
                         state = templateListState,
-                        contentPadding = PaddingValues(top = 8.dp, bottom = 96.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        contentPadding = PaddingValues(top = 12.dp, bottom = 24.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         if (uiState.showTemplateLimitWarning && !uiState.warningDismissed) {
                             item(key = "template_limit_warning") {
@@ -335,7 +348,7 @@ fun TemplateListScreen(
                                                 else -> stringResource(R.string.text_no_templates_for_filters)
                                             },
                                         style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                     NeonButton(
                                         onClick = {

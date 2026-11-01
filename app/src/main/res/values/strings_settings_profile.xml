@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_profile_editor_heading">Your signature</string>
+    <string name="settings_profile_editor_description">These details appear wherever your template includes a technician signature.</string>
+    <string name="settings_profile_signature_heading">Signature example</string>
+    <string name="settings_profile_signature_draft">Based on your current edits.</string>
+    <string name="settings_profile_signature_saved">This is your saved signature.</string>
+    <string name="settings_profile_signature_empty">Add your name, title, or department to see your signature.</string>
+    <string name="settings_profile_unsaved_status">Unsaved changes</string>
+    <string name="settings_profile_saved_status">Profile up to date</string>
+</resources>

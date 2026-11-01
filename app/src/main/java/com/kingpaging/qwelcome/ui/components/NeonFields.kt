@@ -4,9 +4,9 @@ package com.kingpaging.qwelcome.ui.components
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -17,7 +17,7 @@ import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.VisualTransformation
-import com.kingpaging.qwelcome.ui.theme.LocalDarkTheme
+import androidx.compose.ui.unit.dp
 
 @Composable
 fun NeonOutlinedField(
@@ -35,7 +35,6 @@ fun NeonOutlinedField(
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     keyboardActions: KeyboardActions = KeyboardActions.Default,
 ) {
-    val isDark = LocalDarkTheme.current
     val colorScheme = MaterialTheme.colorScheme
 
     OutlinedTextField(
@@ -45,6 +44,8 @@ fun NeonOutlinedField(
         enabled = enabled,
         singleLine = singleLine,
         isError = isError,
+        textStyle = MaterialTheme.typography.bodyLarge,
+        shape = RoundedCornerShape(12.dp),
         supportingText =
             if (supportingText != null) {
                 {
@@ -65,52 +66,26 @@ fun NeonOutlinedField(
         keyboardOptions = keyboardOptions,
         keyboardActions = keyboardActions,
         modifier = modifier.fillMaxWidth(),
-        colors = neonOutlinedFieldColors(isDark, accentColor, colorScheme),
+        colors =
+            OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = accentColor,
+                focusedLabelColor = accentColor,
+                focusedTextColor = colorScheme.onSurface,
+                cursorColor = accentColor,
+                unfocusedBorderColor = colorScheme.outline,
+                unfocusedLabelColor = colorScheme.onSurfaceVariant,
+                unfocusedTextColor = colorScheme.onSurface,
+                focusedContainerColor = colorScheme.surfaceContainerLow,
+                unfocusedContainerColor = colorScheme.surfaceContainerLow,
+                disabledBorderColor = colorScheme.outlineVariant,
+                disabledLabelColor = colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                disabledTextColor = colorScheme.onSurface.copy(alpha = 0.5f),
+                disabledContainerColor = colorScheme.surfaceContainer,
+                disabledSupportingTextColor = colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                errorBorderColor = colorScheme.error,
+                errorLabelColor = colorScheme.error,
+                errorCursorColor = colorScheme.error,
+                errorContainerColor = colorScheme.errorContainer,
+            ),
     )
 }
-
-@Composable
-private fun neonOutlinedFieldColors(
-    isDark: Boolean,
-    accentColor: Color,
-    colorScheme: ColorScheme,
-) = OutlinedTextFieldDefaults.colors(
-    focusedBorderColor = accentColor,
-    focusedLabelColor = accentColor,
-    focusedTextColor = colorScheme.onSurface,
-    cursorColor = accentColor,
-    unfocusedBorderColor =
-        if (isDark) {
-            colorScheme.outline.copy(alpha = 0.18f)
-        } else {
-            colorScheme.outline.copy(alpha = 0.6f)
-        },
-    unfocusedLabelColor = colorScheme.onSurfaceVariant,
-    unfocusedTextColor = colorScheme.onSurface,
-    focusedContainerColor =
-        if (isDark) {
-            colorScheme.primary.copy(alpha = 0.05f)
-        } else {
-            colorScheme.surface
-        },
-    unfocusedContainerColor = if (isDark) Color.Transparent else colorScheme.surface,
-    disabledBorderColor = colorScheme.outline.copy(alpha = 0.3f),
-    disabledLabelColor = colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-    disabledTextColor = colorScheme.onSurface.copy(alpha = 0.5f),
-    disabledContainerColor =
-        if (isDark) {
-            Color.Transparent
-        } else {
-            colorScheme.surfaceVariant.copy(alpha = 0.3f)
-        },
-    disabledSupportingTextColor = colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-    errorBorderColor = colorScheme.error,
-    errorLabelColor = colorScheme.error,
-    errorCursorColor = colorScheme.error,
-    errorContainerColor =
-        if (isDark) {
-            colorScheme.error.copy(alpha = 0.05f)
-        } else {
-            Color.Transparent
-        },
-)

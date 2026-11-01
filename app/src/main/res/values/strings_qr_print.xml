@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="qr_print_action">Print / Save PDF</string>
+    <string name="qr_print_document_title">WiFi sign</string>
+    <string name="qr_print_job_name">WiFi sign — %1$s</string>
+    <string name="qr_print_failed">Could not prepare the WiFi sign for printing.</string>
+</resources>

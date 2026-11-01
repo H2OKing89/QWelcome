@@ -1,14 +1,31 @@
 package com.kingpaging.qwelcome.ui.settings
 
 import android.content.Context
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
-import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.kingpaging.qwelcome.R
@@ -84,15 +101,16 @@ class SettingsScreenUpdateDialogTest {
     }
 
     @Test
-    fun privacySwitches_have_title_content_descriptions() {
+    fun privacySwitches_have_readableTitles() {
         setScreenContent()
+        composeRule.onNodeWithText(appContext.getString(R.string.settings_privacy_title)).performClick()
 
         composeRule
-            .onNodeWithContentDescription(
+            .onNodeWithText(
                 appContext.getString(R.string.label_crash_reporting),
             ).assertIsDisplayed()
         composeRule
-            .onNodeWithContentDescription(
+            .onNodeWithText(
                 appContext.getString(R.string.label_screen_capture_protection),
             ).performScrollTo()
             .assertIsDisplayed()
@@ -133,6 +151,58 @@ class SettingsScreenUpdateDialogTest {
 
         composeRule.onNodeWithText(appContext.getString(R.string.title_settings)).assertIsDisplayed()
         composeRule.onNodeWithText("Route-free Tech").assertIsDisplayed()
+    }
+
+    @Test
+    fun aboutUpdates_largeText_keepsProgressAndActionsAccessible() {
+        composeRule.setContent {
+            val density = LocalDensity.current
+            CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale = 2f)) {
+                CyberpunkTheme {
+                    Column(
+                        modifier =
+                            Modifier
+                                .width(320.dp)
+                                .fillMaxHeight()
+                                .verticalScroll(rememberScrollState())
+                                .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        SettingsUpdateSection(
+                            currentVersion = "1.0.0",
+                            updateState =
+                                UpdateState.Downloading(
+                                    version = "2.0.0",
+                                    bytesDownloaded = 512L,
+                                    totalBytes = 1024L,
+                                ),
+                            downloadActions = UpdateDownloadActions({}, {}, {}, {}),
+                            navigationActions = UpdateNavigationActions({}, {}),
+                        )
+                    }
+                }
+            }
+        }
+
+        composeRule
+            .onNodeWithTag(SETTINGS_UPDATE_PROGRESS_TAG)
+            .performScrollTo()
+            .assertIsDisplayed()
+            .assert(
+                SemanticsMatcher.expectValue(
+                    SemanticsProperties.ProgressBarRangeInfo,
+                    ProgressBarRangeInfo(0.5f, 0f..1f),
+                ),
+            )
+        composeRule
+            .onNodeWithText(appContext.getString(R.string.action_check_updates))
+            .performScrollTo()
+            .assertIsDisplayed()
+            .assertIsNotEnabled()
+        composeRule
+            .onNodeWithText(appContext.getString(R.string.action_view_github))
+            .performScrollTo()
+            .assertIsDisplayed()
     }
 
     private fun setScreenContent() {

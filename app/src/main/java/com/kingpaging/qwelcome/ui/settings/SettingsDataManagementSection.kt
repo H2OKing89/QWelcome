@@ -2,22 +2,22 @@
 
 package com.kingpaging.qwelcome.ui.settings
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Backup
+import androidx.compose.material.icons.filled.UploadFile
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.kingpaging.qwelcome.R
-import com.kingpaging.qwelcome.ui.components.NeonButton
-import com.kingpaging.qwelcome.ui.components.NeonButtonStyle
-import com.kingpaging.qwelcome.ui.components.NeonMagentaButton
-import com.kingpaging.qwelcome.ui.components.NeonPanel
 
 @Composable
 internal fun SettingsDataManagementSection(
@@ -26,51 +26,35 @@ internal fun SettingsDataManagementSection(
     onOpenImport: () -> Unit,
 ) {
     Text(
-        stringResource(R.string.header_data_management),
-        style = MaterialTheme.typography.titleLarge,
-        color = MaterialTheme.colorScheme.primary,
+        text = stringResource(R.string.settings_backup_intro),
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
-    NeonPanel {
-        Text(
-            stringResource(R.string.text_data_management_description),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-        )
-        if (hasUnsavedChanges) {
+    if (hasUnsavedChanges) {
+        Surface(
+            modifier = Modifier.fillMaxWidth().semantics { liveRegion = LiveRegionMode.Polite },
+            shape = MaterialTheme.shapes.medium,
+            color = MaterialTheme.colorScheme.tertiaryContainer,
+            contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+        ) {
             Text(
-                stringResource(R.string.text_export_disabled_unsaved),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.tertiary,
+                text = stringResource(R.string.settings_backup_save_profile_first),
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(16.dp),
             )
         }
-        Spacer(Modifier.height(12.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            NeonMagentaButton(
-                onClick = onOpenExport,
-                modifier = Modifier.weight(1f),
-                enabled = !hasUnsavedChanges,
-                style = NeonButtonStyle.SECONDARY,
-            ) {
-                Text(
-                    if (hasUnsavedChanges) {
-                        stringResource(R.string.action_save_first)
-                    } else {
-                        stringResource(R.string.action_export)
-                    },
-                )
-            }
-            NeonButton(
-                onClick = onOpenImport,
-                modifier = Modifier.weight(1f),
-                style = NeonButtonStyle.SECONDARY,
-            ) {
-                Text(stringResource(R.string.action_import))
-            }
-        }
     }
-
-    Spacer(Modifier.height(32.dp))
+    SettingsActionRow(
+        title = stringResource(R.string.settings_backup_export_title),
+        description = stringResource(R.string.settings_backup_export_summary),
+        icon = Icons.Default.Backup,
+        onClick = onOpenExport,
+        enabled = !hasUnsavedChanges,
+    )
+    SettingsActionRow(
+        title = stringResource(R.string.settings_backup_import_title),
+        description = stringResource(R.string.settings_backup_import_summary),
+        icon = Icons.Default.UploadFile,
+        onClick = onOpenImport,
+    )
 }

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ux_profile_description">Your details appear wherever a template includes your signature.</string>
+    <string name="ux_backup_description">Keep a backup of your profile and templates, or move them to another device.</string>
+    <string name="ux_import_step_source">1 · Choose a source</string>
+    <string name="ux_import_step_review">2 · Review import</string>
+    <string name="ux_import_step_complete">3 · Ready to use</string>
+</resources>

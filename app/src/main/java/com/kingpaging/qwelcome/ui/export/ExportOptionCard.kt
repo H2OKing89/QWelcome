@@ -24,9 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.kingpaging.qwelcome.ui.theme.LocalDarkTheme
 import com.kingpaging.qwelcome.util.rememberHapticFeedback
 
 @Composable
@@ -38,7 +36,6 @@ internal fun ExportOptionCard(
     isLoading: Boolean,
     onClick: () -> Unit,
 ) {
-    val isDark = LocalDarkTheme.current
     val haptic = rememberHapticFeedback()
 
     Card(
@@ -47,19 +44,14 @@ internal fun ExportOptionCard(
             onClick()
         },
         enabled = !isLoading,
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(20.dp),
         colors =
             CardDefaults.cardColors(
-                containerColor =
-                    if (isDark) {
-                        MaterialTheme.colorScheme.surface.copy(alpha = 0.6f)
-                    } else {
-                        MaterialTheme.colorScheme.surface
-                    },
+                containerColor = MaterialTheme.colorScheme.surfaceContainer,
             ),
         elevation =
             CardDefaults.cardElevation(
-                defaultElevation = if (isDark) 0.dp else 2.dp,
+                defaultElevation = 0.dp,
             ),
         modifier = Modifier.fillMaxWidth(),
     ) {
@@ -133,9 +125,7 @@ private fun RowScope.ExportOptionText(
         Text(
             text = description,
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }

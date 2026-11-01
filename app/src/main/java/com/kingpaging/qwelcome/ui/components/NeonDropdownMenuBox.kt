@@ -2,6 +2,7 @@ package com.kingpaging.qwelcome.ui.components
 
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -11,16 +12,15 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import com.kingpaging.qwelcome.ui.theme.LocalDarkTheme
+import androidx.compose.ui.unit.dp
 
 /**
- * Cyberpunk-styled dropdown menu box wrapping [ExposedDropdownMenuBox].
+ * Read-only dropdown styled consistently with the form fields.
  *
  * Confines @OptIn(ExperimentalMaterial3Api::class) to this component so that
  * screens using the dropdown do not need the annotation themselves.
  *
- * The anchor text field uses the same neon-secondary color scheme as
- * [NeonOutlinedField] for visual consistency.
+ * The anchor uses the same shape and outline contrast as [NeonOutlinedField].
  *
  * @param expanded          Whether the dropdown menu is currently expanded.
  * @param onExpandedChange  Called with the desired new expanded state.
@@ -39,8 +39,6 @@ fun NeonDropdownMenuBox(
     modifier: Modifier = Modifier,
     menuContent: @Composable ColumnScope.() -> Unit,
 ) {
-    val isDark = LocalDarkTheme.current
-
     ExposedDropdownMenuBox(
         expanded = expanded,
         onExpandedChange = onExpandedChange,
@@ -50,16 +48,18 @@ fun NeonDropdownMenuBox(
             value = selectedText,
             onValueChange = {},
             readOnly = true,
+            singleLine = true,
+            textStyle = MaterialTheme.typography.bodyLarge,
+            shape = RoundedCornerShape(12.dp),
             label = label,
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             colors =
                 OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.secondary,
-                    unfocusedBorderColor =
-                        MaterialTheme.colorScheme.secondary.copy(
-                            alpha = if (isDark) 0.45f else 0.28f,
-                        ),
-                    focusedLabelColor = MaterialTheme.colorScheme.secondary,
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                    focusedLabelColor = MaterialTheme.colorScheme.primary,
                     unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
                 ),
             modifier =

@@ -2,128 +2,88 @@ package com.kingpaging.qwelcome.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-import com.kingpaging.qwelcome.R
 
-val DisplayFont =
-    FontFamily(
-        Font(R.font.orbitron_regular, FontWeight.Normal),
-        Font(R.font.orbitron_medium, FontWeight.Medium),
-        Font(R.font.orbitron_bold, FontWeight.Bold),
-    )
+val DisplayFont = FontFamily.SansSerif
+val BodyFont = FontFamily.SansSerif
 
-val BodyFont =
-    FontFamily(
-        Font(R.font.exo2_regular, FontWeight.Normal),
-        Font(R.font.exo2_medium, FontWeight.Medium),
-        Font(R.font.exo2_bold, FontWeight.Bold),
-    )
-
-// ============== DARK MODE GLOW EFFECTS ==============
-// Neon glow shadows for dark mode - vibrant and visible against dark backgrounds
-// Tiered blur: 12f for headlines (larger text tolerates wider glow), 8f for titles (prevents haziness)
-private val CyanGlowDark =
-    Shadow(
-        color = Color(0xFF00E5FF).copy(alpha = 0.6f),
-        offset = Offset(0f, 0f),
-        blurRadius = 12f, // Wide blur for large headlines
-    )
-
-// Tighter glow for titleLarge - prevents haziness on smaller text
-private val CyanGlowTightDark =
-    Shadow(
-        color = Color(0xFF00E5FF).copy(alpha = 0.5f),
-        offset = Offset(0f, 0f),
-        blurRadius = 8f, // Tighter blur for titles
-    )
-
-// Tighter blur (8f) for titleMedium/accent text - reduces haziness per ChatGPT feedback
-private val MagentaGlowDark =
-    Shadow(
-        color = Color(0xFFFF2BD6).copy(alpha = 0.5f),
-        offset = Offset(0f, 0f),
-        blurRadius = 8f, // Tighter than headline (was 10f)
-    )
-
-// Base typography without shadows (used as foundation)
 val CyberTypography =
     Typography(
+        displayLarge = TextStyle(fontFamily = DisplayFont, fontSize = 57.sp, lineHeight = 64.sp),
+        displayMedium = TextStyle(fontFamily = DisplayFont, fontSize = 45.sp, lineHeight = 52.sp),
+        displaySmall = TextStyle(fontFamily = DisplayFont, fontSize = 36.sp, lineHeight = 44.sp),
         headlineLarge =
             TextStyle(
                 fontFamily = DisplayFont,
                 fontWeight = FontWeight.Bold,
                 fontSize = 28.sp,
-                letterSpacing = 1.2.sp,
+                lineHeight = 36.sp,
+            ),
+        headlineMedium =
+            TextStyle(
+                fontFamily = DisplayFont,
+                fontWeight = FontWeight.Bold,
+                fontSize = 24.sp,
+                lineHeight = 32.sp,
+            ),
+        headlineSmall =
+            TextStyle(
+                fontFamily = DisplayFont,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 22.sp,
+                lineHeight = 30.sp,
             ),
         titleLarge =
             TextStyle(
                 fontFamily = DisplayFont,
-                fontWeight = FontWeight.Bold,
-                fontSize = 18.sp,
-                letterSpacing = 1.0.sp,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 20.sp,
+                lineHeight = 28.sp,
             ),
         titleMedium =
             TextStyle(
-                fontFamily = DisplayFont,
-                fontWeight = FontWeight.Medium,
+                fontFamily = BodyFont,
+                fontWeight = FontWeight.SemiBold,
                 fontSize = 16.sp,
-                letterSpacing = 0.8.sp,
+                lineHeight = 24.sp,
             ),
-        bodyLarge =
+        titleSmall =
             TextStyle(
                 fontFamily = BodyFont,
-                fontWeight = FontWeight.Normal,
-                fontSize = 16.sp,
-            ),
-        bodyMedium =
-            TextStyle(
-                fontFamily = BodyFont,
-                fontWeight = FontWeight.Normal,
+                fontWeight = FontWeight.SemiBold,
                 fontSize = 14.sp,
+                lineHeight = 20.sp,
             ),
+        bodyLarge = TextStyle(fontFamily = BodyFont, fontSize = 16.sp, lineHeight = 24.sp),
+        bodyMedium = TextStyle(fontFamily = BodyFont, fontSize = 14.sp, lineHeight = 20.sp),
+        bodySmall = TextStyle(fontFamily = BodyFont, fontSize = 12.sp, lineHeight = 18.sp),
         labelLarge =
             TextStyle(
                 fontFamily = BodyFont,
-                fontWeight = FontWeight.Medium,
+                fontWeight = FontWeight.SemiBold,
                 fontSize = 14.sp,
-                letterSpacing = 0.5.sp,
+                lineHeight = 20.sp,
+            ),
+        labelMedium =
+            TextStyle(
+                fontFamily = BodyFont,
+                fontWeight = FontWeight.Medium,
+                fontSize = 12.sp,
+                lineHeight = 16.sp,
+            ),
+        labelSmall =
+            TextStyle(
+                fontFamily = BodyFont,
+                fontWeight = FontWeight.Medium,
+                fontSize = 11.sp,
+                lineHeight = 16.sp,
             ),
     )
 
-/**
- * Returns theme-aware typography with appropriate glow/shadow effects.
- *
- * Dark mode: Vibrant neon glows on headers (headlineLarge, titleLarge, titleMedium)
- * Light mode: NO shadows on general typography - keeps it crisp and readable.
- *             The cyberpunk vibe comes from colors/panels, not blurry text.
- */
+/** Kept as a stable entry point for callers; both modes use crisp, shadow-free type. */
+@Suppress("UNUSED_PARAMETER")
 @Composable
-fun cyberTypography(isDark: Boolean = LocalDarkTheme.current): Typography {
-    // Light mode: No shadows - keeps it crisp and readable
-    // Dark mode: Headers get neon glows (headlineLarge=wide, titleLarge=tight)
-    val headlineGlow = if (isDark) CyanGlowDark else null // blur 12f
-    val titleGlow = if (isDark) CyanGlowTightDark else null // blur 8f (tighter)
-    val accentGlow = if (isDark) MagentaGlowDark else null // blur 8f
-
-    return Typography(
-        headlineLarge = CyberTypography.headlineLarge.copy(shadow = headlineGlow),
-        headlineMedium = CyberTypography.headlineMedium,
-        headlineSmall = CyberTypography.headlineSmall,
-        titleLarge = CyberTypography.titleLarge.copy(shadow = titleGlow),
-        titleMedium = CyberTypography.titleMedium.copy(shadow = accentGlow),
-        titleSmall = CyberTypography.titleSmall,
-        bodyLarge = CyberTypography.bodyLarge,
-        bodyMedium = CyberTypography.bodyMedium,
-        bodySmall = CyberTypography.bodySmall,
-        labelLarge = CyberTypography.labelLarge,
-        labelMedium = CyberTypography.labelMedium,
-        labelSmall = CyberTypography.labelSmall,
-    )
-}
+fun cyberTypography(isDark: Boolean = LocalDarkTheme.current): Typography = CyberTypography

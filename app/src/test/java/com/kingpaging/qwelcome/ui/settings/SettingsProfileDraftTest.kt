@@ -40,6 +40,24 @@ class SettingsProfileDraftTest {
     }
 
     @Test
+    fun `reset discards all edits and lets later persisted changes update every field`() {
+        val original = TechProfile("Original name", "Original title", "Original department")
+        val draft = SettingsProfileDraft(original)
+        draft.name = "Unsaved name"
+        draft.title = ""
+        draft.department = "Unsaved department"
+        val persisted = TechProfile("Saved name", "Saved title", "Saved department")
+
+        draft.resetTo(persisted)
+
+        assertEquals(persisted, draft.toProfile())
+        val imported = TechProfile("Imported name", "Imported title", "Imported department")
+        draft.updatePersisted(imported)
+
+        assertEquals(imported, draft.toProfile())
+    }
+
+    @Test
     fun `saved draft preserves cleared fields after baseline changes`() {
         val persisted = TechProfile("Technician", "Title", "Department")
         val draft = SettingsProfileDraft(persisted)

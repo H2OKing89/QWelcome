@@ -27,8 +27,6 @@ import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.ui.components.NeonButton
 import com.kingpaging.qwelcome.ui.theme.LocalCyberColors
 
-private const val DONE_BUTTON_WIDTH_FRACTION = 0.7f
-
 @Composable
 internal fun ImportCompleteStep(onDone: () -> Unit) {
     Column(
@@ -37,13 +35,13 @@ internal fun ImportCompleteStep(onDone: () -> Unit) {
         modifier =
             Modifier
                 .fillMaxSize()
-                .padding(bottom = 64.dp),
+                .padding(vertical = 24.dp),
     ) {
         Box(
             contentAlignment = Alignment.Center,
             modifier =
                 Modifier
-                    .size(128.dp)
+                    .size(72.dp)
                     .clip(CircleShape),
         ) {
             Icon(
@@ -53,19 +51,18 @@ internal fun ImportCompleteStep(onDone: () -> Unit) {
                 modifier = Modifier.fillMaxSize(),
             )
         }
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(16.dp))
         Text(stringResource(R.string.title_import_complete), style = MaterialTheme.typography.headlineSmall)
         Text(
             stringResource(R.string.text_import_complete_description),
             style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 8.dp),
         )
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(24.dp))
         NeonButton(
             onClick = onDone,
-            modifier = Modifier.fillMaxWidth(DONE_BUTTON_WIDTH_FRACTION),
-            glowColor = MaterialTheme.colorScheme.secondary,
+            modifier = Modifier.fillMaxWidth(),
         ) {
             Text(stringResource(R.string.action_done))
         }

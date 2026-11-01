@@ -4,66 +4,45 @@ import android.content.ContentResolver
 import android.content.ContentValues
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.Canvas
-import android.graphics.Color
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
-import androidx.compose.ui.graphics.SolidColor
 import androidx.core.content.FileProvider
-import androidx.core.graphics.createBitmap
 import com.kingpaging.qwelcome.util.sanitizeFileName
-import io.github.alexzhirkevich.qrose.ImageFormat
-import io.github.alexzhirkevich.qrose.QrCodePainter
-import io.github.alexzhirkevich.qrose.options.QrBackground
-import io.github.alexzhirkevich.qrose.options.QrBrush
-import io.github.alexzhirkevich.qrose.options.QrColors
-import io.github.alexzhirkevich.qrose.options.QrOptions
-import io.github.alexzhirkevich.qrose.options.solid
-import io.github.alexzhirkevich.qrose.toByteArray
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.io.OutputStream
-import androidx.compose.ui.graphics.Color as ComposeColor
 
 private const val PNG_QUALITY = 100
-private const val QR_CODE_SCALE = 0.8f
 
 /** Owns image resources and storage; the UI receives only a shareable URI. */
 class QrCodeImageService(
     context: Context,
-    private val renderBitmap: (String) -> Bitmap = { renderWifiQrBitmap(it) },
+    private val renderBitmap: ((WifiQrImageRequest) -> Bitmap)? = null,
 ) {
     private val appContext = context.applicationContext
     private val shareCache = QrCodeShareCache(File(appContext.cacheDir, "qr_codes"))
 
     suspend fun pruneExpiredShares() = withContext(Dispatchers.IO) { shareCache.pruneExpired() }
 
-    suspend fun prepareShare(
-        wifiString: String,
-        ssid: String,
-    ): Uri =
+    suspend fun prepareShare(request: WifiQrImageRequest): Uri =
         withContext(Dispatchers.IO) {
             val file =
-                withBitmap(wifiString) { bitmap ->
-                    shareCache.write(ssid) { output -> writePng(bitmap, output) }
+                withBitmap(request) { bitmap ->
+                    shareCache.write(request.ssid) { output -> writePng(bitmap, output) }
                 }
             FileProvider.getUriForFile(appContext, "${appContext.packageName}.provider", file)
         }
 
-    suspend fun saveToGallery(
-        wifiString: String,
-        ssid: String,
-    ) {
+    suspend fun saveToGallery(request: WifiQrImageRequest) {
         withContext(Dispatchers.IO) {
-            val networkName = sanitizeFileName(ssid)
+            val networkName = sanitizeFileName(request.ssid)
             val filename = "WiFi_QR_${networkName}_${System.currentTimeMillis()}.png"
-            withBitmap(wifiString) { bitmap ->
+            withBitmap(request) { bitmap ->
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                     saveToMediaStore(bitmap, filename)
                 } else {
@@ -74,10 +53,16 @@ class QrCodeImageService(
     }
 
     private inline fun <T> withBitmap(
-        wifiString: String,
+        request: WifiQrImageRequest,
         action: (Bitmap) -> T,
     ): T {
-        val bitmap = renderBitmap(wifiString)
+        val bitmap =
+            try {
+                renderBitmap?.invoke(request)
+                    ?: renderWifiQrBitmap(request, labels = wifiQrArtworkLabels(appContext.resources))
+            } catch (error: OutOfMemoryError) {
+                throw IOException("Not enough memory to create WiFi artwork", error)
+            }
         return try {
             action(bitmap)
         } finally {
@@ -147,48 +132,4 @@ private fun writePng(
     output: OutputStream,
 ) {
     if (!bitmap.compress(Bitmap.CompressFormat.PNG, PNG_QUALITY, output)) throw IOException("Failed to encode QR PNG")
-}
-
-/**
- * Scanners depend on high-contrast finder patterns and an uninterrupted quiet zone.
- * Keep branding outside the code; both the screen and PNG use these same options.
- */
-internal fun wifiQrOptions(): QrOptions =
-    QrOptions(
-        colors =
-            QrColors(
-                dark = QrBrush.Default,
-                light = QrBrush.solid(ComposeColor.White),
-                ball = QrBrush.Default,
-                frame = QrBrush.Default,
-            ),
-        background = QrBackground(fill = SolidColor(ComposeColor.White)),
-        scale = QR_CODE_SCALE,
-    )
-
-internal fun renderWifiQrBitmap(
-    wifiString: String,
-    size: Int = 1024,
-): Bitmap {
-    val painter = QrCodePainter(data = wifiString, options = wifiQrOptions())
-    val bytes = painter.toByteArray(size, size, ImageFormat.PNG)
-    val qrBitmap =
-        BitmapFactory.decodeByteArray(bytes, 0, bytes.size) ?: throw IOException("Failed to decode QR bitmap")
-    try {
-        val padding = size / 10
-        val finalBitmap = createBitmap(size + padding * 2, size + padding * 2, Bitmap.Config.ARGB_8888)
-        var completed = false
-        try {
-            Canvas(finalBitmap).apply {
-                drawColor(Color.WHITE)
-                drawBitmap(qrBitmap, padding.toFloat(), padding.toFloat(), null)
-            }
-            completed = true
-            return finalBitmap
-        } finally {
-            if (!completed) finalBitmap.recycle()
-        }
-    } finally {
-        qrBitmap.recycle()
-    }
 }

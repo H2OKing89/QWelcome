@@ -1,152 +1,90 @@
 package com.kingpaging.qwelcome.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.*
+import androidx.compose.material3.ColorScheme
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.graphics.Color
 
-/*
- * CYBERPUNK THEME ARCHITECTURE
- * ============================
- *
- * This theme follows Android/Material3 best practices:
- *
- * 1. COLOR ACCESS HIERARCHY:
- *    - MaterialTheme.colorScheme.primary (PREFERRED - standard Material3 colors)
- *    - LocalCyberColors.current.success (EXTENDED - non-Material colors like success/warning)
- *    - LocalDarkTheme.current (CHECK - when you need to know the theme mode)
- *
- * 2. WHAT'S IN MaterialTheme.colorScheme (USE THESE):
- *    - primary/onPrimary, secondary/onSecondary, tertiary/onTertiary
- *    - background/onBackground, surface/onSurface
- *    - error/onError, outline, scrim, etc.
- *
- * 3. WHAT'S IN LocalCyberColors.current (CUSTOM EXTRAS):
- *    - success/onSuccess, warning/onWarning (not in Material3)
- *    - lime, info (brand-specific neon colors)
- *
- * MIGRATION NOTE: CyberScheme is deprecated - use MaterialTheme.colorScheme instead.
- */
-
-// ============== DARK MODE PALETTE ==============
-
-// Palette pulled from your HTML theme - neon cyberpunk aesthetic
-private val CyberBg = Color(0xFF05030A) // --bg (deep space black)
-private val CyberCyan = Color(0xFF00E5FF) // --cyan (electric cyan)
-private val CyberMagenta = Color(0xFFFF2BD6) // --magenta (hot pink)
-private val CyberPurple = Color(0xFFA371F7) // --purple (soft purple)
-private val CyberLime = Color(0xFF9BFF00) // --lime (neon green - for accents)
-
-private val CyberSurface = Color(0xFF120A1C) // --bg-secondary (dark purple tint)
-private val CyberSurface2 = Color(0xFF1E1030) // --bg-tertiary (lighter purple)
-private val CyberSurfaceContainer = Color(0xFF1A0F28) // For elevated surfaces
-
-private val CyberText = Color(0xFFF0F5FF) // Light blue-white text
-private val CyberMuted = Color(0xFFBEC8DC) // Muted text
-
-// ============== LIGHT MODE PALETTE ==============
-// Light mode maintaining cyberpunk aesthetic - high contrast, vibrant but readable
-private val CyberLightBg = Color(0xFFFAF8FC) // Very light purple tint
-private val CyberLightCyan = Color(0xFF00838F) // Deep teal (high contrast cyan)
-private val CyberLightMagenta = Color(0xFFC2185B) // Deep magenta (readable pink)
-private val CyberLightPurple = Color(0xFF6200EA) // Deep purple (vibrant but readable)
-private val CyberLightLime = Color(0xFF558B2F) // Dark lime (readable green)
-
-private val CyberLightSurface = Color(0xFFFFFFFF) // Pure white cards
-private val CyberLightSurface2 = Color(0xFFF3EDF7) // Light purple tint surface
-private val CyberLightSurfaceContainer = Color(0xFFEDE7F2) // Elevated surfaces
-
-private val CyberLightText = Color(0xFF1C1B1F) // Near black text
-private val CyberLightMuted = Color(0xFF49454F) // Muted gray-purple
-
-// ============== ADDITIONAL SEMANTIC COLORS ==============
-// For both themes - status and feedback colors
-private val CyberErrorDark = Color(0xFFFF4D6D) // Neon red-pink
-private val CyberErrorLight = Color(0xFFBA1A1A) // Deep red
-private val CyberSuccessDark = Color(0xFF00E676) // Neon green
-private val CyberSuccessLight = Color(0xFF2E7D32) // Forest green
-private val CyberWarningDark = Color(0xFFFFD600) // Bright yellow
-private val CyberWarningLight = Color(0xFFE65100) // Deep orange
-
+/** Shared color roles for the Q Welcome field workflow. */
 val CyberDarkScheme =
     darkColorScheme(
-        primary = CyberCyan,
-        onPrimary = Color(0xFF001014),
-        primaryContainer = Color(0xFF004D5A),
-        onPrimaryContainer = Color(0xFF97F0FF),
-        secondary = CyberMagenta,
-        onSecondary = Color(0xFF14000F),
-        secondaryContainer = Color(0xFF5C1049),
-        onSecondaryContainer = Color(0xFFFFD8EE),
-        tertiary = CyberPurple,
-        onTertiary = Color(0xFF080010),
-        tertiaryContainer = Color(0xFF4A3362),
-        onTertiaryContainer = Color(0xFFE9DDFF),
-        background = CyberBg,
-        onBackground = CyberText,
-        surface = CyberSurface,
-        onSurface = CyberText,
-        surfaceVariant = CyberSurface2,
-        onSurfaceVariant = CyberMuted,
-        surfaceContainerHighest = CyberSurfaceContainer,
-        surfaceContainerHigh = CyberSurface2,
-        surfaceContainer = CyberSurface,
-        surfaceContainerLow = Color(0xFF0D0812),
-        surfaceContainerLowest = CyberBg,
-        outline = Color(0xFF938F99),
-        outlineVariant = Color(0xFF49454F),
-        error = CyberErrorDark,
-        onError = Color(0xFF140008),
-        errorContainer = Color(0xFF93000A),
+        primary = Color(0xFFBCA7FF),
+        onPrimary = Color(0xFF29164F),
+        primaryContainer = Color(0xFF392961),
+        onPrimaryContainer = Color(0xFFEADDFF),
+        secondary = Color(0xFF85D3E5),
+        onSecondary = Color(0xFF003641),
+        secondaryContainer = Color(0xFF16434F),
+        onSecondaryContainer = Color(0xFFBDECF6),
+        tertiary = Color(0xFFB5C4F6),
+        onTertiary = Color(0xFF1E2E56),
+        tertiaryContainer = Color(0xFF34446E),
+        onTertiaryContainer = Color(0xFFDCE3FF),
+        background = Color(0xFF0B0F1A),
+        onBackground = Color(0xFFF1F3FA),
+        surface = Color(0xFF151B2A),
+        onSurface = Color(0xFFF1F3FA),
+        surfaceVariant = Color(0xFF232C40),
+        onSurfaceVariant = Color(0xFFB7C0D3),
+        surfaceContainerHighest = Color(0xFF293249),
+        surfaceContainerHigh = Color(0xFF20283B),
+        surfaceContainer = Color(0xFF1A2233),
+        surfaceContainerLow = Color(0xFF121827),
+        surfaceContainerLowest = Color(0xFF080C15),
+        outline = Color(0xFF8490A8),
+        outlineVariant = Color(0xFF364057),
+        error = Color(0xFFFFB4AB),
+        onError = Color(0xFF690005),
+        errorContainer = Color(0xFF5A2027),
         onErrorContainer = Color(0xFFFFDAD6),
-        inverseSurface = CyberText,
-        inverseOnSurface = CyberBg,
-        inversePrimary = Color(0xFF006877),
+        inverseSurface = Color(0xFFE3E7F1),
+        inverseOnSurface = Color(0xFF202635),
+        inversePrimary = Color(0xFF6544B9),
         scrim = Color.Black,
     )
 
 val CyberLightScheme =
     lightColorScheme(
-        primary = CyberLightCyan,
+        primary = Color(0xFF6544B9),
         onPrimary = Color.White,
-        primaryContainer = Color(0xFFB2EBF2),
-        onPrimaryContainer = Color(0xFF002022),
-        secondary = CyberLightMagenta,
+        primaryContainer = Color(0xFFEADDFF),
+        onPrimaryContainer = Color(0xFF29164F),
+        secondary = Color(0xFF236B7B),
         onSecondary = Color.White,
-        secondaryContainer = Color(0xFFFCE4EC),
-        onSecondaryContainer = Color(0xFF31111D),
-        tertiary = CyberLightPurple,
+        secondaryContainer = Color(0xFFD1F0F7),
+        onSecondaryContainer = Color(0xFF003641),
+        tertiary = Color(0xFF4C5D8B),
         onTertiary = Color.White,
-        tertiaryContainer = Color(0xFFE8DEF8),
-        onTertiaryContainer = Color(0xFF21005D),
-        background = CyberLightBg,
-        onBackground = CyberLightText,
-        surface = CyberLightSurface,
-        onSurface = CyberLightText,
-        surfaceVariant = CyberLightSurface2,
-        onSurfaceVariant = CyberLightMuted,
-        surfaceContainerHighest = Color(0xFFE6E0E9),
-        surfaceContainerHigh = CyberLightSurfaceContainer,
-        surfaceContainer = Color(0xFFF3EDF7),
-        surfaceContainerLow = CyberLightSurface,
+        tertiaryContainer = Color(0xFFDCE3FF),
+        onTertiaryContainer = Color(0xFF1E2E56),
+        background = Color(0xFFF5F6FB),
+        onBackground = Color(0xFF1B2130),
+        surface = Color.White,
+        onSurface = Color(0xFF1B2130),
+        surfaceVariant = Color(0xFFE9EDF5),
+        onSurfaceVariant = Color(0xFF515C70),
+        surfaceContainerHighest = Color(0xFFE1E6F0),
+        surfaceContainerHigh = Color(0xFFE8ECF4),
+        surfaceContainer = Color(0xFFEEF1F7),
+        surfaceContainerLow = Color(0xFFF9FAFD),
         surfaceContainerLowest = Color.White,
-        outline = Color(0xFF79747E),
-        outlineVariant = Color(0xFFCAC4D0),
-        error = CyberErrorLight,
+        outline = Color(0xFF717D93),
+        outlineVariant = Color(0xFFD6DCE8),
+        error = Color(0xFFB3261E),
         onError = Color.White,
-        errorContainer = Color(0xFFF9DEDC),
+        errorContainer = Color(0xFFFCE3DF),
         onErrorContainer = Color(0xFF410E0B),
-        inverseSurface = Color(0xFF313033),
-        inverseOnSurface = Color(0xFFF4EFF4),
-        inversePrimary = CyberCyan,
+        inverseSurface = Color(0xFF2D3444),
+        inverseOnSurface = Color(0xFFF1F3FA),
+        inversePrimary = Color(0xFFBCA7FF),
         scrim = Color.Black,
     )
 
-// ============== EXTENDED COLORS ==============
-// For colors not part of Material3's ColorScheme (success, warning, info, etc.)
-// Access via LocalCyberColors.current
 data class CyberExtendedColors(
     val success: Color,
     val onSuccess: Color,
@@ -161,27 +99,27 @@ data class CyberExtendedColors(
 
 private val DarkExtendedColors =
     CyberExtendedColors(
-        success = CyberSuccessDark,
-        onSuccess = Color(0xFF003910),
-        successContainer = Color(0xFF005221),
-        warning = CyberWarningDark,
-        onWarning = Color(0xFF3D2600),
-        warningContainer = Color(0xFF5C3D00),
-        info = CyberCyan,
-        lime = CyberLime,
+        success = CyberColors.SuccessDark,
+        onSuccess = Color(0xFF003824),
+        successContainer = Color(0xFF174D37),
+        warning = CyberColors.WarningDark,
+        onWarning = Color(0xFF442B00),
+        warningContainer = Color(0xFF503B1D),
+        info = CyberColors.InfoDark,
+        lime = CyberColors.LimeDark,
         qrCodeBackground = Color.White,
     )
 
 private val LightExtendedColors =
     CyberExtendedColors(
-        success = CyberSuccessLight,
+        success = CyberColors.SuccessLight,
         onSuccess = Color.White,
-        successContainer = Color(0xFFC8E6C9),
-        warning = CyberWarningLight,
+        successContainer = Color(0xFFD4EFDF),
+        warning = CyberColors.WarningLight,
         onWarning = Color.White,
-        warningContainer = Color(0xFFFFE0B2),
-        info = CyberLightCyan,
-        lime = CyberLightLime,
+        warningContainer = Color(0xFFFFE9C9),
+        info = CyberColors.InfoLight,
+        lime = CyberColors.LimeLight,
         qrCodeBackground = Color.White,
     )
 
@@ -190,20 +128,11 @@ val LocalCyberColors =
         error("No CyberExtendedColors provided. Ensure CyberpunkTheme is applied.")
     }
 
-// Composition local for dark theme state
 val LocalDarkTheme =
     compositionLocalOf<Boolean> {
         error("No LocalDarkTheme provided. Ensure CyberpunkTheme is applied.")
     }
 
-/**
- * DEPRECATED: Use MaterialTheme.colorScheme instead.
- * Kept for backward compatibility during migration.
- *
- * Example migration:
- *   Before: CyberScheme.primary
- *   After:  MaterialTheme.colorScheme.primary
- */
 @Deprecated(
     message = "Use MaterialTheme.colorScheme instead for proper theme integration",
     replaceWith = ReplaceWith("MaterialTheme.colorScheme", "androidx.compose.material3.MaterialTheme"),
@@ -212,33 +141,19 @@ val CyberScheme: ColorScheme
     @Composable
     get() = MaterialTheme.colorScheme
 
-/**
- * Cyberpunk-themed Material3 theme that adapts to system dark/light mode.
- *
- * Usage:
- *   - Standard colors: MaterialTheme.colorScheme.primary, .secondary, .surface, etc.
- *   - Extended colors: LocalCyberColors.current.success, .warning, .lime, etc.
- *   - Check dark mode: LocalDarkTheme.current
- *
- * Dark mode: Neon glows, deep purple/black backgrounds, vibrant cyan/magenta accents
- * Light mode: High contrast, vibrant but readable colors, subtle shadows instead of glows
- */
+/** Applies Q Welcome's purple brand, calm surfaces and readable typography. */
 @Composable
 fun CyberpunkTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit,
 ) {
-    val colorScheme = if (darkTheme) CyberDarkScheme else CyberLightScheme
-    val extendedColors = if (darkTheme) DarkExtendedColors else LightExtendedColors
-    val typography = cyberTypography(isDark = darkTheme)
-
     CompositionLocalProvider(
         LocalDarkTheme provides darkTheme,
-        LocalCyberColors provides extendedColors,
+        LocalCyberColors provides if (darkTheme) DarkExtendedColors else LightExtendedColors,
     ) {
         MaterialTheme(
-            colorScheme = colorScheme,
-            typography = typography,
+            colorScheme = if (darkTheme) CyberDarkScheme else CyberLightScheme,
+            typography = cyberTypography(isDark = darkTheme),
             content = content,
         )
     }
