@@ -281,19 +281,24 @@ class CustomerIntakeViewModel(
      * and the password field is cleared/disabled (for guest networks without passwords).
      */
     fun onOpenNetworkChanged(isOpen: Boolean) {
-        updateState { state ->
-            state.copy(
-                isOpenNetwork = isOpen,
-                // Clear password and error when switching to open network
-                password = if (isOpen) "" else state.password,
-                passwordError = null,
-            )
-        }
-        recordUserActivity()
+        val securityType =
+            when {
+                isOpen -> WifiQrGenerator.SecurityType.OPEN
+                _uiState.value.isOpenNetwork -> WifiQrGenerator.DEFAULT_SECURITY_TYPE
+                else -> _uiState.value.securityType
+            }
+        onSecurityTypeChanged(securityType)
     }
 
     fun onSecurityTypeChanged(securityType: WifiQrGenerator.SecurityType) {
-        updateState { it.copy(securityType = securityType) }
+        val isOpen = securityType == WifiQrGenerator.SecurityType.OPEN
+        updateState { state ->
+            state.copy(
+                securityType = securityType,
+                password = if (isOpen) "" else state.password,
+                passwordError = if (isOpen) null else state.passwordError,
+            )
+        }
         recordUserActivity()
     }
 

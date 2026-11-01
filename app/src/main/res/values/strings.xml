@@ -210,7 +210,6 @@
 
     <!-- QR code bottom sheet -->
     <string name="title_wifi_qr_code">WiFi QR Code</string>
-    <string name="text_scan_to_connect_automatically">Scan to connect automatically</string>
     <string name="content_desc_wifi_qr_code">WiFi QR Code</string>
     <string name="label_network">Network:</string>
     <string name="label_security">Security:</string>
@@ -232,8 +231,11 @@
     <string name="state_expanded">Expanded</string>
     <string name="state_collapsed">Collapsed</string>
     <string name="label_wifi_security">WiFi Security</string>
+    <string name="security_off">SecurityOff</string>
     <string name="security_wpa2">WPA2-Personal</string>
-    <string name="security_wpa3_sae">WPA3-Personal (SAE)</string>
+    <string name="security_wpa_wpa2_personal">WPA-WPA2-Personal</string>
+    <string name="security_wpa3_sae">WPA3-Personal</string>
+    <string name="security_wpa2_wpa3_personal">WPA2-WPA3-Personal</string>
     <string name="label_hidden_network">Hidden Network</string>
     <string name="content_desc_hide_password">Hide password</string>
     <string name="content_desc_show_password">Show password</string>

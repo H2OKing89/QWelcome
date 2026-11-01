@@ -536,6 +536,30 @@ class TemplateListScreenTest {
     }
 
     @Test
+    fun searchingWithKeyboard_resizesResultsAndKeepsLastMatchReachable() {
+        val templates =
+            List(12) { index ->
+                englishTemplate.copy(id = "install-$index", name = "Install $index")
+            }
+        setScreenContent(templates = templates)
+        val results = composeRule.onNodeWithTag(TEMPLATE_LIST_TEST_TAG)
+        val initialHeight = results.fetchSemanticsNode().boundsInRoot.height
+        val search =
+            composeRule.onNodeWithContentDescription(
+                appContext.getString(R.string.content_desc_search_templates),
+            )
+
+        search.performClick().performTextInput("Install")
+        composeRule.waitUntil(timeoutMillis = PERSISTENCE_TIMEOUT_MILLIS) {
+            results.fetchSemanticsNode().boundsInRoot.height < initialHeight
+        }
+        results.performScrollToNode(hasText(templates.last().name))
+
+        composeRule.onNodeWithText(templates.last().name).assertIsDisplayed()
+        search.assertIsFocused()
+    }
+
+    @Test
     fun deletingActiveTemplate_explainsDefaultFallback() {
         setScreenContent(activeTemplateId = englishTemplate.id)
 

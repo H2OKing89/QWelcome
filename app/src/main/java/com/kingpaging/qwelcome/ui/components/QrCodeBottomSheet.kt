@@ -7,6 +7,7 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import android.os.Build
 import android.util.Log
 import android.widget.Toast
@@ -18,6 +19,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.painter.BitmapPainter
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -25,36 +29,39 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.ContextCompat
 import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.data.QrCodeImageService
-import com.kingpaging.qwelcome.data.wifiQrOptions
+import com.kingpaging.qwelcome.data.WifiQrImageRequest
+import com.kingpaging.qwelcome.data.renderWifiQrBitmap
+import com.kingpaging.qwelcome.data.wifiQrArtworkLabels
 import com.kingpaging.qwelcome.util.WifiQrGenerator
-import io.github.alexzhirkevich.qrose.rememberQrCodePainter
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+
+private const val ARTWORK_PREVIEW_WIDTH = 1280
 
 @Composable
 fun QrCodeBottomSheet(
     ssid: String,
     password: String,
     isOpenNetwork: Boolean = false,
-    securityType: WifiQrGenerator.SecurityType = WifiQrGenerator.SecurityType.WPA2_PSK,
+    securityType: WifiQrGenerator.SecurityType = WifiQrGenerator.DEFAULT_SECURITY_TYPE,
     isHiddenNetwork: Boolean = false,
     onDismiss: () -> Unit,
 ) {
     val context = LocalContext.current
-    val resources = androidx.compose.ui.platform.LocalResources.current
     val imageService = remember(context) { QrCodeImageService(context) }
     val scope = rememberCoroutineScope()
-    var isSaving by remember { mutableStateOf(false) }
-    var isSharing by remember { mutableStateOf(false) }
     var showSaveWarning by rememberSaveable { mutableStateOf(false) }
-    val wifiString =
+    val request =
         remember(ssid, password, isOpenNetwork, securityType, isHiddenNetwork) {
+            WifiQrImageRequest(ssid, password, isOpenNetwork, securityType, isHiddenNetwork)
+        }
+    val wifiString =
+        remember(request) {
             try {
-                if (isOpenNetwork) {
-                    WifiQrGenerator.generateOpenNetworkString(ssid, isHiddenNetwork)
-                } else {
-                    WifiQrGenerator.generateWifiString(ssid, password, securityType, isHiddenNetwork)
-                }
+                request.payload()
             } catch (_: IllegalArgumentException) {
                 null
             }
@@ -68,21 +75,12 @@ fun QrCodeBottomSheet(
         )
         return
     }
-    val saveQrCode: () -> Unit = {
-        if (!isSaving && !isSharing) {
-            isSaving = true
-            scope.launch {
-                try {
-                    runQrAction(context, R.string.toast_qr_save_failed) {
-                        imageService.saveToGallery(wifiString, ssid)
-                        Toast.makeText(context, R.string.toast_qr_saved, Toast.LENGTH_SHORT).show()
-                    }
-                } finally {
-                    isSaving = false
-                }
-            }
+    val preview = rememberQrArtworkPreview(request)
+    val actionController =
+        remember(context, imageService, scope) {
+            QrCodeActionController(context, imageService, scope)
         }
-    }
+    val saveQrCode: () -> Unit = { actionController.save(request) }
     val storagePermissionLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
             if (granted) {
@@ -91,8 +89,6 @@ fun QrCodeBottomSheet(
                 Toast.makeText(context, R.string.toast_permission_denied, Toast.LENGTH_SHORT).show()
             }
         }
-    val options = remember { wifiQrOptions() }
-    val qrPainter = rememberQrCodePainter(data = wifiString, options = options)
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     if (showSaveWarning) {
@@ -101,7 +97,7 @@ fun QrCodeBottomSheet(
             modifier = Modifier.imePadding(),
             properties = DialogProperties(decorFitsSystemWindows = false),
             title = { Text(stringResource(R.string.title_save_qr_warning)) },
-            text = { Text(stringResource(R.string.text_save_qr_warning)) },
+            text = { Text(stringResource(R.string.strings_qr_artwork_save_warning)) },
             confirmButton = {
                 NeonButton(
                     onClick = {
@@ -142,46 +138,135 @@ fun QrCodeBottomSheet(
         },
     ) {
         QrCodeScrollableContent(
-            qrPainter = qrPainter,
-            network = QrCodeNetworkDetails(ssid, isOpenNetwork, securityType),
-            isSaving = isSaving,
-            isSharing = isSharing,
+            qrPainter = preview.painter,
+            previewFailed = preview.failed,
+            network = QrCodeNetworkDetails(ssid, request.isOpen, request.effectiveSecurityType, password),
+            isSaving = actionController.isSaving,
+            isSharing = actionController.isSharing,
+            isPrinting = actionController.isPrinting,
             actions =
                 QrCodeSheetActions(
-                    onRequestSave = { showSaveWarning = true },
-                    onShare = {
-                        if (!isSaving && !isSharing) {
-                            isSharing = true
-                            scope.launch {
-                                try {
-                                    runQrAction(context, R.string.toast_qr_share_failed) {
-                                        val uri = imageService.prepareShare(wifiString, ssid)
-                                        val intent =
-                                            Intent(Intent.ACTION_SEND).apply {
-                                                type = "image/png"
-                                                putExtra(Intent.EXTRA_STREAM, uri)
-                                                putExtra(
-                                                    Intent.EXTRA_TEXT,
-                                                    resources.getString(R.string.share_text_wifi_network_qr, ssid),
-                                                )
-                                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                            }
-                                        context.startActivity(
-                                            Intent.createChooser(
-                                                intent,
-                                                resources.getString(R.string.chooser_share_wifi_qr),
-                                            ),
-                                        )
-                                    }
-                                } finally {
-                                    isSharing = false
-                                }
-                            }
-                        }
+                    onRequestSave = {
+                        if (!actionController.isBusy) showSaveWarning = true
                     },
+                    onPrint = { actionController.print(request) },
+                    onShare = { actionController.share(request) },
                 ),
         )
     }
+}
+
+/** Serializes image/print actions while keeping their busy state independent of sheet composition. */
+private class QrCodeActionController(
+    private val context: Context,
+    private val imageService: QrCodeImageService,
+    private val scope: CoroutineScope,
+) {
+    var isSaving by mutableStateOf(false)
+        private set
+    var isSharing by mutableStateOf(false)
+        private set
+    var isPrinting by mutableStateOf(false)
+        private set
+    val isBusy: Boolean
+        get() = isSaving || isSharing || isPrinting
+
+    fun save(request: WifiQrImageRequest) {
+        if (isBusy) return
+        isSaving = true
+        scope.launch {
+            try {
+                runQrAction(context, R.string.toast_qr_save_failed) {
+                    imageService.saveToGallery(request)
+                    Toast.makeText(context, R.string.toast_qr_saved, Toast.LENGTH_SHORT).show()
+                }
+            } finally {
+                isSaving = false
+            }
+        }
+    }
+
+    fun share(request: WifiQrImageRequest) {
+        if (isBusy) return
+        isSharing = true
+        scope.launch {
+            try {
+                runQrAction(context, R.string.toast_qr_share_failed) {
+                    val resources = context.resources
+                    val uri = imageService.prepareShare(request)
+                    val intent =
+                        Intent(Intent.ACTION_SEND).apply {
+                            type = "image/png"
+                            putExtra(Intent.EXTRA_STREAM, uri)
+                            putExtra(
+                                Intent.EXTRA_TEXT,
+                                resources.getString(R.string.share_text_wifi_network_qr, request.ssid),
+                            )
+                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        }
+                    context.startActivity(
+                        Intent.createChooser(intent, resources.getString(R.string.chooser_share_wifi_qr)),
+                    )
+                }
+            } finally {
+                isSharing = false
+            }
+        }
+    }
+
+    fun print(request: WifiQrImageRequest) {
+        if (isBusy) return
+        isPrinting = true
+        scope.launch {
+            var submitted = false
+            try {
+                runQrAction(context, R.string.qr_print_failed) {
+                    printWifiQrArtwork(context, request) { isPrinting = false }
+                    submitted = true
+                }
+            } finally {
+                if (!submitted) isPrinting = false
+            }
+        }
+    }
+}
+
+private data class QrArtworkPreview(
+    val painter: Painter? = null,
+    val failed: Boolean = false,
+)
+
+@Composable
+private fun rememberQrArtworkPreview(request: WifiQrImageRequest): QrArtworkPreview {
+    val labels = wifiQrArtworkLabels(androidx.compose.ui.platform.LocalResources.current)
+    val preview by produceState(QrArtworkPreview(), request, labels) {
+        value = QrArtworkPreview()
+        var pendingBitmap: Bitmap? = null
+        try {
+            val bitmap =
+                withContext(Dispatchers.Default) {
+                    renderWifiQrBitmap(request, ARTWORK_PREVIEW_WIDTH, labels).also { pendingBitmap = it }
+                }
+            value = QrArtworkPreview(BitmapPainter(bitmap.asImageBitmap()))
+            // A displayed bitmap follows painter/GC ownership so a pending display list stays valid.
+            pendingBitmap = null
+        } catch (exception: CancellationException) {
+            throw exception
+        } catch (exception: java.io.IOException) {
+            Log.e("QrCodeBottomSheet", "QR artwork preview failed", exception)
+            value = QrArtworkPreview(failed = true)
+        } catch (exception: IllegalArgumentException) {
+            Log.e("QrCodeBottomSheet", "QR artwork preview failed", exception)
+            value = QrArtworkPreview(failed = true)
+        } catch (exception: IllegalStateException) {
+            Log.e("QrCodeBottomSheet", "QR artwork preview failed", exception)
+            value = QrArtworkPreview(failed = true)
+        } finally {
+            // Also covers cancellation while the result is dispatched back to Main.
+            pendingBitmap?.recycle()
+        }
+    }
+    return preview
 }
 
 private suspend fun runQrAction(
@@ -215,7 +300,7 @@ private fun showQrFailure(
     when (exception) {
         is SecurityException -> Toast.makeText(context, R.string.toast_permission_denied, Toast.LENGTH_SHORT).show()
         is ActivityNotFoundException ->
-            Toast.makeText(context, R.string.toast_qr_share_failed, Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, messageRes, Toast.LENGTH_SHORT).show()
         else -> Toast.makeText(context, messageRes, Toast.LENGTH_SHORT).show()
     }
 }

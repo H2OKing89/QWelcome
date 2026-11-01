@@ -13,9 +13,16 @@ object WifiQrGenerator {
     enum class SecurityType(
         val qrValue: String,
     ) {
+        OPEN("nopass"),
         WPA2_PSK("WPA"),
+        WPA_WPA2_PERSONAL("WPA"),
         WPA3_SAE("SAE"),
+
+        // Transition networks retain the standard PSK QR value for scanner compatibility.
+        WPA2_WPA3_PERSONAL("WPA"),
     }
+
+    val DEFAULT_SECURITY_TYPE: SecurityType = SecurityType.WPA2_WPA3_PERSONAL
 
     /** Minimum password length for WPA/WPA2 (8 characters) */
     const val MIN_PASSWORD_LENGTH = WIFI_MIN_PASSWORD_LENGTH
@@ -72,7 +79,7 @@ object WifiQrGenerator {
 
     /**
      * Generates a string formatted for Wi-Fi QR codes.
-     * Generates a string for a WPA2-PSK or WPA3-SAE network.
+     * Open networks omit the password; PSK/transition networks use WPA and WPA3-only uses SAE.
      *
      * Special characters must be escaped in order: \ first, then ; , and "
      *
@@ -86,9 +93,10 @@ object WifiQrGenerator {
     fun generateWifiString(
         ssid: String,
         password: String,
-        securityType: SecurityType = SecurityType.WPA2_PSK,
+        securityType: SecurityType = DEFAULT_SECURITY_TYPE,
         isHidden: Boolean = false,
     ): String {
+        if (securityType == SecurityType.OPEN) return generateOpenNetworkString(ssid, isHidden)
         // Validate inputs - throw with generic message since we don't have context for string resolution
         validateSsid(ssid).let {
             if (it is ValidationResult.Error) throw IllegalArgumentException("Invalid SSID")

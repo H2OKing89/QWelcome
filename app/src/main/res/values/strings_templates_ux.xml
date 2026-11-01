@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ux_template_library_hint">Choose a message for your next visit.</string>
+    <string name="ux_template_new_short">New</string>
+    <string name="ux_template_active">In use</string>
+    <string name="ux_template_view_message">View message</string>
+    <string name="ux_template_editor_help">Make it yours. Customer and WiFi variables fill in automatically for each visit.</string>
+    <string name="ux_template_message_help">Tap to edit the wording and insert customer details.</string>
+    <string name="ux_template_tags_help">Optional · organize your library</string>
+    <string name="ux_template_variables_help">Tap a variable to insert it at the cursor.</string>
+</resources>

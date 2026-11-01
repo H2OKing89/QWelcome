@@ -4,10 +4,8 @@ package com.kingpaging.qwelcome.ui.import_pkg
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -23,7 +21,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.data.ImportValidationResult
@@ -31,9 +28,6 @@ import com.kingpaging.qwelcome.data.ImportWarning
 import com.kingpaging.qwelcome.ui.components.NeonButton
 import com.kingpaging.qwelcome.ui.components.NeonButtonStyle
 import com.kingpaging.qwelcome.ui.components.NeonPanel
-import com.kingpaging.qwelcome.ui.theme.LocalCyberColors
-
-private const val CONFIRMATION_BUTTON_WIDTH_FRACTION = 0.9f
 
 @Composable
 internal fun ImportConfirmStep(
@@ -49,7 +43,6 @@ internal fun ImportConfirmStep(
     ) {
         Text(stringResource(R.string.title_ready_to_import), style = MaterialTheme.typography.titleLarge)
         ImportValidationSummary(validationResult)
-        Spacer(Modifier.height(16.dp))
         ImportConfirmationActions(isLoading, onConfirm, onCancel)
     }
 }
@@ -60,7 +53,7 @@ private fun ImportValidationSummary(validationResult: ImportValidationResult) {
         Text(
             stringResource(R.string.text_import_overwrite_warning),
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         HorizontalDivider(Modifier.padding(vertical = 8.dp))
         ImportValidationDetails(validationResult)
@@ -168,7 +161,7 @@ private fun ImportConfirmationActions(
         Text(
             stringResource(R.string.status_importing),
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 8.dp),
         )
     } else {
@@ -181,22 +174,13 @@ private fun ImportConfirmationButtons(
     onConfirm: () -> Unit,
     onCancel: () -> Unit,
 ) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        modifier = Modifier.fillMaxWidth(CONFIRMATION_BUTTON_WIDTH_FRACTION),
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.fillMaxWidth(),
     ) {
         NeonButton(
-            onClick = onCancel,
-            modifier = Modifier.weight(1f),
-            style = NeonButtonStyle.TERTIARY,
-            glowColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-        ) {
-            Text(stringResource(R.string.action_cancel))
-        }
-        NeonButton(
             onClick = onConfirm,
-            modifier = Modifier.weight(1f),
-            glowColor = LocalCyberColors.current.success,
+            modifier = Modifier.fillMaxWidth(),
         ) {
             Icon(
                 Icons.Default.Check,
@@ -206,6 +190,13 @@ private fun ImportConfirmationButtons(
             Spacer(Modifier.width(8.dp))
             Text(stringResource(R.string.action_confirm))
         }
+        NeonButton(
+            onClick = onCancel,
+            modifier = Modifier.fillMaxWidth(),
+            style = NeonButtonStyle.TERTIARY,
+        ) {
+            Text(stringResource(R.string.action_cancel))
+        }
     }
 }
 
@@ -214,14 +205,15 @@ private fun InfoRow(
     label: String,
     value: String,
 ) {
-    Row(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Text(label, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
-        Text(value, style = MaterialTheme.typography.bodyMedium)
+        Text(
+            label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(value, style = MaterialTheme.typography.bodyLarge)
     }
 }

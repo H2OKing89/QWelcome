@@ -1,5 +1,6 @@
 package com.kingpaging.qwelcome.ui
 
+import android.content.Context
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasText
@@ -7,9 +8,12 @@ import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextReplacement
+import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.data.TechProfile
 import com.kingpaging.qwelcome.data.Template
 import com.kingpaging.qwelcome.ui.settings.SettingsScreen
@@ -56,6 +60,10 @@ class UiDraftRestorationTest {
             }
         }
 
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        composeRule
+            .onNodeWithText(context.getString(R.string.settings_profile_edit))
+            .performClick()
         composeRule.onNodeWithText(profile.name).performTextReplacement("Unsaved technician")
         restoration.emulateSavedInstanceStateRestore()
         composeRule.onNodeWithText("Unsaved technician").assertIsDisplayed()

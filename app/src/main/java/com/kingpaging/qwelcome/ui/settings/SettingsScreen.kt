@@ -1,26 +1,37 @@
 package com.kingpaging.qwelcome.ui.settings
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.data.TechProfile
 import com.kingpaging.qwelcome.ui.components.CenteredFormColumn
 import com.kingpaging.qwelcome.ui.components.CyberpunkBackdrop
-import com.kingpaging.qwelcome.ui.components.NeonButton
-import com.kingpaging.qwelcome.ui.components.NeonButtonStyle
 import com.kingpaging.qwelcome.ui.components.NeonDiscardDialog
 import com.kingpaging.qwelcome.ui.components.NeonTopAppBar
 import com.kingpaging.qwelcome.util.rememberHapticFeedback
@@ -46,77 +57,60 @@ fun SettingsScreen(
     onCheckForUpdate: () -> Unit,
     onOpenProjectPage: () -> Unit,
 ) {
+    var section by rememberSaveable { mutableStateOf(SettingsSection.OVERVIEW) }
     var showDiscardDialog by rememberSaveable { mutableStateOf(false) }
+    val pageState = rememberSaveableStateHolder()
     val currentProfile = uiState.profile
-    val privacySettings = uiState.privacySettings
-    val updateState = uiState.updateState
-
     val draft = rememberSettingsProfileDraft(currentProfile)
     val hasUnsavedChanges = draft.toProfile() != currentProfile
-
+    val focusManager = LocalFocusManager.current
     val haptic = rememberHapticFeedback()
-    val availableUpdate = updateState as? UpdateState.Available
+    val goBack: () -> Unit = {
+        focusManager.clearFocus()
+        when {
+            section == SettingsSection.PROFILE && hasUnsavedChanges -> showDiscardDialog = true
+            section != SettingsSection.OVERVIEW -> {
+                if (section == SettingsSection.PROFILE) draft.resetTo(currentProfile)
+                section = SettingsSection.OVERVIEW
+            }
+            else -> onBack()
+        }
+    }
 
-    // Discard changes confirmation dialog
     if (showDiscardDialog) {
         NeonDiscardDialog(
             message = stringResource(R.string.dialog_discard_changes_message),
             onDiscard = {
+                draft.resetTo(currentProfile)
                 showDiscardDialog = false
-                onBack()
+                section = SettingsSection.OVERVIEW
             },
             onKeepEditing = { showDiscardDialog = false },
         )
     }
-
+    val availableUpdate = uiState.updateState as? UpdateState.Available
     if (uiState.showDownloadConfirmDialog && availableUpdate != null) {
-        AlertDialog(
-            onDismissRequest = onDismissDownloadConfirmation,
-            title = { Text(stringResource(R.string.title_update_available)) },
-            text = {
-                Text(
-                    stringResource(
-                        R.string.text_update_download_confirm,
-                        availableUpdate.version,
-                        formatBytes(availableUpdate.assetSizeBytes),
-                    ),
-                )
-            },
-            confirmButton = {
-                NeonButton(
-                    onClick = onConfirmDownload,
-                    style = NeonButtonStyle.PRIMARY,
-                ) {
-                    Text(stringResource(R.string.action_download_update))
-                }
-            },
-            dismissButton = {
-                NeonButton(
-                    onClick = onDismissDownloadConfirmation,
-                    style = NeonButtonStyle.TERTIARY,
-                ) {
-                    Text(stringResource(R.string.action_cancel))
-                }
-            },
+        SettingsDownloadConfirmation(
+            available = availableUpdate,
+            onConfirm = onConfirmDownload,
+            onDismiss = onDismissDownloadConfirmation,
         )
     }
-
-    // Handle system back button - respect unsaved changes
-    BackHandler {
-        if (hasUnsavedChanges) showDiscardDialog = true else onBack()
-    }
+    BackHandler(onBack = goBack)
 
     CyberpunkBackdrop {
         Scaffold(
-            // Intentional: keep scaffold transparent so the cyberpunk backdrop remains visible.
+            modifier = Modifier.imePadding(),
             containerColor = Color.Transparent,
             topBar = {
                 NeonTopAppBar(
-                    title = { Text(stringResource(R.string.title_settings)) },
+                    title = {
+                        Text(stringResource(section.titleResource), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    },
                     navigationIcon = {
                         IconButton(onClick = {
                             haptic()
-                            if (hasUnsavedChanges) showDiscardDialog = true else onBack()
+                            goBack()
                         }) {
                             Icon(
                                 Icons.AutoMirrored.Filled.ArrowBack,
@@ -126,70 +120,91 @@ fun SettingsScreen(
                     },
                 )
             },
+            bottomBar = {
+                if (section == SettingsSection.PROFILE) {
+                    Surface(color = MaterialTheme.colorScheme.surface) {
+                        Box(
+                            modifier = Modifier.fillMaxWidth().navigationBarsPadding(),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Box(
+                                modifier =
+                                    Modifier
+                                        .widthIn(max = 720.dp)
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                            ) {
+                                SettingsProfileSaveAction(
+                                    hasUnsavedChanges = hasUnsavedChanges,
+                                    onSaveProfile = {
+                                        focusManager.clearFocus()
+                                        onSaveProfile(draft.toProfile())
+                                    },
+                                )
+                            }
+                        }
+                    }
+                }
+            },
         ) { padding ->
-            CenteredFormColumn(padding = padding) {
-                SettingsProfileSection(
-                    activeTemplateName = uiState.activeTemplate.name,
-                    name = draft.name,
-                    title = draft.title,
-                    department = draft.department,
-                    hasUnsavedChanges = hasUnsavedChanges,
-                    onNameChange = { draft.name = it },
-                    onTitleChange = { draft.title = it },
-                    onDepartmentChange = { draft.department = it },
-                    onOpenTemplates = onOpenTemplates,
-                    onSaveProfile = { onSaveProfile(draft.toProfile()) },
-                )
-
-                SettingsPrivacySection(
-                    privacySettings = privacySettings,
-                    onSetCrashReportingEnabled = {
-                        haptic()
-                        onSetCrashReportingEnabled(it)
-                    },
-                    onSetScreenCaptureProtectionEnabled = {
-                        haptic()
-                        onSetScreenCaptureProtectionEnabled(it)
-                    },
-                )
-
-                SettingsDataManagementSection(
-                    hasUnsavedChanges = hasUnsavedChanges,
-                    onOpenExport = onOpenExport,
-                    onOpenImport = onOpenImport,
-                )
-
-                SettingsUpdateSection(
-                    currentVersion = uiState.currentVersion,
-                    updateState = updateState,
-                    downloadActions =
-                        UpdateDownloadActions(
-                            onRequestDownloadConfirmation = {
-                                haptic()
-                                onRequestDownloadConfirmation()
-                            },
-                            onDismissUpdate = {
-                                haptic()
-                                onDismissUpdate()
-                            },
-                            onRetryInstall = {
-                                haptic()
-                                onRetryInstall()
-                            },
-                            onOpenInstallSettings = {
-                                haptic()
-                                onOpenInstallSettings()
-                            },
-                        ),
-                    navigationActions =
-                        UpdateNavigationActions(
-                            onCheckForUpdate = {
-                                haptic()
-                                onCheckForUpdate()
-                            },
-                            onOpenProjectPage = onOpenProjectPage,
-                        ),
-                )
+            pageState.SaveableStateProvider(section) {
+                CenteredFormColumn(padding = padding) {
+                    when (section) {
+                        SettingsSection.OVERVIEW ->
+                            SettingsOverview(
+                                uiState = uiState,
+                                onOpenSection = { section = it },
+                                onOpenTemplates = onOpenTemplates,
+                            )
+                        SettingsSection.PROFILE ->
+                            SettingsProfileSection(
+                                name = draft.name,
+                                title = draft.title,
+                                department = draft.department,
+                                hasUnsavedChanges = hasUnsavedChanges,
+                                onNameChange = { draft.name = it },
+                                onTitleChange = { draft.title = it },
+                                onDepartmentChange = { draft.department = it },
+                                onSaveProfile = { onSaveProfile(draft.toProfile()) },
+                                showSaveAction = false,
+                            )
+                        SettingsSection.PRIVACY ->
+                            SettingsPrivacySection(
+                                privacySettings = uiState.privacySettings,
+                                onSetCrashReportingEnabled = {
+                                    haptic()
+                                    onSetCrashReportingEnabled(it)
+                                },
+                                onSetScreenCaptureProtectionEnabled = {
+                                    haptic()
+                                    onSetScreenCaptureProtectionEnabled(it)
+                                },
+                            )
+                        SettingsSection.BACKUP ->
+                            SettingsDataManagementSection(
+                                hasUnsavedChanges = hasUnsavedChanges,
+                                onOpenExport = onOpenExport,
+                                onOpenImport = onOpenImport,
+                            )
+                        SettingsSection.ABOUT ->
+                            SettingsUpdateSection(
+                                currentVersion = uiState.currentVersion,
+                                updateState = uiState.updateState,
+                                downloadActions =
+                                    UpdateDownloadActions(
+                                        onRequestDownloadConfirmation = onRequestDownloadConfirmation,
+                                        onDismissUpdate = onDismissUpdate,
+                                        onRetryInstall = onRetryInstall,
+                                        onOpenInstallSettings = onOpenInstallSettings,
+                                    ),
+                                navigationActions =
+                                    UpdateNavigationActions(
+                                        onCheckForUpdate = onCheckForUpdate,
+                                        onOpenProjectPage = onOpenProjectPage,
+                                    ),
+                            )
+                    }
+                }
             }
         }
     }

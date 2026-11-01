@@ -1,0 +1,18 @@
+<resources>
+    <string name="settings_updates_app_description">Wi-Fi welcome messages for every install.</string>
+    <string name="settings_updates_card_title">App updates</string>
+    <string name="settings_updates_idle_title">Ready when you are</string>
+    <string name="settings_updates_idle_description">Check for the latest Q Welcome release.</string>
+    <string name="settings_updates_dismissed_title">Update dismissed</string>
+    <string name="settings_updates_dismissed_description">You can check again whenever you\'re ready.</string>
+    <string name="settings_updates_checking_description">Looking for the latest release.</string>
+    <string name="settings_updates_current_description">You\'re using the latest available version.</string>
+    <string name="settings_updates_available_description">A newer version is ready to download (%1$s).</string>
+    <string name="settings_updates_queued_description">Waiting for the download to start.</string>
+    <string name="settings_updates_verifying_description">Checking the downloaded update before installation.</string>
+    <string name="settings_updates_ready_description">The download is complete. Android will guide you through installation.</string>
+    <string name="settings_updates_permission_title">Allow installation</string>
+    <string name="settings_updates_installing_description">Finish installing in the Android installer.</string>
+    <string name="settings_updates_error_title">Update needs attention</string>
+    <string name="settings_updates_dismiss_action">Not now</string>
+</resources>

@@ -1,30 +1,22 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
-
 package com.kingpaging.qwelcome.ui.export
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Backup
 import androidx.compose.material.icons.filled.Description
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.ui.components.CenteredFormColumn
 import com.kingpaging.qwelcome.ui.components.CyberpunkBackdrop
+import com.kingpaging.qwelcome.ui.components.NeonTopAppBar
 import com.kingpaging.qwelcome.util.rememberHapticFeedback
 import com.kingpaging.qwelcome.viewmodel.export.ExportType
 import com.kingpaging.qwelcome.viewmodel.export.ExportUiState
@@ -43,8 +35,8 @@ fun ExportScreen(
         Scaffold(
             containerColor = Color.Transparent,
             topBar = {
-                TopAppBar(
-                    title = { Text(stringResource(R.string.title_export), color = MaterialTheme.colorScheme.primary) },
+                NeonTopAppBar(
+                    title = { Text(stringResource(R.string.title_export)) },
                     navigationIcon = {
                         IconButton(onClick = {
                             haptic()
@@ -53,14 +45,9 @@ fun ExportScreen(
                             Icon(
                                 Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = stringResource(R.string.content_desc_back),
-                                tint = MaterialTheme.colorScheme.primary,
                             )
                         }
                     },
-                    colors =
-                        TopAppBarDefaults.topAppBarColors(
-                            containerColor = Color.Transparent,
-                        ),
                 )
             },
         ) { padding ->
@@ -69,16 +56,14 @@ fun ExportScreen(
                 Text(
                     stringResource(R.string.text_export_description),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-
-                Spacer(Modifier.height(8.dp))
 
                 // Export Options
                 Text(
                     stringResource(R.string.header_export_options),
                     style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
 
                 // Template Pack Card
@@ -111,8 +96,6 @@ fun ExportScreen(
                     onShareRequested = actions.onShareRequested,
                     onSaveToFileRequested = actions.onSaveToFileRequested,
                 )
-
-                Spacer(Modifier.height(32.dp))
             }
         }
 

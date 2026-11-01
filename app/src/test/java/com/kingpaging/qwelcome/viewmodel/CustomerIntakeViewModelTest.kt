@@ -125,6 +125,64 @@ class CustomerIntakeViewModelTest {
     }
 
     @Test
+    fun `new customer and cleared forms default to mixed personal security`() {
+        assertEquals(WifiQrGenerator.SecurityType.WPA2_WPA3_PERSONAL, vm.uiState.value.securityType)
+        fillValidFields()
+        vm.onSecurityTypeChanged(WifiQrGenerator.SecurityType.WPA3_SAE)
+        vm.onHiddenNetworkChanged(true)
+
+        vm.clearFormWithUndo()
+
+        assertEquals(WifiQrGenerator.SecurityType.WPA2_WPA3_PERSONAL, vm.uiState.value.securityType)
+        assertFalse(vm.uiState.value.isOpenNetwork)
+        assertFalse(vm.uiState.value.isHiddenNetwork)
+        assertEquals("", vm.uiState.value.password)
+    }
+
+    @Test
+    fun `protected security changes preserve credentials and legacy open toggle clears them`() {
+        vm.onSsidChanged("TestWiFi")
+        vm.onPasswordChanged("password123")
+        WifiQrGenerator.SecurityType.entries.filterNot { it == WifiQrGenerator.SecurityType.OPEN }.forEach { mode ->
+            vm.onSecurityTypeChanged(mode)
+            assertEquals(mode, vm.uiState.value.securityType)
+            assertEquals("password123", vm.uiState.value.password)
+            assertTrue(vm.uiState.value.qrEnabled)
+        }
+
+        vm.onOpenNetworkChanged(true)
+        assertEquals(WifiQrGenerator.SecurityType.OPEN, vm.uiState.value.securityType)
+        assertEquals("", vm.uiState.value.password)
+        assertNull(vm.uiState.value.passwordError)
+        assertTrue(vm.uiState.value.qrEnabled)
+
+        vm.onOpenNetworkChanged(false)
+        assertEquals(WifiQrGenerator.SecurityType.WPA2_WPA3_PERSONAL, vm.uiState.value.securityType)
+        assertEquals("", vm.uiState.value.password)
+        assertNull(vm.uiState.value.passwordError)
+        assertFalse(vm.uiState.value.qrEnabled)
+    }
+
+    @Test
+    fun `selecting open security skips password validation for template actions`() =
+        runTest {
+            fillValidFields()
+            vm.onPasswordChanged("short")
+            assertNotNull(vm.uiState.value.passwordError)
+
+            vm.onSecurityTypeChanged(WifiQrGenerator.SecurityType.OPEN)
+            val navigator = FakeNavigator()
+            vm.onShareClicked(navigator)
+            advanceUntilIdle()
+
+            assertTrue(vm.uiState.value.isOpenNetwork)
+            assertTrue(vm.uiState.value.qrEnabled)
+            assertNull(vm.uiState.value.passwordError)
+            assertEquals("", vm.uiState.value.password)
+            assertEquals(1, navigator.shareCalls.size)
+        }
+
+    @Test
     fun `security and hidden network options update state`() {
         vm.onSecurityTypeChanged(WifiQrGenerator.SecurityType.WPA3_SAE)
         vm.onHiddenNetworkChanged(true)
@@ -277,6 +335,8 @@ class CustomerIntakeViewModelTest {
     @Test
     fun `clearFormWithUndo restores the manually cleared form`() {
         fillValidFields()
+        vm.onSecurityTypeChanged(WifiQrGenerator.SecurityType.WPA3_SAE)
+        vm.onHiddenNetworkChanged(true)
 
         val token = vm.clearFormWithUndo()
         assertEquals("", vm.uiState.value.customerName)
@@ -285,6 +345,8 @@ class CustomerIntakeViewModelTest {
 
         assertEquals("Alice", vm.uiState.value.customerName)
         assertEquals("TestWiFi", vm.uiState.value.ssid)
+        assertEquals(WifiQrGenerator.SecurityType.WPA3_SAE, vm.uiState.value.securityType)
+        assertTrue(vm.uiState.value.isHiddenNetwork)
     }
 
     @Test

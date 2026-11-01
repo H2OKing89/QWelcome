@@ -143,7 +143,6 @@ fun CustomerIntakeRoute(
                 onSsidChanged = customerIntakeViewModel::onSsidChanged,
                 onSecurityTypeChanged = customerIntakeViewModel::onSecurityTypeChanged,
                 onHiddenNetworkChanged = customerIntakeViewModel::onHiddenNetworkChanged,
-                onOpenNetworkChanged = customerIntakeViewModel::onOpenNetworkChanged,
                 onPasswordChanged = customerIntakeViewModel::onPasswordChanged,
                 onAccountNumberChanged = customerIntakeViewModel::onAccountNumberChanged,
                 onSmsClick = { customerIntakeViewModel.onSmsClicked(navigator) },

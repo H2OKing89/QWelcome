@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_privacy_intro">Choose how Q Welcome handles diagnostics and screen visibility.</string>
+    <string name="settings_crash_reporting_summary">Share crash diagnostics to help improve Q Welcome.</string>
+    <string name="settings_capture_protection_summary">Hide this app in screenshots, screen recordings, and Recents.</string>
+    <string name="settings_status_on">On</string>
+    <string name="settings_status_off">Off</string>
+    <string name="settings_status_loading">Loading settings…</string>
+    <string name="settings_backup_intro">Keep a copy of your templates and profile, or bring in a file shared by your team.</string>
+    <string name="settings_backup_export_title">Export backup</string>
+    <string name="settings_backup_export_summary">Choose templates and profile details to save or share.</string>
+    <string name="settings_backup_import_title">Import a file</string>
+    <string name="settings_backup_import_summary">Open a backup or template file. Review it before restoring.</string>
+    <string name="settings_backup_save_profile_first">Save your profile changes before exporting a backup.</string>
+</resources>

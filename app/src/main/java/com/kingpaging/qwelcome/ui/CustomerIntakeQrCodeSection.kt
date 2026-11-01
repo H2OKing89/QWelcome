@@ -71,7 +71,7 @@ internal fun CustomerIntakeQrCodeSection(
                     if (enabled) {
                         MaterialTheme.colorScheme.tertiary
                     } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                        MaterialTheme.colorScheme.onSurfaceVariant
                     },
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,

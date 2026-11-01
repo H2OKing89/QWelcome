@@ -40,7 +40,6 @@ import androidx.compose.ui.unit.sp
 import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.ui.components.NeonButton
 import com.kingpaging.qwelcome.ui.components.NeonButtonStyle
-import com.kingpaging.qwelcome.ui.components.NeonMagentaButton
 import com.kingpaging.qwelcome.ui.components.NeonPanel
 import com.kingpaging.qwelcome.viewmodel.export.ExportType
 import com.kingpaging.qwelcome.viewmodel.export.RecentShareTargetUi
@@ -87,13 +86,13 @@ private fun ExportResultContent(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         HorizontalDivider(
-            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
+            color = MaterialTheme.colorScheme.outlineVariant,
             modifier = Modifier.padding(vertical = 8.dp),
         )
         ExportResultHeader(exportType, templateCount)
-        RecentShareTargets(recentShareTargets, onShareToPackageRequested)
-        ExportCopyShareActions(onCopy, onShareRequested)
         ExportSaveToFileAction(onSaveToFileRequested)
+        ExportCopyShareActions(onCopy, onShareRequested)
+        RecentShareTargets(recentShareTargets, onShareToPackageRequested)
         ExportJsonPreview(exportedJson)
     }
 }
@@ -132,7 +131,7 @@ private fun RecentShareTargets(
     Text(
         stringResource(R.string.label_recent_shares),
         style = MaterialTheme.typography.labelMedium,
-        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
     Row(
         modifier =
@@ -200,9 +199,10 @@ private fun ExportCopyShareActions(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        NeonMagentaButton(
+        NeonButton(
             onClick = onCopy,
             modifier = Modifier.weight(1f),
+            style = NeonButtonStyle.SECONDARY,
         ) {
             Icon(
                 Icons.Default.ContentCopy,
@@ -233,8 +233,7 @@ private fun ExportCopyShareActions(
 private fun ExportSaveToFileAction(onSaveToFileRequested: () -> Unit) {
     NeonButton(
         onClick = onSaveToFileRequested,
-        glowColor = MaterialTheme.colorScheme.secondary,
-        style = NeonButtonStyle.SECONDARY,
+        style = NeonButtonStyle.PRIMARY,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Icon(
@@ -252,7 +251,7 @@ private fun ExportJsonPreview(exportedJson: String) {
     Text(
         stringResource(R.string.label_preview),
         style = MaterialTheme.typography.labelMedium,
-        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
     NeonPanel {
         Box(
@@ -268,10 +267,10 @@ private fun ExportJsonPreview(exportedJson: String) {
                 style =
                     MaterialTheme.typography.bodySmall.copy(
                         fontFamily = FontFamily.Monospace,
-                        fontSize = 10.sp,
-                        lineHeight = 14.sp,
+                        fontSize = 12.sp,
+                        lineHeight = 18.sp,
                     ),
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
