@@ -90,7 +90,8 @@ internal fun StartupRecoveryScreen(
             )
         }
     }
-    if (confirmRecovery && state is AppStartupState.Failed && state.canRecoverLegacyTemplates) {
+    val canContinue = !savingCopy && copyStatus == R.string.startup_copy_saved
+    if (confirmRecovery && canContinue && (state as? AppStartupState.Failed)?.canRecoverLegacyTemplates == true) {
         ConfirmTemplateRecovery(
             onDismiss = { confirmRecovery = false },
             onContinue = {
@@ -137,7 +138,9 @@ private fun RecoveryActions(
     }
     if (state.canRecoverLegacyTemplates) {
         TextButton(onClick = onSaveCopy, enabled = enabled) { Text(stringResource(R.string.startup_save_copy)) }
-        TextButton(onClick = onContinue, enabled = enabled) { Text(stringResource(R.string.startup_skip_templates)) }
+        TextButton(onClick = onContinue, enabled = enabled && status == R.string.startup_copy_saved) {
+            Text(stringResource(R.string.startup_skip_templates))
+        }
     }
     status?.let { Text(stringResource(it)) }
 }

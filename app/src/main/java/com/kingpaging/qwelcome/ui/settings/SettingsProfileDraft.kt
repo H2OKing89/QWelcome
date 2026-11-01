@@ -15,19 +15,44 @@ private const val PROFILE_FIELD_COUNT = 3
 internal class SettingsProfileDraft(
     baseline: TechProfile,
     edited: TechProfile = baseline,
+    private var nameEdited: Boolean = edited.name != baseline.name,
+    private var titleEdited: Boolean = edited.title != baseline.title,
+    private var departmentEdited: Boolean = edited.dept != baseline.dept,
 ) {
     private var baseline by mutableStateOf(baseline)
-    var name by mutableStateOf(edited.name)
-    var title by mutableStateOf(edited.title)
-    var department by mutableStateOf(edited.dept)
+    private var profile by mutableStateOf(edited)
 
-    fun toProfile(): TechProfile = TechProfile(name, title, department)
+    var name: String
+        get() = profile.name
+        set(value) {
+            nameEdited = true
+            profile = profile.copy(name = value)
+        }
+
+    var title: String
+        get() = profile.title
+        set(value) {
+            titleEdited = true
+            profile = profile.copy(title = value)
+        }
+
+    var department: String
+        get() = profile.dept
+        set(value) {
+            departmentEdited = true
+            profile = profile.copy(dept = value)
+        }
+
+    fun toProfile(): TechProfile = profile
 
     fun updatePersisted(profile: TechProfile) {
         if (baseline == profile) return
-        if (name == baseline.name) name = profile.name
-        if (title == baseline.title) title = profile.title
-        if (department == baseline.dept) department = profile.dept
+        this.profile =
+            TechProfile(
+                name = if (nameEdited) name else profile.name,
+                title = if (titleEdited) title else profile.title,
+                dept = if (departmentEdited) department else profile.dept,
+            )
         baseline = profile
     }
 
@@ -35,14 +60,28 @@ internal class SettingsProfileDraft(
         val Saver =
             listSaver<SettingsProfileDraft, String>(
                 save = {
-                    listOf(it.baseline.name, it.baseline.title, it.baseline.dept, it.name, it.title, it.department)
+                    listOf(
+                        it.baseline.name,
+                        it.baseline.title,
+                        it.baseline.dept,
+                        it.name,
+                        it.title,
+                        it.department,
+                        it.nameEdited.toString(),
+                        it.titleEdited.toString(),
+                        it.departmentEdited.toString(),
+                    )
                 },
                 restore = {
                     val original = it.take(PROFILE_FIELD_COUNT)
                     val edited = it.drop(PROFILE_FIELD_COUNT)
+                    val editedFields = it.drop(PROFILE_FIELD_COUNT * 2)
                     SettingsProfileDraft(
                         baseline = TechProfile(original[0], original[1], original[2]),
                         edited = TechProfile(edited[0], edited[1], edited[2]),
+                        nameEdited = editedFields[0].toBoolean(),
+                        titleEdited = editedFields[1].toBoolean(),
+                        departmentEdited = editedFields[2].toBoolean(),
                     )
                 },
             )

@@ -73,7 +73,7 @@ fun QrCodeBottomSheet(
             isSaving = true
             scope.launch {
                 try {
-                    runQrAction(context, R.string.toast_failed_save) {
+                    runQrAction(context, R.string.toast_qr_save_failed) {
                         imageService.saveToGallery(wifiString, ssid)
                         Toast.makeText(context, R.string.toast_qr_saved, Toast.LENGTH_SHORT).show()
                     }
@@ -154,7 +154,7 @@ fun QrCodeBottomSheet(
                             isSharing = true
                             scope.launch {
                                 try {
-                                    runQrAction(context, R.string.toast_failed_share) {
+                                    runQrAction(context, R.string.toast_qr_share_failed) {
                                         val uri = imageService.prepareShare(wifiString, ssid)
                                         val intent =
                                             Intent(Intent.ACTION_SEND).apply {
@@ -215,12 +215,7 @@ private fun showQrFailure(
     when (exception) {
         is SecurityException -> Toast.makeText(context, R.string.toast_permission_denied, Toast.LENGTH_SHORT).show()
         is ActivityNotFoundException ->
-            Toast
-                .makeText(
-                    context,
-                    context.getString(R.string.toast_failed_share, exception.message),
-                    Toast.LENGTH_SHORT,
-                ).show()
-        else -> Toast.makeText(context, context.getString(messageRes, exception.message), Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, R.string.toast_qr_share_failed, Toast.LENGTH_SHORT).show()
+        else -> Toast.makeText(context, messageRes, Toast.LENGTH_SHORT).show()
     }
 }

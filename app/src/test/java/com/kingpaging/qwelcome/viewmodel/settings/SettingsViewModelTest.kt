@@ -453,6 +453,7 @@ class SettingsViewModelTest {
             runCurrent()
 
             vm.dismissUpdate()
+            vm.lastCheckTimeMillis = 0L
             vm.checkForUpdate()
 
             assertTrue(vm.updateState.value is UpdateState.Downloading)

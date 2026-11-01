@@ -3,7 +3,7 @@
     <string name="startup_loading">Loading your settings…</string>
     <string name="startup_failed_title">Unable to load your settings</string>
     <string name="startup_failed_body">Your saved settings could not be opened. Try again. Your data has been kept.</string>
-    <string name="startup_legacy_failed_body">Your old templates could not be read. You can save a recovery copy, retry, or continue without those templates. Your technician profile will be preserved.</string>
+    <string name="startup_legacy_failed_body">Your old templates could not be read. Save a recovery copy before continuing without those templates, or try again. Your technician profile will be preserved.</string>
     <string name="startup_retry">Try again</string>
     <string name="startup_save_copy">Save recovery copy</string>
     <string name="startup_skip_templates">Continue without old templates</string>
