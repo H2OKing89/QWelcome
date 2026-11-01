@@ -144,6 +144,7 @@ private fun WifiCredentialFields(
     NeonOutlinedField(
         value = uiState.ssid,
         onValueChange = onSsidChanged,
+        keyboardOptions = KeyboardOptions(autoCorrectEnabled = false),
         label = { Text(stringResource(R.string.label_wifi_ssid)) },
         isError = uiState.ssidError != null,
         supportingText = { uiState.ssidError?.let { Text(it) } },
@@ -172,6 +173,7 @@ private fun WifiPasswordField(
     NeonOutlinedField(
         value = if (uiState.isOpenNetwork) "" else uiState.password,
         onValueChange = onPasswordChanged,
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, autoCorrectEnabled = false),
         label = { Text(stringResource(R.string.label_wifi_password)) },
         enabled = !uiState.isOpenNetwork,
         isError = uiState.passwordError != null,

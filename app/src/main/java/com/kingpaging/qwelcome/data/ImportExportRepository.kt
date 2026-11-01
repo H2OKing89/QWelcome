@@ -1,6 +1,9 @@
 package com.kingpaging.qwelcome.data
 
 import com.kingpaging.qwelcome.util.ResourceProvider
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 
 private const val BYTES_PER_MB = 1024L * 1024L
@@ -25,6 +28,7 @@ internal const val MAX_IMPORT_SIZE_BYTES = 10 * 1024 * 1024
 class ImportExportRepository(
     settingsStore: SettingsStore,
     resourceProvider: ResourceProvider,
+    private val computationDispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) {
     private val json =
         Json {
@@ -53,17 +57,19 @@ class ImportExportRepository(
         )
 
     suspend fun exportTemplatePack(templateIds: List<String> = emptyList()): ExportResult =
-        exportService.exportTemplatePack(templateIds)
+        withContext(computationDispatcher) { exportService.exportTemplatePack(templateIds) }
 
-    suspend fun exportFullBackup(): ExportResult = exportService.exportFullBackup()
+    suspend fun exportFullBackup(): ExportResult =
+        withContext(computationDispatcher) { exportService.exportFullBackup() }
 
     suspend fun validateImport(jsonString: String): ImportValidationResult =
-        importValidationService.validateImport(jsonString)
+        withContext(computationDispatcher) { importValidationService.validateImport(jsonString) }
 
     suspend fun applyTemplatePack(
         pack: TemplatePack,
         resolutions: Map<String, ConflictResolution> = emptyMap(),
-    ): ImportApplyResult = importApplyService.applyTemplatePack(pack, resolutions)
+    ): ImportApplyResult =
+        withContext(computationDispatcher) { importApplyService.applyTemplatePack(pack, resolutions) }
 
     suspend fun applyFullBackup(
         backup: FullBackup,
@@ -71,12 +77,14 @@ class ImportExportRepository(
         importDefaultTemplate: Boolean = true,
         resolutions: Map<String, ConflictResolution> = emptyMap(),
     ): ImportApplyResult =
-        importApplyService.applyFullBackup(
-            backup = backup,
-            importTechProfile = importTechProfile,
-            importDefaultTemplate = importDefaultTemplate,
-            resolutions = resolutions,
-        )
+        withContext(computationDispatcher) {
+            importApplyService.applyFullBackup(
+                backup = backup,
+                importTechProfile = importTechProfile,
+                importDefaultTemplate = importDefaultTemplate,
+                resolutions = resolutions,
+            )
+        }
 }
 
 // ========== Result Types ==========

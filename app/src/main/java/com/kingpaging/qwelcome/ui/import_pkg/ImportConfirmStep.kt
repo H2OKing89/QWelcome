@@ -27,6 +27,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.data.ImportValidationResult
+import com.kingpaging.qwelcome.data.ImportWarning
 import com.kingpaging.qwelcome.ui.components.NeonButton
 import com.kingpaging.qwelcome.ui.components.NeonButtonStyle
 import com.kingpaging.qwelcome.ui.components.NeonPanel
@@ -90,6 +91,7 @@ private fun ImportTemplatePackDetails(result: ImportValidationResult.ValidTempla
     )
     InfoRow(stringResource(R.string.label_tech_profile), stringResource(R.string.label_not_included))
     ImportConflictInfo(result.hasConflicts, result.conflicts.size)
+    ImportWarnings(result.warnings)
 }
 
 @Composable
@@ -102,6 +104,44 @@ private fun ImportFullBackupDetails(result: ImportValidationResult.ValidFullBack
     )
     InfoRow(stringResource(R.string.label_tech_profile), stringResource(R.string.label_included))
     ImportConflictInfo(result.hasConflicts, result.conflicts.size)
+    ImportWarnings(result.warnings)
+}
+
+@Composable
+private fun ImportWarnings(warnings: List<ImportWarning>) {
+    if (warnings.isEmpty()) return
+
+    HorizontalDivider(Modifier.padding(vertical = 8.dp))
+    Text(
+        text = stringResource(R.string.import_warnings_title),
+        style = MaterialTheme.typography.titleSmall,
+    )
+    warnings.forEach { warning ->
+        val message =
+            when (warning) {
+                is ImportWarning.NewerVersion ->
+                    stringResource(
+                        R.string.import_warning_newer_version,
+                        warning.importVersion,
+                        warning.supportedVersion,
+                    )
+                is ImportWarning.MissingField ->
+                    stringResource(R.string.import_warning_missing_field, warning.templateIdentifier, warning.fieldName)
+                is ImportWarning.LongContent ->
+                    stringResource(R.string.import_warning_long_content, warning.templateName, warning.length)
+                is ImportWarning.MissingPlaceholders ->
+                    stringResource(
+                        R.string.import_warning_missing_placeholders,
+                        warning.templateName,
+                        warning.placeholders.joinToString(", "),
+                    )
+            }
+        Text(
+            text = message,
+            style = MaterialTheme.typography.bodySmall,
+            modifier = Modifier.padding(top = 8.dp),
+        )
+    }
 }
 
 @Composable

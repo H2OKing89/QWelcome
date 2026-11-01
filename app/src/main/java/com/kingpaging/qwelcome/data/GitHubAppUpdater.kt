@@ -23,10 +23,14 @@ import java.util.concurrent.ConcurrentHashMap
 
 private const val TAG = "GitHubAppUpdater"
 private const val APK_MIME_TYPE = "application/vnd.android.package-archive"
+private const val APK_RETENTION_MILLIS = 7L * 24 * 60 * 60 * 1000
 
-class GitHubAppUpdater(
+class GitHubAppUpdater internal constructor(
     private val context: Context,
+    private val pendingDownloadStore: UpdateDownloadStore,
 ) : AppUpdater {
+    constructor(context: Context) : this(context, FileUpdateDownloadStore(context.applicationContext))
+
     private val appContext = context.applicationContext
     private val downloadManager =
         appContext.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
@@ -34,6 +38,32 @@ class GitHubAppUpdater(
 
     override suspend fun checkForUpdate(currentVersionName: String): UpdateCheckResult =
         UpdateChecker.checkForUpdate(currentVersionName)
+
+    override suspend fun restorePendingDownload(currentVersionName: String): PendingUpdateDownload? =
+        withContext(Dispatchers.IO) {
+            val pending = pendingDownloadStore.read()
+            if (
+                pending != null &&
+                !VersionComparator.isNewerVersion(pending.update.latestVersion, currentVersionName)
+            ) {
+                downloadManager.remove(pending.downloadId)
+                pendingDownloadStore.clear()
+                pruneOldApks()
+                return@withContext null
+            }
+            pending?.let { downloadPaths[it.downloadId] = it.apkPath }
+            pruneOldApks(pending?.apkPath)
+            pending
+        }
+
+    override suspend fun forgetPendingDownload(downloadId: Long) =
+        withContext(Dispatchers.IO) {
+            if (pendingDownloadStore.read()?.downloadId == downloadId) {
+                pendingDownloadStore.clear()
+            }
+            downloadPaths.remove(downloadId)
+            Unit
+        }
 
     override suspend fun enqueueDownload(update: UpdateCheckResult.UpdateAvailable): DownloadEnqueueResult =
         withContext(Dispatchers.IO) {
@@ -49,6 +79,12 @@ class GitHubAppUpdater(
                 if (!updatesDir.exists() && !updatesDir.mkdirs()) {
                     return@withContext DownloadEnqueueResult.Failed("Unable to create updates directory")
                 }
+
+                val previous = pendingDownloadStore.read()
+                previous?.let { downloadManager.remove(it.downloadId) }
+                pendingDownloadStore.clear()
+                downloadPaths.clear()
+                pruneOldApks()
 
                 val safeAssetName = sanitizeFileName(update.assetName, UPDATE_FALLBACK_FILE_NAME)
                 val destinationFile = File(updatesDir, safeAssetName)
@@ -78,6 +114,12 @@ class GitHubAppUpdater(
 
                 val downloadId = downloadManager.enqueue(request)
                 val apkPath = destinationFile.absolutePath
+                try {
+                    pendingDownloadStore.write(PendingUpdateDownload(downloadId, apkPath, update))
+                } catch (exception: java.io.IOException) {
+                    downloadManager.remove(downloadId)
+                    throw exception
+                }
                 downloadPaths[downloadId] = apkPath
                 DownloadEnqueueResult.Started(downloadId = downloadId, apkPath = apkPath)
             } catch (e: java.io.IOException) {
@@ -184,9 +226,9 @@ class GitHubAppUpdater(
                         return@withContext VerificationResult.Failed("Unable to inspect installed app signature")
                     }
 
-            val installedSigners = getSignerFingerprints(installedInfo)
-            val archiveSigners = getSignerFingerprints(archiveInfo)
-            if (!signerSetsMatch(installedSigners, archiveSigners)) {
+            val installedSigners = getSigningIdentity(installedInfo)
+            val archiveSigners = getSigningIdentity(archiveInfo)
+            if (!installedSigners.acceptsUpdate(archiveSigners)) {
                 file.delete()
                 logError("APK signature mismatch for update ${update.assetName}", null)
                 return@withContext VerificationResult.Failed("Signature verification failed")
@@ -222,7 +264,7 @@ class GitHubAppUpdater(
             .apply {
                 setDataAndType(uri, APK_MIME_TYPE)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                putExtra(Intent.EXTRA_RETURN_RESULT, true)
             }.takeIf { installIntent ->
                 installIntent.resolveActivity(appContext.packageManager) != null
             }
@@ -284,20 +326,49 @@ class GitHubAppUpdater(
     }
 
     @Suppress("DEPRECATION")
-    private fun getSignerFingerprints(packageInfo: PackageInfo): Set<String> {
-        val signatures =
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                val signingInfo = packageInfo.signingInfo
-                if (signingInfo != null && !signingInfo.hasMultipleSigners()) {
-                    // Include certificate history for key-rotated apps
-                    signingInfo.signingCertificateHistory?.toList().orEmpty()
+    private fun getSigningIdentity(packageInfo: PackageInfo): ApkSigningIdentity {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            val signingInfo = packageInfo.signingInfo ?: return ApkSigningIdentity(emptySet())
+            val current =
+                signingInfo.apkContentsSigners
+                    .orEmpty()
+                    .map(::signatureFingerprint)
+                    .toSet()
+            val history =
+                if (signingInfo.hasMultipleSigners()) {
+                    current
                 } else {
-                    signingInfo?.apkContentsSigners?.toList().orEmpty()
+                    signingInfo.signingCertificateHistory
+                        .orEmpty()
+                        .map(::signatureFingerprint)
+                        .toSet()
                 }
-            } else {
-                packageInfo.signatures?.toList().orEmpty()
+            ApkSigningIdentity(current, history)
+        } else {
+            ApkSigningIdentity(
+                packageInfo.signatures
+                    .orEmpty()
+                    .map(::signatureFingerprint)
+                    .toSet(),
+            )
+        }
+    }
+
+    /** Only touches old APK files directly inside our updater directory, never an active download. */
+    internal fun pruneOldApks(protectedPath: String? = null) {
+        val downloads = appContext.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS) ?: return
+        val directory = File(downloads, "updates")
+        val protectedFiles = downloadPaths.values.toSet() + listOfNotNull(protectedPath)
+        val cutoff = System.currentTimeMillis() - APK_RETENTION_MILLIS
+        directory.listFiles()?.forEach { file ->
+            val oldApk =
+                file.isFile &&
+                    file.extension.equals("apk", ignoreCase = true) &&
+                    file.lastModified() < cutoff
+            if (oldApk && file.absolutePath !in protectedFiles) {
+                file.delete()
             }
-        return signatures.map(::signatureFingerprint).toSet()
+        }
     }
 
     private fun signatureFingerprint(signature: Signature): String {
@@ -347,14 +418,6 @@ class GitHubAppUpdater(
         expectedPackageName: String,
         archivePackageName: String,
     ): Boolean = expectedPackageName == archivePackageName
-
-    internal fun signerSetsMatch(
-        installedSigners: Set<String>,
-        archiveSigners: Set<String>,
-    ): Boolean {
-        if (installedSigners.isEmpty() || archiveSigners.isEmpty()) return false
-        return installedSigners.containsAll(archiveSigners)
-    }
 
     internal fun trackedDownloadCount(): Int = downloadPaths.size
 }

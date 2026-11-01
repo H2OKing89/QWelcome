@@ -1,5 +1,6 @@
 package com.kingpaging.qwelcome.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -15,6 +16,7 @@ import com.kingpaging.qwelcome.util.SystemTimeProvider
 import com.kingpaging.qwelcome.util.TimeProvider
 import com.kingpaging.qwelcome.util.WifiQrGenerator
 import com.kingpaging.qwelcome.util.WifiValidationRules
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -26,6 +28,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.io.IOException
 
 /** One-shot UI events emitted by the ViewModel */
 sealed class UiEvent {
@@ -340,61 +343,22 @@ class CustomerIntakeViewModel(
         return true
     }
 
-    /**
-     * Handles SMS button click - validates inputs and sends SMS via Navigator.
-     * @param navigator The Navigator instance for launching intents (injected for testability)
-     */
+    /** Uses one form snapshot for both the SMS recipient and message. */
     fun onSmsClicked(navigator: Navigator) =
-        viewModelScope.launch {
-            recordUserActivity()
-            if (!checkRateLimit()) return@launch
-            val activeTemplate = settingsStore.activeTemplateFlow.first()
-            if (!validateInputs(requirePhone = true, activeTemplate = activeTemplate)) {
-                _uiEvent.emit(UiEvent.ValidationFailed)
-                return@launch
-            }
-            val message = generateMessage(activeTemplate)
-            val normalizedPhone = PhoneUtils.normalize(_uiState.value.customerPhone)
-            if (normalizedPhone != null) {
-                navigator.openSms(normalizedPhone, message)
+        launchMessageAction(requirePhone = true) { form, message ->
+            PhoneUtils.normalize(form.customerPhone)?.let { phone ->
+                navigator.openSms(phone, message)
             }
         }
 
-    /**
-     * Handles Share button click - validates inputs and opens share sheet via Navigator.
-     * Phone number is NOT required for sharing (only SMS needs it).
-     * @param navigator The Navigator instance for launching intents (injected for testability)
-     */
     fun onShareClicked(navigator: Navigator) =
-        viewModelScope.launch {
-            recordUserActivity()
-            if (!checkRateLimit()) return@launch
-            val activeTemplate = settingsStore.activeTemplateFlow.first()
-            if (!validateInputs(requirePhone = false, activeTemplate = activeTemplate)) {
-                _uiEvent.emit(UiEvent.ValidationFailed)
-                return@launch
-            }
-            val message = generateMessage(activeTemplate)
+        launchMessageAction(requirePhone = false) { _, message ->
             navigator.shareText(message)
         }
 
-    /**
-     * Handles Copy button click - validates inputs and copies to clipboard via Navigator.
-     * Phone number is NOT required for copying (only SMS needs it).
-     * @param navigator The Navigator instance for launching intents (injected for testability)
-     */
     fun onCopyClicked(navigator: Navigator) =
-        viewModelScope.launch {
-            recordUserActivity()
-            if (!checkRateLimit()) return@launch
-            val activeTemplate = settingsStore.activeTemplateFlow.first()
-            if (!validateInputs(requirePhone = false, activeTemplate = activeTemplate)) {
-                _uiEvent.emit(UiEvent.ValidationFailed)
-                return@launch
-            }
-            val message = generateMessage(activeTemplate)
-            val success = navigator.copyToClipboard("Customer Message", message)
-            if (success) {
+        launchMessageAction(requirePhone = false) { _, message ->
+            if (navigator.copyToClipboard("Customer Message", message)) {
                 _uiEvent.emit(UiEvent.CopySuccess)
                 _uiEvent.emit(UiEvent.ShowToast(resourceProvider.getString(R.string.toast_copied_to_clipboard)))
             } else {
@@ -403,82 +367,40 @@ class CustomerIntakeViewModel(
             }
         }
 
-    /**
-     * Validates form inputs before sending/sharing/copying.
-     * @param requirePhone If true, validates phone number (for SMS). If false, skips phone validation (for Share/Copy).
-     * @param activeTemplate The template snapshot to validate against, resolved once by the caller
-     * so validation and message generation stay consistent even if the active template changes mid-action.
-     */
+    private fun launchMessageAction(
+        requirePhone: Boolean,
+        action: suspend (CustomerIntakeUiState, String) -> Unit,
+    ): Job {
+        val form = _uiState.value
+        recordUserActivity()
+        return viewModelScope.launch {
+            if (!checkRateLimit()) return@launch
+            try {
+                val template = settingsStore.activeTemplateFlow.first()
+                if (!validateInputs(form, requirePhone, template)) {
+                    _uiEvent.emit(UiEvent.ValidationFailed)
+                    return@launch
+                }
+                action(form, generateMessage(template, form))
+            } catch (exception: CancellationException) {
+                throw exception
+            } catch (exception: IOException) {
+                Log.e("CustomerIntakeViewModel", "Failed to prepare customer message", exception)
+                _uiEvent.emit(UiEvent.ActionFailed)
+                _uiEvent.emit(UiEvent.ShowToast(resourceProvider.getString(R.string.error_message_action_failed)))
+            }
+        }
+    }
+
+    /** Validates the captured form without replacing newer edits with stale errors. */
     private fun validateInputs(
+        currentState: CustomerIntakeUiState,
         requirePhone: Boolean,
         activeTemplate: Template,
     ): Boolean {
-        val currentState = _uiState.value
-        val requiresPassword =
-            MessageTemplate.usesPlaceholder(
-                activeTemplate.content,
-                MessageTemplate.KEY_PASSWORD,
-            )
-        val requiresAccountNumber =
-            MessageTemplate.usesPlaceholder(
-                activeTemplate.content,
-                MessageTemplate.KEY_ACCOUNT_NUMBER,
-            )
-
-        // Calculate all errors at once
-        val customerNameError =
-            if (currentState.customerName.isBlank()) {
-                resourceProvider.getString(
-                    R.string.error_name_empty,
-                )
-            } else {
-                null
-            }
-
-        val customerPhoneError =
-            if (requirePhone) {
-                when {
-                    currentState.customerPhone.isBlank() -> resourceProvider.getString(R.string.error_phone_empty)
-                    else -> validatePhoneNumber(currentState.customerPhone, progressiveMode = false, resourceProvider)
-                }
-            } else {
-                null
-            }
-
-        val ssidError =
-            when {
-                currentState.ssid.isBlank() -> resourceProvider.getString(R.string.error_ssid_empty)
-                else -> getWifiErrorMessage(WifiQrGenerator.validateSsid(currentState.ssid))
-            }
-
-        // Skip password validation for open networks
-        val passwordError =
-            if (!requiresPassword || currentState.isOpenNetwork) {
-                null // Open networks don't require passwords
-            } else {
-                getWifiErrorMessage(WifiQrGenerator.validatePassword(currentState.password))
-            }
-
-        val accountNumberError =
-            if (requiresAccountNumber && currentState.accountNumber.isBlank()) {
-                resourceProvider.getString(R.string.error_account_empty)
-            } else {
-                null
-            }
-
-        // Batch all error updates into a single state change to minimize recompositions
-        updateState { state ->
-            state.copy(
-                customerNameError = customerNameError,
-                customerPhoneError = customerPhoneError,
-                ssidError = ssidError,
-                passwordError = passwordError,
-                accountNumberError = accountNumberError,
-            )
-        }
-
-        // Use the isValid property from UiState (handles open network logic)
-        return _uiState.value.isValid
+        val result = CustomerMessageValidator(resourceProvider).validate(currentState, requirePhone, activeTemplate)
+        updateState { state -> if (state == currentState) result.form else state }
+        return result.canSubmit
     }
 
     /**
@@ -487,20 +409,17 @@ class CustomerIntakeViewModel(
      * If placeholder is absent, signature is NOT added (user controls placement).
      * @param template The template snapshot resolved by the caller, kept consistent with [validateInputs].
      */
-    private suspend fun generateMessage(template: Template): String {
-        val uiState = _uiState.value
-        val techProfile = settingsStore.techProfileFlow.first()
-        val customerData = uiState.toCustomerData()
-
-        // Only include signature if {{ tech_signature }} placeholder is present
-        val templateContent = template.content
-        return if (templateContent.contains(MessageTemplate.KEY_TECH_SIGNATURE)) {
-            // Use placeholder system - signature is embedded where user placed it
-            MessageTemplate.generate(templateContent, customerData, techProfile)
-        } else {
-            // No placeholder = no signature (user opted out)
-            MessageTemplate.generate(templateContent, customerData)
-        }
+    private suspend fun generateMessage(
+        template: Template,
+        form: CustomerIntakeUiState,
+    ): String {
+        val techProfile =
+            if (MessageTemplate.usesPlaceholder(template.content, MessageTemplate.KEY_TECH_SIGNATURE)) {
+                settingsStore.techProfileFlow.first()
+            } else {
+                null
+            }
+        return MessageTemplate.generate(template.content, form.toCustomerData(), techProfile)
     }
 
     private fun getWifiErrorMessage(result: WifiQrGenerator.ValidationResult): String? =

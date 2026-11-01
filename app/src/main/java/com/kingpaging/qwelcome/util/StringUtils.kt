@@ -10,13 +10,8 @@ object StringUtils {
     fun toTitleCase(input: String): String {
         if (input.isBlank()) return input
 
-        return input
-            .lowercase()
-            .split(" ")
-            .joinToString(" ") { word ->
-                word.split("-").joinToString("-") { part ->
-                    part.replaceFirstChar { it.uppercaseChar() }
-                }
-            }
+        return Regex("""(^|[\s\-'’])(\p{L})""").replace(input.lowercase()) { match ->
+            match.groupValues[1] + match.groupValues[2].replaceFirstChar { it.titlecase() }
+        }
     }
 }

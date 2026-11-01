@@ -24,6 +24,7 @@ internal val TRUSTED_UPDATE_HOSTS =
  * Represents the result of an update check.
  */
 sealed class UpdateCheckResult {
+    @Serializable
     data class UpdateAvailable(
         val latestVersion: String,
         val downloadUrl: String,

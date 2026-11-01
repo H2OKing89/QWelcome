@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="error_qr_invalid_credentials">Check the Wi-Fi network name and password before creating a QR code.</string>
+    <string name="toast_qr_save_failed">Failed to save QR code.</string>
+    <string name="toast_qr_share_failed">Failed to share QR code.</string>
+</resources>

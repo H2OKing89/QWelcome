@@ -61,20 +61,6 @@ class GitHubAppUpdaterTest {
     }
 
     @Test
-    fun `signerSetsMatch returns true when archive signers are subset of installed`() {
-        val updater = createUpdater()
-
-        assertTrue(updater.signerSetsMatch(setOf("a", "b"), setOf("a", "b")))
-        assertTrue(updater.signerSetsMatch(setOf("a", "b", "c"), setOf("a", "b")))
-        assertFalse(updater.signerSetsMatch(setOf("a"), setOf("a", "b")))
-        assertFalse(updater.signerSetsMatch(setOf("a"), setOf("x")))
-        assertFalse(updater.signerSetsMatch(setOf("a", "b"), setOf("b", "c")))
-        assertFalse(updater.signerSetsMatch(setOf("a"), emptySet()))
-        assertFalse(updater.signerSetsMatch(emptySet(), setOf("a")))
-        assertFalse(updater.signerSetsMatch(emptySet(), emptySet()))
-    }
-
-    @Test
     fun `packageNameMatches returns true only for exact package names`() {
         val updater = createUpdater()
 
@@ -98,7 +84,7 @@ class GitHubAppUpdaterTest {
             every { context.getSystemService(Context.DOWNLOAD_SERVICE) } returns downloadManager
             every { context.getExternalFilesDir(any()) } returns downloadsDir
 
-            val testUpdater = GitHubAppUpdater(context)
+            val testUpdater = GitHubAppUpdater(context, MemoryUpdateDownloadStore())
             val update =
                 UpdateCheckResult.UpdateAvailable(
                     latestVersion = "3.0.0",
@@ -321,9 +307,85 @@ class GitHubAppUpdaterTest {
             assertEquals(0, updater.trackedDownloadCount())
         }
 
+    @Test
+    fun `recreated updater restores persisted download and release metadata`() =
+        runTest {
+            val store = MemoryUpdateDownloadStore()
+            val downloadManager = mockk<DownloadManager>(relaxed = true)
+            every { downloadManager.enqueue(any()) } returns 42L
+            val update = updateMetadata()
+            val first = createUpdater(downloadManager, pendingDownloadStore = store)
+
+            val started = first.enqueueDownload(update) as DownloadEnqueueResult.Started
+            val recreated = createUpdater(downloadManager, pendingDownloadStore = store)
+            val pending = recreated.restorePendingDownload("1.0.0")
+
+            assertEquals(42L, pending?.downloadId)
+            assertEquals(started.apkPath, pending?.apkPath)
+            assertEquals(update, pending?.update)
+            assertEquals(1, recreated.trackedDownloadCount())
+        }
+
+    @Test
+    fun `installed update is forgotten and its completed download removed`() =
+        runTest {
+            val store = MemoryUpdateDownloadStore()
+            val downloadManager = mockk<DownloadManager>(relaxed = true)
+            store.pending = PendingUpdateDownload(42L, "/unused.apk", updateMetadata())
+            val updater = createUpdater(downloadManager, pendingDownloadStore = store)
+
+            assertEquals(null, updater.restorePendingDownload("3.0.0"))
+            assertEquals(null, store.pending)
+            verify { downloadManager.remove(42L) }
+        }
+
+    @Test
+    fun `pruning removes only old unprotected APKs`() {
+        val downloads = tempFolder.newFolder("retention")
+        val updates = File(downloads, "updates").apply { mkdirs() }
+        val old = oldFile(updates, "old.apk")
+        val active = oldFile(updates, "active.apk")
+        val recent = File(updates, "recent.apk").apply { writeText("recent") }
+        val other = oldFile(updates, "notes.txt")
+        val directory =
+            File(updates, "nested.apk").apply {
+                mkdirs()
+                setLastModified(1L)
+            }
+        val updater = createUpdater(externalFilesDir = downloads)
+
+        updater.pruneOldApks(active.absolutePath)
+
+        assertFalse(old.exists())
+        assertTrue(active.exists())
+        assertTrue(recent.exists())
+        assertTrue(other.exists())
+        assertTrue(directory.exists())
+    }
+
+    private fun oldFile(
+        directory: File,
+        name: String,
+    ): File =
+        File(directory, name).apply {
+            writeText("old")
+            setLastModified(1L)
+        }
+
+    private fun updateMetadata() =
+        UpdateCheckResult.UpdateAvailable(
+            latestVersion = "3.0.0",
+            downloadUrl = "https://github.com/H2OKing89/QWelcome/releases/download/v3.0.0/QWelcome.apk",
+            releaseNotes = "notes",
+            assetName = "QWelcome.apk",
+            assetSizeBytes = 1000L,
+            sha256Hex = "a".repeat(64),
+        )
+
     private fun createUpdater(
         downloadManager: DownloadManager? = null,
         externalFilesDir: File? = tempFolder.root,
+        pendingDownloadStore: UpdateDownloadStore = MemoryUpdateDownloadStore(),
     ): GitHubAppUpdater {
         val context = mockk<Context>()
         val packageManager = mockk<PackageManager>(relaxed = true)
@@ -335,6 +397,6 @@ class GitHubAppUpdaterTest {
         every { context.getSystemService(Context.DOWNLOAD_SERVICE) } returns dm
         every { context.getExternalFilesDir(any()) } returns externalFilesDir
 
-        return GitHubAppUpdater(context)
+        return GitHubAppUpdater(context, pendingDownloadStore)
     }
 }

@@ -4,6 +4,7 @@ import app.cash.turbine.test
 import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.data.DownloadEnqueueResult
 import com.kingpaging.qwelcome.data.DownloadStatus
+import com.kingpaging.qwelcome.data.PendingUpdateDownload
 import com.kingpaging.qwelcome.data.PrivacySettings
 import com.kingpaging.qwelcome.data.SettingsStore
 import com.kingpaging.qwelcome.data.TechProfile
@@ -19,7 +20,9 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -319,7 +322,7 @@ class SettingsViewModelTest {
         }
 
     @Test
-    fun `retryInstallAfterPermission sets Error when install intent unavailable`() =
+    fun `retryInstallAfterPermission retains APK when install intent unavailable`() =
         runTest {
             fakeAppUpdater.checkForUpdateResult =
                 UpdateCheckResult.UpdateAvailable(
@@ -340,15 +343,18 @@ class SettingsViewModelTest {
             vm.startUpdateDownload()
             advanceUntilIdle()
 
-            vm.retryInstallAfterPermission()
-            advanceUntilIdle()
+            vm.settingsEvents.test {
+                vm.retryInstallAfterPermission()
+                advanceUntilIdle()
 
-            val state = vm.updateState.value
-            assertTrue(state is UpdateState.Error)
-            assertEquals(
-                fakeResourceProvider.getString(R.string.error_update_install_unavailable),
-                (state as UpdateState.Error).message,
-            )
+                val state = vm.updateState.value as UpdateState.ReadyToInstall
+                assertEquals("/tmp/app.apk", state.apkPath)
+                val event = awaitItem() as SettingsEvent.ShowToastError
+                assertEquals(
+                    fakeResourceProvider.getString(R.string.error_update_install_unavailable),
+                    event.message,
+                )
+            }
         }
 
     @Test
@@ -380,6 +386,115 @@ class SettingsViewModelTest {
             val intent = vm.openUnknownSourcesSettingsIntent()
             assertNotNull(intent)
         }
+
+    @Test
+    fun `installer cancellation preserves verified APK and allows retry`() =
+        runTest {
+            prepareDownloadedUpdate()
+
+            vm.settingsEvents.test {
+                vm.retryInstallAfterPermission()
+                assertTrue(awaitItem() is SettingsEvent.LaunchIntent)
+                vm.onInstallerReturned()
+
+                val ready = vm.updateState.value as UpdateState.ReadyToInstall
+                assertEquals("/tmp/app.apk", ready.apkPath)
+                vm.retryInstallAfterPermission()
+                assertTrue(awaitItem() is SettingsEvent.LaunchIntent)
+            }
+            assertEquals(2, fakeAppUpdater.createInstallIntentCallCount)
+            assertEquals(1, fakeAppUpdater.enqueueCallCount)
+        }
+
+    @Test
+    fun `failed installer launch restores ready state and reports error`() =
+        runTest {
+            prepareDownloadedUpdate()
+            vm.settingsEvents.test {
+                vm.retryInstallAfterPermission()
+                assertTrue(awaitItem() is SettingsEvent.LaunchIntent)
+
+                vm.onInstallerLaunchFailed()
+                assertTrue(awaitItem() is SettingsEvent.ShowToastError)
+                assertEquals("/tmp/app.apk", (vm.updateState.value as UpdateState.ReadyToInstall).apkPath)
+            }
+        }
+
+    @Test
+    fun `restoration reconnects to completed download and verifies again`() =
+        runTest {
+            val update = availableUpdate()
+            fakeAppUpdater.pendingDownload = PendingUpdateDownload(42L, "/tmp/app.apk", update)
+            fakeAppUpdater.downloadStatusQueue.add(DownloadStatus.InProgress(10L, 100L))
+            fakeAppUpdater.downloadStatusQueue.add(DownloadStatus.Succeeded("/tmp/app.apk"))
+            fakeAppUpdater.verificationResult = VerificationResult.Success("/tmp/app.apk")
+
+            vm.restorePendingUpdate()
+            advanceUntilIdle()
+
+            assertEquals(0, fakeAppUpdater.enqueueCallCount)
+            assertEquals(update, fakeAppUpdater.lastVerifiedUpdate)
+            assertEquals("/tmp/app.apk", (vm.updateState.value as UpdateState.ReadyToInstall).apkPath)
+            vm.restorePendingUpdate()
+            assertEquals(1, fakeAppUpdater.restoredDownloadCount)
+        }
+
+    @Test
+    fun `stale dismiss and check callbacks cannot interrupt an active download`() =
+        runTest {
+            fakeAppUpdater.checkForUpdateResult = availableUpdate()
+            fakeAppUpdater.enqueueResult = DownloadEnqueueResult.Started(42L, "/tmp/app.apk")
+            fakeAppUpdater.downloadStatusQueue.add(DownloadStatus.InProgress(10L, 100L))
+            fakeAppUpdater.downloadStatusQueue.add(DownloadStatus.Succeeded("/tmp/app.apk"))
+            fakeAppUpdater.verificationResult = VerificationResult.Success("/tmp/app.apk")
+            vm.checkForUpdate()
+            advanceUntilIdle()
+            vm.startUpdateDownload()
+            runCurrent()
+
+            vm.dismissUpdate()
+            vm.lastCheckTimeMillis = 0L
+            vm.checkForUpdate()
+
+            assertTrue(vm.updateState.value is UpdateState.Downloading)
+            assertEquals(1, fakeAppUpdater.checkCallCount)
+            advanceUntilIdle()
+            assertTrue(vm.updateState.value is UpdateState.ReadyToInstall)
+        }
+
+    @Test
+    fun `failed restored download is discarded`() =
+        runTest {
+            fakeAppUpdater.pendingDownload = PendingUpdateDownload(42L, "/tmp/app.apk", availableUpdate())
+            fakeAppUpdater.downloadStatusQueue.add(DownloadStatus.Failed("missing"))
+
+            vm.restorePendingUpdate()
+            advanceUntilIdle()
+
+            assertTrue(vm.updateState.value is UpdateState.Error)
+            assertEquals(42L, fakeAppUpdater.lastForgottenDownloadId)
+        }
+
+    private fun TestScope.prepareDownloadedUpdate() {
+        fakeAppUpdater.checkForUpdateResult = availableUpdate()
+        fakeAppUpdater.enqueueResult = DownloadEnqueueResult.Started(42L, "/tmp/app.apk")
+        fakeAppUpdater.downloadStatusQueue.add(DownloadStatus.Succeeded("/tmp/app.apk"))
+        fakeAppUpdater.verificationResult = VerificationResult.Success("/tmp/app.apk")
+        vm.checkForUpdate()
+        advanceUntilIdle()
+        vm.startUpdateDownload()
+        advanceUntilIdle()
+    }
+
+    private fun availableUpdate() =
+        UpdateCheckResult.UpdateAvailable(
+            latestVersion = "3.0.0",
+            downloadUrl = "https://github.com/H2OKing89/QWelcome/releases/download/v3.0.0/QWelcome.apk",
+            releaseNotes = "notes",
+            assetName = "QWelcome.apk",
+            assetSizeBytes = 1000L,
+            sha256Hex = "a".repeat(64),
+        )
 
     @Test
     fun `checkForUpdate within cooldown emits toast event and does not call updater`() =

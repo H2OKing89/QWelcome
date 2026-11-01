@@ -163,11 +163,7 @@ private fun UpdateStatusContent(
     }
 }
 
-internal fun isUpdateFlowBusy(state: UpdateState): Boolean =
-    state is UpdateState.Checking ||
-        state is UpdateState.DownloadQueued ||
-        state is UpdateState.Downloading ||
-        state is UpdateState.Verifying
+internal fun isUpdateFlowBusy(state: UpdateState): Boolean = state.isBusy
 
 @Composable
 private fun downloadingStatusText(state: UpdateState.Downloading): String {

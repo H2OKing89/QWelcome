@@ -1,3 +1,4 @@
+import com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension
 import dev.detekt.gradle.extensions.DetektExtension
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
@@ -22,6 +23,8 @@ android {
     namespace = "com.kingpaging.qwelcome"
     // androidx.lifecycle 2.11.0 requires compiling against API 37+
     compileSdk = 37
+    testBuildType = providers.gradleProperty("testBuildType").orElse("debug").get()
+    require(testBuildType in setOf("debug", "smoke")) { "testBuildType must be debug or smoke" }
 
     defaultConfig {
         applicationId = "com.kingpaging.qwelcome"
@@ -70,6 +73,22 @@ android {
                 "proguard-rules.pro",
             )
         }
+        create("smoke") {
+            initWith(getByName("release"))
+            proguardFile("proguard-smoke.pro")
+            // Exercise release shrinking without requiring production signing credentials.
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += listOf("release")
+            configure<CrashlyticsExtension> {
+                mappingFileUploadEnabled = false
+                nativeSymbolUploadEnabled = false
+            }
+        }
+    }
+    sourceSets {
+        // Shared fakes are compiled into tests only, for every tested build type.
+        getByName("test").kotlin.directories.add("src/sharedTest/kotlin")
+        getByName("androidTest").kotlin.directories.add("src/sharedTest/kotlin")
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -127,6 +146,7 @@ dependencies {
     testImplementation(libs.turbine)
     testImplementation(libs.mockk)
     androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.zxing.core)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.espresso.intents)
     androidTestUtil(libs.androidx.test.services)
@@ -134,4 +154,5 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+    "smokeImplementation"(libs.androidx.compose.ui.test.manifest)
 }

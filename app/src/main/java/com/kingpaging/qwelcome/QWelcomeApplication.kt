@@ -6,12 +6,18 @@ import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.google.firebase.crashlytics.FirebaseCrashlytics
+import com.kingpaging.qwelcome.data.AppStartupState
+import com.kingpaging.qwelcome.data.QrCodeImageService
+import com.kingpaging.qwelcome.data.StartupCoordinator
+import com.kingpaging.qwelcome.data.preserveAndSkipLegacyTemplates
+import com.kingpaging.qwelcome.data.protoDataStore
 import com.kingpaging.qwelcome.di.AppContainer
 import com.kingpaging.qwelcome.util.SoundManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /**
@@ -24,6 +30,14 @@ class QWelcomeApplication : Application() {
     val appContainer: AppContainer by lazy { AppContainer(this) }
 
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    internal val startupCoordinator by lazy {
+        StartupCoordinator(
+            scope = applicationScope,
+            initialize = { protoDataStore.data.first() },
+            recoverLegacyTemplates = { preserveAndSkipLegacyTemplates(this) },
+        )
+    }
 
     private val appLifecycleObserver =
         object : DefaultLifecycleObserver {
@@ -54,7 +68,14 @@ class QWelcomeApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        clearQrShareCache()
+        startupCoordinator.retry()
+        applicationScope.launch {
+            try {
+                QrCodeImageService(this@QWelcomeApplication).pruneExpiredShares()
+            } catch (exception: SecurityException) {
+                Log.w(TAG, "Failed to prune expired QR shares", exception)
+            }
+        }
 
         // Keep collection disabled until the persisted preference is available.
         val crashlytics = FirebaseCrashlytics.getInstance()
@@ -62,10 +83,14 @@ class QWelcomeApplication : Application() {
         crashlytics.setCustomKey("app_version", BuildConfig.VERSION_NAME)
         crashlytics.setCustomKey("build_type", BuildConfig.BUILD_TYPE)
         applicationScope.launch {
-            appContainer.settingsStore.privacySettingsFlow.collect { settings ->
-                crashlytics.isCrashlyticsCollectionEnabled =
-                    !BuildConfig.DEBUG &&
-                    settings.crashReportingEnabled
+            startupCoordinator.state.collectLatest { state ->
+                if (state == AppStartupState.Ready) {
+                    appContainer.settingsStore.privacySettingsFlow.collect { settings ->
+                        crashlytics.isCrashlyticsCollectionEnabled =
+                            !BuildConfig.DEBUG &&
+                            settings.crashReportingEnabled
+                    }
+                }
             }
         }
 
@@ -74,13 +99,5 @@ class QWelcomeApplication : Application() {
 
     companion object {
         private const val TAG = "QWelcomeApplication"
-        private const val QR_SHARE_CACHE_DIRECTORY = "qr_codes"
-    }
-
-    private fun clearQrShareCache() {
-        val cacheDirectory = cacheDir.resolve(QR_SHARE_CACHE_DIRECTORY)
-        if (cacheDirectory.exists() && !cacheDirectory.deleteRecursively()) {
-            Log.w(TAG, "Failed to clear QR share cache")
-        }
     }
 }

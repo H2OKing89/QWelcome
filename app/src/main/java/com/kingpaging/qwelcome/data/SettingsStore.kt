@@ -311,7 +311,7 @@ class SettingsStore(
     }
 
     suspend fun saveTemplate(template: Template) {
-        require(template.id != DEFAULT_TEMPLATE_ID) { "Cannot modify the default template" }
+        TemplateStructureValidation.requireValidUserTemplates(listOf(template))
         dataStore.updateData { prefs ->
             val newTemplates = prefs.templatesList.filterNot { it.id == template.id } + template.toProto()
             prefs
@@ -323,7 +323,8 @@ class SettingsStore(
     }
 
     suspend fun saveTemplates(templates: List<Template>) {
-        val validTemplates = templates.filter { it.id != DEFAULT_TEMPLATE_ID }
+        TemplateStructureValidation.requireValidUserTemplates(templates)
+        val validTemplates = templates
         if (validTemplates.isEmpty()) return
 
         dataStore.updateData { prefs ->
@@ -344,7 +345,8 @@ class SettingsStore(
         techProfile: TechProfile?,
         activeTemplateId: String?,
     ) {
-        val validTemplates = templates.filter { it.id != DEFAULT_TEMPLATE_ID }
+        TemplateStructureValidation.requireValidUserTemplates(templates)
+        val validTemplates = templates
         dataStore.updateData { preferences ->
             val builder = preferences.toBuilder()
 

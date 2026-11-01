@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="error_import_blank_template_id">Each imported template must have an ID.</string>
+    <string name="error_import_reserved_template_id">The import contains a template ID reserved by the app.</string>
+    <string name="error_import_duplicate_template_id">The import contains multiple templates with the same ID. Each template must have a unique ID.</string>
+    <string name="error_import_blank_template_name">Each imported template must have a name.</string>
+    <string name="error_import_blank_template_content">Each imported template must have message content.</string>
+    <string name="import_warnings_title">Review before importing</string>
+    <string name="import_warning_newer_version">This backup uses schema version %1$d; this app supports version %2$d. Some newer information may not be restored.</string>
+    <string name="import_warning_missing_field">Template “%1$s” is missing %2$s.</string>
+    <string name="import_warning_long_content">Template “%1$s” has long message content (%2$d characters).</string>
+    <string name="import_warning_missing_placeholders">Template “%1$s” is missing required placeholders: %2$s. It cannot be selected until you repair it.</string>
+</resources>

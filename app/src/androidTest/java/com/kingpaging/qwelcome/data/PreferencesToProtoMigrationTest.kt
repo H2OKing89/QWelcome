@@ -102,6 +102,59 @@ class PreferencesToProtoMigrationTest {
             assertTrue(thrown.message?.contains("Failed to parse legacy templates JSON") == true)
         }
 
+    @Test
+    fun recovery_preserves_original_json_and_migrates_technician_profile() =
+        runBlocking {
+            val damaged = "{invalid-json"
+            context.tempPreferencesDataStore.edit { prefs ->
+                prefs[stringPreferencesKey("templates_json")] = damaged
+                prefs[stringPreferencesKey("tech_name")] = "Preserved Tech"
+                prefs[stringPreferencesKey("active_template_id")] = "unreadable"
+            }
+
+            preserveAndSkipLegacyTemplates(context)
+            assertEquals(damaged, readLegacyTemplatesForRecovery(context))
+            val prefs = context.tempPreferencesDataStore.data.first()
+            assertNull(prefs[stringPreferencesKey("templates_json")])
+            assertTrue(
+                prefs.asMap().any { (key, value) ->
+                    key.name.startsWith("recovery_templates_json_") && value == damaged
+                },
+            )
+            val migration = PreferencesToProtoMigration(context)
+            assertTrue(migration.shouldMigrate(UserPreferences.getDefaultInstance()))
+            val migrated = migration.migrate(UserPreferences.getDefaultInstance())
+            assertEquals("Preserved Tech", migrated.techProfile.name)
+            assertEquals(DEFAULT_TEMPLATE_ID, migrated.activeTemplateId)
+            assertEquals(0, migrated.templatesCount)
+
+            migration.cleanUp()
+            assertEquals(damaged, readLegacyTemplatesForRecovery(context))
+            assertTrue(
+                context.tempPreferencesDataStore.data.first().asMap().any { (key, value) ->
+                    key.name.startsWith("recovery_templates_json_") && value == damaged
+                },
+            )
+        }
+
+    @Test
+    fun recovery_export_prefers_legacy_json_over_archived_copy() =
+        runBlocking {
+            val legacy = "{current-invalid-json"
+            context.tempPreferencesDataStore.edit { prefs ->
+                prefs[stringPreferencesKey("recovery_templates_json_saved")] = "{archived-invalid-json"
+                prefs[stringPreferencesKey("templates_json")] = legacy
+            }
+
+            assertEquals(legacy, readLegacyTemplatesForRecovery(context))
+        }
+
+    @Test
+    fun recovery_export_returns_null_when_no_templates_are_saved() =
+        runBlocking {
+            assertNull(readLegacyTemplatesForRecovery(context))
+        }
+
     private suspend fun clearLegacyPrefs() {
         context.tempPreferencesDataStore.edit { it.clear() }
     }

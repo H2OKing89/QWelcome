@@ -12,18 +12,23 @@ import com.kingpaging.qwelcome.testutil.MainDispatcherRule
 import com.kingpaging.qwelcome.util.WifiQrGenerator
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import java.io.IOException
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class CustomerIntakeViewModelTest {
@@ -555,6 +560,93 @@ class CustomerIntakeViewModelTest {
             advanceUntilIdle()
 
             assertEquals("", rebootVm.uiState.value.customerName)
+        }
+
+    @Test
+    fun `passwordless template actions preserve invalid credentials and keep QR disabled`() =
+        runTest {
+            every { mockStore.activeTemplateFlow } returns
+                flowOf(testTemplate.copy(content = "Hello {{customer_name}}, {{ssid}}"))
+            fillValidFields()
+            vm.onPasswordChanged("a".repeat(64))
+            val navigator = FakeNavigator()
+
+            vm.onCopyClicked(navigator)
+            advanceUntilIdle()
+
+            assertEquals(1, navigator.copyCalls.size)
+            assertNotNull(vm.uiState.value.passwordError)
+            assertFalse(vm.uiState.value.qrEnabled)
+            vm.setShowQrSheet(true)
+            assertFalse(vm.uiState.value.showQrSheet)
+        }
+
+    @Test
+    fun `signature placeholders tolerate whitespace in customer actions`() =
+        runTest {
+            val navigator = FakeNavigator()
+            fillValidFields()
+            listOf("{{tech_signature}}", "{{ tech_signature }}", "{{  tech_signature  }}").forEach { signature ->
+                every { mockStore.activeTemplateFlow } returns
+                    flowOf(testTemplate.copy(content = "Hello {{customer_name}}, {{ssid}} $signature"))
+                vm.onShareClicked(navigator)
+                advanceUntilIdle()
+                val message = navigator.shareCalls.last().message
+                assertTrue(message.contains("Tech\nSr Tech\nIT"))
+                fakeTimeProvider.advanceBy(2_000L)
+            }
+        }
+
+    @Test
+    fun `SMS recipient and message use the clicked form while profile loading suspends`() =
+        runTest {
+            val profileReady = CompletableDeferred<TechProfile>()
+            every { mockStore.activeTemplateFlow } returns
+                flowOf(testTemplate.copy(content = testTemplate.content + " {{tech_signature}}"))
+            every { mockStore.techProfileFlow } returns flow { emit(profileReady.await()) }
+            fillValidFields()
+            val navigator = FakeNavigator()
+
+            vm.onSmsClicked(navigator)
+            runCurrent()
+            vm.onCustomerNameChanged("Bob")
+            vm.onCustomerPhoneChanged("3125559876")
+            vm.onSsidChanged("OtherWiFi")
+            profileReady.complete(TechProfile("Tech"))
+            advanceUntilIdle()
+
+            assertEquals("+12125551234", navigator.smsCalls.single().phoneNumber)
+            val message = navigator.smsCalls.single().message
+            assertTrue(message.contains("Alice"))
+            assertTrue(message.contains("TestWiFi"))
+            assertEquals("Bob", vm.uiState.value.customerName)
+            assertEquals("3125559876", vm.uiState.value.customerPhone)
+        }
+
+    @Test
+    fun `actions snapshot the form before their coroutine starts`() =
+        runTest {
+            val navigator = FakeNavigator()
+            fillValidFields()
+            vm.onShareClicked(navigator)
+            vm.onCustomerNameChanged("Bob")
+            advanceUntilIdle()
+            val message = navigator.shareCalls.single().message
+            assertTrue(message.contains("Alice"))
+            assertEquals("Bob", vm.uiState.value.customerName)
+        }
+
+    @Test
+    fun `storage failures produce feedback instead of escaping the action coroutine`() =
+        runTest {
+            every { mockStore.activeTemplateFlow } returns flow { throw IOException("unavailable") }
+            fillValidFields()
+            vm.uiEvent.test {
+                vm.onShareClicked(FakeNavigator())
+                advanceUntilIdle()
+                assertEquals(UiEvent.ActionFailed, awaitItem())
+                assertTrue(awaitItem() is UiEvent.ShowToast)
+            }
         }
 
     private fun fillValidFields() {

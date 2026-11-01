@@ -42,6 +42,7 @@ data class TemplateEditorUiState(
     val contentError: String? = null,
     val showDiscardDialog: Boolean = false,
     val isSaveCompleted: Boolean = false,
+    val isSaving: Boolean = false,
 )
 
 sealed class TemplateEditorEvent {
@@ -142,7 +143,7 @@ class TemplateEditorViewModel(
         content: String,
         tags: List<String>,
     ) {
-        if (!validateContent(content)) return
+        if (!beginSave(name, content)) return
 
         viewModelScope.launch {
             try {
@@ -160,6 +161,8 @@ class TemplateEditorViewModel(
             } catch (exception: Exception) {
                 Log.e(TAG, "Failed to create template", exception)
                 emitError(R.string.error_template_create_failed)
+            } finally {
+                _uiState.update { it.copy(isSaving = false) }
             }
         }
     }
@@ -169,7 +172,7 @@ class TemplateEditorViewModel(
         content: String,
         tags: List<String>,
     ) {
-        if (!validateContent(content)) return
+        if (!beginSave(name, content)) return
 
         viewModelScope.launch {
             try {
@@ -193,6 +196,27 @@ class TemplateEditorViewModel(
             } catch (exception: Exception) {
                 Log.e(TAG, "Failed to update template", exception)
                 emitError(R.string.error_template_update_failed)
+            } finally {
+                _uiState.update { it.copy(isSaving = false) }
+            }
+        }
+    }
+
+    private fun beginSave(
+        name: String,
+        content: String,
+    ): Boolean {
+        val state = _uiState.value
+        return when {
+            state.isLoading || state.isSaving || state.isSaveCompleted -> false
+            name.isBlank() -> {
+                setNameError(R.string.error_name_required)
+                false
+            }
+            !validateContent(content) -> false
+            else -> {
+                _uiState.update { it.copy(isSaving = true) }
+                true
             }
         }
     }

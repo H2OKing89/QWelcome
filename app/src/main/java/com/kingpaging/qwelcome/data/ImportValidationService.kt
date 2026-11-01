@@ -84,6 +84,9 @@ internal class ImportValidationService(
                 )
             }
 
+        TemplateStructureValidation.findError(pack.templates)?.let { error ->
+            return ImportValidationResult.Invalid(resourceProvider.getString(error.messageResId))
+        }
         warnings.addAll(validateTemplates(pack.templates))
 
         if (pack.templates.isEmpty()) {
@@ -116,12 +119,10 @@ internal class ImportValidationService(
                 )
             }
 
-        warnings.addAll(validateTemplates(backup.templates))
-        if (backup.templates.isEmpty()) {
-            return ImportValidationResult.Invalid(
-                resourceProvider.getString(R.string.error_import_template_pack_empty),
-            )
+        TemplateStructureValidation.findError(backup.templates)?.let { error ->
+            return ImportValidationResult.Invalid(resourceProvider.getString(error.messageResId))
         }
+        warnings.addAll(validateTemplates(backup.templates))
 
         val existingTemplates = settingsStore.getUserTemplates()
         val conflicts = detectConflicts(backup.templates, existingTemplates)
@@ -137,16 +138,6 @@ internal class ImportValidationService(
         val warnings = mutableListOf<ImportWarning>()
 
         templates.forEach { template ->
-            if (template.id.isBlank()) {
-                warnings.add(ImportWarning.MissingField(template.name, "id"))
-            }
-            if (template.name.isBlank()) {
-                warnings.add(ImportWarning.MissingField(template.id, "name"))
-            }
-            if (template.content.isBlank()) {
-                warnings.add(ImportWarning.MissingField(template.name.ifBlank { template.id }, "content"))
-            }
-
             if (template.content.length > TEMPLATE_CONTENT_WARNING_LENGTH) {
                 warnings.add(
                     ImportWarning.LongContent(
