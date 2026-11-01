@@ -21,7 +21,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
@@ -37,7 +36,6 @@ internal fun UpdateAvailableControls(
     onDismissUpdate: () -> Unit,
 ) {
     val availability = stringResource(R.string.status_update_available, version)
-    val dismissDescription = stringResource(R.string.content_desc_dismiss_update)
 
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -58,7 +56,7 @@ internal fun UpdateAvailableControls(
         }
         TextButton(
             onClick = onDismissUpdate,
-            modifier = Modifier.fillMaxWidth().semantics { contentDescription = dismissDescription },
+            modifier = Modifier.fillMaxWidth(),
         ) {
             Icon(
                 Icons.Filled.Close,

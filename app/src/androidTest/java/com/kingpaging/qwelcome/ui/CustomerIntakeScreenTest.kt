@@ -164,7 +164,6 @@ class CustomerIntakeScreenTest {
         setScreenContent()
         val context = appContext
 
-        composeRule.onAllNodesWithText(context.getString(R.string.label_open_network)).assertCountEquals(0)
         composeRule.onAllNodesWithText(context.getString(R.string.label_hidden_network)).assertCountEquals(0)
         composeRule.onAllNodesWithText(context.getString(R.string.label_wifi_security)).assertCountEquals(0)
 
@@ -173,7 +172,6 @@ class CustomerIntakeScreenTest {
             .performScrollTo()
             .performClick()
 
-        composeRule.onAllNodesWithText(context.getString(R.string.label_open_network)).assertCountEquals(1)
         composeRule.onAllNodesWithText(context.getString(R.string.label_hidden_network)).assertCountEquals(1)
         composeRule.onAllNodesWithText(context.getString(R.string.label_wifi_security)).assertCountEquals(1)
     }

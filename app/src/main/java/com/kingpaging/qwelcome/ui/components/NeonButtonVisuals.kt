@@ -14,7 +14,7 @@ internal data class NeonButtonVisuals(
     val disabledContainerColor: Color,
 )
 
-private const val ENABLED_OUTLINE_ALPHA = 0.6f
+private const val ENABLED_OUTLINE_ALPHA = 0.8f
 private const val DISABLED_OUTLINE_ALPHA = 0.24f
 private const val LIGHT_ACCENT_LUMINANCE_THRESHOLD = 0.179f
 
