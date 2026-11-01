@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
+import java.util.UUID
 
 private const val TAG = "PreferencesToProtoMigration"
 private const val DATA_STORE_FILE_NAME = "user_preferences.pb"
@@ -23,9 +24,10 @@ private const val TECH_NAME_KEY = "tech_name"
 private const val TECH_TITLE_KEY = "tech_title"
 private const val TECH_DEPT_KEY = "tech_dept"
 private const val TEMPLATES_JSON_KEY = "templates_json"
+private const val RECOVERY_TEMPLATES_JSON_PREFIX = "recovery_templates_json_"
 private const val ACTIVE_TEMPLATE_ID_KEY = "active_template_id"
 
-private class TemplatesMigrationException(
+internal class TemplatesMigrationException(
     val rawTemplatesJson: String,
     cause: Throwable,
 ) : IllegalStateException("Failed to parse legacy templates JSON during migration", cause)
@@ -39,6 +41,26 @@ val Context.protoDataStore: DataStore<UserPreferences> by dataStore(
         listOf(PreferencesToProtoMigration(context))
     },
 )
+
+/** Keeps an immutable recovery copy before explicitly skipping malformed legacy templates. */
+internal suspend fun preserveAndSkipLegacyTemplates(context: Context) {
+    context.tempPreferencesDataStore.edit { prefs ->
+        prefs[stringPreferencesKey(TEMPLATES_JSON_KEY)]?.let { raw ->
+            prefs[stringPreferencesKey("$RECOVERY_TEMPLATES_JSON_PREFIX${UUID.randomUUID()}")] = raw
+        }
+        prefs.remove(stringPreferencesKey(TEMPLATES_JSON_KEY))
+        prefs.remove(stringPreferencesKey(ACTIVE_TEMPLATE_ID_KEY))
+        prefs.remove(booleanPreferencesKey(MIGRATION_COMPLETED_KEY))
+    }
+}
+
+internal suspend fun readLegacyTemplatesForRecovery(context: Context): String? {
+    val prefs = context.tempPreferencesDataStore.data.first()
+    return prefs[stringPreferencesKey(TEMPLATES_JSON_KEY)]
+        ?: prefs.asMap().entries.firstNotNullOfOrNull { (key, value) ->
+            if (key.name.startsWith(RECOVERY_TEMPLATES_JSON_PREFIX)) value as? String else null
+        }
+}
 
 internal class PreferencesToProtoMigration(
     private val context: Context,

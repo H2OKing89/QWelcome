@@ -17,6 +17,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
+import com.kingpaging.qwelcome.data.AppStartupState
 import com.kingpaging.qwelcome.di.AppContainer
 import com.kingpaging.qwelcome.di.LocalCustomerIntakeViewModel
 import com.kingpaging.qwelcome.di.LocalNavigator
@@ -26,6 +27,7 @@ import com.kingpaging.qwelcome.di.LocalTemplateSelectionViewModel
 import com.kingpaging.qwelcome.navigation.AndroidNavigator
 import com.kingpaging.qwelcome.navigation.AppNavGraph
 import com.kingpaging.qwelcome.navigation.Navigator
+import com.kingpaging.qwelcome.ui.StartupRecoveryScreen
 import com.kingpaging.qwelcome.ui.theme.CyberpunkTheme
 import com.kingpaging.qwelcome.util.SoundManager
 import com.kingpaging.qwelcome.viewmodel.CustomerIntakeViewModel
@@ -52,6 +54,18 @@ class MainActivity : ComponentActivity() {
             WindowManager.LayoutParams.FLAG_SECURE,
         )
         setContent {
+            val startup = (application as QWelcomeApplication).startupCoordinator
+            val startupState by startup.state.collectAsStateWithLifecycle()
+            if (startupState != AppStartupState.Ready) {
+                CyberpunkTheme {
+                    StartupRecoveryScreen(
+                        state = startupState,
+                        onRetry = startup::retry,
+                        onContinueWithoutTemplates = startup::continueWithoutLegacyTemplates,
+                    )
+                }
+                return@setContent
+            }
             val appViewModelFactory = remember(appContainer) { AppViewModelProvider(appContainer) }
 
             // Create ViewModels at Activity level for proper scoping

@@ -68,15 +68,22 @@ Navigation routes are type-safe Kotlin serialization types in `navigation/Routes
 
 `SettingsStore` is the single wrapper around the `user_preferences.pb` Proto DataStore document. The schema in `proto/src/main/proto/user_preferences.proto` contains privacy settings, technician profile, user templates, active-template selection, recent share targets, and template recency data.
 
-On first use, `PreferencesToProtoMigration` migrates the legacy preferences store into Proto DataStore. A template parsing failure aborts the migration and preserves the legacy values for manual recovery instead of silently importing partial data.
+On first use, `PreferencesToProtoMigration` migrates the legacy preferences store into Proto DataStore. `StartupCoordinator` gates feature ViewModels until the first persistence read succeeds. A malformed legacy template payload opens a recovery screen with retry, recovery-copy export, and an explicit confirmation to continue without old templates. That recovery atomically archives the original JSON in legacy preferences before removing active template keys; the technician profile still migrates.
 
 Template rules are enforced at the data boundary:
 
 - The built-in template has the stable ID `default` and cannot be edited or deleted as a user template.
 - New-template navigation uses the UI-only sentinel `__new__`.
+- `TemplateStructureValidation` rejects blank and reserved IDs, duplicate IDs within a batch, and blank names/content before import or persistence.
 - Required placeholders are validated before a template can become active.
 
-`ImportExportRepository` coordinates JSON export, validation, conflict resolution, and persistence through focused services. Full-backup imports resolve template ID conflicts before calling `SettingsStore.restoreFullBackup()`, which writes selected templates, technician profile, and active-template selection in one `DataStore.updateData` transaction.
+`ImportExportRepository` coordinates JSON export, validation, conflict resolution, and persistence through focused services on an injectable computation dispatcher. Full backups may contain zero custom templates, and import confirmation displays compatibility and content warnings. Full-backup imports resolve template ID conflicts before calling `SettingsStore.restoreFullBackup()`, which writes selected templates, technician profile, and active-template selection in one `DataStore.updateData` transaction.
+
+`CustomerMessageValidator` separates message-required fields from live WiFi credential errors. Each message action captures one form snapshot for validation, generation, and the SMS recipient. QR eligibility always evaluates the shared WiFi validators rather than trusting displayed errors.
+
+`QrCodeImageService` owns bitmap lifetimes, gallery output, and immutable shared QR files. QR cache entries expire after 24 hours rather than being overwritten or deleted on every startup. The updater stores pending download metadata atomically outside Android backup, re-verifies restored downloads, and retains the verified APK when the installer is cancelled.
+
+The existing JUnit4, MockK, coroutine, and Compose instrumentation stack is retained. CI runs device tests on APIs 28, 30, and 36. A debug-signed `smoke` build type inherits release R8/resource shrinking; `-PtestBuildType=smoke` selects its instrumentation target. Smoke tests exercise typed routes and real Proto/JSON backup restoration; QR tests decode actual generated PNGs using a test-only decoder.
 
 ## Adding a Feature
 

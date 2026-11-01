@@ -4,7 +4,10 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
@@ -12,6 +15,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.core.net.toUri
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
@@ -37,9 +41,25 @@ fun SettingsRoute(
     val activeTemplate by viewModel.activeTemplate.collectAsStateWithLifecycle()
     val updateState by viewModel.updateState.collectAsStateWithLifecycle()
     val showDownloadConfirmDialog by viewModel.showDownloadConfirmDialog.collectAsStateWithLifecycle()
-    val launchIntentFailedMessage = stringResource(R.string.error_update_install_unavailable)
     val noBrowserMessage = stringResource(R.string.toast_no_browser)
     val currentOnBack by rememberUpdatedState(onBack)
+    val installerLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+            viewModel.onInstallerReturned()
+        }
+
+    LaunchedEffect(viewModel) {
+        viewModel.restorePendingUpdate()
+    }
+
+    DisposableEffect(lifecycleOwner, viewModel) {
+        val observer =
+            LifecycleEventObserver { _, event ->
+                if (event == Lifecycle.Event.ON_RESUME) viewModel.onInstallerReturned()
+            }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     LaunchedEffect(lifecycleOwner, viewModel.settingsEvents) {
         lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -52,7 +72,15 @@ fun SettingsRoute(
                         showToast(context, event.message)
                     }
                     is SettingsEvent.LaunchIntent -> {
-                        launchIntent(context, event.intent, launchIntentFailedMessage)
+                        try {
+                            installerLauncher.launch(event.intent)
+                        } catch (_: ActivityNotFoundException) {
+                            viewModel.onInstallerLaunchFailed()
+                        } catch (_: SecurityException) {
+                            viewModel.onInstallerLaunchFailed()
+                        } catch (_: IllegalArgumentException) {
+                            viewModel.onInstallerLaunchFailed()
+                        }
                     }
                 }
             }

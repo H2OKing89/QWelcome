@@ -1,5 +1,6 @@
 package com.kingpaging.qwelcome.ui.import_pkg
 
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -7,6 +8,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.kingpaging.qwelcome.R
 import com.kingpaging.qwelcome.data.ImportValidationResult
+import com.kingpaging.qwelcome.data.ImportWarning
 import com.kingpaging.qwelcome.data.TemplatePack
 import com.kingpaging.qwelcome.ui.theme.CyberpunkTheme
 import org.junit.Assert.assertTrue
@@ -19,6 +21,35 @@ import java.util.concurrent.atomic.AtomicBoolean
 class ImportConfirmStepTest {
     @get:Rule
     val composeRule = createComposeRule()
+
+    @Test
+    fun validationWarnings_areShownBeforeConfirming() {
+        composeRule.setContent {
+            CyberpunkTheme {
+                ImportConfirmStep(
+                    isLoading = false,
+                    validationResult =
+                        ImportValidationResult.ValidTemplatePack(
+                            pack = TemplatePack(templates = emptyList()),
+                            conflicts = emptyList(),
+                            warnings =
+                                listOf(
+                                    ImportWarning.NewerVersion(importVersion = 2, supportedVersion = 1),
+                                    ImportWarning.MissingPlaceholders("Welcome", listOf("{{ ssid }}")),
+                                ),
+                        ),
+                    onConfirm = {},
+                    onCancel = {},
+                )
+            }
+        }
+
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        composeRule.onNodeWithText(context.getString(R.string.import_warning_newer_version, 2, 1)).assertIsDisplayed()
+        composeRule
+            .onNodeWithText(context.getString(R.string.import_warning_missing_placeholders, "Welcome", "{{ ssid }}"))
+            .assertIsDisplayed()
+    }
 
     @Test
     fun confirmAction_invokesCallbackForTemplatePack() {

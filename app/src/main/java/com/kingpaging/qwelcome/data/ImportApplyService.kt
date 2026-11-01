@@ -16,8 +16,11 @@ internal class ImportApplyService(
     suspend fun applyTemplatePack(
         pack: TemplatePack,
         resolutions: Map<String, ConflictResolution> = emptyMap(),
-    ): ImportApplyResult =
-        try {
+    ): ImportApplyResult {
+        return try {
+            TemplateStructureValidation.findError(pack.templates)?.let { error ->
+                return ImportApplyResult.Error(resourceProvider.getString(error.messageResId))
+            }
             val resolved = resolveTemplates(pack.templates, resolutions)
             val templatesToSave = resolved.templates
             settingsStore.saveTemplates(templatesToSave)
@@ -38,14 +41,18 @@ internal class ImportApplyService(
             Log.e(TAG, "Failed to apply template pack", e)
             ImportApplyResult.Error(resourceProvider.getString(R.string.error_import_failed, e.message ?: ""))
         }
+    }
 
     suspend fun applyFullBackup(
         backup: FullBackup,
         importTechProfile: Boolean = false,
         importDefaultTemplate: Boolean = true,
         resolutions: Map<String, ConflictResolution> = emptyMap(),
-    ): ImportApplyResult =
-        try {
+    ): ImportApplyResult {
+        return try {
+            TemplateStructureValidation.findError(backup.templates)?.let { error ->
+                return ImportApplyResult.Error(resourceProvider.getString(error.messageResId))
+            }
             val resolved = resolveTemplates(backup.templates, resolutions)
             val templatesToSave = resolved.templates
             val techProfile =
@@ -60,8 +67,7 @@ internal class ImportApplyService(
                 }
             val activeTemplateId =
                 if (importDefaultTemplate) {
-                    val requestedDefaultId = backup.getEffectiveDefaultTemplateId() ?: DEFAULT_TEMPLATE_ID
-                    resolved.idMap[requestedDefaultId] ?: requestedDefaultId
+                    resolveDefaultTemplateId(backup, resolved.idMap)
                 } else {
                     null
                 }
@@ -92,6 +98,15 @@ internal class ImportApplyService(
             Log.e(TAG, "Failed to apply full backup", e)
             ImportApplyResult.Error(resourceProvider.getString(R.string.error_import_failed, e.message ?: ""))
         }
+    }
+
+    private fun resolveDefaultTemplateId(
+        backup: FullBackup,
+        idMap: Map<String, String>,
+    ): String {
+        val requestedId = backup.getEffectiveDefaultTemplateId() ?: DEFAULT_TEMPLATE_ID
+        return idMap[requestedId] ?: requestedId
+    }
 
     private data class ResolvedTemplates(
         val templates: List<Template>,

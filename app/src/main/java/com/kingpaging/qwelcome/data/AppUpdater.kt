@@ -10,6 +10,11 @@ interface AppUpdater {
 
     suspend fun enqueueDownload(update: UpdateCheckResult.UpdateAvailable): DownloadEnqueueResult
 
+    /** Reconnect to the last download after process recreation, or discard an installed update. */
+    suspend fun restorePendingDownload(currentVersionName: String): PendingUpdateDownload? = null
+
+    suspend fun forgetPendingDownload(downloadId: Long) = Unit
+
     suspend fun getDownloadStatus(downloadId: Long): DownloadStatus
 
     suspend fun verifyDownloadedApk(
@@ -21,6 +26,7 @@ interface AppUpdater {
 
     fun createUnknownSourcesSettingsIntent(): Intent
 
+    /** Launched for a result by the settings route; must not set FLAG_ACTIVITY_NEW_TASK. */
     fun createInstallIntent(apkPath: String): Intent?
 }
 

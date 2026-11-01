@@ -12,8 +12,10 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -22,6 +24,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import java.io.IOException
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class TemplateEditorViewModelTest {
@@ -212,6 +215,49 @@ class TemplateEditorViewModelTest {
                 assertEquals("customer_name, ssid", viewModel.uiState.value.contentError)
                 coVerify(exactly = 0) { settingsStore.saveTemplate(any()) }
             }
+        }
+
+    @Test
+    fun `second save is ignored while first write is suspended and after completion`() =
+        runTest {
+            val writeGate = CompletableDeferred<Unit>()
+            coEvery { settingsStore.saveTemplate(any()) } coAnswers { writeGate.await() }
+            val viewModel = createViewModel(NEW_TEMPLATE_ID)
+            advanceUntilIdle()
+
+            viewModel.createTemplate("New", template.content, emptyList())
+            viewModel.createTemplate("Duplicate", template.content, emptyList())
+            assertTrue(viewModel.uiState.value.isSaving)
+            runCurrent()
+            coVerify(exactly = 1) { settingsStore.saveTemplate(any()) }
+
+            writeGate.complete(Unit)
+            advanceUntilIdle()
+            assertFalse(viewModel.uiState.value.isSaving)
+            assertTrue(viewModel.uiState.value.isSaveCompleted)
+
+            viewModel.createTemplate("Again", template.content, emptyList())
+            advanceUntilIdle()
+            coVerify(exactly = 1) { settingsStore.saveTemplate(any()) }
+        }
+
+    @Test
+    fun `failed write releases save guard for retry`() =
+        runTest {
+            coEvery { settingsStore.saveTemplate(any()) } throws IOException("Disk full")
+            val viewModel = createViewModel(NEW_TEMPLATE_ID)
+            advanceUntilIdle()
+
+            viewModel.createTemplate("New", template.content, emptyList())
+            advanceUntilIdle()
+            assertFalse(viewModel.uiState.value.isSaving)
+            assertFalse(viewModel.uiState.value.isSaveCompleted)
+
+            coEvery { settingsStore.saveTemplate(any()) } returns Unit
+            viewModel.createTemplate("Retry", template.content, emptyList())
+            advanceUntilIdle()
+            assertTrue(viewModel.uiState.value.isSaveCompleted)
+            coVerify(exactly = 2) { settingsStore.saveTemplate(any()) }
         }
 
     private fun createViewModel(templateId: String): TemplateEditorViewModel =

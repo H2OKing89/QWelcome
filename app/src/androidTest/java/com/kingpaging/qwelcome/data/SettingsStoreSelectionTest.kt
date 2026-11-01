@@ -75,6 +75,35 @@ class SettingsStoreSelectionTest {
         }
 
     @Test
+    fun invalidTemplateIdentities_doNotMutateStoredTemplates() =
+        runBlocking {
+            val original = store.getUserTemplates()
+            val invalidLists =
+                listOf(
+                    listOf(firstTemplate.copy(id = "")),
+                    listOf(firstTemplate.copy(id = DEFAULT_TEMPLATE_ID)),
+                    listOf(firstTemplate.copy(id = NEW_TEMPLATE_ID)),
+                    listOf(firstTemplate, firstTemplate.copy(name = "Duplicate")),
+                )
+
+            invalidLists.forEach { templates ->
+                try {
+                    store.saveTemplates(templates)
+                    org.junit.Assert.fail("Invalid templates must not be saved")
+                } catch (_: IllegalArgumentException) {
+                    assertEquals(original, store.getUserTemplates())
+                }
+
+                try {
+                    store.restoreFullBackup(templates, techProfile = null, activeTemplateId = null)
+                    org.junit.Assert.fail("Invalid templates must not be restored")
+                } catch (_: IllegalArgumentException) {
+                    assertEquals(original, store.getUserTemplates())
+                }
+            }
+        }
+
+    @Test
     fun selection_atomicallyUpdatesActiveIdAndUsageTimestamp() =
         runBlocking {
             val result = store.setActiveTemplate(firstTemplate.id)

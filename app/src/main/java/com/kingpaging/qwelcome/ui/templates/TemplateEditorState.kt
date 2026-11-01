@@ -19,8 +19,10 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
@@ -40,6 +42,12 @@ import com.kingpaging.qwelcome.viewmodel.templates.TemplateEditorUiState
 import kotlinx.coroutines.flow.distinctUntilChanged
 
 private const val TAG_MAX_LENGTH = 32
+
+private fun TemplateEditorUiState.canSaveDraft(isDirty: Boolean): Boolean {
+    val draftValid = name.isNotBlank() && contentError == null
+    val saveAvailable = !isSaving && !isSaveCompleted
+    return draftValid && saveAvailable && isDirty
+}
 
 /** Trims and caps a raw tag input to the shared tag length limit. */
 internal fun normalizeTemplateTag(rawTag: String): String = rawTag.trim().take(TAG_MAX_LENGTH)
@@ -105,32 +113,19 @@ private class TemplateEditorState(
             return
         }
 
-        if (editorUiState.contentError != null) {
-            return
-        }
+        val content = contentFieldState.text.toString()
+        if (!Template.hasRequiredPlaceholders(content)) return
 
         val tags = mergeDraftTag(editorUiState.tags, editorUiState.newTagInput)
 
         if (isNew) {
-            onCreate(editorUiState.name, editorUiState.contentText, tags)
+            onCreate(editorUiState.name, content, tags)
         } else {
             onUpdate(
                 editorUiState.name,
-                editorUiState.contentText,
+                content,
                 tags,
             )
-        }
-    }
-
-    fun syncContentFieldValue(contentText: String) {
-        if (contentText == contentFieldState.text.toString()) return
-
-        val clampedStart = contentFieldState.selection.start.coerceIn(0, contentText.length)
-        val clampedEnd = contentFieldState.selection.end.coerceIn(0, contentText.length)
-        contentFieldState.edit {
-            delete(0, length)
-            insert(0, contentText)
-            selection = TextRange(clampedStart, clampedEnd)
         }
     }
 
@@ -157,16 +152,13 @@ private fun rememberTemplateEditorState(initialContentText: String): TemplateEdi
 @Composable
 private fun BindTemplateEditorState(
     state: TemplateEditorState,
-    contentText: String,
     onContentChange: (String) -> Unit,
 ) {
-    LaunchedEffect(contentText) {
-        state.syncContentFieldValue(contentText)
-    }
+    val currentOnContentChange by rememberUpdatedState(onContentChange)
     LaunchedEffect(state.contentFieldState) {
         snapshotFlow { state.contentFieldState.text.toString() }
             .distinctUntilChanged()
-            .collect { onContentChange(it) }
+            .collect { currentOnContentChange(it) }
     }
 }
 
@@ -232,7 +224,6 @@ internal fun TemplateEditorContent(
 
     BindTemplateEditorState(
         state = editorState,
-        contentText = editorUiState.contentText,
         onContentChange = onContentChange,
     )
 
@@ -241,8 +232,7 @@ internal fun TemplateEditorContent(
             editorUiState.contentText != originalContent ||
             editorUiState.tags != originalTags ||
             editorUiState.newTagInput.isNotBlank()
-    val isValid = editorUiState.name.isNotBlank() && editorUiState.contentError == null
-    val saveEnabled = isValid && isDirty
+    val saveEnabled = editorUiState.canSaveDraft(isDirty)
     val suggestedTags =
         listOf(
             stringResource(R.string.tag_residential),

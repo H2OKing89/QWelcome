@@ -4,19 +4,25 @@ package com.kingpaging.qwelcome.ui.components
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Share
@@ -28,7 +34,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -49,6 +58,27 @@ internal data class QrCodeSheetActions(
     val onRequestSave: () -> Unit,
     val onShare: () -> Unit,
 )
+
+@Composable
+internal fun QrCodeScrollableContent(
+    qrPainter: Painter,
+    network: QrCodeNetworkDetails,
+    isSaving: Boolean,
+    isSharing: Boolean,
+    actions: QrCodeSheetActions,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 24.dp, vertical = 16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        QrCodeSheetContent(qrPainter, network, isSaving, isSharing, actions)
+    }
+}
 
 @Composable
 internal fun ColumnScope.QrCodeSheetContent(
@@ -86,14 +116,27 @@ private fun QrCodeSheetHeader() {
 @Composable
 private fun QrCodePreview(qrPainter: Painter) {
     val cyberColors = LocalCyberColors.current
+    val windowHeightPixels = LocalWindowInfo.current.containerSize.height
+    val windowHeight = with(LocalDensity.current) { windowHeightPixels.toDp() }
+    val preferredSize = windowHeight * 0.4f
+    val previewSize = preferredSize.coerceIn(128.dp, 240.dp)
 
     Box(
         modifier =
             Modifier
-                .size(240.dp)
+                .widthIn(max = previewSize)
+                .fillMaxWidth()
+                .aspectRatio(1f)
                 .clip(RoundedCornerShape(16.dp))
                 .background(cyberColors.qrCodeBackground)
-                .padding(12.dp),
+                .border(
+                    width = 2.dp,
+                    brush =
+                        Brush.linearGradient(
+                            listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.secondary),
+                        ),
+                    shape = RoundedCornerShape(16.dp),
+                ).padding(12.dp),
         contentAlignment = Alignment.Center,
     ) {
         Image(
@@ -194,7 +237,7 @@ private fun RowScope.QrSaveAction(
         } else {
             Icon(
                 Icons.Default.Download,
-                contentDescription = stringResource(R.string.action_save),
+                contentDescription = null,
                 modifier = Modifier.size(18.dp),
             )
         }
@@ -223,7 +266,7 @@ private fun RowScope.QrShareAction(
         } else {
             Icon(
                 Icons.Default.Share,
-                contentDescription = stringResource(R.string.action_share),
+                contentDescription = null,
                 modifier = Modifier.size(18.dp),
             )
         }

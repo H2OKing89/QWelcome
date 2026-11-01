@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
@@ -33,6 +34,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -53,6 +55,20 @@ import com.kingpaging.qwelcome.viewmodel.templates.TemplateListUiState
 import com.kingpaging.qwelcome.viewmodel.templates.filterAndOrderTemplates
 
 internal const val TEMPLATE_LIST_TEST_TAG = "template_list"
+
+@Composable
+private fun ScrollToNewActiveTemplate(
+    uiState: TemplateListUiState,
+    listState: LazyListState,
+) {
+    var previousActiveTemplateId by rememberSaveable { mutableStateOf(uiState.activeTemplateId) }
+    LaunchedEffect(uiState.activeTemplateId, uiState.isLoading) {
+        if (!uiState.isLoading && previousActiveTemplateId != uiState.activeTemplateId) {
+            previousActiveTemplateId = uiState.activeTemplateId
+            listState.scrollToItem(0)
+        }
+    }
+}
 
 @Suppress("FunctionNaming", "LongMethod", "LongParameterList")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -80,9 +96,7 @@ fun TemplateListScreen(
     var previewTemplate by remember { mutableStateOf<Template?>(null) }
     var renameTemplate by remember { mutableStateOf<Template?>(null) }
 
-    LaunchedEffect(uiState.activeTemplateId) {
-        templateListState.scrollToItem(0)
-    }
+    ScrollToNewActiveTemplate(uiState, templateListState)
 
     BackHandler { onBack() }
 

@@ -1,6 +1,7 @@
 package com.kingpaging.qwelcome.ui
 
 import com.kingpaging.qwelcome.data.CustomerData
+import com.kingpaging.qwelcome.util.StringUtils
 import com.kingpaging.qwelcome.util.WifiQrGenerator
 
 /**
@@ -34,15 +35,11 @@ data class CustomerIntakeUiState(
     /** True when the WiFi fields are valid enough to generate a QR code. */
     val qrEnabled: Boolean
         get() =
-            if (isOpenNetwork) {
-                ssid.isNotBlank() && ssidError == null
-            } else {
-                ssid.isNotBlank() &&
-                    ssidError == null &&
-                    password.isNotBlank() &&
-                    password.length >= WifiQrGenerator.MIN_PASSWORD_LENGTH &&
-                    passwordError == null
-            }
+            WifiQrGenerator.validateSsid(ssid) is WifiQrGenerator.ValidationResult.Success &&
+                (
+                    isOpenNetwork ||
+                        WifiQrGenerator.validatePassword(password) is WifiQrGenerator.ValidationResult.Success
+                )
 
     /**
      * Returns true if all form fields pass validation (no errors present).
@@ -73,8 +70,8 @@ data class CustomerIntakeUiState(
      * Converts the UI state to a [CustomerData] instance.
      *
      * This mapper function bridges the UI layer (CustomerIntakeUiState) and
-     * the data layer (CustomerData), applying transformations like title case
-     * formatting to the customer name.
+     * the data layer (CustomerData), converting all-caps customer names to title
+     * case while preserving explicitly entered mixed-case spelling.
      *
      * Note: This should only be called after validation has passed, as it does
      * not perform any validation itself.
@@ -83,7 +80,12 @@ data class CustomerIntakeUiState(
      */
     fun toCustomerData(): CustomerData =
         CustomerData(
-            customerName = customerName,
+            customerName =
+                if (customerName.any(Char::isUpperCase) && customerName.none(Char::isLowerCase)) {
+                    StringUtils.toTitleCase(customerName)
+                } else {
+                    customerName
+                },
             customerPhone = customerPhone,
             ssid = ssid,
             password = password,

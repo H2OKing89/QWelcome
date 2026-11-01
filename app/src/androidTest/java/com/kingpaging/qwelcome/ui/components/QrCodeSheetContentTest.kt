@@ -1,12 +1,20 @@
 package com.kingpaging.qwelcome.ui.components
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.ColorPainter
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.kingpaging.qwelcome.R
@@ -51,9 +59,43 @@ class QrCodeSheetContentTest {
         }
 
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
-        composeRule.onNodeWithText(context.getString(R.string.action_save)).performClick()
+        composeRule
+            .onNodeWithText(context.getString(R.string.action_save))
+            .performClick()
 
         assertTrue(saveRequested.get())
+    }
+
+    @Test
+    fun compactHeightWithLargeFontsKeepsActionsReachable() {
+        val saveRequested = AtomicBoolean(false)
+        composeRule.setContent {
+            CyberpunkTheme {
+                val density = LocalDensity.current.density
+                CompositionLocalProvider(LocalDensity provides Density(density, fontScale = 2f)) {
+                    QrCodeScrollableContent(
+                        qrPainter = ColorPainter(Color.Black),
+                        network = QrCodeNetworkDetails("Office WiFi", false, WifiQrGenerator.SecurityType.WPA2_PSK),
+                        isSaving = false,
+                        isSharing = false,
+                        actions = QrCodeSheetActions({ saveRequested.set(true) }, {}),
+                        modifier = Modifier.width(320.dp).height(280.dp),
+                    )
+                }
+            }
+        }
+
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        composeRule
+            .onNodeWithText(context.getString(R.string.action_save))
+            .performScrollTo()
+            .assertIsDisplayed()
+            .performClick()
+        assertTrue(saveRequested.get())
+        composeRule
+            .onNodeWithText(context.getString(R.string.action_share))
+            .performScrollTo()
+            .assertIsDisplayed()
     }
 
     @Test

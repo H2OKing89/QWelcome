@@ -10,8 +10,6 @@
     <!-- Storage permissions for QR code saving (only needed for Android 9 and below) -->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="28" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
-        android:maxSdkVersion="32" />
 
     <!-- Needed for resolveActivity() on Android 11+ (package visibility) -->
     <queries>

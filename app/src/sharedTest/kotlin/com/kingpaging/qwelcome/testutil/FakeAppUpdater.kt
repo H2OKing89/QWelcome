@@ -4,6 +4,7 @@ import android.content.Intent
 import com.kingpaging.qwelcome.data.AppUpdater
 import com.kingpaging.qwelcome.data.DownloadEnqueueResult
 import com.kingpaging.qwelcome.data.DownloadStatus
+import com.kingpaging.qwelcome.data.PendingUpdateDownload
 import com.kingpaging.qwelcome.data.UpdateCheckResult
 import com.kingpaging.qwelcome.data.VerificationResult
 import java.util.ArrayDeque
@@ -19,6 +20,9 @@ class FakeAppUpdater : AppUpdater {
     var unknownSourcesIntent: Intent = Intent("fake.unknown.sources")
     var installIntent: Intent? = Intent("fake.install")
 
+    var pendingDownload: PendingUpdateDownload? = null
+    var restoredDownloadCount: Int = 0
+    var lastForgottenDownloadId: Long? = null
     var checkCallCount: Int = 0
     var lastCheckedVersion: String? = null
     var enqueueCallCount: Int = 0
@@ -37,6 +41,16 @@ class FakeAppUpdater : AppUpdater {
         enqueueCallCount++
         lastEnqueuedUpdate = update
         return enqueueResult
+    }
+
+    override suspend fun restorePendingDownload(currentVersionName: String): PendingUpdateDownload? {
+        restoredDownloadCount++
+        return pendingDownload
+    }
+
+    override suspend fun forgetPendingDownload(downloadId: Long) {
+        lastForgottenDownloadId = downloadId
+        if (pendingDownload?.downloadId == downloadId) pendingDownload = null
     }
 
     override suspend fun getDownloadStatus(downloadId: Long): DownloadStatus =

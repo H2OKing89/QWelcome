@@ -82,7 +82,7 @@ class ImportExportRepositoryTest {
         }
 
     @Test
-    fun `validateImport returns invalid when full backup has empty templates`() =
+    fun `validateImport accepts full backup with only a tech profile`() =
         runTest {
             val backup =
                 FullBackup.create(
@@ -94,11 +94,8 @@ class ImportExportRepositoryTest {
 
             val result = repository.validateImport(json)
 
-            assertTrue(result is ImportValidationResult.Invalid)
-            assertEquals(
-                "string_${R.string.error_import_template_pack_empty}",
-                (result as ImportValidationResult.Invalid).message,
-            )
+            assertTrue(result is ImportValidationResult.ValidFullBackup)
+            assertEquals(backup, (result as ImportValidationResult.ValidFullBackup).backup)
         }
 
     @Test

@@ -28,6 +28,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.io.IOException
 
 private const val TAG = "SettingsViewModel"
 
@@ -121,9 +122,50 @@ class SettingsViewModel(
     @VisibleForTesting
     internal var lastCheckTimeMillis: Long = 0L
 
+    private var recoveryAttempted = false
+
+    /** Reconnect to DownloadManager once when settings is opened after process recreation. */
+    fun restorePendingUpdate() {
+        onInstallerReturned()
+        if (recoveryAttempted || _updateState.value != UpdateState.Idle) return
+        recoveryAttempted = true
+        _updateState.value = UpdateState.Checking
+        viewModelScope.launch {
+            try {
+                val pending = appUpdater.restorePendingDownload(currentVersion)
+                if (pending == null) {
+                    _updateState.value = UpdateState.Idle
+                } else {
+                    monitorDownload(pending.update.toAvailableState(), pending.downloadId)
+                }
+            } catch (exception: IOException) {
+                _updateState.value = UpdateState.Error(updaterErrorMessage(exception))
+            } catch (exception: SecurityException) {
+                _updateState.value = UpdateState.Error(updaterErrorMessage(exception))
+            } catch (exception: IllegalArgumentException) {
+                _updateState.value = UpdateState.Error(updaterErrorMessage(exception))
+            }
+        }
+    }
+
+    /** Return from an installer, including cancellation or an OEM installer with no result. */
+    fun onInstallerReturned() {
+        val installing = _updateState.value as? UpdateState.Installing ?: return
+        _updateState.value = UpdateState.ReadyToInstall(installing.version, installing.apkPath)
+    }
+
+    fun onInstallerLaunchFailed() {
+        onInstallerReturned()
+        viewModelScope.launch {
+            _settingsEvents.emit(
+                SettingsEvent.ShowToastError(resourceProvider.getString(R.string.error_update_install_unavailable)),
+            )
+        }
+    }
+
     /** Check for updates from GitHub Releases */
     fun checkForUpdate() {
-        if (_updateState.value is UpdateState.Checking) return // Prevent duplicate checks
+        if (_updateState.value.isBusy) return
 
         // Enforce 60-second cooldown between checks
         val now = System.currentTimeMillis()
@@ -141,31 +183,20 @@ class SettingsViewModel(
             return
         }
         lastCheckTimeMillis = now
+        _updateState.value = UpdateState.Checking
 
         viewModelScope.launch {
-            _updateState.value = UpdateState.Checking
             _showDownloadConfirmDialog.value = false
+            applyUpdateCheckResult(appUpdater.checkForUpdate(currentVersion))
+        }
+    }
 
-            when (val result = appUpdater.checkForUpdate(currentVersion)) {
-                is UpdateCheckResult.UpdateAvailable -> {
-                    _updateState.value =
-                        UpdateState.Available(
-                            version = result.latestVersion,
-                            downloadUrl = result.downloadUrl,
-                            releaseNotes = result.releaseNotes,
-                            assetName = result.assetName,
-                            assetSizeBytes = result.assetSizeBytes,
-                            sha256Hex = result.sha256Hex,
-                        )
-                }
-                is UpdateCheckResult.UpToDate -> {
-                    _updateState.value = UpdateState.UpToDate
-                    _showDownloadConfirmDialog.value = false
-                }
-                is UpdateCheckResult.Error -> {
-                    _updateState.value = UpdateState.Error(result.message)
-                    _showDownloadConfirmDialog.value = false
-                }
+    private fun applyUpdateCheckResult(result: UpdateCheckResult) {
+        _updateState.value =
+            when (result) {
+                is UpdateCheckResult.UpdateAvailable -> result.toAvailableState()
+                is UpdateCheckResult.UpToDate -> UpdateState.UpToDate
+                is UpdateCheckResult.Error -> UpdateState.Error(result.message)
                 is UpdateCheckResult.RateLimited -> {
                     val message =
                         if (result.retryAfterSeconds != null) {
@@ -176,15 +207,14 @@ class SettingsViewModel(
                         } else {
                             resourceProvider.getString(R.string.toast_rate_limited)
                         }
-                    _updateState.value = UpdateState.Error(message)
-                    _showDownloadConfirmDialog.value = false
+                    UpdateState.Error(message)
                 }
             }
-        }
     }
 
     fun startUpdateDownload() {
         val available = _updateState.value as? UpdateState.Available ?: return
+        _updateState.value = UpdateState.DownloadQueued(available.version, -1L)
 
         viewModelScope.launch {
             try {
@@ -222,6 +252,7 @@ class SettingsViewModel(
 
     /** Dismiss update notification */
     fun dismissUpdate() {
+        if (_updateState.value.isBusy) return
         _updateState.value = UpdateState.Dismissed
         _showDownloadConfirmDialog.value = false
     }
@@ -296,6 +327,7 @@ class SettingsViewModel(
 
                     when (verifyResult) {
                         is VerificationResult.Failed -> {
+                            appUpdater.forgetPendingDownload(downloadId)
                             _updateState.value = UpdateState.Error(verifyResult.message)
                         }
                         is VerificationResult.Success -> {
@@ -309,6 +341,7 @@ class SettingsViewModel(
                     return
                 }
                 is DownloadStatus.Failed -> {
+                    appUpdater.forgetPendingDownload(downloadId)
                     _updateState.value = UpdateState.Error(status.message)
                     return
                 }
@@ -328,21 +361,31 @@ class SettingsViewModel(
 
             val installIntent = appUpdater.createInstallIntent(apkPath)
             if (installIntent == null) {
-                _updateState.value =
-                    UpdateState.Error(
-                        resourceProvider.getString(R.string.error_update_install_unavailable),
-                    )
+                _updateState.value = UpdateState.ReadyToInstall(version, apkPath)
+                onInstallerLaunchFailed()
                 return
             }
 
-            _updateState.value = UpdateState.Installing(version)
+            _updateState.value = UpdateState.Installing(version, apkPath)
             _settingsEvents.emit(SettingsEvent.LaunchIntent(installIntent))
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            _updateState.value = UpdateState.Error(updaterErrorMessage(e))
+            Log.e(TAG, "Unable to launch update installer", e)
+            _updateState.value = UpdateState.ReadyToInstall(version, apkPath)
+            onInstallerLaunchFailed()
         }
     }
+
+    private fun UpdateCheckResult.UpdateAvailable.toAvailableState(): UpdateState.Available =
+        UpdateState.Available(
+            version = latestVersion,
+            downloadUrl = downloadUrl,
+            releaseNotes = releaseNotes,
+            assetName = assetName,
+            assetSizeBytes = assetSizeBytes,
+            sha256Hex = sha256Hex,
+        )
 
     private fun UpdateState.Available.toUpdateAvailable(): UpdateCheckResult.UpdateAvailable =
         UpdateCheckResult.UpdateAvailable(
@@ -367,6 +410,14 @@ class SettingsViewModel(
 
 /** State for update checking UI */
 sealed class UpdateState {
+    val isBusy: Boolean
+        get() =
+            this is Checking ||
+                this is DownloadQueued ||
+                this is Downloading ||
+                this is Verifying ||
+                this is Installing
+
     object Idle : UpdateState()
 
     object Checking : UpdateState()
@@ -411,6 +462,7 @@ sealed class UpdateState {
 
     data class Installing(
         val version: String,
+        val apkPath: String,
     ) : UpdateState()
 
     data class Error(

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="startup_loading">Loading your settings…</string>
+    <string name="startup_failed_title">Unable to load your settings</string>
+    <string name="startup_failed_body">Your saved settings could not be opened. Try again. Your data has been kept.</string>
+    <string name="startup_legacy_failed_body">Your old templates could not be read. You can save a recovery copy, retry, or continue without those templates. Your technician profile will be preserved.</string>
+    <string name="startup_retry">Try again</string>
+    <string name="startup_save_copy">Save recovery copy</string>
+    <string name="startup_skip_templates">Continue without old templates</string>
+    <string name="startup_confirm_title">Continue without old templates?</string>
+    <string name="startup_confirm_body">A recovery copy will be kept on this device. Your old templates will no longer be active. Your technician profile will be preserved.</string>
+    <string name="startup_confirm_continue">Continue</string>
+    <string name="startup_cancel">Cancel</string>
+    <string name="startup_copy_saved">Recovery copy saved</string>
+    <string name="startup_copy_failed">Unable to save the recovery copy. Your original data has been kept.</string>
+    <string name="error_message_action_failed">Unable to prepare the message. Please try again.</string>
+</resources>
