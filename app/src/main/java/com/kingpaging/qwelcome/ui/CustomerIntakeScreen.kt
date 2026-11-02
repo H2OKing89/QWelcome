@@ -263,18 +263,13 @@ internal fun CustomerIntakeScreen(
                         passwordVisible = !passwordVisible
                     },
                     onAccountNumberChanged = actions.onAccountNumberChanged,
-                    requiresAccount =
-                        MessageTemplate.usesPlaceholder(templateContent, MessageTemplate.KEY_ACCOUNT_NUMBER),
-                    requiresPassword = MessageTemplate.usesPlaceholder(templateContent, MessageTemplate.KEY_PASSWORD),
-                )
-
-                CustomerIntakeQrCodeSection(
-                    uiState = uiState,
-                    enabled = uiState.qrEnabled,
                     onShowQrClick = {
                         hapticFeedback()
                         actions.onShowQr()
                     },
+                    requiresAccount =
+                        MessageTemplate.usesPlaceholder(templateContent, MessageTemplate.KEY_ACCOUNT_NUMBER),
+                    requiresPassword = MessageTemplate.usesPlaceholder(templateContent, MessageTemplate.KEY_PASSWORD),
                 )
             }
         }

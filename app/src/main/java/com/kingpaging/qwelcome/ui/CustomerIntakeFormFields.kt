@@ -67,6 +67,7 @@ internal fun CustomerFormFields(
     onPasswordChanged: (String) -> Unit,
     onPasswordVisibilityToggle: () -> Unit,
     onAccountNumberChanged: (String) -> Unit,
+    onShowQrClick: () -> Unit,
     requiresAccount: Boolean = false,
     requiresPassword: Boolean = false,
 ) {
@@ -120,6 +121,11 @@ internal fun CustomerFormFields(
             securityDropdownExpanded = securityDropdownExpanded,
             onSecurityDropdownExpandedChange = onSecurityDropdownExpandedChange,
             onSecurityTypeChanged = onSecurityTypeChanged,
+        )
+        CustomerIntakeQrCodeSection(
+            uiState = uiState,
+            enabled = uiState.qrEnabled,
+            onShowQrClick = onShowQrClick,
         )
     }
 }
