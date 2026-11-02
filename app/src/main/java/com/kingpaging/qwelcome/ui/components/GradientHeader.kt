@@ -14,6 +14,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -23,19 +25,23 @@ import com.kingpaging.qwelcome.R
 /** Compact wordmark with the recognizable Q silhouette and a single brand color. */
 @Composable
 fun QWelcomeHeader(modifier: Modifier = Modifier) {
+    val appName = stringResource(R.string.app_name)
     Row(
-        modifier = modifier.padding(horizontal = 4.dp),
+        modifier =
+            modifier
+                .padding(horizontal = 4.dp)
+                .clearAndSetSemantics { contentDescription = appName },
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         Image(
             painter = painterResource(id = R.drawable.q_logo),
-            contentDescription = stringResource(R.string.content_desc_q_logo),
+            contentDescription = null,
             colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary),
-            modifier = Modifier.size(28.dp),
+            modifier = Modifier.size(22.dp),
         )
         Text(
-            text = stringResource(R.string.app_name),
+            text = stringResource(R.string.intake_header_title),
             style =
                 MaterialTheme.typography.titleMedium.copy(
                     fontWeight = FontWeight.Bold,

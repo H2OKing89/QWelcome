@@ -1,18 +1,21 @@
 package com.kingpaging.qwelcome.ui
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.PersonAdd
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.PersonAdd
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -137,10 +140,18 @@ internal fun CustomerIntakeScreen(
                                 hapticFeedback()
                                 actions.onClearForm()
                             },
-                            modifier = Modifier.semantics { contentDescription = newCustomerDescription },
+                            modifier =
+                                Modifier
+                                    .sizeIn(minHeight = 48.dp)
+                                    .semantics { contentDescription = newCustomerDescription },
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
+                            colors =
+                                ButtonDefaults.textButtonColors(
+                                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                ),
                         ) {
-                            Icon(Icons.Filled.PersonAdd, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(Modifier.width(6.dp))
+                            Icon(Icons.Outlined.PersonAdd, contentDescription = null, modifier = Modifier.size(20.dp))
+                            Spacer(Modifier.width(4.dp))
                             Text(
                                 stringResource(
                                     if (compactHeader) {
@@ -151,17 +162,21 @@ internal fun CustomerIntakeScreen(
                                 ),
                             )
                         }
-                        IconButton(onClick = {
-                            hapticFeedback()
-                            onOpenSettings()
-                        }) {
+                        IconButton(
+                            onClick = {
+                                hapticFeedback()
+                                onOpenSettings()
+                            },
+                            modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp),
+                        ) {
                             Icon(
-                                Icons.Filled.Settings,
+                                Icons.Outlined.Settings,
                                 contentDescription = stringResource(R.string.content_desc_settings),
+                                modifier = Modifier.size(20.dp),
                             )
                         }
                     },
-                    actionIconContentColor = MaterialTheme.colorScheme.onBackground,
+                    actionIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             },
             bottomBar = {
@@ -197,7 +212,10 @@ internal fun CustomerIntakeScreen(
                 }
             },
         ) { innerPadding ->
-            CenteredFormColumn(padding = innerPadding) {
+            CenteredFormColumn(
+                padding = innerPadding,
+                contentPadding = PaddingValues(start = 16.dp, top = 4.dp, end = 16.dp, bottom = 16.dp),
+            ) {
                 CustomerIntakeTemplateSelector(
                     templateUiState = templateUiState,
                     expanded = templateDropdownExpanded,

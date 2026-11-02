@@ -1,4 +1,5 @@
 <resources>
+    <string name="intake_header_title">Welcome</string>
     <string name="intake_customer_section">Customer details</string>
     <string name="intake_wifi_section">WiFi details</string>
     <string name="intake_new_customer">New customer</string>
