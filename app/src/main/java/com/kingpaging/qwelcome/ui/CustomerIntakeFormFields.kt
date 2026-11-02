@@ -4,7 +4,7 @@ package com.kingpaging.qwelcome.ui
 
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -71,11 +71,18 @@ internal fun CustomerFormFields(
     requiresPassword: Boolean = false,
 ) {
     NeonPanel {
-        Text(
-            stringResource(R.string.intake_customer_section),
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.semantics { heading() },
-        )
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(
+                stringResource(R.string.intake_customer_section),
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.semantics { heading() },
+            )
+            Text(
+                stringResource(R.string.intake_required_fields),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
         CustomerContactFields(
             uiState = uiState,
             focusTargets = focusTargets,
@@ -141,15 +148,11 @@ private fun CustomerContactFields(
     NeonOutlinedField(
         value = uiState.customerPhone,
         onValueChange = onCustomerPhoneChanged,
-        label = {
-            IntakeFieldLabel(
-                R.string.label_customer_phone,
-                required = false,
-                hint = stringResource(R.string.intake_phone_for_sms),
-            )
-        },
+        label = { IntakeFieldLabel(R.string.label_customer_phone, required = false) },
         isError = uiState.customerPhoneError != null,
-        supportingText = if (uiState.customerPhoneError != null) ({ Text(uiState.customerPhoneError) }) else null,
+        supportingText = {
+            Text(uiState.customerPhoneError ?: stringResource(R.string.intake_phone_for_sms))
+        },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone, imeAction = ImeAction.Next),
         keyboardActions = KeyboardActions(onNext = { focusTargets.accountNumber.focusRequester.requestFocus() }),
         modifier =
@@ -395,19 +398,16 @@ private fun SecurityTypeSelector(
 private fun IntakeFieldLabel(
     @StringRes labelResource: Int,
     required: Boolean,
-    hint: String? = null,
 ) {
-    val supportingLabel = if (required) stringResource(R.string.intake_required) else hint
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text(stringResource(labelResource))
-        if (supportingLabel != null) {
-            Text(
-                supportingLabel,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.primary,
-            )
-        }
-    }
+    val label = stringResource(labelResource)
+    val requiredDescription = stringResource(R.string.intake_required)
+    Text(
+        text = if (required) stringResource(R.string.intake_required_label, label) else label,
+        modifier =
+            Modifier.semantics {
+                if (required) stateDescription = requiredDescription
+            },
+    )
 }
 
 @Composable

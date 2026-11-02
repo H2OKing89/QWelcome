@@ -223,11 +223,11 @@
     <string name="label_template">Template</string>
     <string name="label_active">Active</string>
     <string name="action_manage_templates">Manage Templates…</string>
-    <string name="label_customer_name">Customer Name</string>
-    <string name="label_customer_phone">Customer Phone</string>
-    <string name="label_wifi_ssid">WiFi SSID</string>
-    <string name="label_wifi_password">WiFi Password</string>
-    <string name="label_advanced_wifi_options">Advanced WiFi Options</string>
+    <string name="label_customer_name">Name</string>
+    <string name="label_customer_phone">Phone number</string>
+    <string name="label_wifi_ssid">Network name (SSID)</string>
+    <string name="label_wifi_password">Password</string>
+    <string name="label_advanced_wifi_options">Advanced options</string>
     <string name="state_expanded">Expanded</string>
     <string name="state_collapsed">Collapsed</string>
     <string name="label_wifi_security">WiFi Security</string>
@@ -239,7 +239,7 @@
     <string name="label_hidden_network">Hidden Network</string>
     <string name="content_desc_hide_password">Hide password</string>
     <string name="content_desc_show_password">Show password</string>
-    <string name="label_account_number">Account Number</string>
+    <string name="label_account_number">Account number</string>
     <string name="header_send">Send</string>
     <string name="action_sms">SMS</string>
     <string name="action_share">Share</string>

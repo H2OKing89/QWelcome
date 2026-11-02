@@ -107,7 +107,9 @@ class CustomerIntakeScreenTest {
         setScreenContent()
         val context = appContext
 
-        composeRule.onNodeWithText(context.getString(R.string.label_customer_name)).assertIsDisplayed()
+        composeRule
+            .onNode(editableFieldWithLabel(context.getString(R.string.label_customer_name)))
+            .assertIsDisplayed()
         composeRule.onNodeWithText(context.getString(R.string.label_customer_phone)).assertIsDisplayed()
         composeRule
             .onNode(editableFieldWithLabel(context.getString(R.string.label_wifi_ssid)))
@@ -258,7 +260,8 @@ class CustomerIntakeScreenTest {
         assertTrue(settingsOpened.get())
     }
 
-    private fun editableFieldWithLabel(label: String): SemanticsMatcher = hasSetTextAction() and hasText(label)
+    private fun editableFieldWithLabel(label: String): SemanticsMatcher =
+        hasSetTextAction() and hasText(label, substring = true)
 
     private fun assertPinnedActionsDisplayed() {
         listOf(R.string.action_sms, R.string.action_share, R.string.action_copy).forEach { label ->
