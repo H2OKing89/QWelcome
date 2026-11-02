@@ -1,25 +1,22 @@
 package com.kingpaging.qwelcome.ui
 
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.PersonAdd
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.PersonAdd
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -28,7 +25,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
@@ -137,10 +133,18 @@ internal fun CustomerIntakeScreen(
                                 hapticFeedback()
                                 actions.onClearForm()
                             },
-                            modifier = Modifier.semantics { contentDescription = newCustomerDescription },
+                            modifier =
+                                Modifier
+                                    .sizeIn(minHeight = 48.dp)
+                                    .semantics { contentDescription = newCustomerDescription },
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
+                            colors =
+                                ButtonDefaults.textButtonColors(
+                                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                ),
                         ) {
-                            Icon(Icons.Filled.PersonAdd, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(Modifier.width(6.dp))
+                            Icon(Icons.Outlined.PersonAdd, contentDescription = null, modifier = Modifier.size(20.dp))
+                            Spacer(Modifier.width(4.dp))
                             Text(
                                 stringResource(
                                     if (compactHeader) {
@@ -151,53 +155,45 @@ internal fun CustomerIntakeScreen(
                                 ),
                             )
                         }
-                        IconButton(onClick = {
-                            hapticFeedback()
-                            onOpenSettings()
-                        }) {
+                        IconButton(
+                            onClick = {
+                                hapticFeedback()
+                                onOpenSettings()
+                            },
+                            modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp),
+                        ) {
                             Icon(
-                                Icons.Filled.Settings,
+                                Icons.Outlined.Settings,
                                 contentDescription = stringResource(R.string.content_desc_settings),
+                                modifier = Modifier.size(20.dp),
                             )
                         }
                     },
-                    actionIconContentColor = MaterialTheme.colorScheme.onBackground,
+                    actionIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             },
             bottomBar = {
-                Surface(color = MaterialTheme.colorScheme.surface, tonalElevation = 2.dp) {
-                    Box(
-                        modifier = Modifier.fillMaxWidth().navigationBarsPadding(),
-                        contentAlignment = Alignment.TopCenter,
-                    ) {
-                        Box(
-                            modifier =
-                                Modifier
-                                    .widthIn(max = 720.dp)
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                        ) {
-                            CustomerIntakeActionButtonRow(
-                                copySuccess = copySuccess,
-                                onSmsClick = {
-                                    hapticFeedback()
-                                    actions.onSmsClick()
-                                },
-                                onShareClick = {
-                                    hapticFeedback()
-                                    actions.onShareClick()
-                                },
-                                onCopyClick = {
-                                    hapticFeedback()
-                                    actions.onCopyClick()
-                                },
-                            )
-                        }
-                    }
-                }
+                CustomerIntakeActionBar(
+                    copySuccess = copySuccess,
+                    onSmsClick = {
+                        hapticFeedback()
+                        actions.onSmsClick()
+                    },
+                    onShareClick = {
+                        hapticFeedback()
+                        actions.onShareClick()
+                    },
+                    onCopyClick = {
+                        hapticFeedback()
+                        actions.onCopyClick()
+                    },
+                )
             },
         ) { innerPadding ->
-            CenteredFormColumn(padding = innerPadding) {
+            CenteredFormColumn(
+                padding = innerPadding,
+                contentPadding = PaddingValues(start = 16.dp, top = 4.dp, end = 16.dp, bottom = 16.dp),
+            ) {
                 CustomerIntakeTemplateSelector(
                     templateUiState = templateUiState,
                     expanded = templateDropdownExpanded,
@@ -245,18 +241,13 @@ internal fun CustomerIntakeScreen(
                         passwordVisible = !passwordVisible
                     },
                     onAccountNumberChanged = actions.onAccountNumberChanged,
-                    requiresAccount =
-                        MessageTemplate.usesPlaceholder(templateContent, MessageTemplate.KEY_ACCOUNT_NUMBER),
-                    requiresPassword = MessageTemplate.usesPlaceholder(templateContent, MessageTemplate.KEY_PASSWORD),
-                )
-
-                CustomerIntakeQrCodeSection(
-                    uiState = uiState,
-                    enabled = uiState.qrEnabled,
                     onShowQrClick = {
                         hapticFeedback()
                         actions.onShowQr()
                     },
+                    requiresAccount =
+                        MessageTemplate.usesPlaceholder(templateContent, MessageTemplate.KEY_ACCOUNT_NUMBER),
+                    requiresPassword = MessageTemplate.usesPlaceholder(templateContent, MessageTemplate.KEY_PASSWORD),
                 )
             }
         }

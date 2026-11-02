@@ -63,6 +63,7 @@ class CustomerIntakeSecurityTest {
                         onPasswordChanged = {},
                         onPasswordVisibilityToggle = {},
                         onAccountNumberChanged = {},
+                        onShowQrClick = {},
                     )
                 }
             }

@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 internal fun CenteredFormColumn(
     padding: PaddingValues,
+    contentPadding: PaddingValues = PaddingValues(16.dp),
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Box(
@@ -39,7 +40,7 @@ internal fun CenteredFormColumn(
                     .widthIn(max = 720.dp)
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
-                    .padding(16.dp),
+                    .padding(contentPadding),
             verticalArrangement = Arrangement.spacedBy(16.dp),
             content = content,
         )
